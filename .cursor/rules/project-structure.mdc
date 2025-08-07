@@ -1,0 +1,10 @@
+---
+description: informs the desired project structure, matching our existing projects
+globs: 
+alwaysApply: false
+---
+Project structure:
+
+All project source files go in the "Sources" directory. Inside of "Sources", any class extensions go in the "Extensions" directory, SwiftUI views go in the "Views" directory, data models go in the "Models" directory. Any other source files can just go in the root of "Sources".
+
+All project test files go in the "Tests" directory. Test files should be named using the base file's name then adding "Tests" to the end of it. For example, the file named "Concierge.swift" should have a test file named "ConciergeTests.swift".

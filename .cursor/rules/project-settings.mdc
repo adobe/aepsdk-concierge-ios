@@ -1,0 +1,12 @@
+---
+description: name the project and ensure suggested APIs are available in our minimum required iOS version
+globs: 
+alwaysApply: false
+---
+# configurable per repository
+
+The project name is "AEPConcierge". Source and Test files are nested in the "AEPConcierge" directory, which is at the root of the repository.
+
+all API recomendations must be available in iOS 15.0. 
+
+you can suggest APIs from newer versions of iOS if what we are trying to accomplish isn't available in iOS 15.0, but make sure to include in which version the suggested API is available.
