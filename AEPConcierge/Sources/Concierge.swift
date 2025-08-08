@@ -52,7 +52,7 @@ public class Concierge: NSObject, Extension {
         // register listener for handling concierge request content events
         registerListener(type: Constants.EventType.concierge,
                          source: EventSource.requestContent,
-                         listener: handleEvent(_:))
+                         listener: handleEvent)
         
         conciergeChatService.clearConciergeSession()
     }
