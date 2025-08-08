@@ -13,7 +13,10 @@
 import Foundation
 
 public protocol SpeechCapturing {
+    var responseProcessor: ((String) -> Void)? { get set }
+    
+    func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
     func beginCapture()
-    func endCapture(completion: @escaping(String?, Error?) -> Void)
+    func endCapture(completion: @escaping (String?, Error?) -> Void)    
 }

@@ -15,6 +15,8 @@ import Speech
 import AEPServices
 
 class SpeechCapturer: SpeechCapturing {
+    var responseProcessor: ((String) -> Void)?
+    
     // MARK: - private members
     private let LOG_TAG = "SpeechCapturer"
     
@@ -26,84 +28,74 @@ class SpeechCapturer: SpeechCapturing {
     
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
-        
+    }
+    
+    func initialize(responseProcessor: ((String) -> Void)?) {
+        self.responseProcessor = responseProcessor
         requestSpeechAndMicrophonePermissions()
-        
     }
     
     // MARK: - internal methods
     
     func isAvailable() -> Bool {
-        // TODO: handle ios >= 17 and < 17 paths for AVAudioApplication or AVAudioSession
-//        AVAudioApplication.shared.recordPermission == .granted
-        SFSpeechRecognizer.authorizationStatus() == .authorized
+        permissionGrantedForAudio && permissionGrantedForSpeech
     }
     
     func beginCapture() {
-//        // Cancel any existing recognition task
-//        recognitionTask?.cancel()
-//        recognitionTask = nil
-//        
-//        // Set up audio session
-//        let audioSession = AVAudioSession.sharedInstance()
-//        
-//        do {
-//            try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
-//            try audioSession.setMode(.measurement)
-//            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-//        } catch {
-//            print("Failed to set up audio session: \(error)")
-//            return
-//        }
-//        
-//        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-//        if #available(iOS 16, *) {
-//            recognitionRequest?.addsPunctuation = true
-//        }
-//        
-//        let inputNode = audioEngine.inputNode
-//        guard let recognitionRequest = recognitionRequest else {
-//            print("Unable to create recognition request")
-//            return
-//        }
-//        
-//        recognitionRequest.shouldReportPartialResults = true
-//        
-//        // Create the user message immediately
-//        messages.append(Message(template: .basic(isUserMessage: true), messageBody: ""))
-//        let messageIndex = messages.count - 1
-//        
-//        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
-//            if let result = result {
-//                DispatchQueue.main.async {
-//                    let transcribedText = result.bestTranscription.formattedString
-//                    currentTranscription = transcribedText
-//                    
-//                    // Update the message body directly instead of through chatMessageView
-//                    messages[messageIndex].messageBody = transcribedText
-//                }
-//            }
-//            
-//            if error != nil {
-//                audioEngine.stop()
-//                inputNode.removeTap(onBus: 0)
-//                self.recognitionRequest = nil
-//                self.recognitionTask = nil
-//            }
-//        }
-//        
-//        let recordingFormat = inputNode.outputFormat(forBus: 0)
-//        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-//            recognitionRequest.append(buffer)
-//        }
-//        
-//        audioEngine.prepare()
-//        
-//        do {
-//            try audioEngine.start()
-//        } catch {
-//            print("Failed to start audio engine: \(error)")
-//        }
+        // Cancel any existing recognition task
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        
+        // Set up audio session
+        let audioSession = AVAudioSession.sharedInstance()
+        
+        do {
+            try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
+            try audioSession.setMode(.measurement)
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
+        } catch {
+            print("Failed to set up audio session: \(error)")
+            return
+        }
+        
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        if #available(iOS 16, *) {
+            recognitionRequest?.addsPunctuation = true
+        }
+        
+        let inputNode = audioEngine.inputNode
+        guard let recognitionRequest = recognitionRequest else {
+            print("Unable to create recognition request")
+            return
+        }
+        
+        recognitionRequest.shouldReportPartialResults = true        
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+            if let result = result {
+                self.responseProcessor?(result.bestTranscription.formattedString)
+            }
+            
+            if error != nil {
+                self.audioEngine.stop()
+                inputNode.removeTap(onBus: 0)
+                self.recognitionRequest = nil
+                self.recognitionTask = nil
+            }
+        }
+        
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            recognitionRequest.append(buffer)
+        }
+        
+        audioEngine.prepare()
+        
+        do {
+            try audioEngine.start()
+        } catch {
+            print("Failed to start audio engine: \(error)")
+        }
     }
     
     func endCapture(completion: @escaping (String?, (any Error)?) -> Void) {
@@ -115,7 +107,7 @@ class SpeechCapturer: SpeechCapturing {
     }
     
     // MARK: - private methods
-    private func requestSpeechAndMicrophonePermissions() {
+    private func requestSpeechAndMicrophonePermissions() {        
         AVAudioSession.sharedInstance().requestRecordPermission { allowed in
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
@@ -133,5 +125,17 @@ class SpeechCapturer: SpeechCapturing {
                 }
             }
         }
+    }
+    
+    private var permissionGrantedForAudio: Bool {
+        if #unavailable(iOS 17.0) {
+            return AVAudioSession.sharedInstance().recordPermission == .granted
+        } else {
+            return AVAudioApplication.shared.recordPermission == .granted
+        }
+    }
+    
+    private var permissionGrantedForSpeech: Bool {
+        SFSpeechRecognizer.authorizationStatus() == .authorized
     }
 }

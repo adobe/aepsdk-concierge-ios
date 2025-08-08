@@ -26,13 +26,16 @@ public struct ChatView: View {
     
     private let speechCapturer: SpeechCapturing?
     private let textSpeaker: TextSpeaking?
+    private var currentMessageIndex: Int {
+        messages.count - 1
+    }
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
         
     public init(parent: Concierge? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
         self.parent = parent
-        self.speechCapturer = speechCapturer ?? SpeechCapturer()
         self.textSpeaker = textSpeaker
+        self.speechCapturer = speechCapturer ?? SpeechCapturer()
     }
         
     // internal use only for previews
@@ -134,6 +137,7 @@ public struct ChatView: View {
             )
         }
         .onAppear {
+            speechCapturer?.initialize(responseProcessor: processSpeechData)
             hapticFeedback.prepare()
         }
     }
@@ -143,16 +147,19 @@ public struct ChatView: View {
         
         if isRecording {
             speechCapturer?.beginCapture()
+            // Create the user message immediately
+            messages.append(Message(template: .basic(isUserMessage: true), messageBody: ""))
         } else {
             speechCapturer?.endCapture() { transcription, error in
                 processTranscription(transcription, error: error)
             }
         }
     }
-    
+        
     private func processTranscription(_ transcription: String?, error: Error?) {
         guard let transcription = transcription, !transcription.isEmpty else {
             Log.trace(label: LOG_TAG, "Unable to process a transcription that was nil or empty.")
+            messages.removeLast()
             return
         }
         
@@ -211,6 +218,13 @@ public struct ChatView: View {
         }
         
         messages.append(Message(template: .divider))
+    }
+    
+    private func processSpeechData(_ text: String) {
+        DispatchQueue.main.async {
+            // Update the message body directly instead of through chatMessageView
+            messages[currentMessageIndex].messageBody = text
+        }
     }
 }
 
