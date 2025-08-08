@@ -1,0 +1,50 @@
+PODS:
+  - AEPAssurance (5.0.1):
+    - AEPCore (< 6.0.0, >= 5.0.0)
+    - AEPServices (< 6.0.0, >= 5.0.0)
+  - AEPCore (5.6.0):
+    - AEPRulesEngine (< 6.0.0, >= 5.0.0)
+    - AEPServices (< 6.0.0, >= 5.6.0)
+  - AEPEdge (5.0.3):
+    - AEPCore (< 6.0.0, >= 5.3.1)
+    - AEPEdgeIdentity (< 6.0.0, >= 5.0.0)
+  - AEPEdgeIdentity (5.0.0):
+    - AEPCore (< 6.0.0, >= 5.0.0)
+  - AEPRulesEngine (5.0.0)
+  - AEPServices (5.6.0)
+  - lottie-ios (4.5.2)
+  - SwiftLint (0.52.0)
+
+DEPENDENCIES:
+  - AEPAssurance
+  - AEPCore
+  - AEPEdge
+  - AEPEdgeIdentity
+  - AEPServices
+  - lottie-ios
+  - SwiftLint (= 0.52.0)
+
+SPEC REPOS:
+  trunk:
+    - AEPAssurance
+    - AEPCore
+    - AEPEdge
+    - AEPEdgeIdentity
+    - AEPRulesEngine
+    - AEPServices
+    - lottie-ios
+    - SwiftLint
+
+SPEC CHECKSUMS:
+  AEPAssurance: df04baeace42befb0cc213fd6cdfe51651d11ba6
+  AEPCore: 404a4c600f5a885031a7e9b1e646ea9405d94b24
+  AEPEdge: 105afc7958acd7c016d57f7ac1d6f632bf05e6ee
+  AEPEdgeIdentity: 3161ff33434586962946912d6b8e9e8fca1c4d23
+  AEPRulesEngine: fe5800653a4bee07b1e41e61b4d5551f0dba557b
+  AEPServices: cbdac48662ef2f1001d05d47b5930a397a8beaab
+  lottie-ios: 96784afc26ea031d3e2b6cae342a4b8915072489
+  SwiftLint: 13280e21cdda6786ad908dc6e416afe5acd1fcb7
+
+PODFILE CHECKSUM: 479fd8e0d59c71be608f0d31f8b2f684432c0eba
+
+COCOAPODS: 1.16.2
