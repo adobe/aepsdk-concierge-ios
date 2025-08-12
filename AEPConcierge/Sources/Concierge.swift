@@ -28,6 +28,9 @@ public class Concierge: NSObject, Extension {
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
     static var containingView: AnyView?
+    static var chatTitle: String = "Concierge"
+    static var chatSubtitle: String? = "Powered by Adobe"
+    private static var presentedUIKitController: UIViewController?
     
     let conciergeChatService: ConciergeChatService
     var chatView: ChatView? = nil
@@ -87,7 +90,13 @@ public class Concierge: NSObject, Extension {
     // MARK: - private methods
     func showChatUI() {
         if chatView == nil {
-            chatView = ChatView(parent: self, speechCapturer: Concierge.speechCapturer, textSpeaker: Concierge.textSpeaker)
+            chatView = ChatView(
+                parent: self,
+                speechCapturer: Concierge.speechCapturer,
+                textSpeaker: Concierge.textSpeaker,
+                title: Concierge.chatTitle,
+                subtitle: Concierge.chatSubtitle
+            )
         }
         
         // Present using UIKit window
@@ -104,5 +113,24 @@ public class Concierge: NSObject, Extension {
     func hideChatUI() {
         // Use state manager to hide chat
         ConciergeStateManager.shared.hideChat()
+    }
+}
+
+// MARK: - UIKit presentation API
+public extension Concierge {
+    /// Presents the chat UI from a UIKit context.
+    static func present(on presentingViewController: UIViewController, title: String? = nil, subtitle: String? = nil) {
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+
+        let controller = ChatHostingController(title: title, subtitle: subtitle)
+        presentedUIKitController = controller
+        presentingViewController.present(controller, animated: true)
+    }
+
+    /// Dismisses the chat UI if presented via UIKit.
+    static func dismiss(animated: Bool = true) {
+        presentedUIKitController?.dismiss(animated: animated)
+        presentedUIKitController = nil
     }
 }

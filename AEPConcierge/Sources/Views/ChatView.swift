@@ -19,23 +19,39 @@ public struct ChatView: View {
     private let LOG_TAG = "ChatView"
     
     @State private var messages: [Message] = []
-    @State private var isRecording = false
-    @State private var isProcessing = false
+    // Text input for bottom composer
+    @State private var inputText: String = ""
     
     private let parent: Concierge?
     
     private let speechCapturer: SpeechCapturing?
     private let textSpeaker: TextSpeaking?
+    
+    // Header content
+    private let titleText: String
+    private let subtitleText: String?
+    // Close handler for UIKit hosting
+    private let onClose: (() -> Void)?
     private var currentMessageIndex: Int {
         messages.count - 1
     }
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
         
-    public init(parent: Concierge? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
+    public init(
+        parent: Concierge? = nil,
+        speechCapturer: SpeechCapturing? = nil,
+        textSpeaker: TextSpeaking? = nil,
+        title: String = "Concierge",
+        subtitle: String? = "Powered by Adobe",
+        onClose: (() -> Void)? = nil
+    ) {
         self.parent = parent
         self.textSpeaker = textSpeaker
         self.speechCapturer = speechCapturer ?? SpeechCapturer()
+        self.titleText = title
+        self.subtitleText = subtitle
+        self.onClose = onClose
     }
         
     // internal use only for previews
@@ -44,61 +60,56 @@ public struct ChatView: View {
         self.parent = nil
         self.speechCapturer = nil
         self.textSpeaker = nil
+        self.titleText = "Concierge"
+        self.subtitleText = "Powered by Adobe"
+        self.onClose = nil
     }
     
     public var body: some View {
-        if #available(iOS 16.4, *) {
-            mainView
-                .background(.clear)
-                .presentationBackground(.clear)
-        } else {
-            mainView
-                .background(Color.clear)
-        }
+        // Fully opaque background
+        mainView
     }
     
     private var mainView: some View {
-        ZStack {
-            // Border glow effect with increased width and blur
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white, lineWidth: 4)
-                .blur(radius: 8)
+        ZStack(alignment: .bottom) {
+            // Solid background
+            Color.PrimaryDark
                 .ignoresSafeArea()
-            
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
-            
-            VStack {
-                HStack {
+
+            VStack(spacing: 0) {
+                // Top bar with title/subtitle and Close
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(titleText)
+                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                            .foregroundColor(Color.TextTitle)
+                        if let subtitleText = subtitleText {
+                            Text(subtitleText)
+                                .font(.system(.footnote))
+                                .foregroundColor(Color.TextBody)
+                        }
+                    }
                     Spacer()
-                    
-                    Button(action: {
-                        parent?.hideChatUI()
-                    }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.Secondary)
-                            .clipShape(Circle())
+                    Button("Close") {
+                        if let onClose = onClose {
+                            onClose()
+                        } else {
+                            parent?.hideChatUI()
+                        }
                     }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.Secondary.opacity(0.9))
+                    .cornerRadius(8)
                 }
-                .padding(.top)
-                .overlay(
-                    VStack(spacing: 4) {
-                        Text("Concierge")
-                            .font(.system(.title, design: .rounded))
-                            .bold()
-                            .foregroundColor(Color.Secondary)
-                        Text("Powered by Adobe")
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                        .padding(.top, 20)
-                        .frame(maxWidth: .infinity)
-                )
-                
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .background(Color.PrimaryDark)
+
+                // Messages list
                 ScrollView {
-                    VStack(spacing: 15) {
+                    VStack(spacing: 12) {
                         ForEach(messages) { message in
                             message.chatMessageView.onAppear {
                                 if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
@@ -107,63 +118,73 @@ public struct ChatView: View {
                             }
                         }
                     }
-                    .padding(.bottom, 90)
+                    .padding(.top, 8)
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
                 }
-                .padding(.top, 15)
-                
-                Spacer()
             }
-            .overlay(
-                ZStack {
-                    // Mic button
-                    Button(action: handleMicTap) {
-                        if !isRecording && !isProcessing {
-                            Image(systemName: "mic.circle.fill")
-                                .font(.system(size: 64))
-                                .foregroundColor(Color.PrimaryLight)
-                                .background(Circle().fill(Color.white))
-                                .clipShape(Circle())
-                        } else {
-                            LottieView(name: isProcessing ? "thinking" : "listening")
-                                .scaleEffect(0.35)
-                                .frame(width: 64, height: 64)
-                                .padding(.bottom, 15)
+
+            // Bottom input bar (iOS 15-compatible)
+            HStack(spacing: 8) {
+                if #available(iOS 16.0, *) {
+                    TextField("Type a message…", text: $inputText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.95))
+                        .cornerRadius(12)
+                        .foregroundColor(.black)
+                        .lineLimit(1...4)
+                } else {
+                    // Fallback: TextEditor for iOS 15
+                    ZStack(alignment: .leading) {
+                        if inputText.isEmpty {
+                            Text("Type a message…")
+                                .foregroundColor(Color.gray)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
                         }
+                        TextEditor(text: $inputText)
+                            .frame(minHeight: 40, maxHeight: 100)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.95))
+                            .cornerRadius(12)
+                            .foregroundColor(.black)
                     }
-                    .disabled(isProcessing)
                 }
-                    .padding(.bottom, 20),
-                alignment: .bottom
-            )
+
+                Button(action: sendTapped) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(Color.Secondary)
+                }
+                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(Color.PrimaryDark.opacity(0.98).ignoresSafeArea(edges: .bottom))
         }
         .onAppear {
+            // Keep initialization for future voice features, but no UI exposure now
             speechCapturer?.initialize(responseProcessor: processSpeechData)
             hapticFeedback.prepare()
         }
     }
     
-    private func handleMicTap() {
-        isRecording.toggle()
-        
-        if isRecording {
-            speechCapturer?.beginCapture()
-            // Create the user message immediately
-            messages.append(Message(template: .basic(isUserMessage: true), messageBody: ""))
-        } else {
-            speechCapturer?.endCapture() { transcription, error in
-                processTranscription(transcription, error: error)
-            }
-        }
+    private func sendTapped() {
+        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        messages.append(Message(template: .basic(isUserMessage: true), messageBody: text))
+        inputText = ""
     }
         
     private func processTranscription(_ transcription: String?, error: Error?) {
         guard let transcription = transcription, !transcription.isEmpty else {
             Log.trace(label: LOG_TAG, "Unable to process a transcription that was nil or empty.")
-            messages.removeLast()
+            if !messages.isEmpty { messages.removeLast() }
             return
         }
-        
-        isProcessing = true
         
         parent?.conciergeChatService.processChat(transcription) { conciergeResponse, conciergeError in
             if conciergeError != nil {
@@ -222,8 +243,11 @@ public struct ChatView: View {
     
     private func processSpeechData(_ text: String) {
         DispatchQueue.main.async {
-            // Update the message body directly instead of through chatMessageView
-            messages[currentMessageIndex].messageBody = text
+            if messages.isEmpty {
+                messages.append(Message(template: .basic(isUserMessage: true), messageBody: text))
+            } else {
+                messages[currentMessageIndex].messageBody = text
+            }
         }
     }
 }
