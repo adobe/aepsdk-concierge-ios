@@ -438,6 +438,7 @@
 		4C9531492E4BE8FD00772695 /* S2_Icon_Contrast_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E922E4BE8FD00772695 /* S2_Icon_Contrast_20_N.svg */; };
 		4C95314A2E4BE8FD00772695 /* S2_Icon_TextIncrease_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952F872E4BE8FD00772695 /* S2_Icon_TextIncrease_20_N.svg */; };
 		4C95314B2E4BE8FD00772695 /* S2_Icon_DeviceAll_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952EA42E4BE8FD00772695 /* S2_Icon_DeviceAll_20_N.svg */; };
+		4C95314D2E4BF05600772695 /* ChatHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C95314C2E4BF05600772695 /* ChatHostingController.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -899,6 +900,7 @@
 		4C952FBB2E4BE8FD00772695 /* S2_Icon_WebPage_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_WebPage_20_N.svg; sourceTree = "<group>"; };
 		4C952FBC2E4BE8FD00772695 /* S2_Icon_ZoomIn_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ZoomIn_20_N.svg; sourceTree = "<group>"; };
 		4C952FBD2E4BE8FD00772695 /* S2_Icon_ZoomOut_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ZoomOut_20_N.svg; sourceTree = "<group>"; };
+		4C95314C2E4BF05600772695 /* ChatHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHostingController.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -980,6 +982,7 @@
 		249899722D667FD60005CBD7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				4C95314C2E4BF05600772695 /* ChatHostingController.swift */,
 				249899832D67C5F90005CBD7 /* Extensions */,
 				249899882D67C61A0005CBD7 /* Models */,
 				2482FDD92E3BE9A20032F3CA /* Protocols */,
@@ -2169,6 +2172,7 @@
 				2482FDE22E3C14C10032F3CA /* TextSpeaker.swift in Sources */,
 				249899812D6696450005CBD7 /* Constants.swift in Sources */,
 				2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */,
+				4C95314D2E4BF05600772695 /* ChatHostingController.swift in Sources */,
 				24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */,
 				249899922D67C62A0005CBD7 /* CarouselGroupView.swift in Sources */,
 				247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */,

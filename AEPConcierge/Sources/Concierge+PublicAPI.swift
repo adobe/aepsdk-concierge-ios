@@ -23,19 +23,29 @@ class ConciergeStateManager: ObservableObject {
     private init() {}
     
     func showChat(_ chatView: ChatView) {
-        self.chatView = chatView
-        self.showingConcierge = true
+        DispatchQueue.main.async {
+            self.chatView = chatView
+            self.showingConcierge = true
+        }
     }
     
     func hideChat() {
-        self.showingConcierge = false
-        self.chatView = nil
+        DispatchQueue.main.async {
+            self.showingConcierge = false
+            self.chatView = nil
+        }
     }
 }
 
 public extension Concierge {
     
-    static func show(containingView: (some View), speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
+    static func show(
+        containingView: (some View),
+        title: String? = nil,
+        subtitle: String? = nil,
+        speechCapturer: SpeechCapturing? = nil,
+        textSpeaker: TextSpeaking? = nil
+    ) {
         self.containingView = AnyView(containingView)
         
         if let speechCapturer = speechCapturer {
@@ -46,6 +56,9 @@ public extension Concierge {
             self.textSpeaker = textSpeaker
         }
         
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        
         let showEvent = Event(name: "Show UI",
                               type: Constants.EventType.concierge,
                               source: EventSource.requestContent,
@@ -53,7 +66,13 @@ public extension Concierge {
         MobileCore.dispatch(event: showEvent)
     }
     
-    static func wrap<Content: View>(_ content: Content) -> some View {
+    static func wrap<Content: View>(
+        _ content: Content,
+        title: String? = nil,
+        subtitle: String? = nil
+    ) -> some View {
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
         return ConciergeWrapper(content: content)
     }
     
@@ -95,7 +114,7 @@ struct ConciergeWrapper<Content: View>: View {
                 }
             }
         }
-        .sheet(isPresented: $stateManager.showingConcierge) {
+        .fullScreenCover(isPresented: $stateManager.showingConcierge) {
             if let chatView = stateManager.chatView {
                 chatView
             }
