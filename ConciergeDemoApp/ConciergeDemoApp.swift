@@ -19,6 +19,7 @@ struct ConciergeDemoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(Color.Brand.red)
         }
     }
 }

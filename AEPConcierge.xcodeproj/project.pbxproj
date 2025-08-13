@@ -439,6 +439,8 @@
 		4C95314A2E4BE8FD00772695 /* S2_Icon_TextIncrease_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952F872E4BE8FD00772695 /* S2_Icon_TextIncrease_20_N.svg */; };
 		4C95314B2E4BE8FD00772695 /* S2_Icon_DeviceAll_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952EA42E4BE8FD00772695 /* S2_Icon_DeviceAll_20_N.svg */; };
 		4C95314D2E4BF05600772695 /* ChatHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C95314C2E4BF05600772695 /* ChatHostingController.swift */; };
+		4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531502E4C1B7D00772695 /* Color+Brand.swift */; };
+		4C9531532E4C1C4B00772695 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531522E4C1C4B00772695 /* Theme.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -901,6 +903,8 @@
 		4C952FBC2E4BE8FD00772695 /* S2_Icon_ZoomIn_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ZoomIn_20_N.svg; sourceTree = "<group>"; };
 		4C952FBD2E4BE8FD00772695 /* S2_Icon_ZoomOut_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ZoomOut_20_N.svg; sourceTree = "<group>"; };
 		4C95314C2E4BF05600772695 /* ChatHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHostingController.swift; sourceTree = "<group>"; };
+		4C9531502E4C1B7D00772695 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
+		4C9531522E4C1C4B00772695 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -982,7 +986,6 @@
 		249899722D667FD60005CBD7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				4C95314C2E4BF05600772695 /* ChatHostingController.swift */,
 				249899832D67C5F90005CBD7 /* Extensions */,
 				249899882D67C61A0005CBD7 /* Models */,
 				2482FDD92E3BE9A20032F3CA /* Protocols */,
@@ -992,6 +995,8 @@
 				2498997C2D6695CF0005CBD7 /* Concierge.swift */,
 				247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */,
 				2498997E2D6695D80005CBD7 /* Concierge+PublicAPI.swift */,
+				4C9531522E4C1C4B00772695 /* Theme.swift */,
+				4C95314C2E4BF05600772695 /* ChatHostingController.swift */,
 				249899802D6696420005CBD7 /* Constants.swift */,
 				249899712D667FD60005CBD7 /* Info.plist */,
 			);
@@ -1072,6 +1077,7 @@
 				249899BA2D67CF0E0005CBD7 /* thinking.json */,
 				2483A3D22D767432004E6CDC /* AppDelegate.swift */,
 				249899AE2D67CCE30005CBD7 /* ConciergeDemoApp.swift */,
+				4C9531502E4C1B7D00772695 /* Color+Brand.swift */,
 				249899AF2D67CCE30005CBD7 /* ContentView.swift */,
 			);
 			path = ConciergeDemoApp;
@@ -2185,6 +2191,7 @@
 				249899892D67C61A0005CBD7 /* ConciergeResponse.swift in Sources */,
 				2498998A2D67C61A0005CBD7 /* MessageTemplate.swift in Sources */,
 				24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */,
+				4C9531532E4C1C4B00772695 /* Theme.swift in Sources */,
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,
@@ -2209,6 +2216,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2483A3D32D767436004E6CDC /* AppDelegate.swift in Sources */,
+				4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */,
 				249899B12D67CCE30005CBD7 /* ConciergeDemoApp.swift in Sources */,
 				249899B22D67CCE30005CBD7 /* ContentView.swift in Sources */,
 			);

@@ -20,9 +20,40 @@ import AEPConcierge
 struct ContentView: View {
     var body: some View {
         Concierge.wrap(
-            Image("home")
-                .resizable()
-                .ignoresSafeArea()
+            VStack(spacing: 0) {
+                Button(action: {
+                    Concierge.show(
+                        title: "Concierge",
+                        subtitle: "Powered by Adobe"
+                    )
+                }) {
+                    Text("Open Chat")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 16)
+                        .padding(.horizontal, 28)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.red)
+                                .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+                        )
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            .conciergeTheme(
+                ConciergeTheme(
+                    primary: .Brand.red,
+                    secondary: .Brand.red,
+                    onPrimary: .white,
+                    textBody: .primary,
+                    surfaceLight: Color(UIColor.secondarySystemBackground),
+                    surfaceDark: Color(UIColor.systemBackground)
+                )
+            )
         )
     }
 }

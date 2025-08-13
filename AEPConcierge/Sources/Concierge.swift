@@ -14,6 +14,7 @@ import AEPCore
 import AEPServices
 import Foundation
 import SwiftUI
+import UIKit
 
 @objc(AEPMobileConcierge)
 public class Concierge: NSObject, Extension {
@@ -84,7 +85,9 @@ public class Concierge: NSObject, Extension {
     }
     
     func handleEvent(_ event: Event) {
-        showChatUI()
+        DispatchQueue.main.async {
+            self.showChatUI()
+        }
     }
     
     // MARK: - private methods
@@ -105,14 +108,26 @@ public class Concierge: NSObject, Extension {
     
     private func presentChatViewModally() {
         guard let chatView = chatView else { return }
-        
-        // Use state manager to show chat
-        ConciergeStateManager.shared.showChat(chatView)
+        // Use state manager to trigger overlay window presentation on main
+        DispatchQueue.main.async {
+            ConciergeStateManager.shared.showChat(chatView)
+        }
     }
     
     func hideChatUI() {
-        // Use state manager to hide chat
-        ConciergeStateManager.shared.hideChat()
+        // Hide SwiftUI overlay if present
+        DispatchQueue.main.async {
+            ConciergeStateManager.shared.hideChat()
+        }
+        // Also remove UIKit-hosted controller if present
+        DispatchQueue.main.async {
+            if let controller = Concierge.presentedUIKitController {
+                controller.willMove(toParent: nil)
+                controller.view.removeFromSuperview()
+                controller.removeFromParent()
+                Concierge.presentedUIKitController = nil
+            }
+        }
     }
 }
 
@@ -123,14 +138,34 @@ public extension Concierge {
         if let title = title { self.chatTitle = title }
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
 
-        let controller = ChatHostingController(title: title, subtitle: subtitle)
-        presentedUIKitController = controller
-        presentingViewController.present(controller, animated: true)
+        // Present by adding a child hosting controller overlaying the presenting VC's view
+        let hosting = ChatHostingController(title: title, subtitle: subtitle)
+        presentedUIKitController = hosting
+        DispatchQueue.main.async {
+            presentingViewController.addChild(hosting)
+            hosting.view.translatesAutoresizingMaskIntoConstraints = false
+            presentingViewController.view.addSubview(hosting.view)
+            NSLayoutConstraint.activate([
+                hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
+                hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
+                hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
+                hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
+            ])
+            hosting.didMove(toParent: presentingViewController)
+        }
     }
 
     /// Dismisses the chat UI if presented via UIKit.
     static func dismiss(animated: Bool = true) {
-        presentedUIKitController?.dismiss(animated: animated)
-        presentedUIKitController = nil
+        DispatchQueue.main.async {
+            if let controller = presentedUIKitController, let parent = controller.parent {
+                controller.willMove(toParent: nil)
+                controller.view.removeFromSuperview()
+                controller.removeFromParent()
+                presentedUIKitController = nil
+                // Also ensure SwiftUI overlay state is cleared if active
+                ConciergeStateManager.shared.hideChat()
+            }
+        }
     }
 }

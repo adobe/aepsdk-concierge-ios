@@ -66,6 +66,20 @@ public extension Concierge {
         MobileCore.dispatch(event: showEvent)
     }
     
+    // Convenience: allow programmatic open without a containing view
+    static func show(
+        title: String? = nil,
+        subtitle: String? = nil,
+        speechCapturer: SpeechCapturing? = nil,
+        textSpeaker: TextSpeaking? = nil
+    ) {
+        self.show(containingView: EmptyView(),
+                  title: title,
+                  subtitle: subtitle,
+                  speechCapturer: speechCapturer,
+                  textSpeaker: textSpeaker)
+    }
+    
     static func wrap<Content: View>(
         _ content: Content,
         title: String? = nil,
@@ -84,6 +98,7 @@ public extension Concierge {
 struct ConciergeWrapper<Content: View>: View {
     let content: Content
     @StateObject private var stateManager = ConciergeStateManager.shared
+    @Environment(\.conciergeTheme) private var theme
     
     init(content: Content) {
         self.content = content
@@ -92,36 +107,14 @@ struct ConciergeWrapper<Content: View>: View {
     var body: some View {
         ZStack {
             content
-            
-            // Floating Concierge button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: showConcierge) {
-                        Image(systemName: "sparkles.square.filled.on.square")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .padding(20)
-                            .background(
-                                Circle()
-                                    .fill(Color.blue)
-                                    .shadow(color: .black.opacity(0.6), radius: 20, x: 2, y: 10)
-                            )
-                    }
-                    .padding(.trailing, 5)
-                    .padding(.bottom, 5)
-                }
-            }
-        }
-        .fullScreenCover(isPresented: $stateManager.showingConcierge) {
-            if let chatView = stateManager.chatView {
+
+            // In-app overlay for chat (safe-area aware by default)
+            if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
+                    .conciergeTheme(theme)
+                    .transition(.opacity)
+                    .zIndex(1)
             }
         }
-    }
-    
-    private func showConcierge() {
-        Concierge.show(containingView: Text(""))
     }
 }
