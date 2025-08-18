@@ -291,25 +291,31 @@ public struct ChatView: View {
                     // Unified rounded container
                     HStack(spacing: 8) {
                     if viewModel.isRecording {
-                        // Listening pill only; hide text and send (text preserved in VM)
-                        HStack {
-                            Button(action: { viewModel.cancelMic() }) {
-                                brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
-                                    .foregroundColor(Color.Secondary)
+                        // Listening pill: center the waveform + label, keep cancel/check at edges
+                        ZStack {
+                            HStack {
+                                Button(action: { viewModel.cancelMic() }) {
+                                    brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
+                                        .foregroundColor(Color.Secondary)
+                                }
+                                .buttonStyle(.plain)
+                                Spacer(minLength: 0)
+                                Button(action: { viewModel.completeMic() }) {
+                                    brandIcon(named: "S2_Icon_Checkmark_20_N", systemName: "checkmark")
+                                        .foregroundColor(Color.Secondary)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                            brandIcon(named: "S2_Icon_AudioWave_20_N", systemName: "waveform")
-                                .foregroundColor(Color.Secondary)
-                            Text("Listening")
-                                .font(.system(.subheadline))
-                                .foregroundColor(.secondary)
-                            Spacer(minLength: 0)
-                            Button(action: { viewModel.completeMic() }) {
-                                brandIcon(named: "S2_Icon_Checkmark_20_N", systemName: "checkmark")
+
+                            HStack(spacing: 6) {
+                                brandIcon(named: "S2_Icon_AudioWave_20_N", systemName: "waveform")
                                     .foregroundColor(Color.Secondary)
+                                Text("Listening")
+                                    .font(.system(.subheadline))
+                                    .foregroundColor(.secondary)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .frame(height: max(40, composerHeight))
                     } else if viewModel.inputState == .transcribing {
                         // Transcribing pill only
                         HStack {
@@ -325,6 +331,7 @@ public struct ChatView: View {
                             brandIcon(named: "S2_Icon_Checkmark_20_N", systemName: "checkmark")
                                 .foregroundColor(Color.secondary.opacity(0.4))
                         }
+                        .frame(height: max(40, composerHeight))
                     } else {
                         // Default: text view followed by mic, then send
                         SelectableTextView(
