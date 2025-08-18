@@ -20,8 +20,11 @@ import UIKit
 private struct SelectableTextView: UIViewRepresentable {
     @Binding var text: String
     @Binding var selectedRange: NSRange
+    @Binding var measuredHeight: CGFloat
     var isEditable: Bool
     var placeholder: String
+    var minLines: Int = 1
+    var maxLines: Int = 4
     var onEditingChanged: ((Bool) -> Void)?
 
     func makeUIView(context: Context) -> UITextView {
@@ -29,9 +32,11 @@ private struct SelectableTextView: UIViewRepresentable {
         tv.backgroundColor = .clear
         tv.font = UIFont.preferredFont(forTextStyle: .body)
         tv.textColor = .label
-        tv.isScrollEnabled = true
+        tv.isScrollEnabled = false
         tv.showsVerticalScrollIndicator = true
         tv.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        tv.textContainer.lineBreakMode = .byWordWrapping
+        tv.textContainer.lineFragmentPadding = 0
         tv.delegate = context.coordinator
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tv.accessibilityTraits.insert(.allowsDirectInteraction)
@@ -58,6 +63,9 @@ private struct SelectableTextView: UIViewRepresentable {
         if let ph = uiView.viewWithTag(999) as? UILabel {
             ph.isHidden = !text.isEmpty
         }
+        context.coordinator.recalculateHeight(uiView)
+        uiView.setNeedsLayout()
+        uiView.layoutIfNeeded()
         if uiView.window != nil, uiView.isFirstResponder == false {
             // Keep cursor positioned where the binding says
             if let start = uiView.position(from: uiView.beginningOfDocument, offset: selectedRange.location),
@@ -83,6 +91,7 @@ private struct SelectableTextView: UIViewRepresentable {
         func textViewDidChange(_ textView: UITextView) {
             let newText = textView.text ?? ""
             if parent.text != newText { parent.text = newText }
+            recalculateHeight(textView)
             if let range = textView.selectedTextRange {
                 let location = textView.offset(from: textView.beginningOfDocument, to: range.start)
                 let length = textView.offset(from: range.start, to: range.end)
@@ -115,27 +124,36 @@ private struct SelectableTextView: UIViewRepresentable {
             let end = NSRange(location: (textView.text as NSString).length, length: 0)
             textView.scrollRangeToVisible(end)
         }
+        func recalculateHeight(_ textView: UITextView) {
+            // Use sizeThatFits to measure multiline height at current width
+            textView.layoutIfNeeded()
+            let lineHeight = textView.font?.lineHeight ?? 17
+            let insets = textView.textContainerInset.top + textView.textContainerInset.bottom
+            let minH = CGFloat(parent.minLines) * lineHeight + insets
+            let maxH = CGFloat(parent.maxLines) * lineHeight + insets
+            let fittingSize = CGSize(width: max(1, textView.bounds.width), height: .greatestFiniteMagnitude)
+            let measured = textView.sizeThatFits(fittingSize).height
+            let target = min(max(measured, minH), maxH)
+            textView.isScrollEnabled = measured > maxH + 1
+            if abs(parent.measuredHeight - target) > 0.5 {
+                DispatchQueue.main.async { [weak self] in
+                    self?.parent.measuredHeight = target
+                }
+            }
+        }
     }
 }
 
 public struct ChatView: View {
     private let LOG_TAG = "ChatView"
     
-    @State private var messages: [Message] = []
-    // Text input for bottom composer
-    @State private var inputText: String = ""
-    @State private var isRecording: Bool = false
-    @State private var isProcessing: Bool = false
+    @StateObject private var viewModel: ConciergeChatViewModel
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
-    @State private var inputTextAtRecordingStart: String = ""
-    @State private var recordingInsertStart: Int? = nil
-    @State private var ignoreEndCaptureTranscription: Bool = false
-    @State private var audioLevels: [Float] = Array(repeating: 0, count: 5)
+    @State private var composerHeight: CGFloat = 0
     
     private let parent: Concierge?
     
-    private var speechCapturer: SpeechCapturing?
     private let textSpeaker: TextSpeaking?
     @Environment(\.conciergeTheme) private var theme
     
@@ -144,9 +162,7 @@ public struct ChatView: View {
     private let subtitleText: String?
     // Close handler for UIKit hosting
     private let onClose: (() -> Void)?
-    private var currentMessageIndex: Int {
-        messages.count - 1
-    }
+    private var currentMessageIndex: Int { viewModel.messages.count - 1 }
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
     @Environment(\.colorScheme) private var colorScheme
@@ -161,21 +177,27 @@ public struct ChatView: View {
     ) {
         self.parent = parent
         self.textSpeaker = textSpeaker
-        self.speechCapturer = speechCapturer ?? SpeechCapturer()
         self.titleText = title
         self.subtitleText = subtitle
         self.onClose = onClose
+        let vm = ConciergeChatViewModel(
+            chatService: parent?.conciergeChatService ?? ConciergeChatService(),
+            speechCapturer: speechCapturer ?? SpeechCapturer(),
+            speaker: textSpeaker
+        )
+        _viewModel = StateObject(wrappedValue: vm)
     }
         
     // internal use only for previews
     init(parent: Concierge? = nil, messages: [Message]) {
-        self.messages = messages
         self.parent = nil
-        self.speechCapturer = nil
         self.textSpeaker = nil
         self.titleText = "Concierge"
         self.subtitleText = "Powered by Adobe"
         self.onClose = nil
+        let vm = ConciergeChatViewModel(chatService: ConciergeChatService(), speechCapturer: nil, speaker: nil)
+        vm.messages = messages
+        _viewModel = StateObject(wrappedValue: vm)
     }
     
     public var body: some View {
@@ -193,7 +215,7 @@ public struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(messages) { message in
+                        ForEach(viewModel.messages) { message in
                             message.chatMessageView
                                 .id(message.id)
                                 .onAppear {
@@ -207,8 +229,8 @@ public struct ChatView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 12)
                 }
-                .onChange(of: messages.count) { _ in
-                    if let lastId = messages.last?.id {
+                .onChange(of: viewModel.messages.count) { _ in
+                    if let lastId = viewModel.messages.last?.id {
                         withAnimation {
                             proxy.scrollTo(lastId, anchor: .bottom)
                         }
@@ -219,18 +241,7 @@ public struct ChatView: View {
         // Safe-area aware top bar
         .safeAreaInset(edge: .top) {
             HStack(alignment: .center) {
-                Button("Close") {
-                    if let onClose = onClose {
-                        onClose()
-                    } else {
-                        parent?.hideChatUI()
-                    }
-                }
-                .foregroundColor(Color.Secondary)
-                .buttonStyle(.plain)
-
-                Spacer()
-
+                // Brand title on the left
                 VStack(alignment: .leading, spacing: 2) {
                     Text(titleText)
                         .font(.system(.title3, design: .rounded).weight(.semibold))
@@ -242,14 +253,32 @@ public struct ChatView: View {
                     }
                 }
 
-                // Test-only control to flip sender to agent for the next send
-                Button(action: { showAgentSend.toggle() }) {
+                Spacer()
+
+                // Test-only sender toggle (kept near the close icon)
+                Button(action: {
+                    showAgentSend.toggle()
+                    if showAgentSend {
+                        viewModel.inputState = .editing
+                        viewModel.chatState = .idle
+                    }
+                }) {
                     Text(showAgentSend ? "Agent" : "User")
                         .font(.system(.footnote))
                         .padding(8)
                         .background(Color.secondary.opacity(0.15))
                         .cornerRadius(8)
                 }
+
+                // Close icon on the right
+                Button(action: {
+                    if let onClose = onClose { onClose() } else { parent?.hideChatUI() }
+                }) {
+                    brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
+                        .foregroundColor(Color.Secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close")
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -257,118 +286,114 @@ public struct ChatView: View {
         }
         // Safe-area aware bottom composer
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 8) {
-                // Voice input is always visible
-                Button(action: handleMicTap) {
-                    HStack(spacing: 6) {
-                        if isRecording {
-                            // 5-band pills from live spectrum
-                            HStack(spacing: 4) {
-                                let heights = audioLevels.map { lvl -> CGFloat in
-                                    CGFloat(6 + Double(lvl) * 16)
-                                }
-                                ForEach(0..<5, id: \.self) { i in
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(Color.Secondary)
-                                        .frame(width: 4, height: heights.count > i ? heights[i] : 6)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 0) {
+                    // Unified rounded container
+                    HStack(spacing: 8) {
+                    if viewModel.isRecording {
+                        // Listening pill only; hide text and send (text preserved in VM)
+                        HStack {
+                            Button(action: { viewModel.cancelMic() }) {
+                                brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
+                                    .foregroundColor(Color.Secondary)
+                            }
+                            .buttonStyle(.plain)
+                            brandIcon(named: "S2_Icon_AudioWave_20_N", systemName: "waveform")
+                                .foregroundColor(Color.Secondary)
+                            Text("Listening")
+                                .font(.system(.subheadline))
+                                .foregroundColor(.secondary)
+                            Spacer(minLength: 0)
+                            Button(action: { viewModel.completeMic() }) {
+                                brandIcon(named: "S2_Icon_Checkmark_20_N", systemName: "checkmark")
+                                    .foregroundColor(Color.Secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } else if viewModel.inputState == .transcribing {
+                        // Transcribing pill only
+                        HStack {
+                            Button(action: { viewModel.cancelMic() }) {
+                                brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
+                                    .foregroundColor(Color.Secondary)
+                            }
+                            .buttonStyle(.plain)
+                            Text("Transcribing")
+                                .font(.system(.subheadline))
+                                .foregroundColor(.secondary)
+                            Spacer(minLength: 0)
+                            brandIcon(named: "S2_Icon_Checkmark_20_N", systemName: "checkmark")
+                                .foregroundColor(Color.secondary.opacity(0.4))
+                        }
+                    } else {
+                        // Default: text view followed by mic, then send
+                        SelectableTextView(
+                            text: $viewModel.inputText,
+                            selectedRange: $selectedTextRange,
+                            measuredHeight: $composerHeight,
+                            isEditable: viewModel.composerEditable,
+                            placeholder: "How can I help",
+                            onEditingChanged: { began in
+                                DispatchQueue.main.async {
+                                    if began { viewModel.inputState = .editing }
+                                    else { viewModel.inputState = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing }
                                 }
                             }
-                            brandIcon(named: "icon_stop", systemName: "stop.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 12, height: 12)
-                                .foregroundColor(Color.white)
-                                .padding(6)
-                                .background(Circle().fill(Color.Secondary))
+                        )
+                        .frame(height: max(40, composerHeight))
+                        .animation(.easeInOut(duration: 0.15), value: composerHeight)
+
+                        Button(action: handleMicTap) {
+                            brandIcon(named: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
+                                .foregroundColor(viewModel.micEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!viewModel.micEnabled)
+
+                        if viewModel.chatState == .processing {
+                            brandIcon(named: "S2_Icon_ClockPending_20_N", systemName: "clock")
+                                .foregroundColor(Color.secondary)
                         } else {
-                            brandIcon(named: "icon_mic", systemName: "mic.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 22, height: 22)
-                                .foregroundColor(Color.Secondary)
+                            Button(action: sendTapped) {
+                                brandIcon(named: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
+                                    .renderingMode(.template)
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(viewModel.sendEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+                            }
+                            .disabled(!viewModel.sendEnabled)
                         }
                     }
-                    .padding(10)
-                    .background(
-                        Capsule().fill(Color.secondary.opacity(colorScheme == .dark ? 0.2 : 0.12))
-                    )
-                }
-                .accessibilityLabel(isRecording ? "Stop recording" : "Voice input")
-                .disabled(isProcessing)
-
-                // Single path for iOS 15+ using UITextView wrapper to support cursor insertions
-                SelectableTextView(
-                    text: $inputText,
-                    selectedRange: $selectedTextRange,
-                    isEditable: !isRecording,
-                    placeholder: isRecording ? "Recording… Tap stop to edit" : "Type a message…"
-                )
-                    .frame(minHeight: 40, maxHeight: 100)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(composerBackgroundColor)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                isRecording ? Color.Secondary : composerBorderColor,
-                                lineWidth: isRecording ? 1.5 : (colorScheme == .light ? 1 : 0)
-                            )
+                        RoundedRectangle(cornerRadius: 12).stroke(composerBorderColor, lineWidth: (colorScheme == .light ? 1 : 0))
                     )
                     .cornerRadius(12)
-                    .opacity(isRecording ? 0.9 : 1)
-                    .allowsHitTesting(!isRecording)
-                    .frame(maxWidth: .infinity)
-
-                Button(action: sendTapped) {
-                    brandIcon(named: "icon_send", systemName: "arrow.up.circle.fill")
-                        .renderingMode(.template)
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(Color.Secondary)
+                    
                 }
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                Text("AI responses may be inaccurate or misleading. Be sure to double check answers and sources.")
+                    .font(.system(.footnote))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
             .background(theme.surfaceDark)
         }
         .onAppear {
-            // Keep initialization for future voice features, but no UI exposure now
-            // Set handlers on the class-based capturer; no reassignment to self needed
-            if let capturer = self.speechCapturer {
-                capturer.initialize(responseProcessor: processSpeechData)
-                capturer.levelUpdateHandler = { levels in
-                    var five = levels
-                    if five.count != 5 { five = Array(repeating: 0, count: 5) }
-                    self.audioLevels = five
-                }
-            }
             hapticFeedback.prepare()
+            // initialize input machine for current text
+            viewModel.inputState = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
         }
     }
     
     private func sendTapped() {
-        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        // If recording, stop capture but do NOT alter input with final transcription
-        if isRecording {
-            ignoreEndCaptureTranscription = true
-            isRecording = false
-            isProcessing = true
-            speechCapturer?.endCapture { _, _ in
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                    self.ignoreEndCaptureTranscription = false
-                }
-            }
-        }
-
-        if showAgentSend {
-            messages.append(Message(template: .basic(isUserMessage: false), messageBody: text))
-        } else {
-            messages.append(Message(template: .basic(isUserMessage: true), messageBody: text))
-        }
-        inputText = ""
+        viewModel.sendMessage(isUser: !showAgentSend)
     }
 
     private var composerBackgroundColor: Color {
@@ -380,115 +405,14 @@ public struct ChatView: View {
     }
 
     private func handleMicTap() {
-        isRecording.toggle()
-        if isRecording {
-            hapticFeedback.impactOccurred()
-            // Snapshot current input and insertion point so partial results replace this segment
-            inputTextAtRecordingStart = inputText
-            recordingInsertStart = max(0, min(selectedTextRange.location, (inputText as NSString).length))
-            speechCapturer?.beginCapture()
-            // Do NOT append a placeholder message; we now stream into the input field
+        if viewModel.isRecording {
+            viewModel.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
-            isProcessing = true
-            speechCapturer?.endCapture() { transcription, error in
-                isProcessing = false
-                // Do not auto-send. If not ignored, apply final transcription into the input field
-                if !self.ignoreEndCaptureTranscription,
-                   let transcription = transcription, !transcription.isEmpty {
-                    let base = self.inputTextAtRecordingStart as NSString
-                    let start = max(0, min(self.recordingInsertStart ?? 0, base.length))
-                    let prefix = base.substring(to: start)
-                    let suffix = base.substring(from: start)
-                    self.inputText = prefix + transcription + suffix
-                    self.selectedTextRange.location = start + (transcription as NSString).length
-                    self.selectedTextRange.length = 0
-                }
-                // Reset snapshot to current state
-                self.inputTextAtRecordingStart = self.inputText
-                self.recordingInsertStart = self.selectedTextRange.location
-            }
+            hapticFeedback.impactOccurred()
+            viewModel.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }
     }
         
-    private func processTranscription(_ transcription: String?, error: Error?) {
-        guard let transcription = transcription, !transcription.isEmpty else {
-            Log.trace(label: LOG_TAG, "Unable to process a transcription that was nil or empty.")
-            return
-        }
-        
-        parent?.conciergeChatService.processChat(transcription) { conciergeResponse, conciergeError in
-            if conciergeError != nil {
-                // handle error
-                return
-            }
-            
-            guard let response = conciergeResponse else {
-                return
-            }
-            
-            processResponse(response)
-        }
-    }
-        
-    private func processResponse(_ response: ConciergeResponse) {
-        guard let message = response.interaction.response.first?.message else {
-            print("we didn't get a response from the Chat API")
-            return
-        }
-        
-        messages.append(Message(template: .divider))
-        
-        messages.append(Message(
-            template: .basic(isUserMessage: false),
-            shouldSpeakMessage: true,
-            messageBody: message.opening
-        ))
-        
-        if let items = message.items {
-            messages.append(Message(template: .divider))
-            
-            var itemNumber = 1
-            items.forEach { item in
-                messages.append(Message(
-                    template: .numbered(
-                        number: itemNumber,
-                        title: item.title,
-                        body: item.introduction
-                    )
-                ))
-                itemNumber += 1
-            }
-        }
-        
-        if let closing = message.ending {
-            messages.append(Message(template: .divider))
-            messages.append(Message(
-                template: .basic(isUserMessage: false),
-                messageBody: closing
-            ))
-        }
-        
-        messages.append(Message(template: .divider))
-    }
-    
-    private func processSpeechData(_ text: String) {
-        DispatchQueue.main.async {
-            // Insert transcribed text by replacing the streaming segment captured at start
-            if isRecording {
-                let base = inputTextAtRecordingStart as NSString
-                let start = max(0, min(recordingInsertStart ?? 0, base.length))
-                let prefix = base.substring(to: start)
-                let suffix = base.substring(from: start)
-                inputText = prefix + text + suffix
-                // Place caret after the streamed text
-                selectedTextRange.location = start + (text as NSString).length
-                selectedTextRange.length = 0
-            } else {
-                // When not recording, do not mutate chat messages from speech callback.
-                // Users will explicitly tap Send to post whatever is in the input box.
-            }
-        }
-    }
 
     // Prefer branded SVG/asset if present, fall back to SF Symbol
     private func brandIcon(named: String, systemName: String) -> Image {

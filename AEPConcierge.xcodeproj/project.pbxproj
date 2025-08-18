@@ -441,6 +441,8 @@
 		4C95314D2E4BF05600772695 /* ChatHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C95314C2E4BF05600772695 /* ChatHostingController.swift */; };
 		4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531502E4C1B7D00772695 /* Color+Brand.swift */; };
 		4C9531532E4C1C4B00772695 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531522E4C1C4B00772695 /* Theme.swift */; };
+		4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */; };
+		4C9531572E53D19900772695 /* ChatStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531562E53D19900772695 /* ChatStates.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -905,6 +907,8 @@
 		4C95314C2E4BF05600772695 /* ChatHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHostingController.swift; sourceTree = "<group>"; };
 		4C9531502E4C1B7D00772695 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		4C9531522E4C1C4B00772695 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatViewModel.swift; sourceTree = "<group>"; };
+		4C9531562E53D19900772695 /* ChatStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStates.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -994,6 +998,7 @@
 				249899702D667FD60005CBD7 /* AEPConcierge.h */,
 				2498997C2D6695CF0005CBD7 /* Concierge.swift */,
 				247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */,
+				4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */,
 				2498997E2D6695D80005CBD7 /* Concierge+PublicAPI.swift */,
 				4C9531522E4C1C4B00772695 /* Theme.swift */,
 				4C95314C2E4BF05600772695 /* ChatHostingController.swift */,
@@ -1033,6 +1038,7 @@
 			isa = PBXGroup;
 			children = (
 				24E237EA2D6FDDED00E2686C /* ConciergeError.swift */,
+				4C9531562E53D19900772695 /* ChatStates.swift */,
 				247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */,
 				24E237E22D6FDB6A00E2686C /* ConciergeInteractionRequest.swift */,
 				24E237E42D6FDBE500E2686C /* ConciergeInteractionResponse.swift */,
@@ -2177,6 +2183,7 @@
 				24E237E92D6FDC1500E2686C /* ConciergeMessageItem.swift in Sources */,
 				2482FDE22E3C14C10032F3CA /* TextSpeaker.swift in Sources */,
 				249899812D6696450005CBD7 /* Constants.swift in Sources */,
+				4C9531572E53D19900772695 /* ChatStates.swift in Sources */,
 				2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */,
 				4C95314D2E4BF05600772695 /* ChatHostingController.swift in Sources */,
 				24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */,
@@ -2193,6 +2200,7 @@
 				24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */,
 				4C9531532E4C1C4B00772695 /* Theme.swift in Sources */,
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
+				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,
 				247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */,

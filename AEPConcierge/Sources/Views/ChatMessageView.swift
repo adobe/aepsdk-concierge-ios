@@ -91,23 +91,18 @@ struct ChatMessageView: View {
         case .basic(let isUserMessage):
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
-                
-                let tailPadding: CGFloat = 14
+
                 Text(messageBody ?? "")
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .foregroundColor(isUserMessage ? theme.onPrimary : theme.textBody)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .foregroundColor(theme.onPrimary)
                     .background(
-                        ChatBubbleShape(isUser: isUserMessage)
-                            .fill(isUserMessage ? theme.primary : Color(UIColor.systemGray5))
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(theme.primary)
                     )
                     .compositingGroup()
                     .drawingGroup()
-                    // Ensure visual margins are even by accounting for tail width
-                    .padding(.leading, isUserMessage ? 0 : tailPadding)
-                    .padding(.trailing, isUserMessage ? tailPadding : 0)
-                    .padding(.horizontal, 2) // small global adjustment to balance both sides
-                
+
                 if !isUserMessage { Spacer() }
             }
             
