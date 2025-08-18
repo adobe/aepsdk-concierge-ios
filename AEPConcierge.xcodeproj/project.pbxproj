@@ -992,20 +992,20 @@
 		249899722D667FD60005CBD7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				249899702D667FD60005CBD7 /* AEPConcierge.h */,
 				249899832D67C5F90005CBD7 /* Extensions */,
 				249899882D67C61A0005CBD7 /* Models */,
 				2482FDD92E3BE9A20032F3CA /* Protocols */,
 				2482FDDE2E3BED5A0032F3CA /* Services */,
 				249899912D67C62A0005CBD7 /* Views */,
-				249899702D667FD60005CBD7 /* AEPConcierge.h */,
 				2498997C2D6695CF0005CBD7 /* Concierge.swift */,
+				2498997E2D6695D80005CBD7 /* Concierge+PublicAPI.swift */,
 				247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */,
 				4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */,
-				2498997E2D6695D80005CBD7 /* Concierge+PublicAPI.swift */,
-				4C9531522E4C1C4B00772695 /* Theme.swift */,
 				4C95314C2E4BF05600772695 /* ConciergeHostingController.swift */,
 				4C9531582E53E86000772695 /* ConciergeOverlayManager.swift */,
 				249899802D6696420005CBD7 /* Constants.swift */,
+				4C9531522E4C1C4B00772695 /* Theme.swift */,
 				249899712D667FD60005CBD7 /* Info.plist */,
 			);
 			path = Sources;
@@ -1060,8 +1060,8 @@
 				2498998C2D67C62A0005CBD7 /* CarouselGroupView.swift */,
 				2498998D2D67C62A0005CBD7 /* ChatMessageView.swift */,
 				2498998E2D67C62A0005CBD7 /* ChatView.swift */,
-				249899902D67C62A0005CBD7 /* PageIndicator.swift */,
 				4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */,
+				249899902D67C62A0005CBD7 /* PageIndicator.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
