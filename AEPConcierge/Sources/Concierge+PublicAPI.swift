@@ -99,8 +99,9 @@ public extension Concierge {
     }
 
     /// Hides the chat overlay if it is currently presented.
-    @MainActor
     static func hide() {
-        ConciergeOverlayManager.shared.hideChat()
+        Task { @MainActor in
+            ConciergeOverlayManager.shared.hideChat()
+        }
     }
 }
