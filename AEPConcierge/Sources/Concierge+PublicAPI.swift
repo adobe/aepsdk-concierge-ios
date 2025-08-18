@@ -14,23 +14,14 @@ import AEPCore
 import SwiftUI
 
 public extension Concierge {
-    /// Requests that the Concierge chat UI be shown on top of the supplied
-    /// SwiftUI view hierarchy.
-    ///
-    /// This method configures runtime dependencies (speech capture, text to speech,
-    /// title/subtitle) and dispatches an AEPCore event. The `Concierge` extension
-    /// reacts to that event, constructs a `ChatView`, and asks the internal
-    /// `ConciergeStateManager` to present it.
+    /// Shows the Concierge chat UI on top of the supplied SwiftUI view hierarchy.
     ///
     /// - Parameters:
-    ///   - containingView: The SwiftUI view to wrap. The overlay is injected above
-    ///     this view via `ConciergeWrapper`.
+    ///   - containingView: The SwiftUI view to wrap. The overlay is injected above this view.
     ///   - title: Optional title shown in the chat header.
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    /// - Note: This API is nonisolated and safe to call from any thread. UI work
-    ///   is scheduled internally on the main actor.
     static func show(
         containingView: (some View),
         title: String? = nil,
@@ -39,15 +30,15 @@ public extension Concierge {
         textSpeaker: TextSpeaking? = nil
     ) {
         self.containingView = AnyView(containingView)
-        
+
         if let speechCapturer = speechCapturer {
             self.speechCapturer = speechCapturer
         }
-        
+
         if let textSpeaker = textSpeaker {
             self.textSpeaker = textSpeaker
         }
-        
+
         if let title = title {
             self.chatTitle = title
         }
@@ -62,10 +53,8 @@ public extension Concierge {
                               data: nil)
         MobileCore.dispatch(event: showEvent)
     }
-    
-    /// Convenience overload that shows the chat UI without requiring a specific
-    /// containing view. Internally this wraps an `EmptyView` and behaves the same
-    /// as the primary `show(containingView:...)` overload.
+
+    /// Shows the chat UI without requiring a specific containing view.
     ///
     /// - Parameters:
     ///   - title: Optional title shown in the chat header.
@@ -84,19 +73,17 @@ public extension Concierge {
                   speechCapturer: speechCapturer,
                   textSpeaker: textSpeaker)
     }
-    
-    /// Wraps the host application's content in a view that can present the
-    /// Concierge chat overlay when requested.
+
+    /// Wraps the app’s content so the Concierge chat overlay can be presented.
     ///
-    /// Place the returned view in your scene hierarchy near the app root to
-    /// enable overlay presentation triggered by the `show(...)` APIs.
+    /// Place the returned view near the app root to enable overlay presentation
+    /// triggered by the `show(...)` APIs.
     ///
     /// - Parameters:
-    ///   - content: The application's existing SwiftUI content.
+    ///   - content: The app’s SwiftUI content.
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
-    /// - Returns: A composed view that renders `content` and conditionally overlays
-    ///   the chat UI while preserving the current theme.
+    /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
     static func wrap<Content: View>(
         _ content: Content,
         title: String? = nil,
@@ -112,12 +99,6 @@ public extension Concierge {
     }
 
     /// Hides the chat overlay if it is currently presented.
-    ///
-    /// This method is `@MainActor` isolated because it mutates SwiftUI
-    /// presentation state via `ConciergeStateManager`.
-    ///
-    /// - Important: Call from the main actor (e.g., inside a SwiftUI action or
-    ///   wrap in `Task { @MainActor in … }`).
     @MainActor
     static func hide() {
         ConciergeOverlayManager.shared.hideChat()
