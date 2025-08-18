@@ -12,7 +12,6 @@ PODS:
     - AEPCore (< 6.0.0, >= 5.0.0)
   - AEPRulesEngine (5.0.0)
   - AEPServices (5.6.0)
-  - lottie-ios (4.5.2)
   - SwiftLint (0.52.0)
 
 DEPENDENCIES:
@@ -21,7 +20,6 @@ DEPENDENCIES:
   - AEPEdge
   - AEPEdgeIdentity
   - AEPServices
-  - lottie-ios
   - SwiftLint (= 0.52.0)
 
 SPEC REPOS:
@@ -32,7 +30,6 @@ SPEC REPOS:
     - AEPEdgeIdentity
     - AEPRulesEngine
     - AEPServices
-    - lottie-ios
     - SwiftLint
 
 SPEC CHECKSUMS:
@@ -42,9 +39,8 @@ SPEC CHECKSUMS:
   AEPEdgeIdentity: 3161ff33434586962946912d6b8e9e8fca1c4d23
   AEPRulesEngine: fe5800653a4bee07b1e41e61b4d5551f0dba557b
   AEPServices: cbdac48662ef2f1001d05d47b5930a397a8beaab
-  lottie-ios: 96784afc26ea031d3e2b6cae342a4b8915072489
   SwiftLint: 13280e21cdda6786ad908dc6e416afe5acd1fcb7
 
-PODFILE CHECKSUM: 479fd8e0d59c71be608f0d31f8b2f684432c0eba
+PODFILE CHECKSUM: c1d44f39e9bee37d4719818a5b164f9be1d74908
 
 COCOAPODS: 1.16.2

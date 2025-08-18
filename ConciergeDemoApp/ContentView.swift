@@ -13,7 +13,6 @@
 import SwiftUI
 import AVFoundation
 import Speech
-import Lottie
 import AudioToolbox
 import AEPConcierge
 
