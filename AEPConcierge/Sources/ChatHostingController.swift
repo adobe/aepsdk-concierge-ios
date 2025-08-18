@@ -13,6 +13,7 @@
 import SwiftUI
 import UIKit
 
+// Bridge between SwiftUI and UIKit to allow UIKit contexts to present the SwiftUI ChatView
 final class ChatHostingController: UIHostingController<ChatView> {
     init(title: String?, subtitle: String?) {
         let view = ChatView(
@@ -29,6 +30,7 @@ final class ChatHostingController: UIHostingController<ChatView> {
         modalPresentationStyle = .fullScreen
     }
 
+    // Required for storyboard/XIB decoding, but unused in our implementation
     @MainActor @available(*, unavailable)
-    required dynamic init?(coder aDecoder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required dynamic init?(coder decoder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
