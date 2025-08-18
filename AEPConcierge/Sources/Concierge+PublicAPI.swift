@@ -13,32 +13,24 @@
 import AEPCore
 import SwiftUI
 
-// Shared instance to manage state between Concierge and wrapper
-class ConciergeStateManager: ObservableObject {
-    static let shared = ConciergeStateManager()
-    
-    @Published var showingConcierge = false
-    @Published var chatView: ChatView?
-    
-    private init() {}
-    
-    func showChat(_ chatView: ChatView) {
-        DispatchQueue.main.async {
-            self.chatView = chatView
-            self.showingConcierge = true
-        }
-    }
-    
-    func hideChat() {
-        DispatchQueue.main.async {
-            self.showingConcierge = false
-            self.chatView = nil
-        }
-    }
-}
-
 public extension Concierge {
-    
+    /// Requests that the Concierge chat UI be shown on top of the supplied
+    /// SwiftUI view hierarchy.
+    ///
+    /// This method configures runtime dependencies (speech capture, text to speech,
+    /// title/subtitle) and dispatches an AEPCore event. The `Concierge` extension
+    /// reacts to that event, constructs a `ChatView`, and asks the internal
+    /// `ConciergeStateManager` to present it.
+    ///
+    /// - Parameters:
+    ///   - containingView: The SwiftUI view to wrap. The overlay is injected above
+    ///     this view via `ConciergeWrapper`.
+    ///   - title: Optional title shown in the chat header.
+    ///   - subtitle: Optional subtitle shown under the title.
+    ///   - speechCapturer: Optional speech capture implementation to use.
+    ///   - textSpeaker: Optional text-to-speech implementation to use.
+    /// - Note: This API is nonisolated and safe to call from any thread. UI work
+    ///   is scheduled internally on the main actor.
     static func show(
         containingView: (some View),
         title: String? = nil,
@@ -56,9 +48,14 @@ public extension Concierge {
             self.textSpeaker = textSpeaker
         }
         
-        if let title = title { self.chatTitle = title }
-        if let subtitle = subtitle { self.chatSubtitle = subtitle }
-        
+        if let title = title {
+            self.chatTitle = title
+        }
+
+        if let subtitle = subtitle {
+            self.chatSubtitle = subtitle
+        }
+
         let showEvent = Event(name: "Show UI",
                               type: Constants.EventType.concierge,
                               source: EventSource.requestContent,
@@ -66,7 +63,15 @@ public extension Concierge {
         MobileCore.dispatch(event: showEvent)
     }
     
-    // Convenience: allow programmatic open without a containing view
+    /// Convenience overload that shows the chat UI without requiring a specific
+    /// containing view. Internally this wraps an `EmptyView` and behaves the same
+    /// as the primary `show(containingView:...)` overload.
+    ///
+    /// - Parameters:
+    ///   - title: Optional title shown in the chat header.
+    ///   - subtitle: Optional subtitle shown under the title.
+    ///   - speechCapturer: Optional speech capture implementation to use.
+    ///   - textSpeaker: Optional text-to-speech implementation to use.
     static func show(
         title: String? = nil,
         subtitle: String? = nil,
@@ -80,41 +85,41 @@ public extension Concierge {
                   textSpeaker: textSpeaker)
     }
     
+    /// Wraps the host application's content in a view that can present the
+    /// Concierge chat overlay when requested.
+    ///
+    /// Place the returned view in your scene hierarchy near the app root to
+    /// enable overlay presentation triggered by the `show(...)` APIs.
+    ///
+    /// - Parameters:
+    ///   - content: The application's existing SwiftUI content.
+    ///   - title: Optional title shown in the chat header for subsequent sessions.
+    ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
+    /// - Returns: A composed view that renders `content` and conditionally overlays
+    ///   the chat UI while preserving the current theme.
     static func wrap<Content: View>(
         _ content: Content,
         title: String? = nil,
         subtitle: String? = nil
     ) -> some View {
-        if let title = title { self.chatTitle = title }
-        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        if let title = title {
+            self.chatTitle = title
+        }
+        if let subtitle = subtitle {
+            self.chatSubtitle = subtitle
+        }
         return ConciergeWrapper(content: content)
     }
-    
+
+    /// Hides the chat overlay if it is currently presented.
+    ///
+    /// This method is `@MainActor` isolated because it mutates SwiftUI
+    /// presentation state via `ConciergeStateManager`.
+    ///
+    /// - Important: Call from the main actor (e.g., inside a SwiftUI action or
+    ///   wrap in `Task { @MainActor in … }`).
+    @MainActor
     static func hide() {
-        ConciergeStateManager.shared.hideChat()
-    }
-}
-
-struct ConciergeWrapper<Content: View>: View {
-    let content: Content
-    @StateObject private var stateManager = ConciergeStateManager.shared
-    @Environment(\.conciergeTheme) private var theme
-    
-    init(content: Content) {
-        self.content = content
-    }
-    
-    var body: some View {
-        ZStack {
-            content
-
-            // In-app overlay for chat (safe-area aware by default)
-            if stateManager.showingConcierge, let chatView = stateManager.chatView {
-                chatView
-                    .conciergeTheme(theme)
-                    .transition(.opacity)
-                    .zIndex(1)
-            }
-        }
+        ConciergeOverlayManager.shared.hideChat()
     }
 }

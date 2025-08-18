@@ -108,16 +108,16 @@ public class Concierge: NSObject, Extension {
     
     private func presentChatViewModally() {
         guard let chatView = chatView else { return }
-        // Use state manager to trigger overlay window presentation on main
-        DispatchQueue.main.async {
-            ConciergeStateManager.shared.showChat(chatView)
+        // Use state manager (MainActor) to trigger overlay window presentation
+        Task { @MainActor in
+            ConciergeOverlayManager.shared.showChat(chatView)
         }
     }
     
     func hideChatUI() {
         // Hide SwiftUI overlay if present
-        DispatchQueue.main.async {
-            ConciergeStateManager.shared.hideChat()
+        Task { @MainActor in
+            ConciergeOverlayManager.shared.hideChat()
         }
         // Also remove UIKit-hosted controller if present
         DispatchQueue.main.async {
@@ -132,6 +132,7 @@ public class Concierge: NSObject, Extension {
 }
 
 // MARK: - UIKit presentation API
+@MainActor
 public extension Concierge {
     /// Presents the chat UI from a UIKit context.
     static func present(on presentingViewController: UIViewController, title: String? = nil, subtitle: String? = nil) {
@@ -139,33 +140,29 @@ public extension Concierge {
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
 
         // Present by adding a child hosting controller overlaying the presenting VC's view
-        let hosting = ChatHostingController(title: title, subtitle: subtitle)
+        let hosting = ConciergeHostingController(title: title, subtitle: subtitle)
         presentedUIKitController = hosting
-        DispatchQueue.main.async {
-            presentingViewController.addChild(hosting)
-            hosting.view.translatesAutoresizingMaskIntoConstraints = false
-            presentingViewController.view.addSubview(hosting.view)
-            NSLayoutConstraint.activate([
-                hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
-                hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
-                hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
-                hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
-            ])
-            hosting.didMove(toParent: presentingViewController)
-        }
+        presentingViewController.addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        presentingViewController.view.addSubview(hosting.view)
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
+        ])
+        hosting.didMove(toParent: presentingViewController)
     }
 
     /// Dismisses the chat UI if presented via UIKit.
     static func dismiss(animated: Bool = true) {
-        DispatchQueue.main.async {
-            if let controller = presentedUIKitController, let parent = controller.parent {
-                controller.willMove(toParent: nil)
-                controller.view.removeFromSuperview()
-                controller.removeFromParent()
-                presentedUIKitController = nil
-                // Also ensure SwiftUI overlay state is cleared if active
-                ConciergeStateManager.shared.hideChat()
-            }
+        if let controller = presentedUIKitController, let parent = controller.parent {
+            controller.willMove(toParent: nil)
+            controller.view.removeFromSuperview()
+            controller.removeFromParent()
+            presentedUIKitController = nil
+            // Also ensure SwiftUI overlay state is cleared if active
+            ConciergeOverlayManager.shared.hideChat()
         }
     }
 }

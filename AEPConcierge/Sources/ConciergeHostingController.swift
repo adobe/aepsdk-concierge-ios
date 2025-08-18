@@ -14,7 +14,7 @@ import SwiftUI
 import UIKit
 
 // Bridge between SwiftUI and UIKit to allow UIKit contexts to present the SwiftUI ChatView
-final class ChatHostingController: UIHostingController<ChatView> {
+final class ConciergeHostingController: UIHostingController<ChatView> {
     init(title: String?, subtitle: String?) {
         let view = ChatView(
             parent: nil,
@@ -23,7 +23,9 @@ final class ChatHostingController: UIHostingController<ChatView> {
             title: title ?? Concierge.chatTitle,
             subtitle: subtitle ?? Concierge.chatSubtitle,
             onClose: {
-                Concierge.dismiss()
+                Task { @MainActor in
+                    Concierge.dismiss()
+                }
             }
         )
         super.init(rootView: view)
