@@ -28,7 +28,7 @@ final class ConciergeHostingController: UIHostingController<ChatView> {
             subtitle: subtitle ?? Concierge.chatSubtitle,
             onClose: {
                 Task { @MainActor in
-                    Concierge.dismiss()
+                    Concierge.hide()
                 }
             }
         )
