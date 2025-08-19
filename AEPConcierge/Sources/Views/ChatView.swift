@@ -20,16 +20,14 @@ import UIKit
 
 public struct ChatView: View {
     private let LOG_TAG = "ChatView"
-    
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.conciergeTheme) private var theme
     @StateObject private var viewModel: ConciergeChatViewModel
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
-    
-    // Concierge host is no longer required; use public API for close
+
     private let textSpeaker: TextSpeaking?
-    @Environment(\.conciergeTheme) private var theme
-    
     // Header content
     private let titleText: String
     private let subtitleText: String?
@@ -38,7 +36,6 @@ public struct ChatView: View {
     private var currentMessageIndex: Int { viewModel.messages.count - 1 }
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
-    @Environment(\.colorScheme) private var colorScheme
         
     // Public initializer – callers do not need to (and cannot) pass the chat service.
     public init(
