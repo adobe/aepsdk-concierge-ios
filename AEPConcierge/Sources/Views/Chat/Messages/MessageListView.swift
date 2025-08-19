@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
     let messages: [Message]
     let onSpeak: (String) -> Void

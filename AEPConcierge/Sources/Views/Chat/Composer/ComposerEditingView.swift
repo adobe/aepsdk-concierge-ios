@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Text entry row with editable field plus mic and send controls.
 struct ComposerEditingView: View {
     @Binding var inputText: String
     @Binding var selectedRange: NSRange

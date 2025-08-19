@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Presents an icon from the asset catalog with an SF Symbol fallback.
 struct BrandIcon: View {
     let assetName: String
     let systemName: String

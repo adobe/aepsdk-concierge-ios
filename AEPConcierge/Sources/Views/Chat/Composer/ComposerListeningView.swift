@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Displays listening state with cancel and complete actions during voice capture.
 struct ComposerListeningView: View {
     let onCancel: () -> Void
     let onComplete: () -> Void

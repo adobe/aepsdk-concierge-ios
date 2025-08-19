@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Shows transcribing state after recording while processing speech to text.
 struct ComposerTranscribingView: View {
     let onCancel: () -> Void
     let measuredHeight: CGFloat
