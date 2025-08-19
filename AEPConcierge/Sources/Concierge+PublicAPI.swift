@@ -17,23 +17,19 @@ import UIKit
 public extension Concierge {
     // MARK: - SwiftUI presentation APIs
 
-    /// Shows the Concierge chat UI on top of the supplied SwiftUI view hierarchy.
+    /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.
     ///
     /// - Parameters:
-    ///   - containingView: The SwiftUI view to wrap. The overlay is injected above this view.
     ///   - title: Optional title shown in the chat header.
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
     static func show(
-        containingView: (some View),
         title: String? = nil,
         subtitle: String? = nil,
         speechCapturer: SpeechCapturing? = nil,
         textSpeaker: TextSpeaking? = nil
     ) {
-        self.containingView = AnyView(containingView)
-
         if let speechCapturer = speechCapturer {
             self.speechCapturer = speechCapturer
         }
@@ -69,26 +65,6 @@ public extension Concierge {
         MobileCore.dispatch(event: showEvent)
     }
 
-    /// Shows the chat UI without requiring a specific containing view.
-    ///
-    /// - Parameters:
-    ///   - title: Optional title shown in the chat header.
-    ///   - subtitle: Optional subtitle shown under the title.
-    ///   - speechCapturer: Optional speech capture implementation to use.
-    ///   - textSpeaker: Optional text-to-speech implementation to use.
-    static func show(
-        title: String? = nil,
-        subtitle: String? = nil,
-        speechCapturer: SpeechCapturing? = nil,
-        textSpeaker: TextSpeaking? = nil
-    ) {
-        self.show(containingView: EmptyView(),
-                  title: title,
-                  subtitle: subtitle,
-                  speechCapturer: speechCapturer,
-                  textSpeaker: textSpeaker)
-    }
-
     /// Wraps the app’s content so the Concierge chat overlay can be presented.
     ///
     /// Place the returned view near the app root to enable overlay presentation
@@ -116,11 +92,20 @@ public extension Concierge {
     /// Hides the chat overlay if it is currently presented.
     static func hide() {
         Task { @MainActor in
+            // Hide SwiftUI overlay if present
             ConciergeOverlayManager.shared.hideChat()
+
+            // Remove UIKit hosted controller if present
+            if let controller = Concierge.presentedUIKitController {
+                controller.willMove(toParent: nil)
+                controller.view.removeFromSuperview()
+                controller.removeFromParent()
+                Concierge.presentedUIKitController = nil
+            }
         }
     }
 
-    // MARK: - UIKit presentation APIs
+    // MARK: - UIKit presentation API
 
     /// Presents the chat UI from a UIKit context by embedding a SwiftUI `ChatView`
     /// inside a `UIHostingController` and adding it as a child of the provided
@@ -147,20 +132,6 @@ public extension Concierge {
                 hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
             ])
             hosting.didMove(toParent: presentingViewController)
-        }
-    }
-
-    /// Dismisses the chat UI if it was presented via UIKit.
-    static func dismiss(animated: Bool = true) {
-        Task { @MainActor in
-            if let controller = presentedUIKitController, let parent = controller.parent {
-                controller.willMove(toParent: nil)
-                controller.view.removeFromSuperview()
-                controller.removeFromParent()
-                presentedUIKitController = nil
-                // Ensure SwiftUI overlay state is cleared if active
-                ConciergeOverlayManager.shared.hideChat()
-            }
         }
     }
 }

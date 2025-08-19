@@ -11,7 +11,6 @@
  */
 
 import SwiftUI
-import UIKit
 
 import AEPCore
 import AEPServices
@@ -28,7 +27,6 @@ public class Concierge: NSObject, Extension {
     // MARK: - class properties
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
-    static var containingView: AnyView?
     static var chatTitle: String = "Concierge"
     static var chatSubtitle: String? = "Powered by Adobe"
     static var presentedUIKitController: UIViewController?
@@ -88,20 +86,5 @@ public class Concierge: NSObject, Extension {
 
     private func handleEvent(_ event: Event) {
         Log.trace(label: Constants.LOG_TAG, "Received show chat UI event.")
-    }
-    
-    private func hideChatUI() {
-        Task { @MainActor in
-            // Hide SwiftUI overlay if present
-            ConciergeOverlayManager.shared.hideChat()
-
-            // Remove UIKit hosted controller if present
-            if let controller = Concierge.presentedUIKitController {
-                controller.willMove(toParent: nil)
-                controller.view.removeFromSuperview()
-                controller.removeFromParent()
-                Concierge.presentedUIKitController = nil
-            }
-        }
     }
 }
