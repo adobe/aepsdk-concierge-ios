@@ -152,8 +152,7 @@ public struct ChatView: View {
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
     
-    private let parent: Concierge?
-    
+    // Concierge host is no longer required; use public API for close
     private let textSpeaker: TextSpeaking?
     @Environment(\.conciergeTheme) private var theme
     
@@ -167,21 +166,41 @@ public struct ChatView: View {
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
     @Environment(\.colorScheme) private var colorScheme
         
+    // Public initializer – callers do not need to (and cannot) pass the chat service.
     public init(
-        parent: Concierge? = nil,
         speechCapturer: SpeechCapturing? = nil,
         textSpeaker: TextSpeaking? = nil,
         title: String = "Concierge",
         subtitle: String? = "Powered by Adobe",
         onClose: (() -> Void)? = nil
     ) {
-        self.parent = parent
         self.textSpeaker = textSpeaker
         self.titleText = title
         self.subtitleText = subtitle
         self.onClose = onClose
         let vm = ConciergeChatViewModel(
-            chatService: parent?.conciergeChatService ?? ConciergeChatService(),
+            chatService: ConciergeChatService(),
+            speechCapturer: speechCapturer ?? SpeechCapturer(),
+            speaker: textSpeaker
+        )
+        _viewModel = StateObject(wrappedValue: vm)
+    }
+
+    // Internal initializer used by the SDK to inject a specific service instance.
+    init(
+        chatService: ConciergeChatService,
+        speechCapturer: SpeechCapturing? = nil,
+        textSpeaker: TextSpeaking? = nil,
+        title: String = "Concierge",
+        subtitle: String? = "Powered by Adobe",
+        onClose: (() -> Void)? = nil
+    ) {
+        self.textSpeaker = textSpeaker
+        self.titleText = title
+        self.subtitleText = subtitle
+        self.onClose = onClose
+        let vm = ConciergeChatViewModel(
+            chatService: chatService,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
             speaker: textSpeaker
         )
@@ -189,8 +208,7 @@ public struct ChatView: View {
     }
         
     // internal use only for previews
-    init(parent: Concierge? = nil, messages: [Message]) {
-        self.parent = nil
+    init(messages: [Message]) {
         self.textSpeaker = nil
         self.titleText = "Concierge"
         self.subtitleText = "Powered by Adobe"
@@ -272,7 +290,7 @@ public struct ChatView: View {
 
                 // Close icon on the right
                 Button(action: {
-                    if let onClose = onClose { onClose() } else { parent?.hideChatUI() }
+                    if let onClose = onClose { onClose() } else { Concierge.hide() }
                 }) {
                     brandIcon(named: "S2_Icon_Close_20_N", systemName: "xmark")
                         .foregroundColor(Color.Secondary)
