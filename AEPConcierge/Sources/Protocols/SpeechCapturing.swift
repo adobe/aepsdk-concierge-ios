@@ -14,8 +14,6 @@ import Foundation
 
 public protocol SpeechCapturing: AnyObject {
     var responseProcessor: ((String) -> Void)? { get set }
-    // Optional: 5-band spectrum levels (0...1) for UI visualizations
-    var levelUpdateHandler: (([Float]) -> Void)? { get set }
     
     func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
