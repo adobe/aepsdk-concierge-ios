@@ -101,8 +101,9 @@ final class ConciergeChatViewModel: ObservableObject {
         }
         inputTextAtRecordingStart = inputText
         recordingInsertStart = max(0, min(currentSelectionLocation, (inputText as NSString).length))
-        capturer.beginCapture()
+        // Flip to recording before kicking off capture so UI sticks even if focus callbacks fire
         inputState = .recording
+        capturer.beginCapture()
     }
 
     func stopRecording(acceptTranscription: Bool) {
