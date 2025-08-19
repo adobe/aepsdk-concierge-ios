@@ -12,11 +12,15 @@
 
 import SwiftUI
 
+/// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
 struct ChatTopBar: View {
     @Environment(\.conciergeTheme) private var theme
+
+    @Binding var showAgentSend: Bool
+
     let title: String
     let subtitle: String?
-    @Binding var showAgentSend: Bool
+
     let onToggleMode: (Bool) -> Void
     let onClose: () -> Void
 

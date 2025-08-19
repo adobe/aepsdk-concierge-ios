@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Dots indicator for paged content, highlighting the current page.
 struct PageIndicator: View {
     let numberOfPages: Int
     @Binding var currentIndex: Int

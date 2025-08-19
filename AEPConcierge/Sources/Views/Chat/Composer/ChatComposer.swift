@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Input composer container that switches between editing, listening, and transcribing states and wires user actions.
 struct ChatComposer: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme

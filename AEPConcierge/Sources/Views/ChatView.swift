@@ -16,6 +16,8 @@ import AEPServices
 
 public struct ChatView: View {
     private let LOG_TAG = "ChatView"
+
+    // MARK: Environment
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
     @StateObject private var viewModel: ConciergeChatViewModel
@@ -23,24 +25,27 @@ public struct ChatView: View {
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
 
+    // MARK: Dependencies and configuration
     private let textSpeaker: TextSpeaking?
+    // Close handler for UIKit hosting
+    private let onClose: (() -> Void)?
     // Header content
     private let titleText: String
     private let subtitleText: String?
-    // Close handler for UIKit hosting
-    private let onClose: (() -> Void)?
+
+    // MARK: Derived values
     private var currentMessageIndex: Int { viewModel.messages.count - 1 }
     
+    // MARK: UI values
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
-
     private var composerBackgroundColor: Color {
         colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
     }
-
     private var composerBorderColor: Color {
         Color(UIColor.separator)
     }
 
+    // MARK: - Initializers
     // Public initializer – callers do not need to (and cannot) pass the chat service.
     public init(
         speechCapturer: SpeechCapturing? = nil,
@@ -93,9 +98,10 @@ public struct ChatView: View {
         _viewModel = StateObject(wrappedValue: vm)
     }
     
+    // MARK: - Body
     public var body: some View {
         ZStack(alignment: .bottom) {
-            // Full-bleed background only (dynamic for light/dark)
+            // Full background color ignoring safe area (dynamic for light/dark)
             Color(.systemBackground)
                 .ignoresSafeArea()
 
@@ -103,7 +109,7 @@ public struct ChatView: View {
                 textSpeaker?.utter(text: text)
             }
         }
-        // Safe-area aware top bar
+        // Safe area respecting top bar
         .safeAreaInset(edge: .top) {
             ChatTopBar(
                 title: titleText,
@@ -115,10 +121,16 @@ public struct ChatView: View {
                         viewModel.chatState = .idle
                     }
                 },
-                onClose: { if let onClose = onClose { onClose() } else { Concierge.hide() } }
+                onClose: {
+                    if let onClose = onClose {
+                        onClose()
+                    } else {
+                        Concierge.hide()
+                    }
+                }
             )
         }
-        // Safe-area aware bottom composer
+        // Safe area respecting bottom composer
         .safeAreaInset(edge: .bottom) {
             ChatComposer(
                 inputText: $viewModel.inputText,
@@ -151,6 +163,7 @@ public struct ChatView: View {
         }
     }
     
+    // MARK: - Actions
     private func sendTapped() {
         viewModel.sendMessage(isUser: !showAgentSend)
     }

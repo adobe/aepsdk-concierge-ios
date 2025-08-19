@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Container that overlays the Concierge chat UI on top of arbitrary app content when enabled.
 struct ConciergeWrapper<Content: View>: View {
     let content: Content
     @StateObject private var stateManager = ConciergeOverlayManager.shared

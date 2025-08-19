@@ -13,7 +13,7 @@
 import SwiftUI
 import UIKit
 
-/// UIKit backed multiline text view with selection support
+/// UIKit-backed multiline text input that exposes selection and dynamic height to SwiftUI.
 struct SelectableTextView: UIViewRepresentable {
     @Binding var text: String
     @Binding var selectedRange: NSRange
@@ -75,7 +75,7 @@ struct SelectableTextView: UIViewRepresentable {
                     context.coordinator.isSettingSelectionProgrammatically = false
                 }
             }
-            // Only auto-scroll on text change, not on selection change
+            // Only auto scroll on text change, not on selection change
             context.coordinator.scrollToBottom(uiView)
         }
     }
@@ -114,7 +114,6 @@ struct SelectableTextView: UIViewRepresentable {
                     }
                 }
             }
-            // Rely on UIKit to manage caret visibility; avoid programmatic scrolling which can conflict with autocorrect UI
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) {
@@ -139,7 +138,6 @@ struct SelectableTextView: UIViewRepresentable {
                     }
                 }
             }
-            // Do not auto-scroll on selection change; it can conflict with system selection UI
         }
 
         func scrollToBottom(_ textView: UITextView) {
@@ -149,7 +147,6 @@ struct SelectableTextView: UIViewRepresentable {
         }
 
         func recalculateHeight(_ textView: UITextView) {
-            // Use sizeThatFits to measure multiline height at current width
             textView.layoutIfNeeded()
             // Fallback to 17pt, the typical line height of the default .body font
             let rawLineHeight = textView.font?.lineHeight ?? 17
