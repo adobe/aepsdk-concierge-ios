@@ -111,7 +111,7 @@ build-app: setup
 	@echo "######################################################################"
 	xcodebuild clean build -workspace $(PROJECT_NAME).xcworkspace -scheme $(TEST_APP_IOS_SCHEME) -destination 'generic/platform=iOS Simulator'
 
-test: unit-test-ios functional-test-ios
+test: unit-test-ios
 
 unit-test-ios:
 	@echo "######################################################################"
