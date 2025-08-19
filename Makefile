@@ -90,16 +90,18 @@ build-app: setup
 
 test: unit-test-ios
 
-unit-test-ios: clean
+unit-test-ios:
 	@echo "######################################################################"
 	@echo "### Unit Testing iOS"
 	@echo "######################################################################"
+	rm -rf build/reports/iosUnitResults.xcresult
 	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "UnitTests" -destination $(IOS_DESTINATION) -derivedDataPath build/out -resultBundlePath build/reports/iosUnitResults.xcresult -enableCodeCoverage YES ADB_SKIP_LINT=YES
 
-functional-test-ios: clean
+functional-test-ios:
 	@echo "######################################################################"
 	@echo "### Functional Testing iOS"
 	@echo "######################################################################"
+	rm -rf build/reports/iosFunctionalResults.xcresult
 	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "FunctionalTests" -destination $(IOS_DESTINATION) -resultBundlePath build/reports/iosFunctionalResults.xcresult -enableCodeCoverage YES ADB_SKIP_LINT=YES
 
 install-githook:
