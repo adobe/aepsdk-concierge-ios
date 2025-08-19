@@ -22,7 +22,6 @@ final class ConciergeHostingController: UIHostingController<ChatView> {
     ///   - subtitle: Subtitle shown under the title. If `nil`, uses the SDK default.
     init(title: String?, subtitle: String?) {
         let view = ChatView(
-            parent: nil,
             speechCapturer: Concierge.speechCapturer,
             textSpeaker: Concierge.textSpeaker,
             title: title ?? Concierge.chatTitle,
