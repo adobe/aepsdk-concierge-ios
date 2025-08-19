@@ -6,6 +6,22 @@
 	objectVersion = 56;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		24317C9F2E5525E200F138E9 /* AEPConciergeXCF */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 24317CA22E5525E200F138E9 /* Build configuration list for PBXAggregateTarget "AEPConciergeXCF" */;
+			buildPhases = (
+			);
+			dependencies = (
+				24317CA42E5526A200F138E9 /* PBXTargetDependency */,
+			);
+			name = AEPConciergeXCF;
+			packageProductDependencies = (
+			);
+			productName = AEPConciergeXCF;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */; };
@@ -48,6 +64,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		24317CA32E5526A200F138E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 249899402D6679790005CBD7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 249899482D6679790005CBD7;
+			remoteInfo = AEPConcierge;
+		};
 		249899552D6679790005CBD7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 249899402D6679790005CBD7 /* Project object */;
@@ -389,6 +412,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					24317C9F2E5525E200F138E9 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					249899482D6679790005CBD7 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -414,6 +440,7 @@
 			projectRoot = "";
 			targets = (
 				249899482D6679790005CBD7 /* AEPConcierge */,
+				24317C9F2E5525E200F138E9 /* AEPConciergeXCF */,
 				249899522D6679790005CBD7 /* UnitTests */,
 				2498999C2D67CCD20005CBD7 /* ConciergeDemoApp */,
 			);
@@ -605,6 +632,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		24317CA42E5526A200F138E9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 249899482D6679790005CBD7 /* AEPConcierge */;
+			targetProxy = 24317CA32E5526A200F138E9 /* PBXContainerItemProxy */;
+		};
 		249899562D6679790005CBD7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 249899482D6679790005CBD7 /* AEPConcierge */;
@@ -618,6 +650,36 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		24317CA02E5525E200F138E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "";
+				DEVELOPMENT_TEAM = FKGEE875K4;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VERSIONING_SYSTEM = "";
+			};
+			name = Debug;
+		};
+		24317CA12E5525E200F138E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "";
+				DEVELOPMENT_TEAM = FKGEE875K4;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VERSIONING_SYSTEM = "";
+			};
+			name = Release;
+		};
 		2498995D2D6679790005CBD7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPConcierge.debug.xcconfig */;
@@ -645,6 +707,15 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
 				MARKETING_VERSION = 5.0.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"AEPCore\"",
+					"-framework",
+					"\"AEPRulesEngine\"",
+					"-framework",
+					"\"AEPServices\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -686,6 +757,15 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
 				MARKETING_VERSION = 5.0.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"AEPCore\"",
+					"-framework",
+					"\"AEPRulesEngine\"",
+					"-framework",
+					"\"AEPServices\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -932,6 +1012,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		24317CA22E5525E200F138E9 /* Build configuration list for PBXAggregateTarget "AEPConciergeXCF" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				24317CA02E5525E200F138E9 /* Debug */,
+				24317CA12E5525E200F138E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		249899432D6679790005CBD7 /* Build configuration list for PBXProject "AEPConcierge" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
