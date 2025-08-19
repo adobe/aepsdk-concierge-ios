@@ -112,9 +112,9 @@ public struct ChatView: View {
         // Safe area respecting top bar
         .safeAreaInset(edge: .top) {
             ChatTopBar(
+                showAgentSend: $showAgentSend,
                 title: titleText,
                 subtitle: subtitleText,
-                showAgentSend: $showAgentSend,
                 onToggleMode: { isAgent in
                     if isAgent {
                         viewModel.inputState = .editing
