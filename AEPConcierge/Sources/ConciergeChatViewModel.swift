@@ -11,7 +11,8 @@
  */
 
 import Foundation
-import Combine
+
+import AEPServices
 
 @MainActor
 final class ConciergeChatViewModel: ObservableObject {
@@ -19,6 +20,8 @@ final class ConciergeChatViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var inputState: InputState = .empty
     @Published var chatState: ChatState = .idle
+
+    private let LOG_TAG = "ConciergeChatViewModel"
 
     // MARK: Dependencies
     private let chatService: ConciergeChatService
@@ -28,7 +31,6 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: Recording helpers
     private var inputTextAtRecordingStart: String = ""
     private var recordingInsertStart: Int = 0
-    private var ignoreEndCaptureTranscription: Bool = false
 
     init(chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.chatService = chatService
@@ -60,7 +62,7 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: - Mic control
     func toggleMic(currentSelectionLocation: Int) {
         if isRecording {
-            stopRecording()
+            stopRecording(acceptTranscription: true)
         } else {
             startRecording(currentSelectionLocation: currentSelectionLocation)
         }
@@ -68,42 +70,74 @@ final class ConciergeChatViewModel: ObservableObject {
 
     func cancelMic() {
         guard isRecording else {
+            Log.warning(label: self.LOG_TAG, "cancelMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
             return
         }
-        ignoreEndCaptureTranscription = true
-        stopRecording()
+        stopRecording(acceptTranscription: false)
     }
 
     func completeMic() {
         guard isRecording else {
+            Log.warning(label: self.LOG_TAG, "completeMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
             return
         }
-        stopRecording()
+        stopRecording(acceptTranscription: true)
     }
 
-    private func startRecording(currentSelectionLocation: Int) {
+    func startRecording(currentSelectionLocation: Int) {
+        guard chatState == .idle else {
+            Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
+            return
+        }
+        guard inputState == .empty || inputState == .editing else {
+            Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected inputState to be 'empty' or 'editing', but was '\(inputState)'.")
+            return
+        }
+        guard let capturer = speechCapturer, capturer.isAvailable() else {
+            Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected speech capturer instance is nil.")
+            // Optional: surface an error state instead
+            // inputState = .error(.permissionDenied)
+            return
+        }
         inputTextAtRecordingStart = inputText
         recordingInsertStart = max(0, min(currentSelectionLocation, (inputText as NSString).length))
-        speechCapturer?.beginCapture()
+        capturer.beginCapture()
         inputState = .recording
     }
 
-    private func stopRecording() {
-        chatState = .processing
-        speechCapturer?.endCapture { [weak self] transcription, _ in
+    func stopRecording(acceptTranscription: Bool) {
+        guard isRecording else {
+            Log.warning(label: self.LOG_TAG, "stopRecording ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
+            return
+        }
+        guard let capturer = speechCapturer else {
+            Log.warning(label: self.LOG_TAG, "stopRecording ignored. Expected speech capturer instance to be present, but it was nil.")
+            // We can't end capture—reset to a sane state
+            inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
+            chatState = .idle
+            return
+        }
+        // Update UI state depending on whether the transcription is going to be used or not
+        if acceptTranscription {
+            // Set the transcribing state while processing
+            inputState = .transcribing
+        } else {
+            // Otherwise change back to editable without a transcribing phase
+            inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
+        }
+        capturer.endCapture { [weak self] transcript, _ in
             Task { @MainActor in
-                self?.finishTranscription(transcription)
+                self?.finishTranscription(transcript, acceptTranscription: acceptTranscription)
             }
         }
     }
 
-    private func finishTranscription(_ transcript: String?) {
-        if !ignoreEndCaptureTranscription, let transcript = transcript, !transcript.isEmpty {
+    private func finishTranscription(_ transcript: String?, acceptTranscription: Bool) {
+        if acceptTranscription, let transcript = transcript, !transcript.isEmpty {
             let base = inputTextAtRecordingStart as NSString
             let start = max(0, min(recordingInsertStart, base.length))
             inputText = base.substring(to: start) + transcript + base.substring(from: start)
         }
-        ignoreEndCaptureTranscription = false
         inputTextAtRecordingStart = inputText
         recordingInsertStart = (inputText as NSString).length
         inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
@@ -113,11 +147,17 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: - Sending
     func sendMessage(isUser: Bool) {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else {
+            Log.warning(label: self.LOG_TAG, "sendMessage ignored. Expected non-empty text, but was empty.")
+            return
+        }
+        guard chatState == .idle else {
+            Log.warning(label: self.LOG_TAG, "sendMessage ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
+            return
+        }
 
         if isRecording {
-            ignoreEndCaptureTranscription = true
-            stopRecording()
+            stopRecording(acceptTranscription: true)
         }
 
         messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
@@ -182,7 +222,10 @@ final class ConciergeChatViewModel: ObservableObject {
     }
 
     private func processStreaming(text: String) {
-        guard inputState == .recording else { return }
+        guard inputState == .recording else {
+            Log.warning(label: self.LOG_TAG, "processStreaming ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
+            return
+        }
         let base = inputTextAtRecordingStart as NSString
         let start = max(0, min(recordingInsertStart, base.length))
         inputText = base.substring(to: start) + text + base.substring(from: start)
