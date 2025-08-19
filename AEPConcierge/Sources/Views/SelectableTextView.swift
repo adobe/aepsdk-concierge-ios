@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// UIKit backed multiline text view with selection support
 struct SelectableTextView: UIViewRepresentable {
@@ -74,7 +75,7 @@ struct SelectableTextView: UIViewRepresentable {
                     context.coordinator.isSettingSelectionProgrammatically = false
                 }
             }
-            // Scroll to where the cursor/end of text is
+            // Only auto-scroll on text change, not on selection change
             context.coordinator.scrollToBottom(uiView)
         }
     }
@@ -102,16 +103,18 @@ struct SelectableTextView: UIViewRepresentable {
             recalculateHeight(textView)
 
             if let range = textView.selectedTextRange {
-                let location = textView.offset(from: textView.beginningOfDocument, to: range.start)
-                let length = textView.offset(from: range.start, to: range.end)
-                let newRange = NSRange(location: location, length: length)
+                let startOffset = textView.offset(from: textView.beginningOfDocument, to: range.start)
+                let endOffset = textView.offset(from: textView.beginningOfDocument, to: range.end)
+                let location = min(startOffset, endOffset)
+                let length = max(0, abs(endOffset - startOffset))
+                let newRange = NSRange(location: max(0, location), length: length)
                 if parent.selectedRange != newRange {
                     DispatchQueue.main.async { [parent] in
                         parent.selectedRange = newRange
                     }
                 }
             }
-            scrollToBottom(textView)
+            // Rely on UIKit to manage caret visibility; avoid programmatic scrolling which can conflict with autocorrect UI
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) {
@@ -125,20 +128,23 @@ struct SelectableTextView: UIViewRepresentable {
         func textViewDidChangeSelection(_ textView: UITextView) {
             if isSettingSelectionProgrammatically { return }
             if let range = textView.selectedTextRange {
-                let location = textView.offset(from: textView.beginningOfDocument, to: range.start)
-                let length = textView.offset(from: range.start, to: range.end)
-                let newRange = NSRange(location: location, length: length)
+                let startOffset = textView.offset(from: textView.beginningOfDocument, to: range.start)
+                let endOffset = textView.offset(from: textView.beginningOfDocument, to: range.end)
+                let location = min(startOffset, endOffset)
+                let length = max(0, abs(endOffset - startOffset))
+                let newRange = NSRange(location: max(0, location), length: length)
                 if parent.selectedRange != newRange {
                     DispatchQueue.main.async { [parent] in
                         parent.selectedRange = newRange
                     }
                 }
             }
-            scrollToBottom(textView)
+            // Do not auto-scroll on selection change; it can conflict with system selection UI
         }
 
         func scrollToBottom(_ textView: UITextView) {
-            let end = NSRange(location: (textView.text as NSString).length, length: 0)
+            let length = max(0, (textView.text as NSString).length)
+            let end = NSRange(location: length, length: 0)
             textView.scrollRangeToVisible(end)
         }
 
@@ -146,15 +152,26 @@ struct SelectableTextView: UIViewRepresentable {
             // Use sizeThatFits to measure multiline height at current width
             textView.layoutIfNeeded()
             // Fallback to 17pt, the typical line height of the default .body font
-            let lineHeight = textView.font?.lineHeight ?? 17
+            let rawLineHeight = textView.font?.lineHeight ?? 17
+            let lineHeight: CGFloat = (rawLineHeight.isFinite && rawLineHeight > 0) ? rawLineHeight : 17
             let insets = textView.textContainerInset.top + textView.textContainerInset.bottom
             let minHeight = CGFloat(parent.minLines) * lineHeight + insets
             let maxHeight = CGFloat(parent.maxLines) * lineHeight + insets
-            let fittingSize = CGSize(width: max(1, textView.bounds.width), height: .greatestFiniteMagnitude)
-            let measured = textView.sizeThatFits(fittingSize).height
+            var width = textView.bounds.width
+            if !width.isFinite || width <= 0 {
+                width = textView.frame.size.width
+            }
+            if !width.isFinite || width <= 0 {
+                width = UIScreen.main.bounds.width - 32
+            }
+            let fittingSize = CGSize(width: max(1, width), height: .greatestFiniteMagnitude)
+            var measured = textView.sizeThatFits(fittingSize).height
+            if !measured.isFinite || measured.isNaN {
+                measured = minHeight
+            }
             let target = min(max(measured, minHeight), maxHeight)
-            textView.isScrollEnabled = measured > maxHeight + 1
-            if abs(parent.measuredHeight - target) > 0.5 {
+            textView.isScrollEnabled = measured.isFinite && measured > maxHeight + 1
+            if target.isFinite && abs(parent.measuredHeight - target) > 0.5 {
                 DispatchQueue.main.async { [weak self] in
                     self?.parent.measuredHeight = target
                 }

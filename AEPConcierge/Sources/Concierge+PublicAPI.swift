@@ -10,9 +10,10 @@
  governing permissions and limitations under the License.
  */
 
-import AEPCore
 import SwiftUI
 import UIKit
+
+import AEPCore
 
 public extension Concierge {
     // MARK: - SwiftUI presentation APIs
