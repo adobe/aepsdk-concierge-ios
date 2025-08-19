@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
@@ -18,43 +19,62 @@ import AEPConcierge
 
 struct ContentView: View {
     var body: some View {
-        Concierge.wrap(
-            VStack(spacing: 0) {
-                Button(action: {
-                    Concierge.show(
-                        title: "Concierge",
-                        subtitle: "Powered by Adobe"
-                    )
-                }) {
-                    Text("Open Chat")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 28)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.red)
-                                .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+        TabView {
+            // SwiftUI sample
+            Concierge.wrap(
+                VStack(spacing: 0) {
+                    Button(action: {
+                        Concierge.show(
+                            title: "Concierge",
+                            subtitle: "Powered by Adobe"
                         )
+                    }) {
+                        Text("Open Chat (SwiftUI)")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 28)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color.red)
+                                    .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+                            )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
-            .conciergeTheme(
-                ConciergeTheme(
-                    primary: .Brand.red,
-                    secondary: .Brand.red,
-                    onPrimary: .white,
-                    textBody: .primary,
-                    surfaceLight: Color(UIColor.secondarySystemBackground),
-                    surfaceDark: Color(UIColor.systemBackground)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+                .conciergeTheme(
+                    ConciergeTheme(
+                        primary: .Brand.red,
+                        secondary: .Brand.red,
+                        onPrimary: .white,
+                        textBody: .primary,
+                        surfaceLight: Color(UIColor.secondarySystemBackground),
+                        surfaceDark: Color(UIColor.systemBackground)
+                    )
                 )
             )
-        )
+            .tabItem { Label("SwiftUI", systemImage: "swift") }
+
+            // UIKit sample
+            UIKitDemoScreen()
+                .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
+        }
     }
+}
+
+/// SwiftUI wrapper that hosts the UIKit demo controller inside the tab.
+private struct UIKitDemoScreen: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UINavigationController {
+        let root = ConciergeUIKitDemoViewController()
+        root.title = "UIKit Demo"
+        let nav = UINavigationController(rootViewController: root)
+        return nav
+    }
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {}
 }
 
 #Preview {
