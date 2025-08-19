@@ -17,7 +17,6 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: - Published UI state
     @Published var messages: [Message] = []
     @Published var inputText: String = ""
-    @Published var audioLevels: [Float] = Array(repeating: 0, count: 5)
     @Published var inputState: InputState = .empty
     @Published var chatState: ChatState = .idle
 
@@ -130,11 +129,6 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: - Speech streaming
     private func configureSpeech() {
         speechCapturer?.initialize(responseProcessor: { [weak self] text in self?.processStreaming(text: text) })
-        speechCapturer?.levelUpdateHandler = { [weak self] levels in
-            var five = levels
-            if five.count != 5 { five = Array(repeating: 0, count: 5) }
-            DispatchQueue.main.async { self?.audioLevels = five }
-        }
     }
 
     private func processStreaming(text: String) {
