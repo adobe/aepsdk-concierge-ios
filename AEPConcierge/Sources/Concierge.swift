@@ -86,21 +86,8 @@ public class Concierge: NSObject, Extension {
 
     // MARK: - Private methods
 
-    // TODO: update logic so that UI presentation and hide is not event driven
     private func handleEvent(_ event: Event) {
         Log.trace(label: Constants.LOG_TAG, "Received show chat UI event.")
-//        showChatUI()
-    }
-
-    private func showChatUI() {
-        // Present current chatView if configured via public API path
-        guard let chatView = chatView else {
-            Log.debug(label: Constants.LOG_TAG, "Ignoring show request due to missing chat view configuration.")
-            return
-        }
-        Task { @MainActor in
-            ConciergeOverlayManager.shared.showChat(chatView)
-        }
     }
     
     private func hideChatUI() {
@@ -108,7 +95,7 @@ public class Concierge: NSObject, Extension {
             // Hide SwiftUI overlay if present
             ConciergeOverlayManager.shared.hideChat()
 
-            // Also remove UIKit-hosted controller if present
+            // Remove UIKit hosted controller if present
             if let controller = Concierge.presentedUIKitController {
                 controller.willMove(toParent: nil)
                 controller.view.removeFromSuperview()
