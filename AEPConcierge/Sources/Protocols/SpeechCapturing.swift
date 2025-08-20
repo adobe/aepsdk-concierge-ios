@@ -12,7 +12,7 @@
 
 import Foundation
 
-public protocol SpeechCapturing {
+public protocol SpeechCapturing: AnyObject {
     var responseProcessor: ((String) -> Void)? { get set }
     
     func initialize(responseProcessor: ((String) -> Void)?)

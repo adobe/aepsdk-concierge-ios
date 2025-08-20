@@ -11,24 +11,14 @@
  */
 
 import SwiftUI
-import Lottie
 
-struct LottieView: UIViewRepresentable {
-    let name: String
-    
-    func makeUIView(context: Context) -> LottieAnimationView {
-        let animationView = LottieAnimationView(name: name)
-        animationView.loopMode = .loop
-        animationView.contentMode = .scaleAspectFit
-        animationView.play()
-        
-        return animationView
+struct ComposerDisclaimer: View {
+    var body: some View {
+        Text("AI responses may be inaccurate or misleading. Be sure to double check answers and sources.")
+            .font(.system(.footnote))
+            .foregroundColor(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
-    
-    func updateUIView(_ uiView: LottieAnimationView, context: Context) {
-        uiView.animation = LottieAnimation.named(name)
-        uiView.loopMode = .loop
-        uiView.contentMode = .scaleAspectFit
-        uiView.play()
-    }
-} 
+}
+
+

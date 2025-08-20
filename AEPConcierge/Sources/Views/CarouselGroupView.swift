@@ -12,6 +12,7 @@
 
 import SwiftUI
 
+/// Horizontally paged carousel of message cards with a page indicator.
 struct CarouselGroupView: View {
     let items: [Message]
     @State private var currentIndex = 0
