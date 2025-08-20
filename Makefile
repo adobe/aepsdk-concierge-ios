@@ -22,7 +22,7 @@ IOS_ARCHIVE_PATH = $(CURR_DIR)/build/ios.xcarchive/Products/Library/Frameworks/
 IOS_ARCHIVE_DSYM_PATH = $(CURR_DIR)/build/ios.xcarchive/dSYMs/
 
 # CI variables with defaults. Update the defaults for local development as needed.
-IOS_DEVICE_NAME ?= iPhone 15
+IOS_DEVICE_NAME ?= iPhone 16
 # If OS version is not specified, uses the first device name match in the list of available simulators
 IOS_VERSION ?= 
 ifeq ($(strip $(IOS_VERSION)),)
@@ -30,29 +30,6 @@ ifeq ($(strip $(IOS_VERSION)),)
 else
     IOS_DESTINATION = "platform=iOS Simulator,name=$(IOS_DEVICE_NAME),OS=$(IOS_VERSION)"
 endif
-
-clean-derived-data:
-	@if [ -z "$(SCHEME)" ]; then \
-		echo "Error: SCHEME variable is not set."; \
-		exit 1; \
-	fi; \
-	if [ -z "$(DESTINATION)" ]; then \
-		echo "Error: DESTINATION variable is not set."; \
-		exit 1; \
-	fi; \
-	echo "Cleaning derived data for scheme: $(SCHEME) with destination: $(DESTINATION)"; \
-	DERIVED_DATA_PATH=`xcodebuild -workspace $(PROJECT_NAME).xcworkspace -scheme "$(SCHEME)" -destination "$(DESTINATION)" -showBuildSettings | grep -m1 'BUILD_DIR' | awk '{print $$3}' | sed 's|/Build/Products||'`; \
-	echo "DerivedData Path: $$DERIVED_DATA_PATH"; \
-	\
-	LOGS_TEST_DIR=$$DERIVED_DATA_PATH/Logs/Test; \
-	echo "Logs Test Path: $$LOGS_TEST_DIR"; \
-	\
-	if [ -d "$$LOGS_TEST_DIR" ]; then \
-		echo "Removing existing .xcresult files in $$LOGS_TEST_DIR"; \
-		rm -rf "$$LOGS_TEST_DIR"/*.xcresult; \
-	else \
-		echo "Logs/Test directory does not exist. Skipping cleanup."; \
-	fi;
 
 setup-tools: install-githook
 
@@ -98,8 +75,8 @@ build-ios:
 	@echo "######################################################################"
 	@echo "### Building iOS archive"
 	@echo "######################################################################"
-	xcodebuild archive -workspace $(PROJECT_NAME).xcworkspace -scheme $(SCHEME_NAME_XCFRAMEWORK) -archivePath "./build/ios.xcarchive" -sdk iphoneos -destination="iOS" SKIP_INSTALL=NO BUILD_LIBRARIES_FOR_DISTRIBUTION=YES ADB_SKIP_LINT=YES
-	xcodebuild archive -workspace $(PROJECT_NAME).xcworkspace -scheme $(SCHEME_NAME_XCFRAMEWORK) -archivePath "./build/ios_simulator.xcarchive" -sdk iphonesimulator -destination="iOS Simulator" SKIP_INSTALL=NO BUILD_LIBRARIES_FOR_DISTRIBUTION=YES ADB_SKIP_LINT=YES
+	xcodebuild archive -workspace $(PROJECT_NAME).xcworkspace -scheme $(SCHEME_NAME_XCFRAMEWORK) -archivePath "./build/ios.xcarchive" -sdk iphoneos -destination="iOS" SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES ADB_SKIP_LINT=YES
+	xcodebuild archive -workspace $(PROJECT_NAME).xcworkspace -scheme $(SCHEME_NAME_XCFRAMEWORK) -archivePath "./build/ios_simulator.xcarchive" -sdk iphonesimulator -destination="iOS Simulator" SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES ADB_SKIP_LINT=YES
 
 zip:
 	cd build && zip -r -X $(PROJECT_NAME).xcframework.zip $(PROJECT_NAME).xcframework/
@@ -117,15 +94,15 @@ unit-test-ios:
 	@echo "######################################################################"
 	@echo "### Unit Testing iOS"
 	@echo "######################################################################"
-	@$(MAKE) clean-derived-data SCHEME=UnitTests DESTINATION=$(IOS_DESTINATION)
-	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "UnitTests" -destination $(IOS_DESTINATION) -enableCodeCoverage YES ADB_SKIP_LINT=YES
+	rm -rf build/reports/iosUnitResults.xcresult
+	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "UnitTests" -destination $(IOS_DESTINATION) -derivedDataPath build/out -resultBundlePath build/reports/iosUnitResults.xcresult -enableCodeCoverage YES ADB_SKIP_LINT=YES
 
 functional-test-ios:
 	@echo "######################################################################"
 	@echo "### Functional Testing iOS"
 	@echo "######################################################################"
-	@$(MAKE) clean-derived-data SCHEME=FunctionalTests DESTINATION=$(IOS_DESTINATION)
-	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "FunctionalTests" -destination $(IOS_DESTINATION) -enableCodeCoverage YES ADB_SKIP_LINT=YES
+	rm -rf build/reports/iosFunctionalResults.xcresult
+	xcodebuild test -workspace $(PROJECT_NAME).xcworkspace -scheme "FunctionalTests" -destination $(IOS_DESTINATION) -resultBundlePath build/reports/iosFunctionalResults.xcresult -enableCodeCoverage YES ADB_SKIP_LINT=YES
 
 install-githook:
 	git config core.hooksPath .githooks
