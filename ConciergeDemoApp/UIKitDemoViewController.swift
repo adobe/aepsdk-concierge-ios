@@ -17,24 +17,18 @@ import AEPConcierge
 final class ConciergeUIKitDemoViewController: UIViewController {
     private let openButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Present Chat (UIKit)", for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = UIColor.systemRed
-        button.layer.cornerRadius = 12
-        button.contentEdgeInsets = UIEdgeInsets(top: 14, left: 20, bottom: 14, right: 20)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-
-    private let hideButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Hide Chat", for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        button.setTitleColor(.systemRed, for: .normal)
-        button.backgroundColor = UIColor.secondarySystemBackground
-        button.layer.cornerRadius = 10
-        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+        var config = UIButton.Configuration.filled()
+        config.title = "Open chat (UIKit)"
+        config.baseBackgroundColor = .systemRed
+        config.baseForegroundColor = .white
+        config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20)
+        config.cornerStyle = .medium
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+            return outgoing
+        }
+        button.configuration = config
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -44,27 +38,19 @@ final class ConciergeUIKitDemoViewController: UIViewController {
         view.backgroundColor = .systemBackground
 
         view.addSubview(openButton)
-        view.addSubview(hideButton)
 
         NSLayoutConstraint.activate([
             openButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            openButton.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -12),
-
-            hideButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            hideButton.topAnchor.constraint(equalTo: openButton.bottomAnchor, constant: 16)
+            openButton.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
 
         openButton.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
-        hideButton.addTarget(self, action: #selector(hideTapped), for: .touchUpInside)
     }
 
     @objc private func openTapped() {
         Concierge.present(on: self, title: "Concierge", subtitle: "Powered by Adobe")
     }
 
-    @objc private func hideTapped() {
-        Concierge.hide()
-    }
 }
 
 
