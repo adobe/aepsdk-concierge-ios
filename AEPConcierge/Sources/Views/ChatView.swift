@@ -11,219 +11,143 @@
  */
 
 import SwiftUI
-import AVFoundation
-import Speech
+
 import AEPServices
 
 public struct ChatView: View {
     private let LOG_TAG = "ChatView"
-    
-    @State private var messages: [Message] = []
-    @State private var isRecording = false
-    @State private var isProcessing = false
-    
-    private let parent: Concierge?
-    
-    private let speechCapturer: SpeechCapturing?
+
+    // MARK: Environment
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.conciergeTheme) private var theme
+    @StateObject private var viewModel: ConciergeChatViewModel
+    @ObservedObject private var reducer: InputReducer
+    @State private var showAgentSend: Bool = false
+    @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
+    @State private var composerHeight: CGFloat = 0
+
+    // MARK: Dependencies and configuration
     private let textSpeaker: TextSpeaking?
-    private var currentMessageIndex: Int {
-        messages.count - 1
-    }
+    // Close handler for UIKit hosting
+    private let onClose: (() -> Void)?
+    // Header content
+    private let titleText: String
+    private let subtitleText: String?
+
+    // MARK: Derived values
+    private var currentMessageIndex: Int { viewModel.messages.count - 1 }
     
+    // MARK: UI values
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        
-    public init(parent: Concierge? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
-        self.parent = parent
+    private var composerBackgroundColor: Color {
+        colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
+    }
+    private var composerBorderColor: Color {
+        Color(UIColor.separator)
+    }
+
+    // MARK: - Initializers
+    // Public initializer – callers do not need to (and cannot) pass the chat service.
+    public init(
+        speechCapturer: SpeechCapturing? = nil,
+        textSpeaker: TextSpeaking? = nil,
+        title: String = "Concierge",
+        subtitle: String? = "Powered by Adobe",
+        onClose: (() -> Void)? = nil
+    ) {
         self.textSpeaker = textSpeaker
-        self.speechCapturer = speechCapturer ?? SpeechCapturer()
+        self.titleText = title
+        self.subtitleText = subtitle
+        self.onClose = onClose
+        let vm = ConciergeChatViewModel(
+            chatService: ConciergeChatService(),
+            speechCapturer: speechCapturer ?? SpeechCapturer(),
+            speaker: textSpeaker
+        )
+        _viewModel = StateObject(wrappedValue: vm)
+        _reducer = ObservedObject(wrappedValue: vm.inputReducer)
     }
-        
+
     // internal use only for previews
-    init(parent: Concierge? = nil, messages: [Message]) {
-        self.messages = messages
-        self.parent = nil
-        self.speechCapturer = nil
+    init(messages: [Message]) {
         self.textSpeaker = nil
+        self.titleText = "Concierge"
+        self.subtitleText = "Powered by Adobe"
+        self.onClose = nil
+        let vm = ConciergeChatViewModel(chatService: ConciergeChatService(), speechCapturer: nil, speaker: nil)
+        vm.messages = messages
+        _viewModel = StateObject(wrappedValue: vm)
+        _reducer = ObservedObject(wrappedValue: vm.inputReducer)
     }
     
+    // MARK: - Body
     public var body: some View {
-        if #available(iOS 16.4, *) {
-            mainView
-                .background(.clear)
-                .presentationBackground(.clear)
-        } else {
-            mainView
-                .background(Color.clear)
-        }
-    }
-    
-    private var mainView: some View {
-        ZStack {
-            // Border glow effect with increased width and blur
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white, lineWidth: 4)
-                .blur(radius: 8)
+        ZStack(alignment: .bottom) {
+            // Full background color ignoring safe area (dynamic for light/dark)
+            Color(.systemBackground)
                 .ignoresSafeArea()
-            
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
-            
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        parent?.hideChatUI()
-                    }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.Secondary)
-                            .clipShape(Circle())
-                    }
-                }
-                .padding(.top)
-                .overlay(
-                    VStack(spacing: 4) {
-                        Text("Concierge")
-                            .font(.system(.title, design: .rounded))
-                            .bold()
-                            .foregroundColor(Color.Secondary)
-                        Text("Powered by Adobe")
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                        .padding(.top, 20)
-                        .frame(maxWidth: .infinity)
-                )
-                
-                ScrollView {
-                    VStack(spacing: 15) {
-                        ForEach(messages) { message in
-                            message.chatMessageView.onAppear {
-                                if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
-                                    textSpeaker?.utter(text: messageBody)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.bottom, 90)
-                }
-                .padding(.top, 15)
-                
-                Spacer()
+
+            MessageListView(messages: viewModel.messages) { text in
+                textSpeaker?.utter(text: text)
             }
-            .overlay(
-                ZStack {
-                    // Mic button
-                    Button(action: handleMicTap) {
-                        if !isRecording && !isProcessing {
-                            Image(systemName: "mic.circle.fill")
-                                .font(.system(size: 64))
-                                .foregroundColor(Color.PrimaryLight)
-                                .background(Circle().fill(Color.white))
-                                .clipShape(Circle())
-                        } else {
-                            LottieView(name: isProcessing ? "thinking" : "listening")
-                                .scaleEffect(0.35)
-                                .frame(width: 64, height: 64)
-                                .padding(.bottom, 15)
-                        }
+        }
+        // Safe area respecting top bar
+        .safeAreaInset(edge: .top) {
+            ChatTopBar(
+                showAgentSend: $showAgentSend,
+                title: titleText,
+                subtitle: subtitleText,
+                onToggleMode: { isAgent in
+                    if isAgent {
+                        viewModel.chatState = .idle
                     }
-                    .disabled(isProcessing)
+                },
+                onClose: {
+                    if let onClose = onClose {
+                        onClose()
+                    } else {
+                        Concierge.hide()
+                    }
                 }
-                    .padding(.bottom, 20),
-                alignment: .bottom
+            )
+        }
+        // Safe area respecting bottom composer
+        .safeAreaInset(edge: .bottom) {
+            ChatComposer(
+                inputText: Binding(
+                    get: { reducer.data.text },
+                    set: { viewModel.applyTextChange($0) }
+                ),
+                selectedRange: $selectedTextRange,
+                measuredHeight: $composerHeight,
+                inputState: reducer.state,
+                chatState: viewModel.chatState,
+                composerEditable: viewModel.chatState != .processing && reducer.state != .recording && reducer.state != .transcribing,
+                micEnabled: viewModel.micEnabled,
+                sendEnabled: viewModel.chatState == .idle && reducer.data.canSend,
+                onEditingChanged: { _ in },
+                onMicTap: handleMicTap,
+                onCancel: { viewModel.cancelMic() },
+                onComplete: { viewModel.completeMic() },
+                onSend: sendTapped
             )
         }
         .onAppear {
-            speechCapturer?.initialize(responseProcessor: processSpeechData)
             hapticFeedback.prepare()
         }
     }
     
+    // MARK: - Actions
+    private func sendTapped() {
+        viewModel.sendMessage(isUser: !showAgentSend)
+    }
+
     private func handleMicTap() {
-        isRecording.toggle()
-        
-        if isRecording {
-            speechCapturer?.beginCapture()
-            // Create the user message immediately
-            messages.append(Message(template: .basic(isUserMessage: true), messageBody: ""))
+        if viewModel.isRecording {
+            viewModel.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
-            speechCapturer?.endCapture() { transcription, error in
-                processTranscription(transcription, error: error)
-            }
-        }
-    }
-        
-    private func processTranscription(_ transcription: String?, error: Error?) {
-        guard let transcription = transcription, !transcription.isEmpty else {
-            Log.trace(label: LOG_TAG, "Unable to process a transcription that was nil or empty.")
-            messages.removeLast()
-            return
-        }
-        
-        isProcessing = true
-        
-        parent?.conciergeChatService.processChat(transcription) { conciergeResponse, conciergeError in
-            if conciergeError != nil {
-                // handle error
-                return
-            }
-            
-            guard let response = conciergeResponse else {
-                return
-            }
-            
-            processResponse(response)
-        }
-    }
-        
-    private func processResponse(_ response: ConciergeResponse) {
-        guard let message = response.interaction.response.first?.message else {
-            print("we didn't get a response from the Chat API")
-            return
-        }
-        
-        messages.append(Message(template: .divider))
-        
-        messages.append(Message(
-            template: .basic(isUserMessage: false),
-            shouldSpeakMessage: true,
-            messageBody: message.opening
-        ))
-        
-        if let items = message.items {
-            messages.append(Message(template: .divider))
-            
-            var itemNumber = 1
-            items.forEach { item in
-                messages.append(Message(
-                    template: .numbered(
-                        number: itemNumber,
-                        title: item.title,
-                        body: item.introduction
-                    )
-                ))
-                itemNumber += 1
-            }
-        }
-        
-        if let closing = message.ending {
-            messages.append(Message(template: .divider))
-            messages.append(Message(
-                template: .basic(isUserMessage: false),
-                messageBody: closing
-            ))
-        }
-        
-        messages.append(Message(template: .divider))
-    }
-    
-    private func processSpeechData(_ text: String) {
-        DispatchQueue.main.async {
-            // Update the message body directly instead of through chatMessageView
-            messages[currentMessageIndex].messageBody = text
+            hapticFeedback.impactOccurred()
+            viewModel.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }
     }
 }

@@ -13,9 +13,11 @@
 import SwiftUI
 
 struct ChatMessageView: View {
+    @Environment(\.conciergeTheme) private var theme
+
     let template: MessageTemplate
     var messageBody: String?
-    
+
     init(template: MessageTemplate, messageBody: String? = nil) {
         self.template = template
         self.messageBody = messageBody
@@ -30,16 +32,19 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
             
         case .basic(let isUserMessage):
-            HStack {
+            HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
-                
+
                 Text(messageBody ?? "")
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .foregroundColor(isUserMessage ? Color.PrimaryDark : Color.TextBody)
-                    .background(isUserMessage ? Color.white : Color.PrimaryLight)
-                    .cornerRadius(10)
-                
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(isUserMessage ? theme.primary : theme.agentBubble)
+                    )
+                    .compositingGroup()
+
                 if !isUserMessage { Spacer() }
             }
             

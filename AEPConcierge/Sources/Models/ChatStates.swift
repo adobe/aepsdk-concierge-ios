@@ -10,20 +10,36 @@
  governing permissions and limitations under the License.
  */
 
-import SwiftUI
+import Foundation
 
-/// Dots indicator for paged content, highlighting the current page.
-struct PageIndicator: View {
-    let numberOfPages: Int
-    @Binding var currentIndex: Int
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<numberOfPages, id: \.self) { index in
-                Circle()
-                    .fill(index == currentIndex ? Color.TextTitle : Color.TextBody.opacity(0.5))
-                    .frame(width: 8, height: 8)
-            }
-        }
-    }
-} 
+// MARK: - Input Stream State Machine
+
+public enum InputError: Error, Equatable {
+    case permissionDenied
+    case transcriptionFailed
+    case unknown
+}
+
+public enum InputState: Equatable {
+    case empty
+    case editing
+    case recording
+    case transcribing
+    case error(InputError)
+}
+
+// MARK: - Chat Controller State Machine
+
+public enum ChatError: Error, Equatable {
+    case networkFailure
+    case modelError
+    case cancelled
+}
+
+public enum ChatState: Equatable {
+    case idle
+    case processing
+    case error(ChatError)
+}
+
+

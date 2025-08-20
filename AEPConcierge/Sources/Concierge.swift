@@ -10,10 +10,10 @@
  governing permissions and limitations under the License.
  */
 
+import SwiftUI
+
 import AEPCore
 import AEPServices
-import Foundation
-import SwiftUI
 
 @objc(AEPMobileConcierge)
 public class Concierge: NSObject, Extension {
@@ -27,7 +27,9 @@ public class Concierge: NSObject, Extension {
     // MARK: - class properties
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
-    static var containingView: AnyView?
+    static var chatTitle: String = "Concierge"
+    static var chatSubtitle: String? = "Powered by Adobe"
+    static var presentedUIKitController: UIViewController?
     
     let conciergeChatService: ConciergeChatService
     var chatView: ChatView? = nil
@@ -79,30 +81,10 @@ public class Concierge: NSObject, Extension {
         
         return true
     }
-    
-    func handleEvent(_ event: Event) {
-        showChatUI()
-    }
-    
-    // MARK: - private methods
-    func showChatUI() {
-        if chatView == nil {
-            chatView = ChatView(parent: self, speechCapturer: Concierge.speechCapturer, textSpeaker: Concierge.textSpeaker)
-        }
-        
-        // Present using UIKit window
-        presentChatViewModally()
-    }
-    
-    private func presentChatViewModally() {
-        guard let chatView = chatView else { return }
-        
-        // Use state manager to show chat
-        ConciergeStateManager.shared.showChat(chatView)
-    }
-    
-    func hideChatUI() {
-        // Use state manager to hide chat
-        ConciergeStateManager.shared.hideChat()
+
+    // MARK: - Private methods
+
+    private func handleEvent(_ event: Event) {
+        Log.trace(label: Constants.LOG_TAG, "Received show chat UI event.")
     }
 }

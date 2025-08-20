@@ -12,13 +12,14 @@
 
 import AVFoundation
 import Speech
+
 import AEPServices
 
 class SpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
     
-    // MARK: - private members
     private let LOG_TAG = "SpeechCapturer"
+    private var isCapturing: Bool = false
     
     private let speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -42,6 +43,13 @@ class SpeechCapturer: SpeechCapturing {
     }
     
     func beginCapture() {
+        // Prevent double-starts
+        if isCapturing {
+            Log.warning(label: self.LOG_TAG, "beginCapture ignored. Capturing is already in progress.")
+            return
+        }
+        isCapturing = true
+        currentTranscription = ""
         // Cancel any existing recognition task
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -55,25 +63,35 @@ class SpeechCapturer: SpeechCapturing {
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
         } catch {
-            print("Failed to set up audio session: \(error)")
+            Log.error(label: self.LOG_TAG, "Failed to set up audio session: \(error)")
+            isCapturing = false
             return
         }
         
+        // Ensure a clean slate on the input node
+        let inputNode = audioEngine.inputNode
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        inputNode.removeTap(onBus: 0)
+
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         if #available(iOS 16, *) {
             recognitionRequest?.addsPunctuation = true
         }
         
-        let inputNode = audioEngine.inputNode
         guard let recognitionRequest = recognitionRequest else {
-            print("Unable to create recognition request")
+            Log.error(label: self.LOG_TAG, "Unable to create recognition request")
+            isCapturing = false
             return
         }
         
-        recognitionRequest.shouldReportPartialResults = true        
+        recognitionRequest.shouldReportPartialResults = true
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
             if let result = result {
-                self.responseProcessor?(result.bestTranscription.formattedString)
+                let text = result.bestTranscription.formattedString
+                self.currentTranscription = text
+                self.responseProcessor?(text)
             }
             
             if error != nil {
@@ -81,6 +99,7 @@ class SpeechCapturer: SpeechCapturing {
                 inputNode.removeTap(onBus: 0)
                 self.recognitionRequest = nil
                 self.recognitionTask = nil
+                self.isCapturing = false
             }
         }
         
@@ -94,15 +113,18 @@ class SpeechCapturer: SpeechCapturing {
         do {
             try audioEngine.start()
         } catch {
-            print("Failed to start audio engine: \(error)")
+            Log.error(label: self.LOG_TAG, "Failed to start audio engine: \(error)")
+            isCapturing = false
         }
     }
     
     func endCapture(completion: @escaping (String?, (any Error)?) -> Void) {
-        audioEngine.stop()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
-        
+        isCapturing = false
         completion(currentTranscription, nil)
     }
     

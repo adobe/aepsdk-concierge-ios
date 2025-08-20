@@ -12,33 +12,19 @@
 
 import SwiftUI
 
-// TODO: - this needs to not be public and colors should be read from configuration
-public extension Color {
-    static var TextTitle: Color {
-        // white
-        Color.white
-    }
-    
-    static var TextBody: Color {
-        // grey
-        Color(hex: 0xFFD6D6D6)
-    }
-    
-    static var PrimaryLight: Color {
-        // navy
-        Color(hex: 0xFF001A36)
-    }
-    
-    static var PrimaryDark: Color {
-        // navy
-        Color(hex: 0xFF001F48)
-    }
-    
-    static var Secondary: Color {
-        // maroon
-        Color(hex: 0xFF8F0000)
-    }
-    
+// Library defaults should rely on system colors; apps can brand via .tint and their own extensions.
+extension Color {
+    // MARK: - Semantic colors (system-based defaults)
+    static var TextTitle: Color { Color.primary }
+    static var TextBody: Color { Color.secondary }
+
+    // Use environment accent color for accents, and system backgrounds for surfaces
+    static var Primary: Color { Color.accentColor }
+    static var Secondary: Color { Color.accentColor }
+    static var PrimaryLight: Color { Color(UIColor.secondarySystemBackground) }
+    static var PrimaryDark: Color { Color(UIColor.systemBackground) }
+
+    // Convenience initializer for hex RGB (e.g., 0xEB1000)
     init(hex: UInt, alpha: Double = 1) {
         self.init(
             .sRGB,
@@ -48,4 +34,4 @@ public extension Color {
             opacity: alpha
         )
     }
-} 
+}

@@ -12,18 +12,18 @@
 
 import SwiftUI
 
-/// Dots indicator for paged content, highlighting the current page.
-struct PageIndicator: View {
-    let numberOfPages: Int
-    @Binding var currentIndex: Int
-    
+/// Presents an icon from the asset catalog with an SF Symbol fallback.
+struct BrandIcon: View {
+    let assetName: String
+    let systemName: String
+
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<numberOfPages, id: \.self) { index in
-                Circle()
-                    .fill(index == currentIndex ? Color.TextTitle : Color.TextBody.opacity(0.5))
-                    .frame(width: 8, height: 8)
-            }
+        if let uiImage = UIImage(named: assetName) {
+            Image(uiImage: uiImage).renderingMode(.template)
+        } else {
+            Image(systemName: systemName).renderingMode(.template)
         }
     }
-} 
+}
+
+

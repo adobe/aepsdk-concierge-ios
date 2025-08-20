@@ -33,11 +33,9 @@ $dev_branch = 'dev'
 def lib_main
     pod 'AEPCore'
     pod 'AEPServices'
-    pod 'lottie-ios'
 end
 
 def lib_dev
-    pod 'lottie-ios'
     pod 'AEPCore', :git => $dev_repo, :branch => $dev_branch
     pod 'AEPServices', :git => $dev_repo, :branch => $dev_branch
 end
