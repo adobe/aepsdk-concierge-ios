@@ -29,7 +29,7 @@ struct ContentView: View {
                             subtitle: "Powered by Adobe"
                         )
                     }) {
-                        Text("Open Chat (SwiftUI)")
+                        Text("Open chat (SwiftUI)")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                             .padding(.vertical, 16)
@@ -52,6 +52,8 @@ struct ContentView: View {
                         secondary: .Brand.red,
                         onPrimary: .white,
                         textBody: .primary,
+                        agentBubble: Color(UIColor.systemGray5),
+                        onAgent: .primary,
                         surfaceLight: Color(UIColor.secondarySystemBackground),
                         surfaceDark: Color(UIColor.systemBackground)
                     )
@@ -70,7 +72,6 @@ struct ContentView: View {
 private struct UIKitDemoScreen: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UINavigationController {
         let root = ConciergeUIKitDemoViewController()
-        root.title = "UIKit Demo"
         let nav = UINavigationController(rootViewController: root)
         return nav
     }
