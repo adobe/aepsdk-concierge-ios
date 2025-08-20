@@ -49,6 +49,7 @@ class SpeechCapturer: SpeechCapturing {
             return
         }
         isCapturing = true
+        currentTranscription = ""
         // Cancel any existing recognition task
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -85,10 +86,12 @@ class SpeechCapturer: SpeechCapturing {
             return
         }
         
-        recognitionRequest.shouldReportPartialResults = true        
+        recognitionRequest.shouldReportPartialResults = true
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
             if let result = result {
-                self.responseProcessor?(result.bestTranscription.formattedString)
+                let text = result.bestTranscription.formattedString
+                self.currentTranscription = text
+                self.responseProcessor?(text)
             }
             
             if error != nil {
