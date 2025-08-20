@@ -38,13 +38,12 @@ struct ChatMessageView: View {
                 Text(messageBody ?? "")
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .foregroundColor(theme.onPrimary)
+                    .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(theme.primary)
+                            .fill(isUserMessage ? theme.primary : theme.agentBubble)
                     )
                     .compositingGroup()
-                    .drawingGroup()
 
                 if !isUserMessage { Spacer() }
             }
