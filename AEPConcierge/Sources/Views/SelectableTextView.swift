@@ -58,11 +58,32 @@ struct SelectableTextView: UIViewRepresentable {
         if uiView.text != text {
             uiView.text = text
         }
-        uiView.isEditable = isEditable
+        // Defer editable state changes and only apply the value when it differs from the last value to avoid
+        // first responder recalculation during the same layout pass (which can cause AttributeGraph cycles)
+        if context.coordinator.lastIsEditable != isEditable {
+            context.coordinator.lastIsEditable = isEditable
+            DispatchQueue.main.async {
+                if !isEditable, uiView.isFirstResponder {
+                    uiView.resignFirstResponder()
+                }
+                uiView.isEditable = isEditable
+            }
+        }
         context.coordinator.placeholderLabel?.isHidden = !text.isEmpty
         context.coordinator.recalculateHeight(uiView)
+        // Avoid forcing immediate layout; allow the system to coalesce updates
         uiView.setNeedsLayout()
-        uiView.layoutIfNeeded()
+
+        // Make the text view first responder asynchronously once it's in a window to avoid AttributeGraph cycles
+        if uiView.window != nil,
+           uiView.isFirstResponder == false,
+           context.coordinator.didBecomeFirstResponder == false,
+           isEditable {
+            DispatchQueue.main.async {
+                uiView.becomeFirstResponder()
+                context.coordinator.didBecomeFirstResponder = true
+            }
+        }
 
         if uiView.window != nil, uiView.isFirstResponder == false {
             // Keep cursor positioned where the binding says
@@ -76,7 +97,10 @@ struct SelectableTextView: UIViewRepresentable {
                 }
             }
             // Only auto scroll on text change, not on selection change
-            context.coordinator.scrollToBottom(uiView)
+            // Defer scroll to the next runloop to avoid layout feedback
+            DispatchQueue.main.async {
+                context.coordinator.scrollToBottom(uiView)
+            }
         }
     }
 
@@ -88,6 +112,8 @@ struct SelectableTextView: UIViewRepresentable {
         var parent: SelectableTextView
         var isSettingSelectionProgrammatically: Bool = false
         weak var placeholderLabel: UILabel?
+        var didBecomeFirstResponder: Bool = false
+        var lastIsEditable: Bool? = nil
 
         init(_ parent: SelectableTextView) {
             self.parent = parent
