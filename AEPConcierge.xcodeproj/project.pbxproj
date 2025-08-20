@@ -6,7 +6,24 @@
 	objectVersion = 56;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		24317C9F2E5525E200F138E9 /* AEPConciergeXCF */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 24317CA22E5525E200F138E9 /* Build configuration list for PBXAggregateTarget "AEPConciergeXCF" */;
+			buildPhases = (
+			);
+			dependencies = (
+				24317CA42E5526A200F138E9 /* PBXTargetDependency */,
+			);
+			name = AEPConciergeXCF;
+			packageProductDependencies = (
+			);
+			productName = AEPConciergeXCF;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
+		24317CA62E55345100F138E9 /* ConversationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CA52E55340000F138E9 /* ConversationService.swift */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
@@ -71,6 +88,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		24317CA32E5526A200F138E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 249899402D6679790005CBD7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 249899482D6679790005CBD7;
+			remoteInfo = AEPConcierge;
+		};
 		249899552D6679790005CBD7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 249899402D6679790005CBD7 /* Project object */;
@@ -90,6 +114,7 @@
 /* Begin PBXFileReference section */
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
+		24317CA52E55340000F138E9 /* ConversationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationService.swift; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeInteraction.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
@@ -204,6 +229,7 @@
 		2482FDDE2E3BED5A0032F3CA /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				24317CA52E55340000F138E9 /* ConversationService.swift */,
 				2482FDDF2E3BED830032F3CA /* SpeechCapturer.swift */,
 				2482FDE12E3C14C10032F3CA /* TextSpeaker.swift */,
 			);
@@ -514,6 +540,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					24317C9F2E5525E200F138E9 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					249899482D6679790005CBD7 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -539,6 +568,7 @@
 			projectRoot = "";
 			targets = (
 				249899482D6679790005CBD7 /* AEPConcierge */,
+				24317C9F2E5525E200F138E9 /* AEPConciergeXCF */,
 				249899522D6679790005CBD7 /* UnitTests */,
 				2498999C2D67CCD20005CBD7 /* ConciergeDemoApp */,
 			);
@@ -730,6 +760,7 @@
 				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,
+				24317CA62E55345100F138E9 /* ConversationService.swift in Sources */,
 				247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */,
 				2498997F2D6695E10005CBD7 /* Concierge+PublicAPI.swift in Sources */,
 				249899842D67C5F90005CBD7 /* Color+Extensions.swift in Sources */,
@@ -761,6 +792,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		24317CA42E5526A200F138E9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 249899482D6679790005CBD7 /* AEPConcierge */;
+			targetProxy = 24317CA32E5526A200F138E9 /* PBXContainerItemProxy */;
+		};
 		249899562D6679790005CBD7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 249899482D6679790005CBD7 /* AEPConcierge */;
@@ -774,6 +810,36 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		24317CA02E5525E200F138E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "";
+				DEVELOPMENT_TEAM = FKGEE875K4;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VERSIONING_SYSTEM = "";
+			};
+			name = Debug;
+		};
+		24317CA12E5525E200F138E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "";
+				DEVELOPMENT_TEAM = FKGEE875K4;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VERSIONING_SYSTEM = "";
+			};
+			name = Release;
+		};
 		2498995D2D6679790005CBD7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPConcierge.debug.xcconfig */;
@@ -987,14 +1053,17 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKGEE875K4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.AEPConciergeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "";
 			};
 			name = Debug;
 		};
@@ -1004,14 +1073,17 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FKGEE875K4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.AEPConciergeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "";
 			};
 			name = Release;
 		};
@@ -1037,6 +1109,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1072,6 +1145,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1088,6 +1162,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		24317CA22E5525E200F138E9 /* Build configuration list for PBXAggregateTarget "AEPConciergeXCF" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				24317CA02E5525E200F138E9 /* Debug */,
+				24317CA12E5525E200F138E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		249899432D6679790005CBD7 /* Build configuration list for PBXProject "AEPConcierge" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
