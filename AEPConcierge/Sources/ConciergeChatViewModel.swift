@@ -138,6 +138,9 @@ final class ConciergeChatViewModel: ObservableObject {
             let base = inputTextAtRecordingStart as NSString
             let start = max(0, min(recordingInsertStart, base.length))
             inputText = base.substring(to: start) + transcript + base.substring(from: start)
+        } else {
+            // Discard any transcribed text that was shown during recording
+            inputText = inputTextAtRecordingStart
         }
         inputTextAtRecordingStart = inputText
         recordingInsertStart = (inputText as NSString).length
