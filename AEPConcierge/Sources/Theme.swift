@@ -17,6 +17,8 @@ public struct ConciergeTheme {
     public var secondary: Color
     public var onPrimary: Color
     public var textBody: Color
+    public var agentBubble: Color
+    public var onAgent: Color
     public var surfaceLight: Color
     public var surfaceDark: Color
 
@@ -25,6 +27,8 @@ public struct ConciergeTheme {
         secondary: Color = .accentColor,
         onPrimary: Color = .primary,
         textBody: Color = .secondary,
+        agentBubble: Color = Color(UIColor.secondarySystemBackground),
+        onAgent: Color = .primary,
         surfaceLight: Color = Color(UIColor.secondarySystemBackground),
         surfaceDark: Color = Color(UIColor.systemBackground)
     ) {
@@ -32,6 +36,8 @@ public struct ConciergeTheme {
         self.secondary = secondary
         self.onPrimary = onPrimary
         self.textBody = textBody
+        self.agentBubble = agentBubble
+        self.onAgent = onAgent
         self.surfaceLight = surfaceLight
         self.surfaceDark = surfaceDark
     }
