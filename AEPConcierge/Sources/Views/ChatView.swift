@@ -21,6 +21,7 @@ public struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
     @StateObject private var viewModel: ConciergeChatViewModel
+    @ObservedObject private var reducer: InputReducer
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
@@ -64,6 +65,7 @@ public struct ChatView: View {
             speaker: textSpeaker
         )
         _viewModel = StateObject(wrappedValue: vm)
+        _reducer = ObservedObject(wrappedValue: vm.inputReducer)
     }
 
     // internal use only for previews
@@ -75,6 +77,7 @@ public struct ChatView: View {
         let vm = ConciergeChatViewModel(chatService: ConciergeChatService(), speechCapturer: nil, speaker: nil)
         vm.messages = messages
         _viewModel = StateObject(wrappedValue: vm)
+        _reducer = ObservedObject(wrappedValue: vm.inputReducer)
     }
     
     // MARK: - Body
@@ -96,7 +99,6 @@ public struct ChatView: View {
                 subtitle: subtitleText,
                 onToggleMode: { isAgent in
                     if isAgent {
-                        viewModel.inputState = .editing
                         viewModel.chatState = .idle
                     }
                 },
@@ -112,29 +114,18 @@ public struct ChatView: View {
         // Safe area respecting bottom composer
         .safeAreaInset(edge: .bottom) {
             ChatComposer(
-                inputText: $viewModel.inputText,
+                inputText: Binding(
+                    get: { reducer.data.text },
+                    set: { viewModel.applyTextChange($0) }
+                ),
                 selectedRange: $selectedTextRange,
                 measuredHeight: $composerHeight,
-                inputState: viewModel.inputState,
+                inputState: reducer.state,
                 chatState: viewModel.chatState,
-                composerEditable: viewModel.composerEditable,
+                composerEditable: viewModel.chatState != .processing && reducer.state != .recording && reducer.state != .transcribing,
                 micEnabled: viewModel.micEnabled,
-                sendEnabled: viewModel.sendEnabled,
-                onEditingChanged: { began in
-                    // Publish on next turn of the runloop to avoid mutations during view updates
-                    Task { @MainActor in
-                        let current = viewModel.inputState
-                        if current == .recording || current == .transcribing { return }
-                        if began {
-                            viewModel.inputState = .editing
-                        } else {
-                            let isEmpty = viewModel.inputText
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-                                .isEmpty
-                            viewModel.inputState = isEmpty ? .empty : .editing
-                        }
-                    }
-                },
+                sendEnabled: viewModel.chatState == .idle && reducer.data.canSend,
+                onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
                 onCancel: { viewModel.cancelMic() },
                 onComplete: { viewModel.completeMic() },
@@ -143,8 +134,6 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
-            // initialize input machine for current text
-            viewModel.inputState = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
         }
     }
     

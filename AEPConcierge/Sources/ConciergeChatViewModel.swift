@@ -17,8 +17,8 @@ import AEPServices
 @MainActor
 final class ConciergeChatViewModel: ObservableObject {
     @Published var messages: [Message] = []
-    @Published var inputText: String = ""
-    @Published var inputState: InputState = .empty
+    var inputText: String { inputReducer.data.text }
+    var inputState: InputState { inputReducer.state }
     @Published var chatState: ChatState = .idle
 
     private let LOG_TAG = "ConciergeChatViewModel"
@@ -28,9 +28,8 @@ final class ConciergeChatViewModel: ObservableObject {
     private let speechCapturer: SpeechCapturing?
     private let speaker: TextSpeaking?
 
-    // MARK: Recording helpers
-    private var inputTextAtRecordingStart: String = ""
-    private var recordingInsertStart: Int = 0
+    // MARK: Input reducer
+    let inputReducer = InputReducer()
 
     init(chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.chatService = chatService
@@ -48,24 +47,20 @@ final class ConciergeChatViewModel: ObservableObject {
     }
     var composerEditable: Bool {
         chatState != .processing
-        && inputState != .recording
-        && inputState != .transcribing
+        && inputReducer.state != .recording
+        && inputReducer.state != .transcribing
     }
     var micEnabled: Bool {
         chatState == .idle
     }
     var sendEnabled: Bool {
-        chatState == .idle
-        && !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        chatState == .idle && inputReducer.data.canSend
     }
 
     // MARK: - Mic control
     func toggleMic(currentSelectionLocation: Int) {
-        if isRecording {
-            stopRecording(acceptTranscription: true)
-        } else {
-            startRecording(currentSelectionLocation: currentSelectionLocation)
-        }
+        if isRecording { completeMic() }
+        else { startRecording(currentSelectionLocation: currentSelectionLocation) }
     }
 
     func cancelMic() {
@@ -73,7 +68,8 @@ final class ConciergeChatViewModel: ObservableObject {
             Log.warning(label: self.LOG_TAG, "cancelMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
             return
         }
-        stopRecording(acceptTranscription: false)
+        inputReducer.apply(.cancelRecording)
+        speechCapturer?.endCapture { _, _ in }
     }
 
     func completeMic() {
@@ -81,7 +77,16 @@ final class ConciergeChatViewModel: ObservableObject {
             Log.warning(label: self.LOG_TAG, "completeMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
             return
         }
-        stopRecording(acceptTranscription: true)
+        inputReducer.apply(.recordingComplete)
+        speechCapturer?.endCapture { [weak self] transcript, _ in
+            Task { @MainActor in
+                if let t = transcript, !t.isEmpty {
+                    self?.inputReducer.apply(.transcriptionComplete(t))
+                } else {
+                    self?.inputReducer.apply(.transcriptionError("empty transcript"))
+                }
+            }
+        }
     }
 
     func startRecording(currentSelectionLocation: Int) {
@@ -89,7 +94,9 @@ final class ConciergeChatViewModel: ObservableObject {
             Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
             return
         }
-        guard inputState == .empty || inputState == .editing else {
+        guard inputState == .empty || inputState == .editing || {
+            if case .error = inputState { return true } else { return false }
+        }() else {
             Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected inputState to be 'empty' or 'editing', but was '\(inputState)'.")
             return
         }
@@ -99,54 +106,13 @@ final class ConciergeChatViewModel: ObservableObject {
             // inputState = .error(.permissionDenied)
             return
         }
-        inputTextAtRecordingStart = inputText
-        recordingInsertStart = max(0, min(currentSelectionLocation, (inputText as NSString).length))
-        // Flip to recording before kicking off capture so UI sticks even if focus callbacks fire
-        inputState = .recording
+        inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         capturer.beginCapture()
     }
 
-    func stopRecording(acceptTranscription: Bool) {
-        guard isRecording else {
-            Log.warning(label: self.LOG_TAG, "stopRecording ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
-            return
-        }
-        guard let capturer = speechCapturer else {
-            Log.warning(label: self.LOG_TAG, "stopRecording ignored. Expected speech capturer instance to be present, but it was nil.")
-            // We can't end capture—reset to a sane state
-            inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
-            chatState = .idle
-            return
-        }
-        // Update UI state depending on whether the transcription is going to be used or not
-        if acceptTranscription {
-            // Set the transcribing state while processing
-            inputState = .transcribing
-        } else {
-            // Otherwise change back to editable without a transcribing phase
-            inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
-        }
-        capturer.endCapture { [weak self] transcript, _ in
-            Task { @MainActor in
-                self?.finishTranscription(transcript, acceptTranscription: acceptTranscription)
-            }
-        }
-    }
+    // stopRecording behavior moved into cancel/complete + reducer
 
-    private func finishTranscription(_ transcript: String?, acceptTranscription: Bool) {
-        if acceptTranscription, let transcript = transcript, !transcript.isEmpty {
-            let base = inputTextAtRecordingStart as NSString
-            let start = max(0, min(recordingInsertStart, base.length))
-            inputText = base.substring(to: start) + transcript + base.substring(from: start)
-        } else {
-            // Discard any transcribed text that was shown during recording
-            inputText = inputTextAtRecordingStart
-        }
-        inputTextAtRecordingStart = inputText
-        recordingInsertStart = (inputText as NSString).length
-        inputState = inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing
-        chatState = .idle
-    }
+    // finishTranscription handled by reducer via transcriptionComplete/error
 
     // MARK: - Sending
     func sendMessage(isUser: Bool) {
@@ -160,12 +126,12 @@ final class ConciergeChatViewModel: ObservableObject {
             return
         }
 
-        if isRecording {
-            stopRecording(acceptTranscription: true)
-        }
+        if isRecording { completeMic() }
+
+        // Clear input via reducer to keep state machine consistent
+        inputReducer.apply(.sendMessage)
 
         messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
-        inputText = ""
 
         if isUser {
             chatState = .processing
@@ -183,7 +149,7 @@ final class ConciergeChatViewModel: ObservableObject {
                 }
             }
         } else {
-            inputState = .editing
+            // Non-user messages don't mutate input state here; reducer already cleared input
             chatState = .idle
         }
     }
@@ -212,7 +178,6 @@ final class ConciergeChatViewModel: ObservableObject {
         }
 
         messages.append(Message(template: .divider))
-        inputState = .editing
         chatState = .idle
     }
 
@@ -220,20 +185,25 @@ final class ConciergeChatViewModel: ObservableObject {
     private func configureSpeech() {
         speechCapturer?.initialize(responseProcessor: { [weak self] text in
             Task { @MainActor in
-                self?.processStreaming(text: text)
+                self?.inputReducer.apply(.streamingPartial(text))
             }
         })
     }
 
-    private func processStreaming(text: String) {
-        guard inputState == .recording else {
-            Log.warning(label: self.LOG_TAG, "processStreaming ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
-            return
+    // MARK: - Text changes routing to reducer
+    func applyTextChange(_ newText: String) {
+        let wasEmpty = inputReducer.data.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let isEmptyNew = newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if isEmptyNew && !wasEmpty {
+            inputReducer.apply(.deleteContent)
+        } else if !isEmptyNew && wasEmpty {
+            inputReducer.apply(.addContent)
         }
-        let base = inputTextAtRecordingStart as NSString
-        let start = max(0, min(recordingInsertStart, base.length))
-        inputText = base.substring(to: start) + text + base.substring(from: start)
+        inputReducer.apply(.inputReceived(newText))
     }
+
+    // MARK: - Combine
+    // No additional subscriptions; views may observe reducer directly
 }
 
 
