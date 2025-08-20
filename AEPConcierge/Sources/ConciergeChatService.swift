@@ -38,6 +38,7 @@ struct ConciergeChatService {
         
         ServiceProvider.shared.networkService.connectAsync(networkRequest: networkRequest) { connection in
             if let error = connection.error {
+                print(error)
                 if connection.responseCode == 404 {
                     completionHandler(nil, .unreachable)
                     return
@@ -56,26 +57,26 @@ struct ConciergeChatService {
     }
     
     func clearConciergeSession() {
-        guard let url = URL(string: Constants.SharedState.Concierge.DELETE_ENDPOINT) else {
-            Log.warning(label: Constants.LOG_TAG, "Unable to create URL to clear the Concierge session. The session will not be cleared.")
-            return
-        }
-        
-        let networkRequest = NetworkRequest(url: url,
-                                            httpMethod: .delete,
-                                            connectTimeout: 2.0)
-        
-        ServiceProvider.shared.networkService.connectAsync(networkRequest: networkRequest) { connection in
-            guard let responseCode = connection.responseCode else {
-                Log.warning(label: Constants.LOG_TAG, "API request to clear the Concierge session failed: response code is not obtainable or empty.")
-                return
-            }
-            
-            if responseCode != 204 {
-                Log.warning(label: Constants.LOG_TAG, "API request to clear the Concierge session failed: response code == \(responseCode).")
-            } else {
-                Log.debug(label: Constants.LOG_TAG, "API request to clear the Concierge session succeeded.")
-            }
-        }
+//        guard let url = URL(string: Constants.SharedState.Concierge.DELETE_ENDPOINT) else {
+//            Log.warning(label: Constants.LOG_TAG, "Unable to create URL to clear the Concierge session. The session will not be cleared.")
+//            return
+//        }
+//        
+//        let networkRequest = NetworkRequest(url: url,
+//                                            httpMethod: .delete,
+//                                            connectTimeout: 2.0)
+//        
+//        ServiceProvider.shared.networkService.connectAsync(networkRequest: networkRequest) { connection in
+//            guard let responseCode = connection.responseCode else {
+//                Log.warning(label: Constants.LOG_TAG, "API request to clear the Concierge session failed: response code is not obtainable or empty.")
+//                return
+//            }
+//            
+//            if responseCode != 204 {
+//                Log.warning(label: Constants.LOG_TAG, "API request to clear the Concierge session failed: response code == \(responseCode).")
+//            } else {
+//                Log.debug(label: Constants.LOG_TAG, "API request to clear the Concierge session succeeded.")
+//            }
+//        }
     }
 }

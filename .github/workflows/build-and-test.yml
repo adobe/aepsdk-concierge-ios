@@ -23,4 +23,5 @@ jobs:
       run-test-ios-unit: true
       run-build-xcframework-and-app: true
       enable-codecov: true
+      result-bundle-path: build/reports
     secrets: inherit
