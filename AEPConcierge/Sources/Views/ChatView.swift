@@ -66,27 +66,6 @@ public struct ChatView: View {
         _viewModel = StateObject(wrappedValue: vm)
     }
 
-    // Internal initializer used by the SDK to inject a specific service instance.
-    init(
-        chatService: ConciergeChatService,
-        speechCapturer: SpeechCapturing? = nil,
-        textSpeaker: TextSpeaking? = nil,
-        title: String = "Concierge",
-        subtitle: String? = "Powered by Adobe",
-        onClose: (() -> Void)? = nil
-    ) {
-        self.textSpeaker = textSpeaker
-        self.titleText = title
-        self.subtitleText = subtitle
-        self.onClose = onClose
-        let vm = ConciergeChatViewModel(
-            chatService: chatService,
-            speechCapturer: speechCapturer ?? SpeechCapturer(),
-            speaker: textSpeaker
-        )
-        _viewModel = StateObject(wrappedValue: vm)
-    }
-        
     // internal use only for previews
     init(messages: [Message]) {
         self.textSpeaker = nil
@@ -142,12 +121,18 @@ public struct ChatView: View {
                 micEnabled: viewModel.micEnabled,
                 sendEnabled: viewModel.sendEnabled,
                 onEditingChanged: { began in
-                    DispatchQueue.main.async {
+                    // Publish on next turn of the runloop to avoid mutations during view updates
+                    Task { @MainActor in
                         let current = viewModel.inputState
-                        // Do not override recording/transcribing with editing state changes
                         if current == .recording || current == .transcribing { return }
-                        if began { viewModel.inputState = .editing }
-                        else { viewModel.inputState = viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .empty : .editing }
+                        if began {
+                            viewModel.inputState = .editing
+                        } else {
+                            let isEmpty = viewModel.inputText
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                                .isEmpty
+                            viewModel.inputState = isEmpty ? .empty : .editing
+                        }
                     }
                 },
                 onMicTap: handleMicTap,
