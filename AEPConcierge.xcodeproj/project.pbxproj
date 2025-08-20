@@ -55,6 +55,7 @@
 		4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */; };
 		4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */; };
 		4C3A65D52E55446600EEEF3B /* UIKitDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */; };
+		4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65D62E55600F00EEEF3B /* InputReducer.swift */; };
 		4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */; };
 		4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */; };
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
@@ -142,6 +143,7 @@
 		4C3A65C72E55272300EEEF3B /* ChatTopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTopBar.swift; sourceTree = "<group>"; };
 		4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
 		4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIKitDemoViewController.swift; sourceTree = "<group>"; };
+		4C3A65D62E55600F00EEEF3B /* InputReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputReducer.swift; sourceTree = "<group>"; };
 		4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_AudioWave_20_N.svg; sourceTree = "<group>"; };
 		4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ClockPending_20_N.svg; sourceTree = "<group>"; };
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
@@ -280,14 +282,15 @@
 		249899882D67C61A0005CBD7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				24E237EA2D6FDDED00E2686C /* ConciergeError.swift */,
 				4C9531562E53D19900772695 /* ChatStates.swift */,
+				24E237EA2D6FDDED00E2686C /* ConciergeError.swift */,
 				247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */,
 				24E237E22D6FDB6A00E2686C /* ConciergeInteractionRequest.swift */,
 				24E237E42D6FDBE500E2686C /* ConciergeInteractionResponse.swift */,
 				24E237E82D6FDC1300E2686C /* ConciergeMessageItem.swift */,
 				249899852D67C61A0005CBD7 /* ConciergeResponse.swift */,
 				24E237E62D6FDBF800E2686C /* ConciergeResponseMessage.swift */,
+				4C3A65D62E55600F00EEEF3B /* InputReducer.swift */,
 				249899862D67C61A0005CBD7 /* Message.swift */,
 				249899872D67C61A0005CBD7 /* MessageTemplate.swift */,
 			);
@@ -723,6 +726,7 @@
 				4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */,
 				4C9531532E4C1C4B00772695 /* Theme.swift in Sources */,
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
+				4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */,
 				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,

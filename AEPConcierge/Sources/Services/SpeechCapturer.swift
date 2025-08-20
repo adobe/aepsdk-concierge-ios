@@ -119,7 +119,9 @@ class SpeechCapturer: SpeechCapturing {
     }
     
     func endCapture(completion: @escaping (String?, (any Error)?) -> Void) {
-        audioEngine.stop()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         isCapturing = false
