@@ -116,6 +116,8 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: - Sending
     func sendMessage(isUser: Bool) {
+        chatService.setServerEventHandler(handle(response:error:))
+        
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             Log.warning(label: self.LOG_TAG, "sendMessage ignored. Expected non-empty text, but was empty.")
@@ -135,47 +137,80 @@ final class ConciergeChatViewModel: ObservableObject {
 
         if isUser {
             chatState = .processing
-            chatService.processChat(text) { [weak self] response, error in
-                Task { @MainActor in
-                    if let _ = error {
-                        self?.chatState = .error(.networkFailure)
-                        return
+            
+            // Add a placeholder message that will be updated with streaming content
+            let streamingMessageIndex = messages.count
+            messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
+            
+            var accumulatedContent = ""
+            
+            chatService.streamChat(text,
+                onChunk: { [weak self] chunk in
+                    Task { @MainActor in
+                        accumulatedContent += chunk
+                        // Update the streaming message with accumulated content
+                        if streamingMessageIndex < self?.messages.count ?? 0 {
+                            self?.messages[streamingMessageIndex] = Message(
+                                template: .basic(isUserMessage: false),
+                                messageBody: accumulatedContent
+                            )
+                        }
                     }
-                    guard let response = response else {
-                        self?.chatState = .error(.modelError)
-                        return
+                },
+                onComplete: { [weak self] error in
+                    Task { @MainActor in
+                        if let error = error {
+                            Log.error(label: self?.LOG_TAG ?? "ConciergeChatViewModel", "Streaming error: \(error)")
+                            self?.chatState = .error(.networkFailure)
+                            
+                            // Remove the placeholder message on error
+                            if streamingMessageIndex < self?.messages.count ?? 0 {
+                                self?.messages.remove(at: streamingMessageIndex)
+                            }
+                        } else {
+                            // Stream completed successfully
+                            self?.chatState = .idle
+                            
+                            // Optionally speak the completed message
+                            if var finalMessage = self?.messages[safe: streamingMessageIndex] {
+                                finalMessage.shouldSpeakMessage = true
+                            }
+                        }
                     }
-                    self?.handle(response: response)
                 }
-            }
+            )
         } else {
             // Non-user messages don't mutate input state here; reducer already cleared input
             chatState = .idle
         }
     }
 
-    private func handle(response: ConciergeResponse) {
-        guard let message = response.interaction.response.first?.message else {
-            chatState = .error(.modelError)
-            return
-        }
+    private func handle(response: ConciergeResponse?, error: ConciergeError?) {
+//        guard let message = response.interaction.response.first?.message else {
+//            chatState = .error(.modelError)
+//            return
+//        }
 
         messages.append(Message(template: .divider))
-        messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: message.opening))
+        messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
+        
+        
+        
+//        messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: message.opening))
 
-        if let items = message.items {
-            messages.append(Message(template: .divider))
-            var i = 1
-            for item in items {
-                messages.append(Message(template: .numbered(number: i, title: item.title, body: item.introduction)))
-                i += 1
-            }
-        }
-
-        if let closing = message.ending {
-            messages.append(Message(template: .divider))
-            messages.append(Message(template: .basic(isUserMessage: false), messageBody: closing))
-        }
+//        if let items = message.items {
+//            messages.append(Message(template: .divider))
+//            var i = 1
+//            for item in items {
+//                messages.append(Message(template: .numbered(number: i, title: item.title, body: item.introduction)))
+//                i += 1
+//            }
+//        }
+//
+//        if let closing = message.ending {
+//            messages.append(Message(template: .divider))
+//            messages.append(Message(template: .basic(isUserMessage: false), messageBody: closing))
+//        }
 
         messages.append(Message(template: .divider))
         chatState = .idle
@@ -204,6 +239,13 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: - Combine
     // No additional subscriptions; views may observe reducer directly
+}
+
+// MARK: - Array Safe Access Extension
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
 }
 
 

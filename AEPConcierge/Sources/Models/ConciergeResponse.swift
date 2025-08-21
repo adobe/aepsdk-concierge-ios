@@ -13,5 +13,6 @@
 public struct ConciergeResponse: Codable {
     public let id: String
     public let status: String
-    public let interaction: ConciergeInteraction
+//    public let interaction: ConciergeInteraction
+    public let message: String
 }

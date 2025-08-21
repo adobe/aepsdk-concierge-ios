@@ -18,7 +18,7 @@ import AEPEdgeIdentity
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         
-        MobileCore.setLogLevel(.trace)
+//        MobileCore.setLogLevel(.trace)
 
         let extensions = [
             AEPEdgeIdentity.Identity.self,
