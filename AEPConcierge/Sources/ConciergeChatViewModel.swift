@@ -186,34 +186,15 @@ final class ConciergeChatViewModel: ObservableObject {
     }
 
     private func handle(response: ConciergeResponse?, error: ConciergeError?) {
-//        guard let message = response.interaction.response.first?.message else {
-//            chatState = .error(.modelError)
-//            return
-//        }
+        if let error = error {
+            Log.warning(label: LOG_TAG, "An error occurred while retrieving data from the ConciergeChatService: \(error)")
+            return
+        }
 
-        messages.append(Message(template: .divider))
-        messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
-        
-        
-        
-//        messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: message.opening))
-
-//        if let items = message.items {
-//            messages.append(Message(template: .divider))
-//            var i = 1
-//            for item in items {
-//                messages.append(Message(template: .numbered(number: i, title: item.title, body: item.introduction)))
-//                i += 1
-//            }
-//        }
-//
-//        if let closing = message.ending {
-//            messages.append(Message(template: .divider))
-//            messages.append(Message(template: .basic(isUserMessage: false), messageBody: closing))
-//        }
-
-        messages.append(Message(template: .divider))
-        chatState = .idle
+        Task { @MainActor in
+            messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
+            chatState = .idle
+        }        
     }
 
     // MARK: - Speech streaming
