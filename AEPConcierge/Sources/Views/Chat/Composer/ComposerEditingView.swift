@@ -31,7 +31,7 @@ struct ComposerEditingView: View {
                 selectedRange: $selectedRange,
                 measuredHeight: $measuredHeight,
                 isEditable: isEditable,
-                placeholder: "How can I help",
+                placeholder: "How can I help?",
                 onEditingChanged: onEditingChanged
             )
             .frame(height: max(40, measuredHeight))
