@@ -21,6 +21,12 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		24317CAA2E590AE800F138E9 /* TempResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CA92E590ACD00F138E9 /* TempResponse.swift */; };
+		24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAB2E590AF400F138E9 /* TempPayload.swift */; };
+		24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAD2E590AFD00F138E9 /* TempHandle.swift */; };
+		24317CB02E590C9B00F138E9 /* TempElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAF2E590C9400F138E9 /* TempElement.swift */; };
+		24317CB22E590D2600F138E9 /* TempMultimodalElements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CB12E590D1D00F138E9 /* TempMultimodalElements.swift */; };
+		24317CB42E590F0B00F138E9 /* TempSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CB32E590F0700F138E9 /* TempSource.swift */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
@@ -111,6 +117,12 @@
 /* Begin PBXFileReference section */
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
+		24317CA92E590ACD00F138E9 /* TempResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempResponse.swift; sourceTree = "<group>"; };
+		24317CAB2E590AF400F138E9 /* TempPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempPayload.swift; sourceTree = "<group>"; };
+		24317CAD2E590AFD00F138E9 /* TempHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempHandle.swift; sourceTree = "<group>"; };
+		24317CAF2E590C9400F138E9 /* TempElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempElement.swift; sourceTree = "<group>"; };
+		24317CB12E590D1D00F138E9 /* TempMultimodalElements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempMultimodalElements.swift; sourceTree = "<group>"; };
+		24317CB32E590F0700F138E9 /* TempSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempSource.swift; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeInteraction.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
@@ -213,6 +225,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		24317CB52E59115A00F138E9 /* TempModels */ = {
+			isa = PBXGroup;
+			children = (
+				24317CAD2E590AFD00F138E9 /* TempHandle.swift */,
+				24317CAB2E590AF400F138E9 /* TempPayload.swift */,
+				24317CA92E590ACD00F138E9 /* TempResponse.swift */,
+				24317CB12E590D1D00F138E9 /* TempMultimodalElements.swift */,
+				24317CAF2E590C9400F138E9 /* TempElement.swift */,
+				24317CB32E590F0700F138E9 /* TempSource.swift */,
+			);
+			path = TempModels;
+			sourceTree = "<group>";
+		};
 		2482FDD92E3BE9A20032F3CA /* Protocols */ = {
 			isa = PBXGroup;
 			children = (
@@ -303,6 +328,7 @@
 		249899882D67C61A0005CBD7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				24317CB52E59115A00F138E9 /* TempModels */,
 				4C9531562E53D19900772695 /* ChatStates.swift */,
 				24E237EA2D6FDDED00E2686C /* ConciergeError.swift */,
 				247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */,
@@ -723,10 +749,13 @@
 				4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */,
 				4C3A65CE2E55272400EEEF3B /* ComposerTranscribingView.swift in Sources */,
 				4C3A65CF2E55272400EEEF3B /* ComposerListeningView.swift in Sources */,
+				24317CB22E590D2600F138E9 /* TempMultimodalElements.swift in Sources */,
+				24317CAA2E590AE800F138E9 /* TempResponse.swift in Sources */,
 				4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */,
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
+				24317CB42E590F0B00F138E9 /* TempSource.swift in Sources */,
 				4C9531592E53E86000772695 /* ConciergeOverlayManager.swift in Sources */,
 				4C95314D2E4BF05600772695 /* ConciergeHostingController.swift in Sources */,
 				24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */,
@@ -737,13 +766,16 @@
 				249899952D67C62A0005CBD7 /* ChatMessageView.swift in Sources */,
 				249899962D67C62A0005CBD7 /* PageIndicator.swift in Sources */,
 				249899782D667FD60005CBD7 /* AEPConcierge.docc in Sources */,
+				24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */,
 				249899892D67C61A0005CBD7 /* ConciergeResponse.swift in Sources */,
+				24317CB02E590C9B00F138E9 /* TempElement.swift in Sources */,
 				2498998A2D67C61A0005CBD7 /* MessageTemplate.swift in Sources */,
 				24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */,
 				4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */,
 				4C9531532E4C1C4B00772695 /* Theme.swift in Sources */,
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
 				4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */,
+				24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */,
 				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,
