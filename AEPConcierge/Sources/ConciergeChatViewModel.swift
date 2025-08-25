@@ -116,7 +116,10 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: - Sending
     func sendMessage(isUser: Bool) {
-        chatService.setServerEventHandler(handle(response:error:))
+        chatService.setServerEventHandler(handle)
+        
+        // TODO: remove temporary handler
+        chatService.setTempServerEventHandler(tempHandle)
         
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -184,6 +187,13 @@ final class ConciergeChatViewModel: ObservableObject {
             chatState = .idle
         }
     }
+    
+    private func tempHandle(payload: TempPayload) {
+        Task { @MainActor in
+//            print(payload.response?.message)
+            chatState = .idle
+        }
+    }
 
     private func handle(response: ConciergeResponse?, error: ConciergeError?) {
         if let error = error {
@@ -194,7 +204,7 @@ final class ConciergeChatViewModel: ObservableObject {
         Task { @MainActor in
             messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
             chatState = .idle
-        }        
+        }
     }
 
     // MARK: - Speech streaming
