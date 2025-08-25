@@ -55,8 +55,6 @@ public class Concierge: NSObject, Extension {
         registerListener(type: Constants.EventType.concierge,
                          source: EventSource.requestContent,
                          listener: handleEvent)
-        
-        conciergeChatService.clearConciergeSession()
     }
 
     public func onUnregistered() {
