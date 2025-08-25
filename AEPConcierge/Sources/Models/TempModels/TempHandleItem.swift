@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempHandle: Codable {
-    public let handle: [TempHandleItem]
+public struct TempHandleItem: Codable {
+    public let type: String
+    public let payload: [TempPayload]
 }

@@ -15,6 +15,10 @@ import AEPServices
 class ConciergeChatService: NSObject {
     // MARK: - temporary constants for testing
     let serviceEndpoint = "https://bc-conversation-service-stage.corp.ethos12-stage-va7.ethos.adobe.net/brand-concierge/conversations?configId=211312ed-d9ca-4f51-b09c-2de37a2a24d0&sessionId=c300837c-dee1-4d4c-87cd-0508902596cd"
+    let tempQuery = "Help me find a beach trip for summer getaway"
+    let tempSurface = "web://git.corp.adobe.com/pages/nciocanu/concierge-demo/streaming"
+    
+    let LOG_TAG = "ConciergeChatService"
     
     // MARK: - private members
     private var session: URLSession!
@@ -44,14 +48,17 @@ class ConciergeChatService: NSObject {
             return
         }
         
-        let payload = createChatPayload(query: "Help me find a beach trip for summer getaway")//query)
+        let payload = createChatPayload(query: tempQuery)
+        
+        // TODO: use the actual query
+        //let payload = createChatPayload(query: query)
                 
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = Constants.HTTPMethods.POST
         request.httpBody = payload
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 15
+        request.setValue(Constants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: Constants.HeaderFields.CONTENT_TYPE)
+        request.setValue(Constants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: Constants.HeaderFields.ACCEPT)
+        request.timeoutInterval = Constants.Request.READ_TIMEOUT
         
         dataTask = session.dataTask(with: request)
         dataTask?.resume()
@@ -65,13 +72,16 @@ class ConciergeChatService: NSObject {
     private func createChatPayload(query: String) -> Data? {
         // Create proper payload for your API
         let payload = [
-            "events": [
+            Constants.Request.Keys.EVENTS: [
                 [
-                    "query": [
-                        "conversation": [
-                            "fetchConversationalExperience": true,
-                            "surfaces": ["web://git.corp.adobe.com/pages/nciocanu/concierge-demo/streaming"],
-                            "message": query
+                    Constants.Request.Keys.QUERY: [
+                        Constants.Request.Keys.CONVERSATION: [
+                            Constants.Request.Keys.FETCH_CONVERSATIONAL_EXPERIENCE: true,
+                            Constants.Request.Keys.SURFACES: [
+                                // TODO: use a surface from configuration
+                                tempSurface
+                            ],
+                            Constants.Request.Keys.MESSAGE: query
                         ]
                     ]
                 ]
@@ -83,48 +93,6 @@ class ConciergeChatService: NSObject {
         }
         
         return jsonData
-    }
-    
-    func processChat(_ query: String, completionHandler: @escaping ((ConciergeResponse?, ConciergeError?) -> Void)) {
-        guard let url = URL(string: Constants.SharedState.Concierge.CHAT_ENDPOINT) else {
-            Log.warning(label: Constants.LOG_TAG, "Unable to create a URL for the Concierge chat API.")
-            completionHandler(nil, .invalidEndpoint)
-            return
-        }
-        
-        guard let jsonData = try? JSONEncoder().encode([Constants.Request.Keys.MESSAGE: query]) else {
-            Log.warning(label: Constants.LOG_TAG, "Unable to encode the post body for Concierge chat API request.")
-            completionHandler(nil, .invalidData)
-            return
-        }
-        
-        let headers = [Constants.HeaderFields.CONTENT_TYPE: Constants.ContentTypes.APPLICATION_JSON]
-        
-        let networkRequest = NetworkRequest(url: url,
-                                            httpMethod: .post,
-                                            connectPayloadData: jsonData,
-                                            httpHeaders: headers,
-                                            connectTimeout: Constants.Request.CONNECT_TIMEOUT,
-                                            readTimeout: Constants.Request.READ_TIMEOUT)
-        
-        ServiceProvider.shared.networkService.connectAsync(networkRequest: networkRequest) { connection in
-            if let error = connection.error {
-                print(error)
-                if connection.responseCode == 404 {
-                    completionHandler(nil, .unreachable)
-                    return
-                }
-            }
-            
-            guard let data = connection.data, !data.isEmpty else {
-                completionHandler(nil, .invalidResponseData)
-                return
-            }
-            
-            if let conciergeResponse = try? JSONDecoder().decode(ConciergeResponse.self, from: data) {
-                completionHandler(conciergeResponse, nil)
-            }
-        }
     }
 }
 
@@ -143,7 +111,7 @@ extension ConciergeChatService: URLSessionDataDelegate {
         let dataComponents = dataString.components(separatedBy: .newlines)
         for component in dataComponents {
             // skip newlines
-            if !component.hasPrefix("data: ") {
+            if !component.hasPrefix(Constants.SSE.DATA_PREFIX) {
                 continue
             }
             
@@ -158,46 +126,18 @@ extension ConciergeChatService: URLSessionDataDelegate {
                 // pass back the payload of the first handle
                 tempServerEventHandler?(handle.handle.first!.payload.first!)
             } catch {
-                print("error decoding to TempHandle: \(error)")
+                Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
             }
         }
-        
-        // END NEW STUFF
-        
-//        print("raw data from response: \(String(data:data, encoding:.utf8) ?? "none")")
-//        guard let dataString = String(data: data, encoding: .utf8) else {
-//            return
-//        }
-//        
-//        let trimmedHandle = dataString.hasPrefix("data: ") ? String(dataString.dropFirst(6)) : dataString
-//        guard let handleData = trimmedHandle.data(using: .utf8) else {
-//            return
-//        }
-//                
-//        let handleMap = try? JSONSerialization.jsonObject(with: handleData) as? [String: Any]
-//        
-//        let firstHandle = (handleMap?["handle"] as? [Any])?.first as? [String: Any]
-//        
-//        let handleType = firstHandle?["type"]
-//        let handlePayload = firstHandle?["payload"] as? [Any]?
-//        let firstPayload = handlePayload??.first as? [String: Any]
-//        let responseObject = firstPayload?["response"] as? [String: Any]
-//        guard let responseMessage = responseObject?["message"] as? String else {
-//            return
-//        }
-//        
-//        let response = ConciergeResponse(id: "abc", status: "abc", message: responseMessage)
-//        
-//        serverEventHandler?(response, nil)
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
             // Handle connection errors
-            print("SSE connection error: \(error.localizedDescription)")
+            Log.warning(label: LOG_TAG, "An error occurred while connecting to the Concierge server: \(error.localizedDescription)")
         } else {
             // Connection completed (e.g., server closed connection)
-            print("SSE connection completed.")
+            Log.trace(label: LOG_TAG, "Concierge server connection closed.")
             disconnect()
         }
     }
