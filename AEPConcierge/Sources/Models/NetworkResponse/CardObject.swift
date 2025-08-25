@@ -10,6 +10,9 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempHandle: Codable {
-    public let handle: [TempHandleItem]
+struct CardObject: Codable {
+    let title: String?
+    let description: String?
+    let media: MediaObject?
+    let buttons: [ButtonObject]?
 }
