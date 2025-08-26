@@ -151,6 +151,8 @@ final class ConciergeChatViewModel: ObservableObject {
                 onChunk: { [weak self] chunk in
                     Task { @MainActor in
                         accumulatedContent += chunk
+                        print("chunk: \(chunk)")
+                        print("accumulatedContent: \(accumulatedContent)")
                         // Update the streaming message with accumulated content
                         if streamingMessageIndex < self?.messages.count ?? 0 {
                             self?.messages[streamingMessageIndex] = Message(
@@ -174,9 +176,13 @@ final class ConciergeChatViewModel: ObservableObject {
                             // Stream completed successfully
                             self?.chatState = .idle
                             
-                            // Optionally speak the completed message
-                            if var finalMessage = self?.messages[safe: streamingMessageIndex] {
-                                finalMessage.shouldSpeakMessage = true
+                            // Mark the completed streaming message to be spoken
+                            if streamingMessageIndex < self?.messages.count ?? 0 {
+                                var msg = self?.messages[streamingMessageIndex]
+                                if var m = msg {
+                                    m.shouldSpeakMessage = true
+                                    self?.messages[streamingMessageIndex] = m
+                                }
                             }
                         }
                     }
