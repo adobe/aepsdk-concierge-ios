@@ -35,7 +35,8 @@ struct ChatMessageView: View {
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
 
-                Text(messageBody ?? "")
+                // Render agent messages with inline markdown
+                (isUserMessage ? Text(messageBody ?? "") : Text.markdown(messageBody ?? ""))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .textSelection(.enabled)
@@ -45,6 +46,15 @@ struct ChatMessageView: View {
                             .fill(isUserMessage ? theme.primary : theme.agentBubble)
                     )
                     .compositingGroup()
+                    .contextMenu {
+                        Button(action: {
+                            let source = messageBody ?? ""
+                            // Copy raw markdown (preserve markers)
+                            UIPasteboard.general.string = source
+                        }) {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
 
                 if !isUserMessage { Spacer() }
             }
