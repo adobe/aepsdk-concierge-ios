@@ -18,6 +18,7 @@ public struct TempPayload: Codable {
     public let interactionId: String?
     public let request: [String: AnyCodable]?
     public let response: TempResponse?
+    public let state: String?
     
     // state:store
     public let key: String?

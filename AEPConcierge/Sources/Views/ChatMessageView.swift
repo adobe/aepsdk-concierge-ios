@@ -86,9 +86,11 @@ struct ChatMessageView: View {
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
                                 .foregroundColor(Color.TextTitle)
+                                .textSelection(.enabled)
                         }
                         Text(text)
                             .foregroundColor(Color.TextBody)
+                            .textSelection(.enabled)
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -122,10 +124,12 @@ struct ChatMessageView: View {
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
                                 .foregroundColor(Color.TextTitle)
+                                .textSelection(.enabled)
                         }
                         if let body = body {
                             Text(body)
                                 .foregroundColor(Color.TextBody)
+                                .textSelection(.enabled)
                         }
                     }
                 }
@@ -172,11 +176,13 @@ struct ChatMessageView: View {
                         .font(.system(.headline, design: .rounded))
                         .bold()
                         .foregroundColor(Color.TextTitle)
+                        .textSelection(.enabled)
                     
                     Text(body)
                         .font(.system(.subheadline))
                         .foregroundColor(Color.TextBody)
                         .padding(.bottom, 14)
+                        .textSelection(.enabled)
                 }
                 .padding(14)
                 .frame(width: 350, alignment: .leading)

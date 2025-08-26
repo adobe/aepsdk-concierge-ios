@@ -26,6 +26,7 @@ class ConciergeChatService: NSObject {
     private var serverEventHandler: ((ConciergeResponse?, ConciergeError?) -> Void)?
     private var onChunkHandler: ((String) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
+    private var lastEmittedResponseText: String = ""
     
     // TODO: remove the temp code, this is for the demo and testing the UI
     private var tempServerEventHandler: ((TempPayload) -> Void)?
@@ -50,6 +51,11 @@ class ConciergeChatService: NSObject {
             return
         }
         
+        // Register handlers for this streaming session
+        self.onChunkHandler = onChunk
+        self.onCompleteHandler = onComplete
+        self.lastEmittedResponseText = ""
+
         let payload = createChatPayload(query: tempQuery)
         
         // TODO: use the actual query
@@ -125,9 +131,26 @@ extension ConciergeChatService: URLSessionDataDelegate {
             
             do {
                 let handle = try JSONDecoder().decode(TempHandle.self, from: handleData)
-                
-                // pass back the payload of the first handle
-                tempServerEventHandler?(handle.handle.first!.payload.first!)
+                if let firstPayload = handle.handle.first?.payload.first,
+                   let state = firstPayload.state,
+                   let message = firstPayload.response?.message {
+                    if state == "in-progress" {
+                        // Emit raw fragment and accumulate locally
+                        self.onChunkHandler?(message)
+                        self.lastEmittedResponseText += message
+                    } else if state == "completed" {
+                        // Emit only the remainder beyond what we already streamed
+                        let fullText = message
+                        if self.lastEmittedResponseText.count < fullText.count {
+                            let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
+                            let delta = String(fullText[startIndex...])
+                            if !delta.isEmpty {
+                                self.onChunkHandler?(delta)
+                            }
+                        }
+                        self.lastEmittedResponseText = fullText
+                    }
+                }
             } catch {
                 Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
             }
@@ -138,13 +161,16 @@ extension ConciergeChatService: URLSessionDataDelegate {
         if let error = error {
             // Handle connection errors
             Log.warning(label: LOG_TAG, "An error occurred while connecting to the Concierge server: \(error.localizedDescription)")
+            onCompleteHandler?(.unreachable)
         } else {
             // Connection completed (e.g., server closed connection)
             Log.trace(label: LOG_TAG, "Concierge server connection closed.")
+            onCompleteHandler?(nil)
             disconnect()
         }
         // Clean up handlers
         onChunkHandler = nil
         onCompleteHandler = nil
+        lastEmittedResponseText = ""
     }
 }
