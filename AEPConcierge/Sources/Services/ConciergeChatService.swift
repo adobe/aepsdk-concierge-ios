@@ -56,10 +56,8 @@ class ConciergeChatService: NSObject {
         self.onCompleteHandler = onComplete
         self.lastEmittedResponseText = ""
 
-        let payload = createChatPayload(query: tempQuery)
-        
-        // TODO: use the actual query
-        //let payload = createChatPayload(query: query)
+        // Use the actual user-provided query
+        let payload = createChatPayload(query: query)
                 
         var request = URLRequest(url: url)
         request.httpMethod = Constants.HTTPMethods.POST
@@ -134,11 +132,11 @@ extension ConciergeChatService: URLSessionDataDelegate {
                 if let firstPayload = handle.handle.first?.payload.first,
                    let state = firstPayload.state,
                    let message = firstPayload.response?.message {
-                    if state == "in-progress" {
+                    if state == Constants.StreamState.IN_PROGRESS {
                         // Emit raw fragment and accumulate locally
                         self.onChunkHandler?(message)
                         self.lastEmittedResponseText += message
-                    } else if state == "completed" {
+                    } else if state == Constants.StreamState.COMPLETED {
                         // Emit only the remainder beyond what we already streamed
                         let fullText = message
                         if self.lastEmittedResponseText.count < fullText.count {
