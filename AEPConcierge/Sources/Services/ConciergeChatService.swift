@@ -24,6 +24,8 @@ class ConciergeChatService: NSObject {
     private var session: URLSession!
     private var dataTask: URLSessionDataTask?
     private var serverEventHandler: ((ConciergeResponse?, ConciergeError?) -> Void)?
+    private var onChunkHandler: ((String) -> Void)?
+    private var onCompleteHandler: ((ConciergeError?) -> Void)?
     
     // TODO: remove the temp code, this is for the demo and testing the UI
     private var tempServerEventHandler: ((TempPayload) -> Void)?
@@ -141,5 +143,8 @@ extension ConciergeChatService: URLSessionDataDelegate {
             Log.trace(label: LOG_TAG, "Concierge server connection closed.")
             disconnect()
         }
+        // Clean up handlers
+        onChunkHandler = nil
+        onCompleteHandler = nil
     }
 }

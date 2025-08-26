@@ -38,6 +38,7 @@ struct ChatMessageView: View {
                 Text(messageBody ?? "")
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
+                    .textSelection(.enabled)
                     .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
