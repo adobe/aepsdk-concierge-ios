@@ -10,6 +10,13 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempHandle: Codable {
-    public let handle: [TempHandleItem]
+struct ConciergeJsonContentObject: Codable {
+    let conversationId: String
+    let interactionId: String
+    let state: String
+    let text: String?
+    let card: CardObject?
+    let carousel: [CardObject]?
+    let prompt: PromptObject?
+    let citations: [String]?
 }

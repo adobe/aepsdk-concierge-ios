@@ -190,7 +190,7 @@ final class ConciergeChatViewModel: ObservableObject {
     
     private func tempHandle(payload: TempPayload) {
         Task { @MainActor in
-//            print(payload.response?.message)
+            messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: false, messageBody: payload.response?.message))
             chatState = .idle
         }
     }

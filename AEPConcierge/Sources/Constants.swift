@@ -23,18 +23,41 @@ enum Constants {
         static let APPLICATION_JSON = "application/json"
     }
     
+    enum AcceptTypes {
+        static let TEXT_EVENT_STREAM = "text/event-stream"
+    }
+    
+    enum HTTPMethods {
+        static let POST = "POST"
+    }
+    
     enum HeaderFields {
         static let CONTENT_TYPE = "Content-Type"
+        static let ACCEPT = "Accept"
     }
     
     enum EventType {
         static let concierge = "com.adobe.eventType.concierge"
     }
     
+    enum ConciergeSchemas {
+        static let JSON_CONTENT = "https://ns.adobe.com/concierge/json-content"
+    }
+    
+    enum SSE {
+        // intentionally including the space here - this value is used to identify data in SSE responses
+        static let DATA_PREFIX = "data: "
+    }
+    
     enum Request {
-        static let CONNECT_TIMEOUT = 1.0
         static let READ_TIMEOUT = 15.0
+        
         enum Keys {
+            static let EVENTS = "events"
+            static let QUERY = "query"
+            static let CONVERSATION = "conversation"
+            static let FETCH_CONVERSATIONAL_EXPERIENCE = "fetchConversationalExperience"
+            static let SURFACES = "surfaces"
             static let MESSAGE = "message"
         }
     }
@@ -49,11 +72,7 @@ enum Constants {
         enum Configuration {
             static let NAME = "com.adobe.module.configuration"
 
-            // Messaging dataset ids
-            static let EXPERIENCE_EVENT_DATASET = "messaging.eventDataset"
-
-            // config for whether to useSandbox or not
-            static let USE_SANDBOX = "messaging.useSandbox"
+            // TODO: define configuration properties for concierge
         }
 
         enum EdgeIdentity {
