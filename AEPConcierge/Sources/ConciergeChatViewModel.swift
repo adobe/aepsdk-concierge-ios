@@ -116,10 +116,7 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: - Sending
     func sendMessage(isUser: Bool) {
-        chatService.setServerEventHandler(handle)
-        
-        // TODO: remove temporary handler
-        chatService.setTempServerEventHandler(tempHandle)
+        // Streaming path handles updates and completion via closures
         
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -153,12 +150,11 @@ final class ConciergeChatViewModel: ObservableObject {
                         accumulatedContent += chunk
                         print("chunk: \(chunk)")
                         print("accumulatedContent: \(accumulatedContent)")
-                        // Update the streaming message with accumulated content
-                        if streamingMessageIndex < self?.messages.count ?? 0 {
-                            self?.messages[streamingMessageIndex] = Message(
-                                template: .basic(isUserMessage: false),
-                                messageBody: accumulatedContent
-                            )
+                        // Update the streaming message with accumulated content (preserve id)
+                        if streamingMessageIndex < self?.messages.count ?? 0,
+                           var current = self?.messages[streamingMessageIndex] {
+                            current.messageBody = accumulatedContent
+                            self?.messages[streamingMessageIndex] = current
                         }
                     }
                 },
@@ -176,13 +172,13 @@ final class ConciergeChatViewModel: ObservableObject {
                             // Stream completed successfully
                             self?.chatState = .idle
                             
-                            // Mark the completed streaming message to be spoken
+                            // Replace with a fresh message marked for speaking to trigger onAppear
                             if streamingMessageIndex < self?.messages.count ?? 0 {
-                                var msg = self?.messages[streamingMessageIndex]
-                                if var m = msg {
-                                    m.shouldSpeakMessage = true
-                                    self?.messages[streamingMessageIndex] = m
-                                }
+                                self?.messages[streamingMessageIndex] = Message(
+                                    template: .basic(isUserMessage: false),
+                                    shouldSpeakMessage: true,
+                                    messageBody: accumulatedContent
+                                )
                             }
                         }
                     }
@@ -190,13 +186,6 @@ final class ConciergeChatViewModel: ObservableObject {
             )
         } else {
             // Non-user messages don't mutate input state here; reducer already cleared input
-            chatState = .idle
-        }
-    }
-    
-    private func tempHandle(payload: TempPayload) {
-        Task { @MainActor in
-            messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: false, messageBody: payload.response?.message))
             chatState = .idle
         }
     }
