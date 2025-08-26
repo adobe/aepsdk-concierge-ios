@@ -14,9 +14,9 @@ import AEPServices
 
 class ConciergeChatService: NSObject {
     // MARK: - temporary constants for testing
-    let serviceEndpoint = "https://bc-conversation-service-stage.corp.ethos12-stage-va7.ethos.adobe.net/brand-concierge/conversations?configId=211312ed-d9ca-4f51-b09c-2de37a2a24d0&sessionId=c300837c-dee1-4d4c-87cd-0508902596cd"
-    let tempQuery = "Help me find a beach trip for summer getaway"
-    let tempSurface = "web://git.corp.adobe.com/pages/nciocanu/concierge-demo/streaming"
+    let serviceEndpoint = "https://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/conversations?sessionId=083f7d55-df46-43f3-a70d-626cc324d1ef&requestId=f199b4ed-50db-44cd-9371-291778e81927&configId=51ee226f-9327-4b97-99fb-d5f9877d8198"
+    let tempQuery = "I want to turn my clips into polished videos."
+    let tempSurface = "web://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/index.html"
     
     let LOG_TAG = "ConciergeChatService"
     
@@ -116,6 +116,7 @@ extension ConciergeChatService: URLSessionDataDelegate {
             }
             
             let trimmedHandle = String(component.dropFirst(6))
+            print(trimmedHandle)
             guard let handleData = trimmedHandle.data(using: .utf8) else {
                 return
             }
