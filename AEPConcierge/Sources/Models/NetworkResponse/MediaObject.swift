@@ -10,6 +10,9 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempHandle: Codable {
-    public let handle: [TempHandleItem]
+struct MediaObject: Codable {
+    let type: String
+    let title: String?
+    let altText: String?
+    let url: String
 }

@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempHandle: Codable {
-    public let handle: [TempHandleItem]
+struct PromptObject: Codable {
+    let text: String
+    let url: String
 }
