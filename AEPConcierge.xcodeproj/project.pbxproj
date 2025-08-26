@@ -84,6 +84,7 @@
 		4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */; };
 		4C3A65D52E55446600EEEF3B /* UIKitDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */; };
 		4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65D62E55600F00EEEF3B /* InputReducer.swift */; };
+		4C3A65DD2E5E65C300EEEF3B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65DC2E5E65C300EEEF3B /* MarkdownRenderer.swift */; };
 		4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */; };
 		4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */; };
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
@@ -193,6 +194,7 @@
 		4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
 		4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIKitDemoViewController.swift; sourceTree = "<group>"; };
 		4C3A65D62E55600F00EEEF3B /* InputReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputReducer.swift; sourceTree = "<group>"; };
+		4C3A65DC2E5E65C300EEEF3B /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
 		4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_AudioWave_20_N.svg; sourceTree = "<group>"; };
 		4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ClockPending_20_N.svg; sourceTree = "<group>"; };
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 			isa = PBXGroup;
 			children = (
 				249899822D67C5F90005CBD7 /* Color+Extensions.swift */,
+				4C3A65DC2E5E65C300EEEF3B /* MarkdownRenderer.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -694,9 +697,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -733,9 +740,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -824,6 +835,7 @@
 				2482FDE02E3BED830032F3CA /* SpeechCapturer.swift in Sources */,
 				24317CB72E5CC5CC00F138E9 /* SchemaObject.swift in Sources */,
 				2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */,
+				4C3A65DD2E5E65C300EEEF3B /* MarkdownRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
