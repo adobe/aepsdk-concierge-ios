@@ -49,6 +49,12 @@ enum Constants {
         static let DATA_PREFIX = "data: "
     }
     
+    // Streaming / conversation state values from SSE payloads
+    enum StreamState {
+        static let IN_PROGRESS = "in-progress"
+        static let COMPLETED = "completed"
+    }
+    
     enum Request {
         static let READ_TIMEOUT = 15.0
         
