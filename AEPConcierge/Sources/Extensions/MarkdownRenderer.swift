@@ -23,6 +23,24 @@ enum MarkdownRenderer {
         case blockQuote([NSAttributedString])
     }
 
+    // MARK: - Shared helper types (extracted)
+    enum ListType { case ordered, unordered }
+    struct ListSignature: Equatable {
+        struct Component: Equatable { let type: ListType; let ordinal: Int }
+        let components: [Component]
+    }
+
+    // MARK: - Shared helpers (extracted)
+    private static func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
+        var s = slice
+        if let font = fallbackFont {
+            var c = AttributeContainer()
+            c[AttributeScopes.UIKitAttributes.FontAttribute.self] = font
+            s.mergeAttributes(c)
+        }
+        return NSAttributedString(s)
+    }
+
     /// Build blocks (text, divider, blockQuote) directly from PresentationIntent
     /// without relying on sentinel characters.
     static func buildBlocks(markdown: String, textColor: UIColor? = nil, baseFont: UIFont = .preferredFont(forTextStyle: .body)) -> [Block] {
@@ -34,16 +52,6 @@ enum MarkdownRenderer {
 
         var blocks: [Block] = []
 
-        func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
-            var s = slice
-            if let font = fallbackFont {
-                var c = AttributeContainer()
-                c[AttributeScopes.UIKitAttributes.FontAttribute.self] = font
-                s.mergeAttributes(c)
-            }
-            return NSAttributedString(s)
-        }
-
         // Helpers to append a paragraph as a text block
         func pushParagraph(_ ns: NSAttributedString) {
             let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
@@ -51,11 +59,9 @@ enum MarkdownRenderer {
         }
 
         // List accumulation (same approach as attributed builder)
-        enum ListType { case ordered, unordered }
         var pendingListDepth: Int? = nil
         var pendingListType: ListType? = nil
         var pendingListOrdinal: Int? = nil
-        struct ListSignature: Equatable { struct Component: Equatable { let type: ListType; let ordinal: Int }; let components: [Component] }
         var pendingListSignature: ListSignature? = nil
         var pendingListContent = NSMutableAttributedString()
 
@@ -97,16 +103,20 @@ enum MarkdownRenderer {
         // Header accumulation
         var headerBuffer = NSMutableAttributedString()
         var headerLevelActive: Int? = nil
+
+        func headerFont(for level: Int) -> UIFont {
+            switch level {
+            case 1: return .systemFont(ofSize: 22, weight: .bold)
+            case 2: return .systemFont(ofSize: 20, weight: .semibold)
+            case 3: return .systemFont(ofSize: 18, weight: .semibold)
+            default: return .systemFont(ofSize: 16, weight: .semibold)
+            }
+        }
+
         func flushHeaderBuffer() {
             guard let level = headerLevelActive, headerBuffer.length > 0 else { return }
-            let font: UIFont = (
-                level == 1 ? .systemFont(ofSize: 22, weight: .bold) :
-                level == 2 ? .systemFont(ofSize: 20, weight: .semibold) :
-                level == 3 ? .systemFont(ofSize: 18, weight: .semibold) :
-                .systemFont(ofSize: 16, weight: .semibold)
-            )
             let r = NSRange(location: 0, length: headerBuffer.length)
-            headerBuffer.addAttribute(.font, value: font, range: r)
+            headerBuffer.addAttribute(.font, value: headerFont(for: level), range: r)
             headerBuffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: r)
             pushParagraph(headerBuffer)
             headerBuffer = NSMutableAttributedString()
