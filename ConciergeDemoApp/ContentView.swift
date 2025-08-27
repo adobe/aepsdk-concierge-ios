@@ -63,18 +63,11 @@ Final paragraph to verify trailing layout.
             Concierge.wrap(
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        let blocks = MarkdownRenderer.buildBlocks(markdown: stringToRender, textColor: UIColor(.black))
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(Array(blocks.enumerated()), id: \.0) { _, block in
-                                switch block {
-                                case .text(let ns):
-                                    MarkdownText(attributed: ns)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                case .divider:
-                                    Divider()
-                                }
-                            }
-                        }
+
+                        MarkdownBlockView(
+                            markdown: stringToRender,
+                            textColor: UIColor(.black)
+                        )
                         .padding(.horizontal, 20)
                         .padding(.top, 12)
 //
