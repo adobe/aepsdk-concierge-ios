@@ -36,18 +36,23 @@ struct ChatMessageView: View {
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
 
-                // User: SwiftUI Text. Agent: UIKit-backed markdown view with intrinsic height.
+                // User: SwiftUI Text. Agent: SwiftUI block renderer interleaving text + Divider.
                 Group {
                     if isUserMessage {
                         Text(messageBody ?? "")
                     } else {
-                        UIKitMarkdownText(
-                            markdown: messageBody ?? "",
-                            textColor: UIColor(theme.onAgent),
-                            baseFont: .preferredFont(forTextStyle: .body),
-                            maxWidth: nil
-                        )
-                        .fixedSize(horizontal: false, vertical: true)
+                        let blocks = MarkdownRenderer.buildBlocks(markdown: messageBody ?? "", textColor: UIColor(theme.onAgent))
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(blocks.enumerated()), id: \.0) { _, block in
+                                switch block {
+                                case .text(let ns):
+                                    MarkdownText(attributed: ns)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                case .divider:
+                                    Divider()
+                                }
+                            }
+                        }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
                     }
