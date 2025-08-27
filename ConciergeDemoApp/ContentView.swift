@@ -37,7 +37,9 @@ This is a paragraph with inline styles: **bold**, _italic_, `inline code`, and a
 2. Second ordered item
 
 - First unordered item
-  - Nested unordered (child)
+  - Nested unordered (child1)
+  - Nested unordered (child2)
+    - Extra nested unordered (child3) with lots of extra text to see how line wrapping works for these elements
 - Second unordered item
 
 ```swift
@@ -62,7 +64,7 @@ Final paragraph to verify trailing layout.
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         UIKitMarkdownText(
-                            markdown: headerString,
+                            markdown: stringToRender,
                             textColor: UIColor.label,
                             baseFont: .preferredFont(forTextStyle: .body),
                             maxWidth: UIScreen.main.bounds.width - 40
@@ -78,7 +80,7 @@ Final paragraph to verify trailing layout.
 
                         Button(action: {
                             MarkdownRenderer.debugDump(stringToRender, syntax: .full)
-                            MarkdownRenderer.debugDump(stringToRender, syntax: .inlineOnlyPreservingWhitespace)
+//                            MarkdownRenderer.debugDump(stringToRender, syntax: .inlineOnlyPreservingWhitespace)
                         }) {
                             Text("DEBUG MARKDOWN")
                         }

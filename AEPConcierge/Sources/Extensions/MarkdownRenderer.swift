@@ -257,6 +257,8 @@ struct UIKitMarkdownText: UIViewRepresentable {
         var pendingListDepth: Int? = nil
         var pendingListType: ListType? = nil
         var pendingListOrdinal: Int? = nil
+        struct ListSignature: Equatable { struct Component: Equatable { let type: ListType; let ordinal: Int }; let components: [Component] }
+        var pendingListSignature: ListSignature? = nil
         var pendingListContent = NSMutableAttributedString()
 
         func flushPendingList() {
@@ -329,6 +331,8 @@ struct UIKitMarkdownText: UIViewRepresentable {
             var depth = 0
             var listType: ListType? = nil
             var ordinal: Int? = nil
+            var pairs: [(ListType, Int)] = []
+            var pendingOrdinalTemp: Int? = nil
 
             if let pres = run.presentationIntent {
                 for comp in pres.components {
@@ -337,13 +341,22 @@ struct UIKitMarkdownText: UIViewRepresentable {
                     case .codeBlock: isCodeBlock = true
                     case .blockQuote: isBlockQuote = true
                     case .thematicBreak: isThematic = true
-                    case .listItem(let ord): depth += 1; ordinal = ord
-                    case .orderedList: listType = .ordered
-                    case .unorderedList: listType = .unordered
+                    case .listItem(let ord):
+                        depth += 1
+                        ordinal = ord
+                        pendingOrdinalTemp = ord
+                    case .orderedList:
+                        listType = .ordered
+                        if let o = pendingOrdinalTemp { pairs.append((.ordered, o)); pendingOrdinalTemp = nil }
+                    case .unorderedList:
+                        listType = .unordered
+                        if let o = pendingOrdinalTemp { pairs.append((.unordered, o)); pendingOrdinalTemp = nil }
                     default: break
                     }
                 }
             }
+
+            let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
 
             if let level = headerLevel {
                 flushPendingList(); flushPendingParagraph()
@@ -398,12 +411,13 @@ struct UIKitMarkdownText: UIViewRepresentable {
                 flushPendingParagraph()
                 // list item content
                 let ns = nsFromSlice(sliceAS)
-                if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal {
+                if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal || pendingListSignature != signature {
                     // flush previous item
                     flushPendingList()
                     pendingListDepth = depth
                     pendingListType = type
                     pendingListOrdinal = ordinal
+                    pendingListSignature = signature
                 }
                 pendingListContent.append(ns)
                 continue
