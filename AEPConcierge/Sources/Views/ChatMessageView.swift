@@ -41,20 +41,10 @@ struct ChatMessageView: View {
                     if isUserMessage {
                         Text(messageBody ?? "")
                     } else {
-                        let blocks = MarkdownRenderer.buildBlocks(markdown: messageBody ?? "", textColor: UIColor(theme.onAgent))
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(Array(blocks.enumerated()), id: \.0) { _, block in
-                                switch block {
-                                case .text(let ns):
-                                    MarkdownText(attributed: ns)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                case .divider:
-                                    Divider()
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .layoutPriority(1)
+                        MarkdownBlockView(
+                            markdown: messageBody ?? "",
+                            textColor: UIColor(theme.onAgent)
+                        )
                     }
                 }
                     .padding(.horizontal, 16)

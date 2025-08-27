@@ -12,7 +12,7 @@
 
 import SwiftUI
 
-/// UIKit-backed text view that displays an NSAttributedString and auto-sizes
+/// UIKit backed text view that displays an NSAttributedString and auto sizes
 /// to its intrinsic height for use inside SwiftUI stacks.
 struct MarkdownText: UIViewRepresentable {
     let attributed: NSAttributedString
