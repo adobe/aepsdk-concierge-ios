@@ -82,26 +82,50 @@ private struct ListBlockView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(items.enumerated()), id: \.0) { idx, blocks in
-                HStack(alignment: .top, spacing: 8) {
-                    Text(bullet(for: idx))
-                        .font(.body)
+                // If a list item contains only nested lists (no text/quotes),
+                // suppress the parent's bullet to avoid a visually empty bullet
+                // followed by an indented bullet list.
+                let hasOwnRenderableText = blocks.contains { b in
+                    switch b {
+                    case .text: return true
+                    case .blockQuote: return true
+                    case .divider: return false
+                    case .list: return false
+                    }
+                }
+
+                if hasOwnRenderableText {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(bullet(for: idx))
+                            .font(.body)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
+                                switch child {
+                                case .text(let ns):
+                                    MarkdownText(attributed: ns)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                case .divider:
+                                    Divider()
+                                case .blockQuote(let nested):
+                                    QuoteBlockView(blocks: nested)
+                                case .list(let t, let inner):
+                                    ListBlockView(type: t, items: inner)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Render only the nested lists without an extra bullet at this level
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
-                            switch child {
-                            case .text(let ns):
-                                MarkdownText(attributed: ns)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            case .divider:
-                                Divider()
-                            case .blockQuote(let nested):
-                                QuoteBlockView(blocks: nested)
-                            case .list(let t, let inner):
+                            if case .list(let t, let inner) = child {
                                 ListBlockView(type: t, items: inner)
+                            } else if case .divider = child {
+                                Divider()
                             }
                         }
                     }
                 }
-                .padding(.leading,  (type == .unordered ? 0 : 0))
             }
         }
     }
