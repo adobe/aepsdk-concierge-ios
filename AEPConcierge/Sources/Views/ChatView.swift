@@ -87,7 +87,11 @@ public struct ChatView: View {
             Color(.systemBackground)
                 .ignoresSafeArea()
 
-            MessageListView(messages: viewModel.messages) { text in
+            MessageListView(
+                messages: viewModel.messages,
+                agentScrollTick: viewModel.agentScrollTick,
+                userScrollTick: viewModel.userScrollTick
+            ) { text in
                 textSpeaker?.utter(text: text)
             }
         }
