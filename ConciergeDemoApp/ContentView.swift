@@ -47,6 +47,25 @@ This is a paragraph with inline styles: **bold**, _italic_, `inline code`, and a
 print("Hello, Markdown blocks!")
 ```
 
+> Tips for the day:
+>
+> - Use version control
+> - Write tests
+>   - Unit tests
+>   - Snapshot tests
+> - Document decisions
+>
+> That’s it!
+
+Regular paragraph to separate sections.
+
+> Mixed content:
+>
+> - Top item
+>   - Child item
+>   - Another child
+> - Next item
+
 | Column A | Column B | Column C |
 |:-------:|---------:|---------:|
 | A1      | B1       | C1       |
