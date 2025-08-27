@@ -35,6 +35,19 @@ struct MarkdownBlockView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 case .divider:
                     Divider()
+                case .blockQuote(let paras):
+                    HStack(alignment: .top, spacing: 10) {
+                        Rectangle()
+                            .fill(Color.secondary)
+                            .frame(width: 3)
+                            .cornerRadius(2)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(Array(paras.enumerated()), id: \.0) { _, p in
+                                MarkdownText(attributed: p)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
                 }
             }
         }

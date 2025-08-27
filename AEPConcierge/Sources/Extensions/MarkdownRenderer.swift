@@ -3,7 +3,7 @@
  This file is licensed to you under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License. You may obtain a copy
  of the License at http://www.apache.org/licenses/LICENSE-2.0
-
+ 
  Unless required by applicable law or agreed to in writing, software distributed under
  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
  OF ANY KIND, either express or implied. See the License for the specific language
@@ -13,99 +13,26 @@
 import SwiftUI
 import UIKit
 
-/// Renders markdown into an AttributedString, leveraging the system markdown parser
-/// and applying text style changes where applicable.
+/// Markdown renderer utilities: parse markdown and produce structured blocks
+/// that can be rendered by SwiftUI components.
 enum MarkdownRenderer {
-    /// Parse and style a markdown string into an AttributedString.
-    /// - Parameter markdown: The markdown source text.
-    /// - Returns: A styled AttributedString for use with SwiftUI `Text(_:)` or UIKit.
-    static func render(_ markdown: String) -> AttributedString {
-        // Parse using system markdown support
-        let options = AttributedString.MarkdownParsingOptions(
-            // Use full parsing for block and inline detection
-            interpretedSyntax: .full,
-            failurePolicy: .returnPartiallyParsedIfPossible
-        )
-
-        guard var attributed = try? AttributedString(markdown: markdown, options: options) else {
-            return AttributedString(markdown)
-        }
-
-        applyInlineStyles(&attributed)
-        applyBlockStyles(&attributed)
-        return attributed
-    }
     // MARK: - Block model for interleaving SwiftUI views
     enum Block: Equatable {
         case text(NSAttributedString)
         case divider
+        case blockQuote([NSAttributedString])
     }
 
-    /// Build blocks (text + divider) from markdown using the block-aware builder.
+    /// Build blocks (text, divider, blockQuote) directly from PresentationIntent
+    /// without relying on sentinel characters.
     static func buildBlocks(markdown: String, textColor: UIColor? = nil, baseFont: UIFont = .preferredFont(forTextStyle: .body)) -> [Block] {
-        let ns = buildBlockAwareAttributedString(markdown: markdown, textColor: textColor, baseFont: baseFont)
-        // Split the result by U+2029 into paragraphs and detect divider lines
-        var blocks: [Block] = []
-        let full = ns.string
-        let parts = full.components(separatedBy: "\u{2029}")
-        var cursor = 0
-        for part in parts {
-            let length = (part as NSString).length
-            if length == 0 { cursor += 1; continue }
-            let range = NSRange(location: cursor, length: length)
-            let sub = ns.attributedSubstring(from: range)
-            let trimmed = part.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed == "\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}" { blocks.append(.divider) }
-            else { blocks.append(.text(sub)) }
-            cursor += length + 1 // + separator
-        }
-        return blocks
-    }
-
-    // MARK: - Block-aware attributed string builder (moved from UIKit bridge)
-    static func applyBaseStyling(_ source: NSAttributedString, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {
-        let mutable = NSMutableAttributedString(attributedString: source)
-        let range = NSRange(location: 0, length: mutable.length)
-        if let color = textColor { mutable.addAttribute(.foregroundColor, value: color, range: range) }
-        mutable.enumerateAttribute(.font, in: range) { value, subrange, _ in
-            guard let font = value as? UIFont else {
-                mutable.addAttribute(.font, value: baseFont, range: subrange)
-                return
-            }
-            let traits = font.fontDescriptor.symbolicTraits
-            let isMono = traits.contains(.traitMonoSpace)
-            let isBoldish = traits.contains(.traitBold)
-            if !isMono && !isBoldish {
-                let new = UIFont(descriptor: font.fontDescriptor.withSize(baseFont.pointSize), size: baseFont.pointSize)
-                mutable.addAttribute(.font, value: new, range: subrange)
-            }
-        }
-        return mutable
-    }
-
-    static func buildBlockAwareAttributedString(markdown: String, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
-        guard let attributed = try? AttributedString(markdown: markdown, options: options) else {
-            return NSAttributedString(string: markdown, attributes: [.font: baseFont, .foregroundColor: textColor ?? UIColor.label])
-        }
+        guard let attributed = try? AttributedString(markdown: markdown, options: options) else { return [] }
 
-        let out = NSMutableAttributedString()
-        let bodyAttrs: [NSAttributedString.Key: Any] = [
-            .font: baseFont,
-            .foregroundColor: textColor ?? UIColor.label
-        ]
-
-        func appendParagraph(_ ns: NSAttributedString) {
-            let sep = "\u{2029}"
-            if out.length > 0, !out.string.hasSuffix(sep) {
-                out.append(NSAttributedString(string: sep))
-            }
-            out.append(ns)
-            out.append(NSAttributedString(string: sep))
-        }
+        var blocks: [Block] = []
 
         func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
             var s = slice
@@ -117,6 +44,13 @@ enum MarkdownRenderer {
             return NSAttributedString(s)
         }
 
+        // Helpers to append a paragraph as a text block
+        func pushParagraph(_ ns: NSAttributedString) {
+            let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
+            blocks.append(.text(styled))
+        }
+
+        // List accumulation (same approach as attributed builder)
         enum ListType { case ordered, unordered }
         var pendingListDepth: Int? = nil
         var pendingListType: ListType? = nil
@@ -131,7 +65,10 @@ enum MarkdownRenderer {
             let indentSpaces = String(repeating: " ", count: Int(CGFloat(depth - 1) * indentPerLevel / 4))
             let bullet: String = (type == .ordered && pendingListOrdinal != nil) ? "\(pendingListOrdinal!)." : "•"
             let prefix = "\(indentSpaces)\(bullet) "
-            let line = NSMutableAttributedString(string: prefix, attributes: bodyAttrs)
+            let line = NSMutableAttributedString(string: prefix, attributes: [
+                .font: baseFont,
+                .foregroundColor: textColor ?? UIColor.label
+            ])
             line.append(pendingListContent)
             let ps = NSMutableParagraphStyle()
             let tabLoc = (prefix as NSString).size(withAttributes: [.font: baseFont]).width
@@ -140,15 +77,24 @@ enum MarkdownRenderer {
             ps.headIndent = tabLoc
             ps.lineBreakMode = .byWordWrapping
             line.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: line.length))
-            appendParagraph(line)
-            pendingListDepth = nil; pendingListType = nil; pendingListOrdinal = nil; pendingListSignature = nil; pendingListContent = NSMutableAttributedString()
+            pushParagraph(line)
+            pendingListDepth = nil
+            pendingListType = nil
+            pendingListOrdinal = nil
+            pendingListSignature = nil
+            pendingListContent = NSMutableAttributedString()
         }
 
+        // Paragraph accumulation
         var pendingParagraph = NSMutableAttributedString()
         func flushPendingParagraph() {
-            if pendingParagraph.length > 0 { appendParagraph(pendingParagraph); pendingParagraph = NSMutableAttributedString() }
+            if pendingParagraph.length > 0 {
+                pushParagraph(pendingParagraph)
+                pendingParagraph = NSMutableAttributedString()
+            }
         }
 
+        // Header accumulation
         var headerBuffer = NSMutableAttributedString()
         var headerLevelActive: Int? = nil
         func flushHeaderBuffer() {
@@ -162,9 +108,18 @@ enum MarkdownRenderer {
             let r = NSRange(location: 0, length: headerBuffer.length)
             headerBuffer.addAttribute(.font, value: font, range: r)
             headerBuffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: r)
-            appendParagraph(headerBuffer)
+            pushParagraph(headerBuffer)
             headerBuffer = NSMutableAttributedString()
             headerLevelActive = nil
+        }
+
+        // Block quote accumulation (structured)
+        var quoteParas: [NSAttributedString] = []
+        func flushQuote() {
+            if !quoteParas.isEmpty {
+                blocks.append(.blockQuote(quoteParas))
+                quoteParas = []
+            }
         }
 
         for run in attributed.runs {
@@ -197,6 +152,7 @@ enum MarkdownRenderer {
             if let level = headerLevel {
                 flushPendingList()
                 flushPendingParagraph()
+                flushQuote()
                 if headerLevelActive == nil {
                     headerLevelActive = level
                 }
@@ -213,34 +169,28 @@ enum MarkdownRenderer {
             if isThematic {
                 flushPendingList()
                 flushPendingParagraph()
-                let rule = NSAttributedString(string: "\n\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\n", attributes: bodyAttrs)
-                appendParagraph(rule)
+                flushQuote()
+                blocks.append(.divider)
                 continue
             }
             if isCodeBlock {
                 flushPendingList()
                 flushPendingParagraph()
+                flushQuote()
                 let ns = nsFromSlice(sliceAS)
                 let m = NSMutableAttributedString(attributedString: ns)
                 m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
                 m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
-                appendParagraph(m)
+                pushParagraph(m)
                 continue
             }
             if isBlockQuote {
                 flushPendingList()
                 flushPendingParagraph()
-                let marker = NSAttributedString(string: "▎ ", attributes: [.foregroundColor: UIColor.tertiaryLabel, .font: baseFont])
-                let ns = nsFromSlice(sliceAS)
-                let m = NSMutableAttributedString(attributedString: marker)
-                m.append(ns)
-                let ps = NSMutableParagraphStyle()
-                ps.headIndent = 16
-                ps.firstLineHeadIndent = 0
-                ps.lineBreakMode = .byWordWrapping
-                m.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: m.length))
-                appendParagraph(m)
+                quoteParas.append(applyBaseStyling(nsFromSlice(sliceAS), textColor: textColor, baseFont: baseFont))
                 continue
+            } else {
+                flushQuote()
             }
             if depth > 0, let type = listType {
                 flushPendingParagraph()
@@ -255,67 +205,34 @@ enum MarkdownRenderer {
                 pendingListContent.append(ns)
                 continue
             }
-            let ns = nsFromSlice(sliceAS); pendingParagraph.append(ns)
+            let ns = nsFromSlice(sliceAS)
+            pendingParagraph.append(ns)
         }
 
-        flushPendingList(); flushPendingParagraph()
-        return applyBaseStyling(out, textColor: textColor, baseFont: baseFont)
+        flushPendingList()
+        flushPendingParagraph()
+        flushQuote()
+        return blocks
     }
 
-    // MARK: - Styling
-    private static func applyInlineStyles(_ attributed: inout AttributedString) {
-        var container = AttributeContainer()
-        let swiftUIFontScope = AttributeScopes.SwiftUIAttributes.self
-
-        for run in attributed.runs {
-            // For inline code styling, apply monospaced font
-            if let intent = run.inlinePresentationIntent, intent.contains(.code) {
-                container[swiftUIFontScope.FontAttribute.self] = .system(.body, design: .monospaced)
-                attributed[run.range].mergeAttributes(container)
-                container = AttributeContainer()
+    static func applyBaseStyling(_ source: NSAttributedString, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {
+        let mutable = NSMutableAttributedString(attributedString: source)
+        let range = NSRange(location: 0, length: mutable.length)
+        if let color = textColor { mutable.addAttribute(.foregroundColor, value: color, range: range) }
+        mutable.enumerateAttribute(.font, in: range) { value, subrange, _ in
+            guard let font = value as? UIFont else {
+                mutable.addAttribute(.font, value: baseFont, range: subrange)
+                return
+            }
+            let traits = font.fontDescriptor.symbolicTraits
+            let isMono = traits.contains(.traitMonoSpace)
+            let isBoldish = traits.contains(.traitBold)
+            if !isMono && !isBoldish {
+                let new = UIFont(descriptor: font.fontDescriptor.withSize(baseFont.pointSize), size: baseFont.pointSize)
+                mutable.addAttribute(.font, value: new, range: subrange)
             }
         }
-    }
-
-    private static func applyBlockStyles(_ attributed: inout AttributedString) {
-        let swiftUIFontScope = AttributeScopes.SwiftUIAttributes.self
-        let uiKitScope = AttributeScopes.UIKitAttributes.self
-
-        for run in attributed.runs {
-            if let presentation = run.presentationIntent {
-                for component in presentation.components {
-                    switch component.kind {
-                    case .header(let level):
-                        var container = AttributeContainer()
-                        // Map heading levels to font sizes/weights
-                        let font: Font
-                        switch level {
-                        case 1: font = .system(size: 22, weight: .bold)
-                        case 2: font = .system(size: 20, weight: .semibold)
-                        case 3: font = .system(size: 18, weight: .semibold)
-                        default: font = .system(size: 16, weight: .semibold)
-                        }
-                        container[swiftUIFontScope.FontAttribute.self] = font
-                        attributed[run.range].mergeAttributes(container)
-
-                    case .blockQuote:
-                        var container = AttributeContainer()
-                        // Slightly dim quotes to differentiate
-                        container[uiKitScope.ForegroundColorAttribute.self] = UIColor.secondaryLabel
-                        attributed[run.range].mergeAttributes(container)
-                    default:
-                        break
-                    }
-                }
-            }
-        }
-    }
-}
-
-extension Text {
-    /// Convenience helper to create a Text view from markdown using MarkdownRenderer.
-    static func markdown(_ markdown: String) -> Text {
-        return Text(MarkdownRenderer.render(markdown))
+        return mutable
     }
 }
 

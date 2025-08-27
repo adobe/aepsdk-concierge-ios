@@ -27,7 +27,7 @@ This is a paragraph with inline styles: **bold**, _italic_, `inline code`, and a
 
 > Block quote line one
 >
-> Block quote line two
+> Block quote line two with lots of extra text to see how line wrapping works for these elements
 
 ---
 
