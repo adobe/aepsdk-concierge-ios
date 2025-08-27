@@ -11,7 +11,6 @@
  */
 
 import SwiftUI
-import UIKit
 
 /// Markdown renderer utilities: parse markdown and produce structured blocks
 /// that can be rendered by SwiftUI components.
@@ -42,30 +41,48 @@ enum MarkdownRenderer {
     }
 
     /// Build blocks (text, divider, blockQuote) directly from PresentationIntent
-    /// without relying on sentinel characters.
+    /// using a small stateful builder.
     static func buildBlocks(markdown: String, textColor: UIColor? = nil, baseFont: UIFont = .preferredFont(forTextStyle: .body)) -> [Block] {
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
         guard let attributed = try? AttributedString(markdown: markdown, options: options) else { return [] }
+        var builder = BlockBuilder(attributed: attributed, textColor: textColor, baseFont: baseFont)
+        return builder.build()
+    }
 
-        var blocks: [Block] = []
+    // MARK: - Builder
+    private struct BlockBuilder {
+        let attributed: AttributedString
+        let textColor: UIColor?
+        let baseFont: UIFont
 
-        // Helpers to append a paragraph as a text block
-        func pushParagraph(_ ns: NSAttributedString) {
-            let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
-            blocks.append(.text(styled))
-        }
+        private(set) var blocks: [Block] = []
 
-        // List accumulation (same approach as attributed builder)
+        // List state
         var pendingListDepth: Int? = nil
         var pendingListType: ListType? = nil
         var pendingListOrdinal: Int? = nil
         var pendingListSignature: ListSignature? = nil
         var pendingListContent = NSMutableAttributedString()
 
-        func flushPendingList() {
+        // Paragraph state
+        var pendingParagraph = NSMutableAttributedString()
+
+        // Header state
+        var headerBuffer = NSMutableAttributedString()
+        var headerLevelActive: Int? = nil
+
+        // Quote state
+        var quoteParas: [NSAttributedString] = []
+
+        mutating func pushParagraph(_ ns: NSAttributedString) {
+            let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
+            blocks.append(.text(styled))
+        }
+
+        mutating func flushPendingList() {
             guard let depth = pendingListDepth, let type = pendingListType else { return }
             let indentPerLevel: CGFloat = 20
             let indentSpaces = String(repeating: " ", count: Int(CGFloat(depth - 1) * indentPerLevel / 4))
@@ -91,18 +108,12 @@ enum MarkdownRenderer {
             pendingListContent = NSMutableAttributedString()
         }
 
-        // Paragraph accumulation
-        var pendingParagraph = NSMutableAttributedString()
-        func flushPendingParagraph() {
+        mutating func flushPendingParagraph() {
             if pendingParagraph.length > 0 {
                 pushParagraph(pendingParagraph)
                 pendingParagraph = NSMutableAttributedString()
             }
         }
-
-        // Header accumulation
-        var headerBuffer = NSMutableAttributedString()
-        var headerLevelActive: Int? = nil
 
         func headerFont(for level: Int) -> UIFont {
             switch level {
@@ -113,7 +124,7 @@ enum MarkdownRenderer {
             }
         }
 
-        func flushHeaderBuffer() {
+        mutating func flushHeaderBuffer() {
             guard let level = headerLevelActive, headerBuffer.length > 0 else { return }
             let r = NSRange(location: 0, length: headerBuffer.length)
             headerBuffer.addAttribute(.font, value: headerFont(for: level), range: r)
@@ -123,17 +134,88 @@ enum MarkdownRenderer {
             headerLevelActive = nil
         }
 
-        // Block quote accumulation (structured)
-        var quoteParas: [NSAttributedString] = []
-        func flushQuote() {
+        mutating func flushQuote() {
             if !quoteParas.isEmpty {
                 blocks.append(.blockQuote(quoteParas))
                 quoteParas = []
             }
         }
 
-        for run in attributed.runs {
-            let sliceAS = AttributedString(attributed[run.range])
+        mutating func build() -> [Block] {
+            for run in attributed.runs {
+                let sliceAS = AttributedString(attributed[run.range])
+                switch classify(presentation: run.presentationIntent) {
+                case .header(let level):
+                    flushPendingList()
+                    flushPendingParagraph()
+                    flushQuote()
+                    if headerLevelActive == nil {
+                        headerLevelActive = level
+                    }
+                    if let active = headerLevelActive, active != level {
+                        flushHeaderBuffer()
+                        headerLevelActive = level
+                    }
+                    headerBuffer.append(nsFromSlice(sliceAS))
+
+                case .thematicBreak:
+                    flushPendingList()
+                    flushPendingParagraph()
+                    flushQuote()
+                    blocks.append(.divider)
+
+                case .codeBlock:
+                    flushPendingList()
+                    flushPendingParagraph()
+                    flushQuote()
+                    let ns = nsFromSlice(sliceAS)
+                    let m = NSMutableAttributedString(attributedString: ns)
+                    m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
+                    m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
+                    pushParagraph(m)
+
+                case .blockQuote:
+                    flushPendingList()
+                    flushPendingParagraph()
+                    quoteParas.append(applyBaseStyling(nsFromSlice(sliceAS), textColor: textColor, baseFont: baseFont))
+
+                case .list(let type, let depth, let ordinal, let signature):
+                    flushPendingParagraph()
+                    let ns = nsFromSlice(sliceAS)
+                    if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal || pendingListSignature != signature {
+                        flushPendingList()
+                        pendingListDepth = depth
+                        pendingListType = type
+                        pendingListOrdinal = ordinal
+                        pendingListSignature = signature
+                    }
+                    pendingListContent.append(ns)
+
+                case .paragraph:
+                    if headerLevelActive != nil { flushHeaderBuffer() }
+                    flushQuote()
+                    let ns = nsFromSlice(sliceAS)
+                    pendingParagraph.append(ns)
+                }
+            }
+
+            flushPendingList()
+            flushPendingParagraph()
+            flushQuote()
+            return blocks
+        }
+
+        // MARK: - Run classification
+        private enum RunKind {
+            case header(Int)
+            case thematicBreak
+            case codeBlock
+            case blockQuote
+            case list(ListType, Int, Int?, ListSignature?)
+            case paragraph
+        }
+
+        private func classify(presentation: PresentationIntent?) -> RunKind {
             var headerLevel: Int? = nil
             var isCodeBlock = false
             var isBlockQuote = false
@@ -143,7 +225,7 @@ enum MarkdownRenderer {
             var ordinal: Int? = nil
             var pairs: [(ListType, Int)] = []
             var pendingOrdinalTemp: Int? = nil
-            if let pres = run.presentationIntent {
+            if let pres = presentation {
                 for comp in pres.components {
                     switch comp.kind {
                     case .header(let level): headerLevel = level
@@ -157,72 +239,16 @@ enum MarkdownRenderer {
                     }
                 }
             }
-            let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
-
-            if let level = headerLevel {
-                flushPendingList()
-                flushPendingParagraph()
-                flushQuote()
-                if headerLevelActive == nil {
-                    headerLevelActive = level
-                }
-                if let active = headerLevelActive, active != level {
-                    flushHeaderBuffer()
-                    headerLevelActive = level
-                }
-                headerBuffer.append(nsFromSlice(sliceAS))
-                continue
-            } else if headerLevelActive != nil {
-                flushHeaderBuffer()
-            }
-
-            if isThematic {
-                flushPendingList()
-                flushPendingParagraph()
-                flushQuote()
-                blocks.append(.divider)
-                continue
-            }
-            if isCodeBlock {
-                flushPendingList()
-                flushPendingParagraph()
-                flushQuote()
-                let ns = nsFromSlice(sliceAS)
-                let m = NSMutableAttributedString(attributedString: ns)
-                m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
-                m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
-                pushParagraph(m)
-                continue
-            }
-            if isBlockQuote {
-                flushPendingList()
-                flushPendingParagraph()
-                quoteParas.append(applyBaseStyling(nsFromSlice(sliceAS), textColor: textColor, baseFont: baseFont))
-                continue
-            } else {
-                flushQuote()
-            }
+            if let level = headerLevel { return .header(level) }
+            if isThematic { return .thematicBreak }
+            if isCodeBlock { return .codeBlock }
+            if isBlockQuote { return .blockQuote }
             if depth > 0, let type = listType {
-                flushPendingParagraph()
-                let ns = nsFromSlice(sliceAS)
-                if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal || pendingListSignature != signature {
-                    flushPendingList()
-                    pendingListDepth = depth
-                    pendingListType = type
-                    pendingListOrdinal = ordinal
-                    pendingListSignature = signature
-                }
-                pendingListContent.append(ns)
-                continue
+                let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
+                return .list(type, depth, ordinal, signature)
             }
-            let ns = nsFromSlice(sliceAS)
-            pendingParagraph.append(ns)
+            return .paragraph
         }
-
-        flushPendingList()
-        flushPendingParagraph()
-        flushQuote()
-        return blocks
     }
 
     static func applyBaseStyling(_ source: NSAttributedString, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {
