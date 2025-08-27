@@ -24,7 +24,7 @@ class ConciergeChatService: NSObject {
     private var session: URLSession!
     private var dataTask: URLSessionDataTask?
     private var serverEventHandler: ((ConciergeResponse?, ConciergeError?) -> Void)?
-    private var onChunkHandler: ((String) -> Void)?
+    private var onChunkHandler: ((TempPayload) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
     private var lastEmittedResponseText: String = ""
     
@@ -45,7 +45,7 @@ class ConciergeChatService: NSObject {
         self.tempServerEventHandler = handler
     }
     
-    func streamChat(_ query: String, onChunk: @escaping (String) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
+    func streamChat(_ query: String, onChunk: @escaping (TempPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
         guard let url = URL(string: serviceEndpoint) else {
             onComplete(.invalidEndpoint)
             return
@@ -128,29 +128,10 @@ extension ConciergeChatService: URLSessionDataDelegate {
             }
             
             do {
-                
-                // START HERE - pass back a TempPayload to onChunk and onComplete
-                
                 let handle = try JSONDecoder().decode(TempHandle.self, from: handleData)
-                if let firstPayload = handle.handle.first?.payload.first,
-                   let state = firstPayload.state,
-                   let message = firstPayload.response?.message {
-                    if state == Constants.StreamState.IN_PROGRESS {
-                        // Emit raw fragment and accumulate locally
-                        self.onChunkHandler?(message)
-                        self.lastEmittedResponseText += message
-                    } else if state == Constants.StreamState.COMPLETED {
-                        // Emit only the remainder beyond what we already streamed
-                        let fullText = message
-                        if self.lastEmittedResponseText.count < fullText.count {
-                            let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
-                            let delta = String(fullText[startIndex...])
-                            if !delta.isEmpty {
-                                self.onChunkHandler?(delta)
-                            }
-                        }
-                        self.lastEmittedResponseText = fullText
-                    }
+                if let handler = self.onChunkHandler,
+                   let payload = handle.handle.first?.payload.first {
+                    handler(payload)
                 }
             } catch {
                 Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
