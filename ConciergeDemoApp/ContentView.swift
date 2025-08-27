@@ -15,64 +15,108 @@ import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
-import AEPConcierge
+@testable import AEPConcierge
 
 struct ContentView: View {
+    let stringToRender = """
+# Header 1
+
+This is a paragraph with inline styles: **bold**, _italic_, `inline code`, and a [link](https://example.com).
+
+## Header 2
+
+> Block quote line one
+>
+> Block quote line two
+
+---
+
+1. First ordered item
+   1. Nested ordered (child 1)
+   2. Nested ordered (child 2)
+2. Second ordered item
+
+- First unordered item
+  - Nested unordered (child)
+- Second unordered item
+
+```swift
+// Code block with language hint
+print("Hello, Markdown blocks!")
+```
+
+| Column A | Column B | Column C |
+|:-------:|---------:|---------:|
+| A1      | B1       | C1       |
+| A2      | B2       | C2       |
+
+Final paragraph to verify trailing layout.
+"""
+
     var body: some View {
         TabView {
             // SwiftUI sample
             Concierge.wrap(
-                VStack(spacing: 0) {
-                    Text("""
-Does _this_ markdown work?
-
-testing **literal** markdowns
-
-* lists
-
-* more lists
-
-1. numbered
-
-2. lists
-
-[A link to a thing](https://adobe.com)
-""")
-                    Button(action: {
-                        Concierge.show(
-                            title: "Concierge",
-                            subtitle: "Powered by Adobe"
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        UIKitMarkdownText(
+                            markdown: stringToRender,
+                            textColor: UIColor.label,
+                            baseFont: .preferredFont(forTextStyle: .body),
+                            maxWidth: UIScreen.main.bounds.width - 40
                         )
-                    }) {
-                        Text("Open chat (SwiftUI)")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 28)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color.red)
-                                    .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
-                            )
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 32)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
-                .conciergeTheme(
-                    ConciergeTheme(
-                        primary: .Brand.red,
-                        secondary: .Brand.red,
-                        onPrimary: .white,
-                        textBody: .primary,
-                        agentBubble: Color(UIColor.systemGray5),
-                        onAgent: .primary,
-                        surfaceLight: Color(UIColor.secondarySystemBackground),
-                        surfaceDark: Color(UIColor.systemBackground)
+                    VStack(spacing: 0) {
+//                        Text(stringToRender)
+//                        Text.markdown(stringToRender)
+
+
+                        Button(action: {
+                            MarkdownRenderer.debugDump(stringToRender, syntax: .full)
+                            MarkdownRenderer.debugDump(stringToRender, syntax: .inlineOnlyPreservingWhitespace)
+                        }) {
+                            Text("DEBUG MARKDOWN")
+                        }
+                        Button(action: {
+                            Concierge.show(
+                                title: "Concierge",
+                                subtitle: "Powered by Adobe"
+                            )
+                        }) {
+                            Text("Open chat (SwiftUI)")
+                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 16)
+                                .padding(.horizontal, 28)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.red)
+                                        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+                                )
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 32)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
+                    .conciergeTheme(
+                        ConciergeTheme(
+                            primary: .Brand.red,
+                            secondary: .Brand.red,
+                            onPrimary: .white,
+                            textBody: .primary,
+                            agentBubble: Color(UIColor.systemGray5),
+                            onAgent: .primary,
+                            surfaceLight: Color(UIColor.secondarySystemBackground),
+                            surfaceDark: Color(UIColor.systemBackground)
+                        )
                     )
-                )
+                }
+
             )
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 

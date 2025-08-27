@@ -35,8 +35,22 @@ struct ChatMessageView: View {
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
 
-                // Render agent messages with inline markdown
-                (isUserMessage ? Text(messageBody ?? "") : Text.markdown(messageBody ?? ""))
+                // User text uses plain Text; agent text uses UIKit-based markdown (.full) for block layout
+                Group {
+                    if isUserMessage {
+                        Text(messageBody ?? "")
+                    } else {
+                        GeometryReader { proxy in
+                            UIKitMarkdownText(
+                                markdown: messageBody ?? "",
+                                textColor: UIColor(theme.onAgent),
+                                baseFont: .preferredFont(forTextStyle: .body),
+                                maxWidth: proxy.size.width
+                            )
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 0)
+                    }
+                }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .textSelection(.enabled)

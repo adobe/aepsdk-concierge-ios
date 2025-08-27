@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// Renders markdown into an AttributedString, leveraging the system markdown parser
 /// and applying text style changes where applicable.
@@ -21,8 +22,8 @@ enum MarkdownRenderer {
     static func render(_ markdown: String) -> AttributedString {
         // Parse using system markdown support
         let options = AttributedString.MarkdownParsingOptions(
-            // Preserve literal newlines and whitespace, but parse inline markdown like **bold**, _italic_, `code`, and links
-            interpretedSyntax: .inlineOnlyPreservingWhitespace,
+            // Use full parsing for block and inline detection
+            interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
 
@@ -89,5 +90,313 @@ extension Text {
     /// Convenience helper to create a Text view from markdown using MarkdownRenderer.
     static func markdown(_ markdown: String) -> Text {
         return Text(MarkdownRenderer.render(markdown))
+    }
+}
+
+#if DEBUG
+extension MarkdownRenderer {
+    /// Debug utility to print the runs and presentation intents produced by Markdown parsing.
+    static func debugDump(_ markdown: String, syntax: AttributedString.MarkdownParsingOptions.InterpretedSyntax) {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: syntax,
+            failurePolicy: .returnPartiallyParsedIfPossible
+        )
+        guard let attributed = try? AttributedString(markdown: markdown, options: options) else {
+            print("MarkdownRenderer.debugDump: failed to parse markdown")
+            return
+        }
+
+        let swiftUIFontScope = AttributeScopes.SwiftUIAttributes.self
+        let uiKitScope = AttributeScopes.UIKitAttributes.self
+        let foundationScope = AttributeScopes.FoundationAttributes.self
+
+        print("\n—— MarkdownRenderer Debug Dump (syntax: \(syntax)) ——")
+        print("Raw text:\n\(String(attributed.characters))")
+
+        for run in attributed.runs {
+            let slice = AttributedString(attributed[run.range])
+            let text = String(slice.characters)
+            print("\n[run] \"\(text)\"")
+
+            if let inline = run.inlinePresentationIntent { print(" inline: \(inline)") }
+
+            if let pres = run.presentationIntent {
+                let kinds = pres.components.map { $0.kind }
+                print(" block kinds: \(kinds)")
+            }
+
+            if let font = run.attributes[swiftUIFontScope.FontAttribute.self] {
+                print(" font: \(font)")
+            }
+            if let color = run.attributes[uiKitScope.ForegroundColorAttribute.self] {
+                print(" color: \(color)")
+            }
+            if let link = run.attributes[foundationScope.LinkAttribute.self] {
+                print(" link: \(String(describing: link))")
+            }
+        }
+        print("—— End Debug Dump ——\n")
+    }
+}
+#endif
+
+// MARK: - UIKit bridge for block-aware Markdown rendering
+/// A UIViewRepresentable that renders Markdown with full block parsing via
+/// NSAttributedString(markdown:), so lists/quotes/code blocks are laid out correctly.
+/// Tables are parsed but not laid out as grids by TextKit (custom rendering needed).
+struct UIKitMarkdownText: UIViewRepresentable {
+    let markdown: String
+    var textColor: UIColor? = nil
+    var baseFont: UIFont = .preferredFont(forTextStyle: .body)
+    /// Pass container width from SwiftUI (e.g., GeometryReader) for correct wrapping.
+    var maxWidth: CGFloat? = nil
+
+    final class AutoSizingTextView: UITextView {
+        var targetWidth: CGFloat = 0 { didSet { if oldValue != targetWidth { invalidateIntrinsicContentSize() } } }
+        override var intrinsicContentSize: CGSize {
+            let width = targetWidth > 0 ? targetWidth : bounds.width
+            let size = sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
+            return CGSize(width: width, height: ceil(size.height))
+        }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            if targetWidth <= 0 && bounds.width > 0 { targetWidth = bounds.width }
+        }
+    }
+
+    func makeUIView(context: Context) -> AutoSizingTextView {
+        let tv = AutoSizingTextView()
+        tv.isEditable = false
+        tv.isScrollEnabled = false
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        tv.textContainer.lineBreakMode = .byWordWrapping
+        tv.textContainer.widthTracksTextView = false
+        tv.adjustsFontForContentSizeCategory = true
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        return tv
+    }
+
+    func updateUIView(_ uiView: AutoSizingTextView, context: Context) {
+        let styled = buildBlockAwareAttributedString(markdown: markdown)
+        uiView.attributedText = styled
+
+        if let w = maxWidth, w > 0 {
+            uiView.targetWidth = w
+            uiView.textContainer.size = CGSize(width: w, height: CGFloat.greatestFiniteMagnitude)
+        }
+    }
+
+    private func applyBaseStyling(to source: NSAttributedString) -> NSAttributedString {
+        let mutable = NSMutableAttributedString(attributedString: source)
+        let range = NSRange(location: 0, length: mutable.length)
+
+        if let color = textColor {
+            mutable.addAttribute(.foregroundColor, value: color, range: range)
+        }
+
+        // Ensure body text matches desired baseFont where no explicit font is provided.
+        mutable.enumerateAttribute(.font, in: range) { value, subrange, _ in
+            guard let font = value as? UIFont else {
+                mutable.addAttribute(.font, value: baseFont, range: subrange)
+                return
+            }
+            // Keep monospace/heading fonts; normalize plain body-ish runs to baseFont size.
+            let traits = font.fontDescriptor.symbolicTraits
+            let isMono = traits.contains(.traitMonoSpace)
+            let isBoldish = traits.contains(.traitBold)
+            if !isMono && !isBoldish {
+                let new = UIFont(descriptor: font.fontDescriptor.withSize(baseFont.pointSize), size: baseFont.pointSize)
+                mutable.addAttribute(.font, value: new, range: subrange)
+            }
+        }
+
+        return mutable
+    }
+
+    // MARK: - Block-aware builder
+    private func buildBlockAwareAttributedString(markdown: String) -> NSAttributedString {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .full,
+            failurePolicy: .returnPartiallyParsedIfPossible
+        )
+        guard let attributed = try? AttributedString(markdown: markdown, options: options) else {
+            return NSAttributedString(string: markdown, attributes: [.font: baseFont, .foregroundColor: textColor ?? UIColor.label])
+        }
+
+        let out = NSMutableAttributedString()
+        let bodyAttrs: [NSAttributedString.Key: Any] = [
+            .font: baseFont,
+            .foregroundColor: textColor ?? UIColor.label
+        ]
+
+        // Helpers to append with explicit paragraph separation (U+2029)
+        func appendParagraph(_ ns: NSAttributedString) {
+            let paragraphSeparator = "\u{2029}"
+            if out.length > 0, !out.string.hasSuffix(paragraphSeparator) {
+                out.append(NSAttributedString(string: paragraphSeparator))
+            }
+            out.append(ns)
+            out.append(NSAttributedString(string: paragraphSeparator))
+        }
+
+        func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
+            var s = slice
+            if let font = fallbackFont {
+                var c = AttributeContainer()
+                c[AttributeScopes.UIKitAttributes.FontAttribute.self] = font
+                s.mergeAttributes(c)
+            }
+            return NSAttributedString(s)
+        }
+
+        // List accumulation state
+        enum ListType { case ordered, unordered }
+        var pendingListDepth: Int? = nil
+        var pendingListType: ListType? = nil
+        var pendingListOrdinal: Int? = nil
+        var pendingListContent = NSMutableAttributedString()
+
+        func flushPendingList() {
+            guard let depth = pendingListDepth, let type = pendingListType else { return }
+            // Build a line for the item
+            let indentPerLevel: CGFloat = 20
+            let indentSpaces = String(repeating: " ", count: Int(CGFloat(depth - 1) * indentPerLevel / 4))
+            let bullet: String
+            if type == .ordered, let ord = pendingListOrdinal {
+                bullet = "\(ord)."
+            } else { bullet = "•" }
+
+            let prefix = "\(indentSpaces)\(bullet) "
+            let line = NSMutableAttributedString(string: prefix, attributes: bodyAttrs)
+            line.append(pendingListContent)
+            // Apply paragraph style for wrap indent
+            let ps = NSMutableParagraphStyle()
+            let tabLoc = (prefix as NSString).size(withAttributes: [.font: baseFont]).width
+            ps.tabStops = [NSTextTab(textAlignment: .left, location: tabLoc, options: [:])]
+            ps.firstLineHeadIndent = 0
+            ps.headIndent = tabLoc
+            ps.lineBreakMode = .byWordWrapping
+            line.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: line.length))
+            appendParagraph(line)
+
+            // reset
+            pendingListDepth = nil
+            pendingListType = nil
+            pendingListOrdinal = nil
+            pendingListContent = NSMutableAttributedString()
+        }
+
+        // Accumulate normal paragraph text
+        var pendingParagraph = NSMutableAttributedString()
+        func flushPendingParagraph() {
+            if pendingParagraph.length > 0 {
+                appendParagraph(pendingParagraph)
+                pendingParagraph = NSMutableAttributedString()
+            }
+        }
+
+        for run in attributed.runs {
+            let sliceAS = AttributedString(attributed[run.range])
+            // Classification
+            var headerLevel: Int? = nil
+            var isCodeBlock = false
+            var isBlockQuote = false
+            var isThematic = false
+            var depth = 0
+            var listType: ListType? = nil
+            var ordinal: Int? = nil
+
+            if let pres = run.presentationIntent {
+                for comp in pres.components {
+                    switch comp.kind {
+                    case .header(let level): headerLevel = level
+                    case .codeBlock: isCodeBlock = true
+                    case .blockQuote: isBlockQuote = true
+                    case .thematicBreak: isThematic = true
+                    case .listItem(let ord): depth += 1; ordinal = ord
+                    case .orderedList: listType = .ordered
+                    case .unorderedList: listType = .unordered
+                    default: break
+                    }
+                }
+            }
+
+            if let level = headerLevel {
+                flushPendingList(); flushPendingParagraph()
+                // Map to fonts
+                let font: UIFont
+                switch level {
+                case 1: font = .systemFont(ofSize: 22, weight: .bold)
+                case 2: font = .systemFont(ofSize: 20, weight: .semibold)
+                case 3: font = .systemFont(ofSize: 18, weight: .semibold)
+                default: font = .systemFont(ofSize: 16, weight: .semibold)
+                }
+                let ns = nsFromSlice(sliceAS)
+                let m = NSMutableAttributedString(attributedString: ns)
+                m.addAttribute(.font, value: font, range: NSRange(location: 0, length: m.length))
+                m.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: NSRange(location: 0, length: m.length))
+                appendParagraph(m)
+                continue
+            }
+
+            if isThematic {
+                flushPendingList(); flushPendingParagraph()
+                let rule = NSAttributedString(string: "\n\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\n", attributes: bodyAttrs)
+                appendParagraph(rule)
+                continue
+            }
+
+            if isCodeBlock {
+                flushPendingList(); flushPendingParagraph()
+                let ns = nsFromSlice(sliceAS)
+                let m = NSMutableAttributedString(attributedString: ns)
+                m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
+                m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
+                appendParagraph(m)
+                continue
+            }
+
+            if isBlockQuote {
+                flushPendingList(); flushPendingParagraph()
+                let marker = NSAttributedString(string: "▎ ", attributes: [.foregroundColor: UIColor.tertiaryLabel, .font: baseFont])
+                let ns = nsFromSlice(sliceAS)
+                let m = NSMutableAttributedString(attributedString: marker)
+                m.append(ns)
+                // Indent quoted text
+                let ps = NSMutableParagraphStyle()
+                ps.headIndent = 16
+                ps.firstLineHeadIndent = 0
+                ps.lineBreakMode = .byWordWrapping
+                m.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: m.length))
+                appendParagraph(m)
+                continue
+            }
+
+            if depth > 0, let type = listType {
+                // list item content
+                let ns = nsFromSlice(sliceAS)
+                if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal {
+                    // flush previous item
+                    flushPendingList()
+                    pendingListDepth = depth
+                    pendingListType = type
+                    pendingListOrdinal = ordinal
+                }
+                pendingListContent.append(ns)
+                continue
+            }
+
+            // Paragraph text
+            let ns = nsFromSlice(sliceAS)
+            pendingParagraph.append(ns)
+        }
+
+        // Flush any remaining
+        flushPendingList(); flushPendingParagraph()
+
+        return applyBaseStyling(to: out)
     }
 }
