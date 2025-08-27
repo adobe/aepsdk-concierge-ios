@@ -223,14 +223,13 @@ final class ConciergeChatViewModel: ObservableObject {
                             // Stream completed successfully
                             self.chatState = .idle
                             
-                            // Replace with a fresh message marked for speaking to trigger onAppear
+                            // Mark the existing streaming message for speaking while preserving its id
                             if streamingMessageIndex < self.messages.count {
-                                self.messages[streamingMessageIndex] = Message(
-                                    template: .basic(isUserMessage: false),
-                                    shouldSpeakMessage: true,
-                                    messageBody: accumulatedContent
-                                )
-                                // Ensure a final tick after replacement
+                                var current = self.messages[streamingMessageIndex]
+                                current.messageBody = accumulatedContent
+                                current.shouldSpeakMessage = true
+                                self.messages[streamingMessageIndex] = current
+                                // Final tick to keep scroll pinned after completion
                                 self.agentScrollTick &+= 1
                             }
                         }
