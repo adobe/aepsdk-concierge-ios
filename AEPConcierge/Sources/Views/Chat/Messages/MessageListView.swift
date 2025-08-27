@@ -15,6 +15,9 @@ import SwiftUI
 /// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
     let messages: [Message]
+    // A monotonic tick that increases whenever the latest agent message updates
+    var agentScrollTick: Int = 0
+    var userScrollTick: Int = 0
     let onSpeak: (String) -> Void
 
     var body: some View {
@@ -35,10 +38,45 @@ struct MessageListView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 12)
             }
-            .onChange(of: messages.count) { _ in
-                if let lastId = messages.last?.id {
+            // Scroll when the last message id changes (new append). We only handle
+            // user messages here; agent messages are handled by `agentScrollTick`
+            // to avoid a position jump at completion.
+            .onChange(of: messages.last?.id) { _ in
+                guard let lastMessage = messages.last else { return }
+                let isAgentMessage: Bool = {
+                    switch lastMessage.template {
+                    case .divider:
+                        return false
+                    case .basic(let isUserMessage):
+                        return !isUserMessage
+                    default:
+                        // All other templates are agent-authored
+                        return true
+                    }
+                }()
+
+                guard !isAgentMessage else { return }
+                DispatchQueue.main.async {
                     withAnimation {
-                        proxy.scrollTo(lastId, anchor: .bottom)
+                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                    }
+                }
+            }
+            // Scroll during agent streaming updates (tick increments)
+            .onChange(of: agentScrollTick) { _ in
+                guard let lastMessage = messages.last else { return }
+                DispatchQueue.main.async {
+                    withAnimation {
+                        proxy.scrollTo(lastMessage.id, anchor: .top)
+                    }
+                }
+            }
+            // Scroll precisely to bottom when a user message is sent
+            .onChange(of: userScrollTick) { _ in
+                guard let lastMessage = messages.last else { return }
+                DispatchQueue.main.async {
+                    withAnimation {
+                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
                     }
                 }
             }
