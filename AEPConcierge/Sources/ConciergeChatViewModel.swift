@@ -180,6 +180,10 @@ final class ConciergeChatViewModel: ObservableObject {
                                     messageBody: accumulatedContent
                                 )
                             }
+                            
+                            if let message = self?.messages.last {
+                                if message.
+                            }
                         }
                     }
                 }

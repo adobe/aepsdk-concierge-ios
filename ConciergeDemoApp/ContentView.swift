@@ -23,21 +23,6 @@ struct ContentView: View {
             // SwiftUI sample
             Concierge.wrap(
                 VStack(spacing: 0) {
-                    Text("""
-Does _this_ markdown work?
-
-testing **literal** markdowns
-
-* lists
-
-* more lists
-
-1. numbered
-
-2. lists
-
-[A link to a thing](https://adobe.com)
-""")
                     Button(action: {
                         Concierge.show(
                             title: "Concierge",
