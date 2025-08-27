@@ -61,7 +61,7 @@ struct MarkdownRenderer {
     let textColor: UIColor?
     let baseFont: UIFont
 
-    // MARK: Output (append-only)
+    // MARK: Output
     private(set) var blocks: [Block] = []
 
     // MARK: Container state (structure of the tree)
@@ -69,10 +69,10 @@ struct MarkdownRenderer {
     var quoteChildrenStack: [[Block]] = []
 
     // MARK: Accumulation buffers (inline content)
-    var pendingParagraph = NSMutableAttributedString()
+    var paragraphBuffer = NSMutableAttributedString()
     var headerBuffer = NSMutableAttributedString()
 
-    // MARK: Mode/flags (ephemeral)
+    // MARK: Mode/flags
     var headerLevelActive: Int? = nil
 
     static func buildBlocks(
@@ -140,7 +140,7 @@ struct MarkdownRenderer {
 
         // Safety: finalize any residual state (should be no-ops if events were complete)
         while !listStack.isEmpty { closeListFrame() }
-        flushPendingParagraph()
+        flushParagraphBuffer()
         if headerLevelActive != nil { flushHeaderBuffer() }
         while !quoteChildrenStack.isEmpty { flushQuote() }
         return blocks
@@ -166,10 +166,10 @@ struct MarkdownRenderer {
     // The new event pipeline uses closeListFrame/closeListItemIfNeeded instead.
 
     // MARK: - Paragraph/Header/Quote finalizers
-    mutating func flushPendingParagraph() {
-        if pendingParagraph.length > 0 {
-            pushParagraph(pendingParagraph)
-            pendingParagraph = NSMutableAttributedString()
+    mutating func flushParagraphBuffer() {
+        if paragraphBuffer.length > 0 {
+            pushParagraph(paragraphBuffer)
+            paragraphBuffer = NSMutableAttributedString()
         }
     }
 
@@ -292,12 +292,12 @@ struct MarkdownRenderer {
             case .divider:
                 // HR is a block element: end paragraphs and lists first
                 while !listStack.isEmpty { closeListFrame() }
-                flushPendingParagraph()
+                flushParagraphBuffer()
                 appendBlock(.divider)
             case .code(let ns):
                 // Code blocks are standalone blocks, not inside lists/paragraphs
                 while !listStack.isEmpty { closeListFrame() }
-                flushPendingParagraph()
+                flushParagraphBuffer()
                 pushParagraph(ns)
             }
         }
@@ -323,7 +323,7 @@ struct MarkdownRenderer {
             }
         case .paragraph:
             // Start a fresh paragraph buffer
-            if pendingParagraph.length > 0 { flushPendingParagraph() }
+            if paragraphBuffer.length > 0 { flushParagraphBuffer() }
         case .header(let level):
             if headerLevelActive != nil { flushHeaderBuffer() }
             headerLevelActive = level
@@ -333,14 +333,14 @@ struct MarkdownRenderer {
     private mutating func handleClose(_ c: Container) {
         switch c {
         case .blockQuote:
-            flushPendingParagraph()
+            flushParagraphBuffer()
             flushQuote()
         case .orderedList, .unorderedList:
             closeListFrame()
         case .listItem:
             closeListItemIfNeeded()
         case .paragraph:
-            flushPendingParagraph()
+            flushParagraphBuffer()
         case .header:
             flushHeaderBuffer()
         }
@@ -350,13 +350,13 @@ struct MarkdownRenderer {
         if let _ = headerLevelActive {
             headerBuffer.append(ns)
         } else {
-            pendingParagraph.append(ns)
+            paragraphBuffer.append(ns)
         }
     }
 
     // MARK: - List helpers for event consumer
     private mutating func closeListItemIfNeeded() {
-        flushPendingParagraph()
+        flushParagraphBuffer()
         guard !listStack.isEmpty else { return }
         if !listStack[listStack.count - 1].currentItem.isEmpty {
             listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
