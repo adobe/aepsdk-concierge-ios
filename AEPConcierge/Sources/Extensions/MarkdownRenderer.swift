@@ -193,6 +193,13 @@ enum MarkdownRenderer {
                     pendingParagraph.append(ns)
 
                 case .list(let type, let depth, let ordinal, let signature):
+                    // If a header was buffered immediately before this list, emit it
+                    // BEFORE we enter the list so it does not get captured inside
+                    // the first list item.
+                    if headerLevelActive != nil {
+                        while !listStack.isEmpty { flushCurrentListItem() }
+                        flushHeaderBuffer()
+                    }
                     // If we are about to enter a deeper list level from paragraph text,
                     // flush the paragraph so it renders before the list at this position.
                     if listStack.count < depth {
@@ -228,10 +235,12 @@ enum MarkdownRenderer {
                     pendingParagraph.append(ns)
 
                 case .paragraph:
-                    if headerLevelActive != nil { flushHeaderBuffer() }
                     // If we were inside a list and now see a plain paragraph, the list has ended.
                     // Finalize all open list frames before starting this paragraph
                     while !listStack.isEmpty { flushCurrentListItem() }
+                    // Now that lists are closed, emit any pending header so it renders
+                    // as a top-level block rather than inside the last list item.
+                    if headerLevelActive != nil { flushHeaderBuffer() }
                     let ns = nsFromSlice(sliceAS)
                     pendingParagraph.append(ns)
                 }
@@ -239,6 +248,8 @@ enum MarkdownRenderer {
 
             while !listStack.isEmpty { flushCurrentListItem() }
             flushPendingParagraph()
+            // Emit any header left buffered at EOF
+            if headerLevelActive != nil { flushHeaderBuffer() }
             // Close any remaining quotes
             while !quoteChildrenStack.isEmpty { flushQuote() }
             return blocks
