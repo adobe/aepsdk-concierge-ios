@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
@@ -35,20 +36,20 @@ struct ChatMessageView: View {
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
 
-                // User text uses plain Text; agent text uses UIKit-based markdown (.full) for block layout
+                // User: SwiftUI Text. Agent: UIKit-backed markdown view with intrinsic height.
                 Group {
                     if isUserMessage {
                         Text(messageBody ?? "")
                     } else {
-                        GeometryReader { proxy in
-                            UIKitMarkdownText(
-                                markdown: messageBody ?? "",
-                                textColor: UIColor(theme.onAgent),
-                                baseFont: .preferredFont(forTextStyle: .body),
-                                maxWidth: proxy.size.width
-                            )
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 0)
+                        UIKitMarkdownText(
+                            markdown: messageBody ?? "",
+                            textColor: UIColor(theme.onAgent),
+                            baseFont: .preferredFont(forTextStyle: .body),
+                            maxWidth: nil
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .layoutPriority(1)
                     }
                 }
                     .padding(.horizontal, 16)
