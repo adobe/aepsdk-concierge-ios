@@ -13,7 +13,7 @@
 public struct TempResponse: Codable {
     public let message: String
     public let promptSuggestions: [String]?
-//    public let multimodalElements: [TempElement]?
+    //public let multimodalElements: TempMultimodalElements?
     public let sources: [TempSource]?
     public let state: String?
 }

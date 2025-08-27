@@ -30,6 +30,9 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: Input reducer
     let inputReducer = InputReducer()
+    
+    // MARK: - chunk handling
+    var lastEmittedResponseText: String = ""
 
     init(chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.chatService = chatService
@@ -145,42 +148,80 @@ final class ConciergeChatViewModel: ObservableObject {
             var accumulatedContent = ""
             
             chatService.streamChat(text,
-                onChunk: { [weak self] chunk in
+                onChunk: { [weak self] payload in
                     Task { @MainActor in
-                        accumulatedContent += chunk
-                        print("chunk: \(chunk)")
-                        print("accumulatedContent: \(accumulatedContent)")
-                        // Update the streaming message with accumulated content (preserve id)
-                        if streamingMessageIndex < self?.messages.count ?? 0,
-                           var current = self?.messages[streamingMessageIndex] {
-                            current.messageBody = accumulatedContent
-                            self?.messages[streamingMessageIndex] = current
+                        guard let self = self else { return }
+                        
+                        let state = payload.state
+                        
+                        // start with handling messages only
+                        if let message = payload.response?.message {
+                            if state == Constants.StreamState.IN_PROGRESS {
+                                // Emit raw fragment and accumulate locally
+                                accumulatedContent += message
+                                print("chunk: \(message)")
+                                print("accumulatedContent: \(accumulatedContent)")
+                                // Update the streaming message with accumulated content (preserve id)
+                                if streamingMessageIndex < self.messages.count {
+                                    var current = self.messages[streamingMessageIndex]
+                                    current.messageBody = accumulatedContent
+                                    self.messages[streamingMessageIndex] = current
+                                }
+                                self.lastEmittedResponseText += message
+                            } else if state == Constants.StreamState.COMPLETED {
+                                // Emit only the remainder beyond what we already streamed
+                                let fullText = message
+                                if self.lastEmittedResponseText.count < fullText.count {
+                                    let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
+                                    let delta = String(fullText[startIndex...])
+                                    if !delta.isEmpty {
+                                        accumulatedContent += delta
+                                        print("chunk: \(delta)")
+                                        print("accumulatedContent: \(delta)")
+                                        // Update the streaming message with accumulated content (preserve id)
+                                        if streamingMessageIndex < self.messages.count {
+                                            var current = self.messages[streamingMessageIndex]
+                                            current.messageBody = accumulatedContent
+                                            self.messages[streamingMessageIndex] = current
+                                        }
+                                    }
+                                }
+                                self.lastEmittedResponseText = fullText
+                            }
                         }
+                        
+                        // handle cards in multimodalElements
+//                        g}
+                        
                     }
                 },
                 onComplete: { [weak self] error in
                     Task { @MainActor in
+                        guard let self = self else { return }
+                        
                         if let error = error {
-                            Log.error(label: self?.LOG_TAG ?? "ConciergeChatViewModel", "Streaming error: \(error)")
-                            self?.chatState = .error(.networkFailure)
+                            Log.error(label: self.LOG_TAG, "Streaming error: \(error)")
+                            self.chatState = .error(.networkFailure)
                             
                             // Remove the placeholder message on error
-                            if streamingMessageIndex < self?.messages.count ?? 0 {
-                                self?.messages.remove(at: streamingMessageIndex)
+                            if streamingMessageIndex < self.messages.count {
+                                self.messages.remove(at: streamingMessageIndex)
                             }
                         } else {
                             // Stream completed successfully
-                            self?.chatState = .idle
+                            self.chatState = .idle
                             
                             // Replace with a fresh message marked for speaking to trigger onAppear
-                            if streamingMessageIndex < self?.messages.count ?? 0 {
-                                self?.messages[streamingMessageIndex] = Message(
+                            if streamingMessageIndex < self.messages.count {
+                                self.messages[streamingMessageIndex] = Message(
                                     template: .basic(isUserMessage: false),
                                     shouldSpeakMessage: true,
                                     messageBody: accumulatedContent
                                 )
                             }
                         }
+                        
+                        self.lastEmittedResponseText = ""
                     }
                 }
             )
