@@ -82,16 +82,16 @@ Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
 
 > Outer quote start
 >
-> 1. Ordered
->    1. Nested child 1
->    2. Nested child 2
->    - Unordered 3
-> 2. Nested child 4
-> - Unordered 5
->   - Nested childwith lots of extra text to see how line wrapping works for these elements
->   1. Nested ordered 6
->   - Nested ordered 7
-> - Unordered 8
+> 1. Ordered 1
+>    1. Nested child 2
+>    2. Nested child 3
+>    - Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com). 4
+> 2. Nested child 5
+> - Unordered 6
+>   - Nested child with lots of extra text to see how line wrapping works for these elements 7
+>   1. Nested ordered 8
+>   - Nested ordered 9
+> - Unordered 10
 >
 > Outer quote end
 
