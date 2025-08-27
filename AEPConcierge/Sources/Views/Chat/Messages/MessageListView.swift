@@ -20,6 +20,9 @@ struct MessageListView: View {
     var userScrollTick: Int = 0
     let onSpeak: (String) -> Void
 
+    // A sentinel we can scroll to that represents the absolute bottom
+    private let bottomAnchorId: String = "__bottom_anchor__"
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -33,6 +36,10 @@ struct MessageListView: View {
                                 }
                             }
                     }
+                    // Bottom sentinel to ensure we can scroll to absolute end
+                    Color.clear
+                        .frame(height: 1)
+                        .id(bottomAnchorId)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -58,7 +65,7 @@ struct MessageListView: View {
                 guard !isAgentMessage else { return }
                 DispatchQueue.main.async {
                     withAnimation {
-                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                        proxy.scrollTo(bottomAnchorId, anchor: .bottom)
                     }
                 }
             }
@@ -73,10 +80,9 @@ struct MessageListView: View {
             }
             // Scroll precisely to bottom when a user message is sent
             .onChange(of: userScrollTick) { _ in
-                guard let lastMessage = messages.last else { return }
                 DispatchQueue.main.async {
                     withAnimation {
-                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                        proxy.scrollTo(bottomAnchorId, anchor: .bottom)
                     }
                 }
             }
