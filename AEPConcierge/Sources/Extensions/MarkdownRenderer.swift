@@ -91,13 +91,12 @@ enum MarkdownRenderer {
         }
 
         mutating func flushCurrentListItem() {
-            guard var frame = listStack.popLast() else { return }
-            // finalize current item
+            // Ensure inline content at the CURRENT deepest level is captured before popping
             if !pendingParagraph.string.isEmpty { flushPendingParagraph() }
+            guard var frame = listStack.popLast() else { return }
             if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
             // emit or push back up
             if listStack.isEmpty {
-                // produce top level list block
                 let block = Block.list(type: frame.type, items: frame.items)
                 if !quoteChildrenStack.isEmpty {
                     quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
@@ -214,6 +213,8 @@ enum MarkdownRenderer {
 
                     // Start a new item when ordinal/signature changes
                     if let top = listStack.last, top.ordinal != ordinal || top.signature != signature {
+                        // Finish any inline content accumulated for the previous item
+                        flushPendingParagraph()
                         if !listStack[listStack.count - 1].currentItem.isEmpty {
                             listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
                             listStack[listStack.count - 1].currentItem = []
@@ -222,9 +223,9 @@ enum MarkdownRenderer {
                         listStack[listStack.count - 1].signature = signature
                     }
 
-                    // Append this run as a paragraph block inside the current list item
+                    // Accumulate inline content for this list item as a single paragraph
                     let ns = nsFromSlice(sliceAS)
-                    pushParagraph(ns)
+                    pendingParagraph.append(ns)
 
                 case .paragraph:
                     if headerLevelActive != nil { flushHeaderBuffer() }
