@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
@@ -35,7 +36,17 @@ struct ChatMessageView: View {
             HStack(alignment: .bottom) {
                 if isUserMessage { Spacer() }
 
-                Text(messageBody ?? "")
+                // User: SwiftUI Text. Agent: SwiftUI block renderer interleaving text + Divider.
+                Group {
+                    if isUserMessage {
+                        Text(messageBody ?? "")
+                    } else {
+                        MarkdownBlockView(
+                            markdown: messageBody ?? "",
+                            textColor: UIColor(theme.onAgent)
+                        )
+                    }
+                }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .textSelection(.enabled)
@@ -45,6 +56,15 @@ struct ChatMessageView: View {
                             .fill(isUserMessage ? theme.primary : theme.agentBubble)
                     )
                     .compositingGroup()
+                    .contextMenu {
+                        Button(action: {
+                            let source = messageBody ?? ""
+                            // Copy raw markdown (preserve markers)
+                            UIPasteboard.general.string = source
+                        }) {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
 
                 if !isUserMessage { Spacer() }
             }
