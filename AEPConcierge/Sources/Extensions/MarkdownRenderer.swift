@@ -19,7 +19,8 @@ enum MarkdownRenderer {
     enum Block: Equatable {
         case text(NSAttributedString)
         case divider
-        case blockQuote([NSAttributedString])
+        case blockQuote([Block])
+        case list(type: ListType, items: [[Block]])
     }
 
     // MARK: - Shared helper types (extracted)
@@ -60,12 +61,9 @@ enum MarkdownRenderer {
 
         private(set) var blocks: [Block] = []
 
-        // List state
-        var pendingListDepth: Int? = nil
-        var pendingListType: ListType? = nil
-        var pendingListOrdinal: Int? = nil
-        var pendingListSignature: ListSignature? = nil
-        var pendingListContent = NSMutableAttributedString()
+        // List state (stack of list items; each level collects blocks for a single item)
+        struct ListFrame { var type: ListType; var items: [[Block]]; var currentItem: [Block]; var ordinal: Int?; var signature: ListSignature? }
+        var listStack: [ListFrame] = []
 
         // Paragraph state
         var pendingParagraph = NSMutableAttributedString()
@@ -74,38 +72,41 @@ enum MarkdownRenderer {
         var headerBuffer = NSMutableAttributedString()
         var headerLevelActive: Int? = nil
 
-        // Quote state
-        var quoteParas: [NSAttributedString] = []
+        // Quote state (stack of child blocks for nested quotes)
+        var quoteChildrenStack: [[Block]] = []
+
+        private mutating func appendBlock(_ block: Block) {
+            if !listStack.isEmpty {
+                listStack[listStack.count - 1].currentItem.append(block)
+            } else if !quoteChildrenStack.isEmpty {
+                quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
+            } else {
+                blocks.append(block)
+            }
+        }
 
         mutating func pushParagraph(_ ns: NSAttributedString) {
             let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
-            blocks.append(.text(styled))
+            appendBlock(.text(styled))
         }
 
-        mutating func flushPendingList() {
-            guard let depth = pendingListDepth, let type = pendingListType else { return }
-            let indentPerLevel: CGFloat = 20
-            let indentSpaces = String(repeating: " ", count: Int(CGFloat(depth - 1) * indentPerLevel / 4))
-            let bullet: String = (type == .ordered && pendingListOrdinal != nil) ? "\(pendingListOrdinal!)." : "•"
-            let prefix = "\(indentSpaces)\(bullet) "
-            let line = NSMutableAttributedString(string: prefix, attributes: [
-                .font: baseFont,
-                .foregroundColor: textColor ?? UIColor.label
-            ])
-            line.append(pendingListContent)
-            let ps = NSMutableParagraphStyle()
-            let tabLoc = (prefix as NSString).size(withAttributes: [.font: baseFont]).width
-            ps.tabStops = [NSTextTab(textAlignment: .left, location: tabLoc, options: [:])]
-            ps.firstLineHeadIndent = 0
-            ps.headIndent = tabLoc
-            ps.lineBreakMode = .byWordWrapping
-            line.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: line.length))
-            pushParagraph(line)
-            pendingListDepth = nil
-            pendingListType = nil
-            pendingListOrdinal = nil
-            pendingListSignature = nil
-            pendingListContent = NSMutableAttributedString()
+        mutating func flushCurrentListItem() {
+            guard var frame = listStack.popLast() else { return }
+            // finalize current item
+            if !pendingParagraph.string.isEmpty { flushPendingParagraph() }
+            if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
+            // emit or push back up
+            if listStack.isEmpty {
+                // produce top-level list block
+                let block = Block.list(type: frame.type, items: frame.items)
+                if !quoteChildrenStack.isEmpty {
+                    quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
+                } else {
+                    blocks.append(block)
+                }
+            } else {
+                listStack[listStack.count - 1].currentItem.append(.list(type: frame.type, items: frame.items))
+            }
         }
 
         mutating func flushPendingParagraph() {
@@ -135,20 +136,34 @@ enum MarkdownRenderer {
         }
 
         mutating func flushQuote() {
-            if !quoteParas.isEmpty {
-                blocks.append(.blockQuote(quoteParas))
-                quoteParas = []
-            }
+            guard !quoteChildrenStack.isEmpty else { return }
+            let children = quoteChildrenStack.removeLast()
+            appendBlock(.blockQuote(children))
         }
 
         mutating func build() -> [Block] {
             for run in attributed.runs {
                 let sliceAS = AttributedString(attributed[run.range])
-                switch classify(presentation: run.presentationIntent) {
-                case .header(let level):
-                    flushPendingList()
+                let kind = classify(presentation: run.presentationIntent)
+                let quoteDepth = blockQuoteDepth(presentation: run.presentationIntent)
+                // Synchronize quote stack depth with current run
+                while quoteChildrenStack.count > quoteDepth {
+                    while !listStack.isEmpty { flushCurrentListItem() }
                     flushPendingParagraph()
                     flushQuote()
+                }
+                while quoteChildrenStack.count < quoteDepth {
+                    while !listStack.isEmpty { flushCurrentListItem() }
+                    flushPendingParagraph()
+                    quoteChildrenStack.append([])
+                }
+
+                switch kind {
+                case .header(let level):
+                    while !listStack.isEmpty { flushCurrentListItem() }
+                    flushPendingParagraph()
+                    // end quote group between blocks
+                    while !quoteChildrenStack.isEmpty { flushQuote() }
                     if headerLevelActive == nil {
                         headerLevelActive = level
                     }
@@ -159,15 +174,13 @@ enum MarkdownRenderer {
                     headerBuffer.append(nsFromSlice(sliceAS))
 
                 case .thematicBreak:
-                    flushPendingList()
+                    while !listStack.isEmpty { flushCurrentListItem() }
                     flushPendingParagraph()
-                    flushQuote()
-                    blocks.append(.divider)
+                    appendBlock(.divider)
 
                 case .codeBlock:
-                    flushPendingList()
+                    while !listStack.isEmpty { flushCurrentListItem() }
                     flushPendingParagraph()
-                    flushQuote()
                     let ns = nsFromSlice(sliceAS)
                     let m = NSMutableAttributedString(attributedString: ns)
                     m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
@@ -175,33 +188,41 @@ enum MarkdownRenderer {
                     pushParagraph(m)
 
                 case .blockQuote:
-                    flushPendingList()
-                    flushPendingParagraph()
-                    quoteParas.append(applyBaseStyling(nsFromSlice(sliceAS), textColor: textColor, baseFont: baseFont))
+                    // Quote content is handled by stack; treat this as paragraph content
+                    let ns = nsFromSlice(sliceAS)
+                    pendingParagraph.append(ns)
 
                 case .list(let type, let depth, let ordinal, let signature):
-                    flushPendingParagraph()
-                    let ns = nsFromSlice(sliceAS)
-                    if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal || pendingListSignature != signature {
-                        flushPendingList()
-                        pendingListDepth = depth
-                        pendingListType = type
-                        pendingListOrdinal = ordinal
-                        pendingListSignature = signature
+                    // Synchronize list stack depth
+                    while listStack.count > depth { flushCurrentListItem() }
+                    while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
+                    // New item boundary if ordinal/signature changed
+                    if let top = listStack.last, top.ordinal != ordinal || top.signature != signature {
+                        // push previous item
+                        if !listStack[listStack.count - 1].currentItem.isEmpty {
+                            listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
+                            listStack[listStack.count - 1].currentItem = []
+                        }
+                        listStack[listStack.count - 1].ordinal = ordinal
+                        listStack[listStack.count - 1].signature = signature
                     }
-                    pendingListContent.append(ns)
+                    // Append paragraph content for this run into the current list item
+                    let ns = nsFromSlice(sliceAS)
+                    // Within list context, a run corresponds to content for the current item.
+                    // Push as a paragraph block directly, so bullets pair with content correctly.
+                    pushParagraph(ns)
 
                 case .paragraph:
                     if headerLevelActive != nil { flushHeaderBuffer() }
-                    flushQuote()
                     let ns = nsFromSlice(sliceAS)
                     pendingParagraph.append(ns)
                 }
             }
 
-            flushPendingList()
+            while !listStack.isEmpty { flushCurrentListItem() }
             flushPendingParagraph()
-            flushQuote()
+            // Close any remaining quotes
+            while !quoteChildrenStack.isEmpty { flushQuote() }
             return blocks
         }
 
@@ -216,38 +237,86 @@ enum MarkdownRenderer {
         }
 
         private func classify(presentation: PresentationIntent?) -> RunKind {
-            var headerLevel: Int? = nil
-            var isCodeBlock = false
-            var isBlockQuote = false
-            var isThematic = false
-            var depth = 0
-            var listType: ListType? = nil
-            var ordinal: Int? = nil
-            var pairs: [(ListType, Int)] = []
-            var pendingOrdinalTemp: Int? = nil
-            if let pres = presentation {
-                for comp in pres.components {
-                    switch comp.kind {
-                    case .header(let level): headerLevel = level
-                    case .codeBlock: isCodeBlock = true
-                    case .blockQuote: isBlockQuote = true
-                    case .thematicBreak: isThematic = true
-                    case .listItem(let ord): depth += 1; ordinal = ord; pendingOrdinalTemp = ord
-                    case .orderedList: listType = .ordered; if let o = pendingOrdinalTemp { pairs.append((.ordered, o)); pendingOrdinalTemp = nil }
-                    case .unorderedList: listType = .unordered; if let o = pendingOrdinalTemp { pairs.append((.unordered, o)); pendingOrdinalTemp = nil }
-                    default: break
+            struct Context {
+                var headerLevel: Int? = nil
+                var isCodeBlock: Bool = false
+                var isThematic: Bool = false
+                var isBlockQuote: Bool = false
+                var listDepth: Int = 0
+                var listType: ListType? = nil
+                var ordinal: Int? = nil
+                var pairs: [(ListType, Int)] = []
+                var pendingOrdinalTemp: Int? = nil
+                var quoteDepth: Int = 0
+
+                init(presentation: PresentationIntent?) {
+                    guard let pres = presentation else { return }
+                    for comp in pres.components {
+                        switch comp.kind {
+                        case .header(let level):
+                            headerLevel = level
+                        case .codeBlock:
+                            isCodeBlock = true
+                        case .thematicBreak:
+                            isThematic = true
+                        case .blockQuote:
+                            isBlockQuote = true
+                            quoteDepth += 1
+                        case .listItem(let ord):
+                            listDepth += 1
+                            ordinal = ord
+                            pendingOrdinalTemp = ord
+                        case .orderedList:
+                            listType = .ordered
+                            if let o = pendingOrdinalTemp {
+                                pairs.append((.ordered, o))
+                                pendingOrdinalTemp = nil
+                            }
+                        case .unorderedList:
+                            listType = .unordered
+                            if let o = pendingOrdinalTemp {
+                                pairs.append((.unordered, o))
+                                pendingOrdinalTemp = nil
+                            }
+                        default:
+                            break
+                        }
                     }
                 }
+
+                func toRunKind() -> RunKind {
+                    if let level = headerLevel { return .header(level) }
+                    if isThematic { return .thematicBreak }
+                    if isCodeBlock { return .codeBlock }
+                    if listDepth > 0, let type = listType {
+                        let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
+                        return .list(type, listDepth, ordinal, signature)
+                    }
+                    return .paragraph
+                }
             }
-            if let level = headerLevel { return .header(level) }
-            if isThematic { return .thematicBreak }
-            if isCodeBlock { return .codeBlock }
-            if isBlockQuote { return .blockQuote }
-            if depth > 0, let type = listType {
-                let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
-                return .list(type, depth, ordinal, signature)
+
+            let ctx = Context(presentation: presentation)
+            // Keep quote depth info by storing it temporarily in a thread-local? We instead
+            // synchronize quote stack in build() using presentation again, so just return kind here.
+            return ctx.toRunKind()
+        }
+
+        private func hasBlockQuote(presentation: PresentationIntent?) -> Bool {
+            guard let pres = presentation else { return false }
+            for comp in pres.components {
+                if case .blockQuote = comp.kind { return true }
             }
-            return .paragraph
+            return false
+        }
+
+        private func blockQuoteDepth(presentation: PresentationIntent?) -> Int {
+            guard let pres = presentation else { return 0 }
+            var depth = 0
+            for comp in pres.components {
+                if case .blockQuote = comp.kind { depth += 1 }
+            }
+            return depth
         }
     }
 
