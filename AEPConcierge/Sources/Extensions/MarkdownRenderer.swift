@@ -298,6 +298,27 @@ struct UIKitMarkdownText: UIViewRepresentable {
             }
         }
 
+        // Header accumulation state to avoid splitting header content across runs
+        var headerBuffer = NSMutableAttributedString()
+        var headerLevelActive: Int? = nil
+
+        func flushHeaderBuffer() {
+            guard let level = headerLevelActive, headerBuffer.length > 0 else { return }
+            let font: UIFont
+            switch level {
+            case 1: font = .systemFont(ofSize: 22, weight: .bold)
+            case 2: font = .systemFont(ofSize: 20, weight: .semibold)
+            case 3: font = .systemFont(ofSize: 18, weight: .semibold)
+            default: font = .systemFont(ofSize: 16, weight: .semibold)
+            }
+            let range = NSRange(location: 0, length: headerBuffer.length)
+            headerBuffer.addAttribute(.font, value: font, range: range)
+            headerBuffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: range)
+            appendParagraph(headerBuffer)
+            headerBuffer = NSMutableAttributedString()
+            headerLevelActive = nil
+        }
+
         for run in attributed.runs {
             let sliceAS = AttributedString(attributed[run.range])
             // Classification
@@ -326,20 +347,17 @@ struct UIKitMarkdownText: UIViewRepresentable {
 
             if let level = headerLevel {
                 flushPendingList(); flushPendingParagraph()
-                // Map to fonts
-                let font: UIFont
-                switch level {
-                case 1: font = .systemFont(ofSize: 22, weight: .bold)
-                case 2: font = .systemFont(ofSize: 20, weight: .semibold)
-                case 3: font = .systemFont(ofSize: 18, weight: .semibold)
-                default: font = .systemFont(ofSize: 16, weight: .semibold)
+                if headerLevelActive == nil { headerLevelActive = level }
+                // If header level changed mid-stream, flush the previous header
+                if let active = headerLevelActive, active != level {
+                    flushHeaderBuffer()
+                    headerLevelActive = level
                 }
-                let ns = nsFromSlice(sliceAS)
-                let m = NSMutableAttributedString(attributedString: ns)
-                m.addAttribute(.font, value: font, range: NSRange(location: 0, length: m.length))
-                m.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: NSRange(location: 0, length: m.length))
-                appendParagraph(m)
+                headerBuffer.append(nsFromSlice(sliceAS))
                 continue
+            } else if headerLevelActive != nil {
+                // Header block ended; flush it before proceeding
+                flushHeaderBuffer()
             }
 
             if isThematic {
@@ -376,6 +394,8 @@ struct UIKitMarkdownText: UIViewRepresentable {
             }
 
             if depth > 0, let type = listType {
+                // If we were accumulating a paragraph before the list, flush it so ordering stays correct
+                flushPendingParagraph()
                 // list item content
                 let ns = nsFromSlice(sliceAS)
                 if pendingListDepth == nil || pendingListDepth != depth || pendingListType == nil || (pendingListType! != type) || pendingListOrdinal != ordinal {
@@ -391,6 +411,7 @@ struct UIKitMarkdownText: UIViewRepresentable {
 
             // Paragraph text
             let ns = nsFromSlice(sliceAS)
+            if pendingParagraph.length > 0 { pendingParagraph.append(NSAttributedString(string: " ")) }
             pendingParagraph.append(ns)
         }
 
