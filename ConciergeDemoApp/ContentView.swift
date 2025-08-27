@@ -55,8 +55,6 @@ print("Hello, Markdown blocks!")
 Final paragraph to verify trailing layout.
 """
 
-    let headerString = "Here’s how you can remove a background in **Adobe Photoshop**:\n\n### 1. **Open Your Image**  \n   - Launch Photoshop and open the image you want to edit.\n\n### 2. **Use the Remove Background Tool**  \n   - Go to the **Properties Panel** (Window > Properties).  \n   - Under **Quick Actions**, click **Remove Background**. Photoshop will automatically isolate the subject and remove the background.\n\n### 3. **Refine the Edges**  \n   - If needed, go to **Select > Modify > Expand** to adjust the selection.  \n   - Use the **Select and Mask** tool to refine edges and clean up any rough areas.\n\n### 4. **Replace or Save**  \n   - Replace the background with a new one by adding a layer underneath.  \n   - Or save the image with a transparent background by exporting it as a PNG (File > Export > Quick Export as PNG).\n\nLet me know if you need help with any step! 😊"
-
     var body: some View {
         TabView {
             // SwiftUI sample
@@ -70,25 +68,10 @@ Final paragraph to verify trailing layout.
                         )
                         .padding(.horizontal, 20)
                         .padding(.top, 12)
-//
-//                        UIKitMarkdownText(
-//                            markdown: stringToRender,
-//                            textColor: UIColor.label,
-//                            baseFont: .preferredFont(forTextStyle: .body),
-//                            maxWidth: UIScreen.main.bounds.width - 40
-//                        )
-//                        .fixedSize(horizontal: false, vertical: true)
-//                        .padding(.horizontal, 20)
-//                        .padding(.top, 12)
                     }
                     VStack(spacing: 0) {
-//                        Text(stringToRender)
-//                        Text.markdown(stringToRender)
-
-
                         Button(action: {
                             MarkdownRenderer.debugDump(stringToRender, syntax: .full)
-//                            MarkdownRenderer.debugDump(stringToRender, syntax: .inlineOnlyPreservingWhitespace)
                         }) {
                             Text("DEBUG MARKDOWN")
                         }
