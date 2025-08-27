@@ -61,6 +61,24 @@ enum MarkdownRenderer {
 
         private(set) var blocks: [Block] = []
 
+        // MARK: - Event model (two-phase pipeline)
+        enum Container: Equatable {
+            case blockQuote
+            case orderedList
+            case unorderedList
+            case listItem(ordinal: Int?, signature: ListSignature?)
+            case paragraph
+            case header(level: Int)
+        }
+
+        enum Event {
+            case open(Container)
+            case close(Container)
+            case text(NSAttributedString)
+            case divider
+            case code(NSAttributedString)
+        }
+
         // List state (stack of list items, each level collects blocks for a single item)
         struct ListFrame { var type: ListType; var items: [[Block]]; var currentItem: [Block]; var ordinal: Int?; var signature: ListSignature? }
         var listStack: [ListFrame] = []
@@ -90,23 +108,8 @@ enum MarkdownRenderer {
             appendBlock(.text(styled))
         }
 
-        mutating func flushCurrentListItem() {
-            // Ensure inline content at the CURRENT deepest level is captured before popping
-            if !pendingParagraph.string.isEmpty { flushPendingParagraph() }
-            guard var frame = listStack.popLast() else { return }
-            if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
-            // emit or push back up
-            if listStack.isEmpty {
-                let block = Block.list(type: frame.type, items: frame.items)
-                if !quoteChildrenStack.isEmpty {
-                    quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
-                } else {
-                    blocks.append(block)
-                }
-            } else {
-                listStack[listStack.count - 1].currentItem.append(.list(type: frame.type, items: frame.items))
-            }
-        }
+        // flushCurrentListItem was used by the old single-pass builder.
+        // The new event pipeline uses closeListFrame/closeListItemIfNeeded instead.
 
         mutating func flushPendingParagraph() {
             if pendingParagraph.length > 0 {
@@ -141,204 +144,247 @@ enum MarkdownRenderer {
         }
 
         mutating func build() -> [Block] {
+            // Phase 1: build events by diffing container stacks per run
+            var events: [Event] = []
+            var prevStack: [Container] = []
+
             for run in attributed.runs {
                 let sliceAS = AttributedString(attributed[run.range])
-                let kind = classify(presentation: run.presentationIntent)
-                let quoteDepth = blockQuoteDepth(presentation: run.presentationIntent)
-                // Synchronize quote stack depth with current run
-                while quoteChildrenStack.count > quoteDepth {
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    flushPendingParagraph()
-                    flushQuote()
-                }
-                while quoteChildrenStack.count < quoteDepth {
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    // Entering a deeper quote. Flush any outside paragraph before opening quote
-                    flushPendingParagraph()
-                    quoteChildrenStack.append([])
-                }
+                let (nextStack, leafKind) = containersFor(presentation: run.presentationIntent)
 
-                switch kind {
-                case .header(let level):
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    flushPendingParagraph()
-                    // end quote group between blocks
-                    while !quoteChildrenStack.isEmpty { flushQuote() }
-                    if headerLevelActive == nil {
-                        headerLevelActive = level
+                // diff stacks -> close then open
+                let lcp = longestCommonPrefix(prevStack, nextStack)
+                if prevStack.count > lcp {
+                    for idx in stride(from: prevStack.count - 1, through: lcp, by: -1) {
+                        events.append(.close(prevStack[idx]))
                     }
-                    if let active = headerLevelActive, active != level {
-                        flushHeaderBuffer()
-                        headerLevelActive = level
+                }
+                if nextStack.count > lcp {
+                    for idx in lcp..<nextStack.count {
+                        events.append(.open(nextStack[idx]))
                     }
-                    headerBuffer.append(nsFromSlice(sliceAS))
+                }
 
-                case .thematicBreak:
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    flushPendingParagraph()
-                    appendBlock(.divider)
-
+                // leaf payloads
+                switch leafKind {
                 case .codeBlock:
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    flushPendingParagraph()
                     let ns = nsFromSlice(sliceAS)
                     let m = NSMutableAttributedString(attributedString: ns)
                     m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
                     m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
-                    pushParagraph(m)
-
-                case .blockQuote:
-                    // Treat quoted text as paragraph content at current quote depth
+                    events.append(.code(m))
+                case .thematicBreak:
+                    events.append(.divider)
+                case .none:
                     let ns = nsFromSlice(sliceAS)
-                    pendingParagraph.append(ns)
-
-                case .list(let type, let depth, let ordinal, let signature):
-                    // If a header was buffered immediately before this list, emit it
-                    // BEFORE we enter the list so it does not get captured inside
-                    // the first list item.
-                    if headerLevelActive != nil {
-                        while !listStack.isEmpty { flushCurrentListItem() }
-                        flushHeaderBuffer()
-                    }
-                    // If we are about to enter a deeper list level from paragraph text,
-                    // flush the paragraph so it renders before the list at this position.
-                    if listStack.count < depth {
-                        flushPendingParagraph()
-                    }
-
-                    // Synchronize list stack depth
-                    while listStack.count > depth { flushCurrentListItem() }
-                    while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
-
-                    // If the list container type changed at this depth, end the current list frame
-                    // and start a new sibling frame at the same depth with the new type
-                    if let top = listStack.last, top.type != type {
-                        flushCurrentListItem()
-                        // after flush, depth decreased by 1; restore frame at same depth with new type
-                        while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
-                    }
-
-                    // Start a new item when ordinal/signature changes
-                    if let top = listStack.last, top.ordinal != ordinal || top.signature != signature {
-                        // Finish any inline content accumulated for the previous item
-                        flushPendingParagraph()
-                        if !listStack[listStack.count - 1].currentItem.isEmpty {
-                            listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
-                            listStack[listStack.count - 1].currentItem = []
-                        }
-                        listStack[listStack.count - 1].ordinal = ordinal
-                        listStack[listStack.count - 1].signature = signature
-                    }
-
-                    // Accumulate inline content for this list item as a single paragraph
-                    let ns = nsFromSlice(sliceAS)
-                    pendingParagraph.append(ns)
-
-                case .paragraph:
-                    // If we were inside a list and now see a plain paragraph, the list has ended.
-                    // Finalize all open list frames before starting this paragraph
-                    while !listStack.isEmpty { flushCurrentListItem() }
-                    // Now that lists are closed, emit any pending header so it renders
-                    // as a top-level block rather than inside the last list item.
-                    if headerLevelActive != nil { flushHeaderBuffer() }
-                    let ns = nsFromSlice(sliceAS)
-                    pendingParagraph.append(ns)
+                    if ns.length > 0 { events.append(.text(ns)) }
                 }
+
+                prevStack = nextStack
             }
 
-            while !listStack.isEmpty { flushCurrentListItem() }
+            // close any remaining containers at EOF
+            for idx in stride(from: prevStack.count - 1, through: 0, by: -1) {
+                events.append(.close(prevStack[idx]))
+            }
+
+            // Phase 2: consume events centrally
+            consume(events: events)
+
+            // Safety: finalize any residual state (should be no-ops if events were complete)
+            while !listStack.isEmpty { closeListFrame() }
             flushPendingParagraph()
-            // Emit any header left buffered at EOF
             if headerLevelActive != nil { flushHeaderBuffer() }
-            // Close any remaining quotes
             while !quoteChildrenStack.isEmpty { flushQuote() }
             return blocks
         }
 
-        // MARK: - Run classification
-        private enum RunKind {
-            case header(Int)
-            case thematicBreak
-            case codeBlock
-            case blockQuote
-            case list(ListType, Int, Int?, ListSignature?)
-            case paragraph
-        }
+        // MARK: - Event production helpers
+        private enum LeafKind { case none, codeBlock, thematicBreak }
 
-        private func classify(presentation: PresentationIntent?) -> RunKind {
-            struct Context {
-                var headerLevel: Int? = nil
-                var isCodeBlock: Bool = false
-                var isThematic: Bool = false
-                var isBlockQuote: Bool = false
-                var ordinal: Int? = nil
-                var pairs: [(ListType, Int)] = []
-                var quoteDepth: Int = 0
+        private func containersFor(presentation: PresentationIntent?) -> ([Container], LeafKind) {
+            guard let pres = presentation else { return ([.paragraph], .none) }
 
-                init(presentation: PresentationIntent?) {
-                    guard let pres = presentation else { return }
-                    var containerStack: [ListType] = []
-                    for comp in pres.components {
-                        switch comp.kind {
-                        case .header(let level):
-                            headerLevel = level
-                        case .codeBlock:
-                            isCodeBlock = true
-                        case .thematicBreak:
-                            isThematic = true
-                        case .blockQuote:
-                            isBlockQuote = true
-                            quoteDepth += 1
-                        case .orderedList:
-                            containerStack.append(.ordered)
-                        case .unorderedList:
-                            containerStack.append(.unordered)
-                        case .listItem(let ord):
-                            ordinal = ord
-                            let currentType = containerStack.last ?? .unordered
-                            pairs.append((currentType, ord))
-                        default:
-                            break
-                        }
-                    }
-                }
+            var leaf: LeafKind = .none
+            var quoteDepth = 0
+            var containerTypeStack: [ListType] = []
+            var pairs: [(ListType, Int)] = []
+            var headerLevel: Int? = nil
+            var hasParagraph = false
+            var hasAnyListItem = false
 
-                func toRunKind() -> RunKind {
-                    if let level = headerLevel { return .header(level) }
-                    if isThematic { return .thematicBreak }
-                    if isCodeBlock { return .codeBlock }
-                    if !pairs.isEmpty {
-                        let type = pairs.last!.0
-                        let depth = pairs.count
-                        let signature: ListSignature? = ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
-                        return .list(type, depth, ordinal, signature)
-                    }
-                    return .paragraph
+            // PresentationIntent.components appear inner-most first in practice.
+            // Iterate reversed so we go outer -> inner, which keeps the container
+            // type stack aligned with listItem depths.
+            for comp in pres.components.reversed() {
+                switch comp.kind {
+                case .header(let level):
+                    headerLevel = level
+                case .codeBlock:
+                    leaf = .codeBlock
+                case .thematicBreak:
+                    leaf = .thematicBreak
+                case .blockQuote:
+                    quoteDepth += 1
+                case .orderedList:
+                    containerTypeStack.append(.ordered)
+                case .unorderedList:
+                    containerTypeStack.append(.unordered)
+                case .listItem(let ord):
+                    let currentType = containerTypeStack.last ?? .unordered
+                    pairs.append((currentType, ord))
+                    hasAnyListItem = true
+                case .paragraph:
+                    hasParagraph = true
+                default:
+                    break
                 }
             }
 
-            let ctx = Context(presentation: presentation)
-            // Keep quote depth info by storing it temporarily in a thread-local? We instead
-            // synchronize quote stack in build() using presentation again, so just return kind here.
-            return ctx.toRunKind()
+            // Build container stack from outer -> inner
+            var containers: [Container] = []
+            if quoteDepth > 0 {
+                for _ in 0..<quoteDepth { containers.append(.blockQuote) }
+            }
+
+            // Header takes precedence over paragraph
+            if let level = headerLevel, leaf == .none {
+                containers.append(.header(level: level))
+                return (containers, .none)
+            }
+
+            // Lists + items
+            if !pairs.isEmpty && leaf == .none {
+                // accumulate signature progressively for each depth
+                for depth in 0..<pairs.count {
+                    let (t, ord) = pairs[depth]
+                    containers.append(t == .ordered ? .orderedList : .unorderedList)
+                    let signature = ListSignature(components: pairs.prefix(depth + 1).map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
+                    containers.append(.listItem(ordinal: ord, signature: signature))
+                }
+            }
+
+            // Paragraph: only if not header or leaf block
+            if leaf == .none {
+                // Apple's runs for lists carry paragraph too; include paragraph so text routes correctly
+                if hasParagraph || (!hasAnyListItem && headerLevel == nil) {
+                    containers.append(.paragraph)
+                }
+            }
+
+            return (containers, leaf)
         }
 
-        private func hasBlockQuote(presentation: PresentationIntent?) -> Bool {
-            guard let pres = presentation else { return false }
-            for comp in pres.components {
-                if case .blockQuote = comp.kind { return true }
-            }
-            return false
+        private func longestCommonPrefix(_ a: [Container], _ b: [Container]) -> Int {
+            let n = min(a.count, b.count)
+            var i = 0
+            while i < n && a[i] == b[i] { i += 1 }
+            return i
         }
 
-        private func blockQuoteDepth(presentation: PresentationIntent?) -> Int {
-            guard let pres = presentation else { return 0 }
-            var depth = 0
-            for comp in pres.components {
-                if case .blockQuote = comp.kind { depth += 1 }
+        // MARK: - Event consumer
+        private mutating func consume(events: [Event]) {
+            for event in events {
+                switch event {
+                case .open(let c):
+                    handleOpen(c)
+                case .close(let c):
+                    handleClose(c)
+                case .text(let ns):
+                    handleText(ns)
+                case .divider:
+                    // HR is a block element: end paragraphs and lists first
+                    while !listStack.isEmpty { closeListFrame() }
+                    flushPendingParagraph()
+                    appendBlock(.divider)
+                case .code(let ns):
+                    // Code blocks are standalone blocks, not inside lists/paragraphs
+                    while !listStack.isEmpty { closeListFrame() }
+                    flushPendingParagraph()
+                    pushParagraph(ns)
+                }
             }
-            return depth
         }
+
+        private mutating func handleOpen(_ c: Container) {
+            switch c {
+            case .blockQuote:
+                // Enter a new quote context
+                quoteChildrenStack.append([])
+            case .orderedList:
+                listStack.append(ListFrame(type: .ordered, items: [], currentItem: [], ordinal: nil, signature: nil))
+            case .unorderedList:
+                listStack.append(ListFrame(type: .unordered, items: [], currentItem: [], ordinal: nil, signature: nil))
+            case .listItem(let ord, let signature):
+                if !listStack.isEmpty {
+                    // start fresh item; previous item will be closed on its close event
+                    listStack[listStack.count - 1].ordinal = ord
+                    listStack[listStack.count - 1].signature = signature
+                    // ensure we are ready to capture children into currentItem
+                    if !listStack[listStack.count - 1].currentItem.isEmpty {
+                        // if somehow item has residuals, finalize it before starting
+                        listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
+                        listStack[listStack.count - 1].currentItem = []
+                    }
+                }
+            case .paragraph:
+                // Start a fresh paragraph buffer
+                if pendingParagraph.length > 0 { flushPendingParagraph() }
+            case .header(let level):
+                if headerLevelActive != nil { flushHeaderBuffer() }
+                headerLevelActive = level
+            }
+        }
+
+        private mutating func handleClose(_ c: Container) {
+            switch c {
+            case .blockQuote:
+                flushPendingParagraph()
+                flushQuote()
+            case .orderedList, .unorderedList:
+                closeListFrame()
+            case .listItem:
+                closeListItemIfNeeded()
+            case .paragraph:
+                flushPendingParagraph()
+            case .header:
+                flushHeaderBuffer()
+            }
+        }
+
+        private mutating func handleText(_ ns: NSAttributedString) {
+            if let _ = headerLevelActive {
+                headerBuffer.append(ns)
+            } else {
+                pendingParagraph.append(ns)
+            }
+        }
+
+        // MARK: - List helpers for event consumer
+        private mutating func closeListItemIfNeeded() {
+            flushPendingParagraph()
+            guard !listStack.isEmpty else { return }
+            if !listStack[listStack.count - 1].currentItem.isEmpty {
+                listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
+                listStack[listStack.count - 1].currentItem = []
+            }
+        }
+
+        private mutating func closeListFrame() {
+            flushPendingParagraph()
+            guard var frame = listStack.popLast() else { return }
+            if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
+            let listBlock = Block.list(type: frame.type, items: frame.items)
+            if !listStack.isEmpty {
+                listStack[listStack.count - 1].currentItem.append(listBlock)
+            } else if !quoteChildrenStack.isEmpty {
+                quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
+            } else {
+                blocks.append(listBlock)
+            }
+        }
+
+        // Old run classification helpers removed; superseded by containersFor(presentation:).
     }
 
     static func applyBaseStyling(_ source: NSAttributedString, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {

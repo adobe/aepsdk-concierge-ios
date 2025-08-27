@@ -86,6 +86,7 @@ Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
 >    1. Nested child 2
 >    2. Nested child 3
 >    - Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com). 4
+> -----
 > 2. Nested child 5
 > - Unordered 6
 >   - Nested child with lots of extra text to see how line wrapping works for these elements 7
