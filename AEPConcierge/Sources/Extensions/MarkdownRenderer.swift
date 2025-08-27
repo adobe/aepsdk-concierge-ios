@@ -13,43 +13,44 @@
 import UIKit
 
 struct MarkdownRenderer {
-    enum Block: Equatable {
-        case blockQuote([Block])
-        case divider
-        case list(type: ListType, items: [[Block]])
-        case text(NSAttributedString)
-    }
-
-    enum Container: Equatable {
-        case blockQuote
-        case header(level: Int)
-        case listItem(ordinal: Int)
-        case orderedList
-        case paragraph
-        case unorderedList
-    }
-
-    enum Event {
-        case open(Container)
-        case close(Container)
-
-        case text(NSAttributedString)
-        case divider
-        case code(NSAttributedString)
-    }
-
     enum ListType {
         case ordered
         case unordered
     }
 
+    enum Block: Equatable {
+        case text(NSAttributedString)
+        case divider
+        case list(type: ListType, items: [[Block]])
+        case blockQuote([Block])
+    }
+
+    // Outer-to-inner container order (helps reason about stack diffs)
+    enum Container: Equatable {
+        case blockQuote
+        case orderedList
+        case unorderedList
+        case listItem(ordinal: Int)
+        case paragraph
+        case header(level: Int)
+    }
+
+    enum Event {
+        case open(Container)
+        case close(Container)
+        case text(NSAttributedString)
+        case divider
+        case code(NSAttributedString)
+    }
+
+    // Internal parser leaf classification
     private enum LeafKind {
         case none
         case codeBlock
         case thematicBreak
     }
 
-    // List state (stack of list items, each level collects blocks for a single item)
+    // Runtime list frame (engine state)
     struct ListFrame {
         var type: ListType
         var items: [[Block]]
@@ -57,24 +58,25 @@ struct MarkdownRenderer {
     }
 
     // MARK: Inputs (immutable)
-    let attributed: AttributedString
-    let textColor: UIColor?
-    let baseFont: UIFont
+    private let attributed: AttributedString
+    private let textColor: UIColor?
+    private let baseFont: UIFont
 
     // MARK: Output
-    private(set) var blocks: [Block] = []
+    private var blocks: [Block] = []
 
     // MARK: Container state (structure of the tree)
-    var listStack: [ListFrame] = []
-    var quoteChildrenStack: [[Block]] = []
+    private var listStack: [ListFrame] = []
+    private var quoteChildrenStack: [[Block]] = []
 
     // MARK: Accumulation buffers (inline content)
-    var paragraphBuffer = NSMutableAttributedString()
-    var headerBuffer = NSMutableAttributedString()
+    private var paragraphBuffer = NSMutableAttributedString()
+    private var headerBuffer = NSMutableAttributedString()
 
     // MARK: Mode/flags
-    var headerLevelActive: Int? = nil
+    private var headerLevelActive: Int? = nil
 
+    // MARK: - Public API
     static func buildBlocks(
         markdown: String,
         textColor: UIColor? = nil,
@@ -88,26 +90,25 @@ struct MarkdownRenderer {
         var builder = MarkdownRenderer(attributed: attributed, textColor: textColor, baseFont: baseFont)
         return builder.build()
     }
-    
-    // MARK: - Public API
+
     private mutating func build() -> [Block] {
         // Phase 1: build events by diffing container stacks per run
         var events: [Event] = []
         var prevStack: [Container] = []
 
         for run in attributed.runs {
-            let sliceAS = AttributedString(attributed[run.range])
+            let runSlice = AttributedString(attributed[run.range])
             let (nextStack, leafKind) = containersFor(presentation: run.presentationIntent)
 
             // diff stacks -> close then open
-            let lcp = longestCommonPrefix(prevStack, nextStack)
-            if prevStack.count > lcp {
-                for idx in stride(from: prevStack.count - 1, through: lcp, by: -1) {
+            let longestCommonPrefixLength = longestCommonPrefix(prevStack, nextStack)
+            if prevStack.count > longestCommonPrefixLength {
+                for idx in stride(from: prevStack.count - 1, through: longestCommonPrefixLength, by: -1) {
                     events.append(.close(prevStack[idx]))
                 }
             }
-            if nextStack.count > lcp {
-                for idx in lcp..<nextStack.count {
+            if nextStack.count > longestCommonPrefixLength {
+                for idx in longestCommonPrefixLength..<nextStack.count {
                     events.append(.open(nextStack[idx]))
                 }
             }
@@ -115,7 +116,7 @@ struct MarkdownRenderer {
             // leaf payloads
             switch leafKind {
             case .codeBlock:
-                let ns = nsFromSlice(sliceAS)
+                let ns = nsFromSlice(runSlice)
                 let m = NSMutableAttributedString(attributedString: ns)
                 m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
                 m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
@@ -123,7 +124,7 @@ struct MarkdownRenderer {
             case .thematicBreak:
                 events.append(.divider)
             case .none:
-                let ns = nsFromSlice(sliceAS)
+                let ns = nsFromSlice(runSlice)
                 if ns.length > 0 { events.append(.text(ns)) }
             }
 
@@ -157,32 +158,20 @@ struct MarkdownRenderer {
         }
     }
 
-    mutating func pushParagraph(_ ns: NSAttributedString) {
+    private mutating func pushParagraph(_ ns: NSAttributedString) {
         let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
         appendBlock(.text(styled))
     }
 
-    // flushCurrentListItem was used by the old single-pass builder.
-    // The new event pipeline uses closeListFrame/closeListItemIfNeeded instead.
-
     // MARK: - Paragraph/Header/Quote finalizers
-    mutating func flushParagraphBuffer() {
+    private mutating func flushParagraphBuffer() {
         if paragraphBuffer.length > 0 {
             pushParagraph(paragraphBuffer)
             paragraphBuffer = NSMutableAttributedString()
         }
     }
 
-    func headerFont(for level: Int) -> UIFont {
-        switch level {
-        case 1: return .systemFont(ofSize: 22, weight: .bold)
-        case 2: return .systemFont(ofSize: 20, weight: .semibold)
-        case 3: return .systemFont(ofSize: 18, weight: .semibold)
-        default: return .systemFont(ofSize: 16, weight: .semibold)
-        }
-    }
-
-    mutating func flushHeaderBuffer() {
+    private mutating func flushHeaderBuffer() {
         guard let level = headerLevelActive, headerBuffer.length > 0 else { return }
         let r = NSRange(location: 0, length: headerBuffer.length)
         headerBuffer.addAttribute(.font, value: headerFont(for: level), range: r)
@@ -192,7 +181,7 @@ struct MarkdownRenderer {
         headerLevelActive = nil
     }
 
-    mutating func flushQuote() {
+    private mutating func flushQuote() {
         guard !quoteChildrenStack.isEmpty else { return }
         let children = quoteChildrenStack.removeLast()
         appendBlock(.blockQuote(children))
@@ -200,21 +189,58 @@ struct MarkdownRenderer {
 
     // MARK: - Event production helpers
 
+    /// PresentationIntent.components appear inner most first -> outer most.
+    /// Iterate reversed to go outer -> inner, which keeps the container
+    /// type stack aligned with listItem depths.
+    ///
+    /// For example, for the run:
+    ///   [run] "Nested ordered 9"
+    ///   block kinds: [paragraph, listItem 1, unorderedList, listItem 1, unorderedList, blockQuote]
+    /// The components arrive inner-most first (paragraph) and end with the outer blockQuote.
+    ///
+    /// Reversing yields:
+    ///   [blockQuote, unorderedList, listItem 1, orderedList, listItem 1, paragraph]
+    /// As we scan this reversed list:
+    ///   - blockQuote            -> quoteDepth += 1
+    ///   - unorderedList         -> containerTypeStack = [.unordered]
+    ///   - listItem 1            -> pairs += (.unordered, 1)
+    ///   - orderedList           -> containerTypeStack = [.unordered, .ordered]
+    ///   - listItem 1            -> pairs += (.ordered, 1)  // nested item at depth 2 (ordered)
+    ///   - paragraph             -> hasParagraph = true
+    ///
+    /// From these we build the container stack outer->inner:
+    ///   [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
+    /// This creates a stable longest-common-prefix and aligns list containers, preserving
+    /// correct sibling boundaries.
+    ///
+    /// Using outer -> inner
+    /// A = [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
+    /// B = [.blockQuote, .unorderedList, .listItem(2), .paragraph]
+    /// Shared prefix = [.blockQuote, .unorderedList]. The event diff (performed elsewhere)
+    /// will close A’s trailing containers and open B’s trailing containers, producing a new
+    /// sibling list item at the same parent unordered list.
+    ///
+    /// Using inner -> outer (default parser order, you get the wrong groupings)
+    /// C = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
+    /// D = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
+    /// Shared prefix is only [.paragraph] in inner -> outer order. Using this order causes
+    /// incorrect groupings and sibling boundaries.
     private func containersFor(presentation: PresentationIntent?) -> ([Container], LeafKind) {
-        guard let pres = presentation else { return ([.paragraph], .none) }
+        guard let presentation = presentation else {
+            // If there is no presentation intent, default to a standard paragraph container
+            return ([.paragraph], .none)
+        }
 
-        var leaf: LeafKind = .none
-        var quoteDepth = 0
-        var containerTypeStack: [ListType] = []
-        var pairs: [(ListType, Int)] = []
+        // Outer structural context/flags
         var headerLevel: Int? = nil
         var hasParagraph = false
-        var hasAnyListItem = false
+        var leaf: LeafKind = .none
+        var appendedParagraph = false
 
-        // PresentationIntent.components appear inner-most first in practice.
-        // Iterate reversed so we go outer -> inner, which keeps the container
-        // type stack aligned with listItem depths.
-        for comp in pres.components.reversed() {
+        var containers: [Container] = []
+
+        // Build container stack directly by walking reversed components.
+        for comp in presentation.components.reversed() {
             switch comp.kind {
             case .header(let level):
                 headerLevel = level
@@ -223,26 +249,22 @@ struct MarkdownRenderer {
             case .thematicBreak:
                 leaf = .thematicBreak
             case .blockQuote:
-                quoteDepth += 1
+                containers.append(.blockQuote)
             case .orderedList:
-                containerTypeStack.append(.ordered)
+                containers.append(.orderedList)
             case .unorderedList:
-                containerTypeStack.append(.unordered)
+                containers.append(.unorderedList)
             case .listItem(let ord):
-                let currentType = containerTypeStack.last ?? .unordered
-                pairs.append((currentType, ord))
-                hasAnyListItem = true
+                containers.append(.listItem(ordinal: ord))
             case .paragraph:
                 hasParagraph = true
+                if !appendedParagraph {
+                    containers.append(.paragraph)
+                    appendedParagraph = true
+                }
             default:
                 break
             }
-        }
-
-        // Build container stack from outer -> inner
-        var containers: [Container] = []
-        if quoteDepth > 0 {
-            for _ in 0..<quoteDepth { containers.append(.blockQuote) }
         }
 
         // Header takes precedence over paragraph
@@ -251,22 +273,9 @@ struct MarkdownRenderer {
             return (containers, .none)
         }
 
-        // Lists + items
-        if !pairs.isEmpty && leaf == .none {
-            // Build outer -> inner, preserving each depth's own type and ordinal
-            for depth in 0..<pairs.count {
-                let (t, ord) = pairs[depth]
-                containers.append(t == .ordered ? .orderedList : .unorderedList)
-                containers.append(.listItem(ordinal: ord))
-            }
-        }
-
-        // Paragraph: only if not header or leaf block
-        if leaf == .none {
-            // Apple's runs for lists carry paragraph too; include paragraph so text routes correctly
-            if hasParagraph || (!hasAnyListItem && headerLevel == nil) {
-                containers.append(.paragraph)
-            }
+        // Paragraph: add only when not a leaf block and not already appended
+        if leaf == .none && hasParagraph && !appendedParagraph {
+            containers.append(.paragraph)
         }
 
         return (containers, leaf)
@@ -365,7 +374,7 @@ struct MarkdownRenderer {
     }
 
     private mutating func closeListFrame() {
-        flushPendingParagraph()
+        flushParagraphBuffer()
         guard var frame = listStack.popLast() else { return }
         if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
         let listBlock = Block.list(type: frame.type, items: frame.items)
@@ -406,6 +415,15 @@ struct MarkdownRenderer {
             }
         }
         return mutable
+    }
+
+    private func headerFont(for level: Int) -> UIFont {
+        switch level {
+        case 1: return .systemFont(ofSize: 22, weight: .bold)
+        case 2: return .systemFont(ofSize: 20, weight: .semibold)
+        case 3: return .systemFont(ofSize: 18, weight: .semibold)
+        default: return .systemFont(ofSize: 16, weight: .semibold)
+        }
     }
 }
 
