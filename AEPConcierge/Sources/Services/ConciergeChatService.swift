@@ -15,7 +15,7 @@ import AEPServices
 class ConciergeChatService: NSObject {
     // MARK: - temporary constants for testing
     let serviceEndpoint = "https://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/conversations?sessionId=083f7d55-df46-43f3-a70d-626cc324d1ef&requestId=f199b4ed-50db-44cd-9371-291778e81927&configId=51ee226f-9327-4b97-99fb-d5f9877d8198"
-    let tempQuery = "I want to turn my clips into polished videos."
+    let tempQuery = "Tell me about Photoshop"
     let tempSurface = "web://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/index.html"
     
     let LOG_TAG = "ConciergeChatService"
@@ -24,7 +24,7 @@ class ConciergeChatService: NSObject {
     private var session: URLSession!
     private var dataTask: URLSessionDataTask?
     private var serverEventHandler: ((ConciergeResponse?, ConciergeError?) -> Void)?
-    private var onChunkHandler: ((String) -> Void)?
+    private var onChunkHandler: ((TempPayload) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
     private var lastEmittedResponseText: String = ""
     
@@ -45,7 +45,7 @@ class ConciergeChatService: NSObject {
         self.tempServerEventHandler = handler
     }
     
-    func streamChat(_ query: String, onChunk: @escaping (String) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
+    func streamChat(_ query: String, onChunk: @escaping (TempPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
         guard let url = URL(string: serviceEndpoint) else {
             onComplete(.invalidEndpoint)
             return
@@ -129,25 +129,9 @@ extension ConciergeChatService: URLSessionDataDelegate {
             
             do {
                 let handle = try JSONDecoder().decode(TempHandle.self, from: handleData)
-                if let firstPayload = handle.handle.first?.payload.first,
-                   let state = firstPayload.state,
-                   let message = firstPayload.response?.message {
-                    if state == Constants.StreamState.IN_PROGRESS {
-                        // Emit raw fragment and accumulate locally
-                        self.onChunkHandler?(message)
-                        self.lastEmittedResponseText += message
-                    } else if state == Constants.StreamState.COMPLETED {
-                        // Emit only the remainder beyond what we already streamed
-                        let fullText = message
-                        if self.lastEmittedResponseText.count < fullText.count {
-                            let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
-                            let delta = String(fullText[startIndex...])
-                            if !delta.isEmpty {
-                                self.onChunkHandler?(delta)
-                            }
-                        }
-                        self.lastEmittedResponseText = fullText
-                    }
+                if let handler = self.onChunkHandler,
+                   let payload = handle.handle.first?.payload.first {
+                    handler(payload)
                 }
             } catch {
                 Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
