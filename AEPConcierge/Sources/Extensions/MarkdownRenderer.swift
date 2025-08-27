@@ -61,7 +61,7 @@ enum MarkdownRenderer {
 
         private(set) var blocks: [Block] = []
 
-        // List state (stack of list items; each level collects blocks for a single item)
+        // List state (stack of list items, each level collects blocks for a single item)
         struct ListFrame { var type: ListType; var items: [[Block]]; var currentItem: [Block]; var ordinal: Int?; var signature: ListSignature? }
         var listStack: [ListFrame] = []
 
@@ -97,7 +97,7 @@ enum MarkdownRenderer {
             if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
             // emit or push back up
             if listStack.isEmpty {
-                // produce top-level list block
+                // produce top level list block
                 let block = Block.list(type: frame.type, items: frame.items)
                 if !quoteChildrenStack.isEmpty {
                     quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
@@ -154,6 +154,7 @@ enum MarkdownRenderer {
                 }
                 while quoteChildrenStack.count < quoteDepth {
                     while !listStack.isEmpty { flushCurrentListItem() }
+                    // Entering a deeper quote. Flush any outside paragraph before opening quote
                     flushPendingParagraph()
                     quoteChildrenStack.append([])
                 }
@@ -188,11 +189,17 @@ enum MarkdownRenderer {
                     pushParagraph(m)
 
                 case .blockQuote:
-                    // Quote content is handled by stack; treat this as paragraph content
+                    // Treat quoted text as paragraph content at current quote depth
                     let ns = nsFromSlice(sliceAS)
                     pendingParagraph.append(ns)
 
                 case .list(let type, let depth, let ordinal, let signature):
+                    // If we are about to enter a deeper list level from paragraph text,
+                    // flush the paragraph so it renders before the list at this position.
+                    if listStack.count < depth {
+                        flushPendingParagraph()
+                    }
+
                     // Synchronize list stack depth
                     while listStack.count > depth { flushCurrentListItem() }
                     while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
@@ -221,6 +228,9 @@ enum MarkdownRenderer {
 
                 case .paragraph:
                     if headerLevelActive != nil { flushHeaderBuffer() }
+                    // If we were inside a list and now see a plain paragraph, the list has ended.
+                    // Finalize all open list frames before starting this paragraph
+                    while !listStack.isEmpty { flushCurrentListItem() }
                     let ns = nsFromSlice(sliceAS)
                     pendingParagraph.append(ns)
                 }
