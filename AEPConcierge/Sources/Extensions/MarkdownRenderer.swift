@@ -25,10 +25,7 @@ enum MarkdownRenderer {
 
     // MARK: - Shared helper types (extracted)
     enum ListType { case ordered, unordered }
-    struct ListSignature: Equatable {
-        struct Component: Equatable { let type: ListType; let ordinal: Int }
-        let components: [Component]
-    }
+    // Removed: ListSignature (no longer used by the event pipeline)
 
     // MARK: - Shared helpers (extracted)
     private static func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
@@ -66,7 +63,7 @@ enum MarkdownRenderer {
             case blockQuote
             case orderedList
             case unorderedList
-            case listItem(ordinal: Int?, signature: ListSignature?)
+            case listItem(ordinal: Int)
             case paragraph
             case header(level: Int)
         }
@@ -80,7 +77,7 @@ enum MarkdownRenderer {
         }
 
         // List state (stack of list items, each level collects blocks for a single item)
-        struct ListFrame { var type: ListType; var items: [[Block]]; var currentItem: [Block]; var ordinal: Int?; var signature: ListSignature? }
+        struct ListFrame { var type: ListType; var items: [[Block]]; var currentItem: [Block] }
         var listStack: [ListFrame] = []
 
         // Paragraph state
@@ -255,12 +252,11 @@ enum MarkdownRenderer {
 
             // Lists + items
             if !pairs.isEmpty && leaf == .none {
-                // accumulate signature progressively for each depth
+                // Build outer -> inner, preserving each depth's own type and ordinal
                 for depth in 0..<pairs.count {
                     let (t, ord) = pairs[depth]
                     containers.append(t == .ordered ? .orderedList : .unorderedList)
-                    let signature = ListSignature(components: pairs.prefix(depth + 1).map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
-                    containers.append(.listItem(ordinal: ord, signature: signature))
+                    containers.append(.listItem(ordinal: ord))
                 }
             }
 
@@ -312,14 +308,11 @@ enum MarkdownRenderer {
                 // Enter a new quote context
                 quoteChildrenStack.append([])
             case .orderedList:
-                listStack.append(ListFrame(type: .ordered, items: [], currentItem: [], ordinal: nil, signature: nil))
+                listStack.append(ListFrame(type: .ordered, items: [], currentItem: []))
             case .unorderedList:
-                listStack.append(ListFrame(type: .unordered, items: [], currentItem: [], ordinal: nil, signature: nil))
-            case .listItem(let ord, let signature):
+                listStack.append(ListFrame(type: .unordered, items: [], currentItem: []))
+            case .listItem:
                 if !listStack.isEmpty {
-                    // start fresh item; previous item will be closed on its close event
-                    listStack[listStack.count - 1].ordinal = ord
-                    listStack[listStack.count - 1].signature = signature
                     // ensure we are ready to capture children into currentItem
                     if !listStack[listStack.count - 1].currentItem.isEmpty {
                         // if somehow item has residuals, finalize it before starting
