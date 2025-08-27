@@ -15,49 +15,163 @@ import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
-import AEPConcierge
+@testable import AEPConcierge
 
 struct ContentView: View {
+    let stringToRender = """
+# Header 1
+
+This is a paragraph with inline styles: **bold**, _italic_, `inline code`, and a [link](https://example.com).
+
+## Header 2
+
+> Block quote line one
+>
+> Block quote line two with lots of extra text to see how line wrapping works for these elements
+
+---
+
+1. First ordered item
+   1. Nested ordered (child 1)
+   2. Nested ordered (child 2)
+2. Second ordered item
+
+- First unordered item
+  - Nested unordered (child1)
+  - Nested unordered (child2)
+    - Extra nested unordered (child3) with lots of extra text to see how line wrapping works for these elements
+- Second unordered item
+
+```swift
+// Code block with language hint
+print("Hello, Markdown blocks!")
+```
+
+> Tips for the day:
+>
+> - Use version control
+> - Write tests
+>   - Unit tests
+>   - Snapshot tests
+> - Document decisions
+>
+> That’s it!
+
+Regular paragraph to separate sections.
+
+> Mixed content:
+>
+> - Top item
+>   - Child item
+>   - Another child
+> - Next item
+
+| Column A | Column B | Column C |
+|:-------:|---------:|---------:|
+| A1      | B1       | C1       |
+| A2      | B2       | C2       |
+
+Final paragraph to verify trailing layout.
+"""
+
+    let stringTest =
+"""
+# Header 1
+
+Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
+
+> Outer quote start
+>
+> 1. Ordered 1
+>    1. Nested child 2
+>    2. Nested child 3
+>    - Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com). 4
+> 2. Nested child 5
+> - Unordered 6
+>   - Nested child with lots of extra text to see how line wrapping works for these elements 7
+>   1. Nested ordered 8
+>   - Nested ordered 9
+> - Unordered 10
+>
+> Outer quote end
+
+---
+
+1. Ordered
+   1. Nested child 1
+   2. Nested child 2
+   - Unordered 3
+2. Nested child 4
+- Unordered 5
+  - Nested childwith lots of extra text to see how line wrapping works for these elements
+  1. Nested ordered 6
+  - Nested ordered 7
+- Unordered 8
+
+```swift
+print("Hello, Markdown blocks!")
+```
+
+Final paragraph.
+"""
+
     var body: some View {
         TabView {
             // SwiftUI sample
             Concierge.wrap(
-                VStack(spacing: 0) {
-                    Button(action: {
-                        Concierge.show(
-                            title: "Concierge",
-                            subtitle: "Powered by Adobe"
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+
+                        MarkdownBlockView(
+                            markdown: stringTest,
+                            textColor: UIColor(.black)
                         )
-                    }) {
-                        Text("Open chat (SwiftUI)")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 28)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color.red)
-                                    .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
-                            )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 32)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
-                .conciergeTheme(
-                    ConciergeTheme(
-                        primary: .Brand.red,
-                        secondary: .Brand.red,
-                        onPrimary: .white,
-                        textBody: .primary,
-                        agentBubble: Color(UIColor.systemGray5),
-                        onAgent: .primary,
-                        surfaceLight: Color(UIColor.secondarySystemBackground),
-                        surfaceDark: Color(UIColor.systemBackground)
+                    VStack(spacing: 0) {
+                        Button(action: {
+                            MarkdownRenderer.debugDump(stringTest, syntax: .full)
+                        }) {
+                            Text("DEBUG MARKDOWN")
+                        }
+                        Button(action: {
+                            Concierge.show(
+                                title: "Concierge",
+                                subtitle: "Powered by Adobe"
+                            )
+                        }) {
+                            Text("Open chat (SwiftUI)")
+                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 16)
+                                .padding(.horizontal, 28)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.red)
+                                        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+                                )
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 32)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
+                    .conciergeTheme(
+                        ConciergeTheme(
+                            primary: .Brand.red,
+                            secondary: .Brand.red,
+                            onPrimary: .white,
+                            textBody: .primary,
+                            agentBubble: Color(UIColor.systemGray5),
+                            onAgent: .primary,
+                            surfaceLight: Color(UIColor.secondarySystemBackground),
+                            surfaceDark: Color(UIColor.systemBackground)
+                        )
                     )
-                )
+                }
+
             )
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 

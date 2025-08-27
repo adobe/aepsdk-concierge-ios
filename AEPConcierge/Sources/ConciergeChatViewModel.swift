@@ -181,9 +181,9 @@ final class ConciergeChatViewModel: ObservableObject {
                                 )
                             }
                             
-                            if let message = self?.messages.last {
-                                if message.
-                            }
+//                            if let message = self?.messages.last {
+//                                if message.
+//                            }
                         }
                     }
                 }
