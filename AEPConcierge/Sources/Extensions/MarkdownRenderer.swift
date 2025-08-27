@@ -196,9 +196,17 @@ enum MarkdownRenderer {
                     // Synchronize list stack depth
                     while listStack.count > depth { flushCurrentListItem() }
                     while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
-                    // New item boundary if ordinal/signature changed
+
+                    // If the list container type changed at this depth, end the current list frame
+                    // and start a new sibling frame at the same depth with the new type
+                    if let top = listStack.last, top.type != type {
+                        flushCurrentListItem()
+                        // after flush, depth decreased by 1; restore frame at same depth with new type
+                        while listStack.count < depth { listStack.append(ListFrame(type: type, items: [], currentItem: [], ordinal: nil, signature: nil)) }
+                    }
+
+                    // Start a new item when ordinal/signature changes
                     if let top = listStack.last, top.ordinal != ordinal || top.signature != signature {
-                        // push previous item
                         if !listStack[listStack.count - 1].currentItem.isEmpty {
                             listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
                             listStack[listStack.count - 1].currentItem = []
@@ -206,10 +214,9 @@ enum MarkdownRenderer {
                         listStack[listStack.count - 1].ordinal = ordinal
                         listStack[listStack.count - 1].signature = signature
                     }
-                    // Append paragraph content for this run into the current list item
+
+                    // Append this run as a paragraph block inside the current list item
                     let ns = nsFromSlice(sliceAS)
-                    // Within list context, a run corresponds to content for the current item.
-                    // Push as a paragraph block directly, so bullets pair with content correctly.
                     pushParagraph(ns)
 
                 case .paragraph:
@@ -242,15 +249,13 @@ enum MarkdownRenderer {
                 var isCodeBlock: Bool = false
                 var isThematic: Bool = false
                 var isBlockQuote: Bool = false
-                var listDepth: Int = 0
-                var listType: ListType? = nil
                 var ordinal: Int? = nil
                 var pairs: [(ListType, Int)] = []
-                var pendingOrdinalTemp: Int? = nil
                 var quoteDepth: Int = 0
 
                 init(presentation: PresentationIntent?) {
                     guard let pres = presentation else { return }
+                    var containerStack: [ListType] = []
                     for comp in pres.components {
                         switch comp.kind {
                         case .header(let level):
@@ -262,22 +267,14 @@ enum MarkdownRenderer {
                         case .blockQuote:
                             isBlockQuote = true
                             quoteDepth += 1
-                        case .listItem(let ord):
-                            listDepth += 1
-                            ordinal = ord
-                            pendingOrdinalTemp = ord
                         case .orderedList:
-                            listType = .ordered
-                            if let o = pendingOrdinalTemp {
-                                pairs.append((.ordered, o))
-                                pendingOrdinalTemp = nil
-                            }
+                            containerStack.append(.ordered)
                         case .unorderedList:
-                            listType = .unordered
-                            if let o = pendingOrdinalTemp {
-                                pairs.append((.unordered, o))
-                                pendingOrdinalTemp = nil
-                            }
+                            containerStack.append(.unordered)
+                        case .listItem(let ord):
+                            ordinal = ord
+                            let currentType = containerStack.last ?? .unordered
+                            pairs.append((currentType, ord))
                         default:
                             break
                         }
@@ -288,9 +285,11 @@ enum MarkdownRenderer {
                     if let level = headerLevel { return .header(level) }
                     if isThematic { return .thematicBreak }
                     if isCodeBlock { return .codeBlock }
-                    if listDepth > 0, let type = listType {
-                        let signature: ListSignature? = pairs.isEmpty ? nil : ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
-                        return .list(type, listDepth, ordinal, signature)
+                    if !pairs.isEmpty {
+                        let type = pairs.last!.0
+                        let depth = pairs.count
+                        let signature: ListSignature? = ListSignature(components: pairs.map { ListSignature.Component(type: $0.0, ordinal: $0.1) })
+                        return .list(type, depth, ordinal, signature)
                     }
                     return .paragraph
                 }

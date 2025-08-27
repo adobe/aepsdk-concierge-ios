@@ -74,6 +74,47 @@ Regular paragraph to separate sections.
 Final paragraph to verify trailing layout.
 """
 
+    let stringTest =
+"""
+# Header 1
+
+Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
+
+> Outer quote start
+>
+> 1. Ordered
+>    1. Nested child 1
+>    2. Nested child 2
+>    - Unordered 3
+> 2. Nested child 4
+> - Unordered 5
+>   - Nested childwith lots of extra text to see how line wrapping works for these elements
+>   1. Nested ordered 6
+>   - Nested ordered 7
+> - Unordered 8
+>
+> Outer quote end
+
+---
+
+1. Ordered
+   1. Nested child 1
+   2. Nested child 2
+   - Unordered 3
+2. Nested child 4
+- Unordered 5
+  - Nested childwith lots of extra text to see how line wrapping works for these elements
+  1. Nested ordered 6
+  - Nested ordered 7
+- Unordered 8
+
+```swift
+print("Hello, Markdown blocks!")
+```
+
+Final paragraph.
+"""
+
     var body: some View {
         TabView {
             // SwiftUI sample
@@ -82,7 +123,7 @@ Final paragraph to verify trailing layout.
                     VStack(alignment: .leading, spacing: 12) {
 
                         MarkdownBlockView(
-                            markdown: stringToRender,
+                            markdown: stringTest,
                             textColor: UIColor(.black)
                         )
                         .padding(.horizontal, 20)
@@ -90,7 +131,7 @@ Final paragraph to verify trailing layout.
                     }
                     VStack(spacing: 0) {
                         Button(action: {
-                            MarkdownRenderer.debugDump(stringToRender, syntax: .full)
+                            MarkdownRenderer.debugDump(stringTest, syntax: .full)
                         }) {
                             Text("DEBUG MARKDOWN")
                         }
