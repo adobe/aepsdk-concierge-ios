@@ -80,6 +80,10 @@ Final paragraph to verify trailing layout.
 
 Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
 
+paragraph 2  
+
+\n\nparagraph 3
+
 > Outer quote start
 >
 > 1. Ordered 1
@@ -121,6 +125,10 @@ print("Hello, Markdown blocks!")
 
 Final paragraph.
 """
+
+    let modelString = """
+        I can help with anything related to Adobe Creative Cloud! Here’s what I can do for you:\n\n1. **Find the Right App**: Need help choosing the best Adobe app for your creative project? I can recommend tools for photo editing, video production, graphic design, animation, and more.\n\n2. **Answer Questions**: Got questions about Creative Cloud plans, pricing, features, or how to get started? I can explain it all.\n\n3. **App-Specific Guidance**: Whether it’s Photoshop, Illustrator, Premiere Pro, After Effects, or any other Adobe app, I can help with features, workflows, and tips.\n\nLet me know what you need, and I’ll make it easy for you! 😊
+        """
 
     var body: some View {
         TabView {
