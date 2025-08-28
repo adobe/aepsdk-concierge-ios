@@ -25,7 +25,7 @@ struct MarkdownRenderer {
         case blockQuote([Block])
     }
 
-    // Outer-to-inner container order (helps reason about stack diffs)
+    // Outer to inner container order
     enum Container: Equatable {
         case blockQuote
         case orderedList
@@ -149,6 +149,10 @@ struct MarkdownRenderer {
 
     // MARK: - Block assembly helpers
     private mutating func appendBlock(_ block: Block) {
+        // Attach content to the deepest structural container that semantically owns it.
+        // For text inside list items (even when wrapped by a quote), we want the text to
+        // belong to the list item so bullets/numbers render correctly. The quote receives
+        // the finalized list block when the list closes.
         if !listStack.isEmpty {
             listStack[listStack.count - 1].currentItem.append(block)
         } else if !quoteChildrenStack.isEmpty {
@@ -160,7 +164,19 @@ struct MarkdownRenderer {
 
     private mutating func pushParagraph(_ ns: NSAttributedString) {
         let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
-        appendBlock(.text(styled))
+        if !listStack.isEmpty {
+            // If we're inside an inner quote (depth >= 2), route paragraph to the quote's children.
+            if quoteChildrenStack.count >= 2 {
+                quoteChildrenStack[quoteChildrenStack.count - 1].append(.text(styled))
+            } else {
+                listStack[listStack.count - 1].currentItem.append(.text(styled))
+            }
+        } else if !quoteChildrenStack.isEmpty {
+            // Quoted paragraph outside of any list
+            quoteChildrenStack[quoteChildrenStack.count - 1].append(.text(styled))
+        } else {
+            blocks.append(.text(styled))
+        }
     }
 
     // MARK: - Paragraph/Header/Quote finalizers
@@ -189,61 +205,42 @@ struct MarkdownRenderer {
 
     // MARK: - Event production helpers
 
-    /// PresentationIntent.components appear inner most first -> outer most.
-    /// Iterate reversed to go outer -> inner, which keeps the container
-    /// type stack aligned with listItem depths.
+    /// Builds the outermost to innermost container stack and the terminal leaf kind for a markdown run.
     ///
-    /// For example, for the run:
-    ///   [run] "Nested ordered 9"
-    ///   block kinds: [paragraph, listItem 1, unorderedList, listItem 1, unorderedList, blockQuote]
-    /// The components arrive inner-most first (paragraph) and end with the outer blockQuote.
+    /// - Parameter presentation: The run's `PresentationIntent` (if any).
+    /// - Returns: `(containers, leaf)` where `containers` is ordered outermost to innermost and
+    ///   `leaf` indicates a terminal block type.
     ///
-    /// Reversing yields:
-    ///   [blockQuote, unorderedList, listItem 1, orderedList, listItem 1, paragraph]
-    /// As we scan this reversed list:
-    ///   - blockQuote            -> quoteDepth += 1
-    ///   - unorderedList         -> containerTypeStack = [.unordered]
-    ///   - listItem 1            -> pairs += (.unordered, 1)
-    ///   - orderedList           -> containerTypeStack = [.unordered, .ordered]
-    ///   - listItem 1            -> pairs += (.ordered, 1)  // nested item at depth 2 (ordered)
-    ///   - paragraph             -> hasParagraph = true
+    /// PresentationIntent.components come innermost first from the parser. The reverse outermost to
+    /// innermost order is used so container hierarchy aligns correctly.
     ///
-    /// From these we build the container stack outer->inner:
-    ///   [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
-    /// This creates a stable longest-common-prefix and aligns list containers, preserving
-    /// correct sibling boundaries.
+    /// Using outermost -> innermost
     ///
-    /// Using outer -> inner
     /// A = [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
-    /// B = [.blockQuote, .unorderedList, .listItem(2), .paragraph]
-    /// Shared prefix = [.blockQuote, .unorderedList]. The event diff (performed elsewhere)
-    /// will close A’s trailing containers and open B’s trailing containers, producing a new
-    /// sibling list item at the same parent unordered list.
     ///
-    /// Using inner -> outer (default parser order, you get the wrong groupings)
-    /// C = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
-    /// D = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
-    /// Shared prefix is only [.paragraph] in inner -> outer order. Using this order causes
-    /// incorrect groupings and sibling boundaries.
+    /// B = [.blockQuote, .unorderedList, .listItem(2), .paragraph]
+    ///
+    /// Using innermost to outermost (default parser order, you get the wrong groupings)
+    ///
+    /// A = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
+    ///
+    /// B = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
     private func containersFor(presentation: PresentationIntent?) -> ([Container], LeafKind) {
         guard let presentation = presentation else {
             // If there is no presentation intent, default to a standard paragraph container
             return ([.paragraph], .none)
         }
 
-        // Outer structural context/flags
-        var headerLevel: Int? = nil
-        var hasParagraph = false
         var leaf: LeafKind = .none
-        var appendedParagraph = false
-
         var containers: [Container] = []
 
-        // Build container stack directly by walking reversed components.
+        // Build container stack from outermost container to innermost by walking reversed components.
+        // Note: `.header`, `.paragraph`, `.codeBlock`, and `.thematicBreak` are
+        // mutually exclusive within a run and should always be the innermost block component (no early break needed).
         for comp in presentation.components.reversed() {
             switch comp.kind {
             case .header(let level):
-                headerLevel = level
+                containers.append(.header(level: level))
             case .codeBlock:
                 leaf = .codeBlock
             case .thematicBreak:
@@ -257,25 +254,10 @@ struct MarkdownRenderer {
             case .listItem(let ord):
                 containers.append(.listItem(ordinal: ord))
             case .paragraph:
-                hasParagraph = true
-                if !appendedParagraph {
-                    containers.append(.paragraph)
-                    appendedParagraph = true
-                }
+                containers.append(.paragraph)
             default:
                 break
             }
-        }
-
-        // Header takes precedence over paragraph
-        if let level = headerLevel, leaf == .none {
-            containers.append(.header(level: level))
-            return (containers, .none)
-        }
-
-        // Paragraph: add only when not a leaf block and not already appended
-        if leaf == .none && hasParagraph && !appendedParagraph {
-            containers.append(.paragraph)
         }
 
         return (containers, leaf)
@@ -315,7 +297,9 @@ struct MarkdownRenderer {
     private mutating func handleOpen(_ c: Container) {
         switch c {
         case .blockQuote:
-            // Enter a new quote context
+            // Enter a new quote context and ensure current paragraph text is flushed
+            // so the quote starts on its own line within the owning container.
+            flushParagraphBuffer()
             quoteChildrenStack.append([])
         case .orderedList:
             listStack.append(ListFrame(type: .ordered, items: [], currentItem: []))
@@ -378,7 +362,10 @@ struct MarkdownRenderer {
         guard var frame = listStack.popLast() else { return }
         if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
         let listBlock = Block.list(type: frame.type, items: frame.items)
-        if !listStack.isEmpty {
+        if quoteChildrenStack.count >= 2 {
+            // A nested list closed while an inner quote is active: make it a quote child
+            quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
+        } else if !listStack.isEmpty {
             listStack[listStack.count - 1].currentItem.append(listBlock)
         } else if !quoteChildrenStack.isEmpty {
             quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
