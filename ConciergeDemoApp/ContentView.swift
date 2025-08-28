@@ -106,24 +106,20 @@ paragraph 2
 >
 > Outer quote end
 
----
-
-1. Ordered
-   1. Nested child 1
-   2. Nested child 2
-   - Unordered 3
-2. Nested child 4
-- Unordered 5
-  - Nested childwith lots of extra text to see how line wrapping works for these elements
-  1. Nested ordered 6
-  - Nested ordered 7
-- Unordered 8
-
 ```swift
+1 // Code block with language hint
 print("Hello, Markdown blocks!")
 ```
 
-Final paragraph.
+```swift
+2 // Code block with language hint
+> 2. Nested child 11
+> - Unordered 12
+>   - Nested child with lots of extra text to see how line wrapping works for these elements 13
+>   1. Nested ordered 14
+>   - Nested ordered 15
+> - Unordered 16
+```
 """
 
     let modelString = """
