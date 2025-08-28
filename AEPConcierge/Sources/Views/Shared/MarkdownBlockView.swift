@@ -33,6 +33,13 @@ struct MarkdownBlockView: View {
                 case .text(let ns):
                     MarkdownText(attributed: ns)
                         .fixedSize(horizontal: false, vertical: true)
+                case .code(let ns):
+                    MarkdownText(attributed: ns)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(uiColor: .secondarySystemBackground))
+                        .cornerRadius(8)
                 case .divider:
                     Divider()
                 case .blockQuote(let paras):
@@ -58,6 +65,13 @@ private struct QuoteBlockView: View {
                     case .text(let ns):
                         MarkdownText(attributed: ns)
                             .fixedSize(horizontal: false, vertical: true)
+                    case .code(let ns):
+                        MarkdownText(attributed: ns)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .cornerRadius(8)
                     case .divider:
                         Divider()
                     case .blockQuote(let nested):
@@ -103,6 +117,13 @@ private struct ListBlockView: View {
                                     case .text(let ns):
                                         MarkdownText(attributed: ns)
                                             .fixedSize(horizontal: false, vertical: true)
+                                    case .code(let ns):
+                                        MarkdownText(attributed: ns)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .padding(10)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color(uiColor: .secondarySystemBackground))
+                                            .cornerRadius(8)
                                     case .divider:
                                         Divider()
                                     case .blockQuote(let nested):
@@ -133,6 +154,7 @@ private struct ListBlockView: View {
                             case .blockQuote: return true
                             case .divider: return false
                             case .list: return false
+                            case .code: return true
                             }
                         }
 
@@ -146,6 +168,13 @@ private struct ListBlockView: View {
                                         case .text(let ns):
                                             MarkdownText(attributed: ns)
                                                 .fixedSize(horizontal: false, vertical: true)
+                                        case .code(let ns):
+                                            MarkdownText(attributed: ns)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .padding(10)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .background(Color(uiColor: .secondarySystemBackground))
+                                                .cornerRadius(8)
                                         case .divider:
                                             Divider()
                                         case .blockQuote(let nested):

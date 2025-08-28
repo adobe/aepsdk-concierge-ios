@@ -24,6 +24,7 @@ struct MarkdownRenderer {
         case divider
         case list(type: ListType, items: [[Block]])
         case blockQuote([Block])
+        case code(NSAttributedString)
     }
 
     // Outer to inner container order
@@ -46,11 +47,14 @@ struct MarkdownRenderer {
         case code(NSAttributedString)
     }
 
-    // Runtime list frame (engine state)
-    struct ListFrame {
-        var type: ListType
-        var items: [[Block]]
-        var currentItem: [Block]
+    // Unified node for building nested structures (Option B)
+    private enum Node {
+        case blockQuote(children: [Block])
+        case list(type: ListType, items: [[Block]])
+        case listItem(children: [Block])
+        case paragraph(buffer: NSMutableAttributedString)
+        case header(level: Int, buffer: NSMutableAttributedString)
+        case codeBlock(buffer: NSMutableAttributedString)
     }
 
     // MARK: Inputs (immutable)
@@ -61,19 +65,31 @@ struct MarkdownRenderer {
     // MARK: Output
     private var blocks: [Block] = []
 
-    // MARK: Container state (structure of the tree)
-    private var listStack: [ListFrame] = []
-    private var quoteChildrenStack: [[Block]] = []
-
-    // MARK: Accumulation buffers (inline content)
-    private var paragraphBuffer = NSMutableAttributedString()
-    private var headerBuffer = NSMutableAttributedString()
-
-    // MARK: Mode/flags
-    private var headerLevelActive: Int? = nil
+    // MARK: Container state (unified)
+    private var nodeStack: [Node] = []
 
     // MARK: Logging
     private let LOG_TAG = "MarkdownRenderer"
+
+#if DEBUG
+    // MARK: - Debug tracing helpers
+    private func trace(_ message: String) {
+        print("[MarkdownRenderer] " + message)
+    }
+    private func describe(_ container: Container) -> String {
+        switch container {
+        case .blockQuote: return "blockQuote"
+        case .orderedList: return "orderedList"
+        case .unorderedList: return "unorderedList"
+        case .listItem(let ord): return "listItem(ordinal: \(ord))"
+        case .paragraph: return "paragraph"
+        case .header(let level): return "header(\(level))"
+        case .codeBlock: return "codeBlock"
+        case .thematicBreak: return "thematicBreak"
+        }
+    }
+    // container stack description no longer used; keep container describe only
+#endif
 
     // MARK: - Public API
     static func buildBlocks(
@@ -118,6 +134,15 @@ struct MarkdownRenderer {
                 events.append(.open(.paragraph))
             }
 
+            // Force a boundary between distinct code blocks when two successive runs
+            // are both innermost codeBlock components. This prevents separate fenced
+            // blocks from merging into one when their container stacks are identical.
+            if (prevStack.last == .codeBlock
+                && currentStack.last == .codeBlock) {
+                events.append(.close(.codeBlock))
+                events.append(.open(.codeBlock))
+            }
+
             if prevStack.count > longestCommonIndex {
                 for idx in stride(from: prevStack.count - 1, through: longestCommonIndex, by: -1) {
                     events.append(.close(prevStack[idx]))
@@ -130,17 +155,14 @@ struct MarkdownRenderer {
             }
 
             // Handle special leaf components based on innermost container
+#if DEBUG
+            trace("consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
+#endif
             switch currentStack.last {
             case .some(.codeBlock):
+                // Accumulate raw text for code; styling will be applied on code block close
                 let ns = NSAttributedString(runSlice)
-                let mutable = NSMutableAttributedString(attributedString: ns)
-                mutable.addAttribute(.font,
-                                     value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),
-                                     range: NSRange(location: 0, length: mutable.length))
-                mutable.addAttribute(.backgroundColor,
-                                     value: UIColor.secondarySystemBackground,
-                                     range: NSRange(location: 0, length: mutable.length))
-                events.append(.code(mutable))
+                if ns.length > 0 { events.append(.text(ns)) }
             case .some(.thematicBreak):
                 events.append(.divider)
             default:
@@ -159,11 +181,8 @@ struct MarkdownRenderer {
         // Phase 2: consume events centrally
         consume(events: events)
 
-        // Safety: finalize any residual state (should be no-ops if events were complete)
-        while !listStack.isEmpty { closeListFrame() }
-        flushParagraphBuffer()
-        if headerLevelActive != nil { flushHeaderBuffer() }
-        while !quoteChildrenStack.isEmpty { flushQuote() }
+        // Safety: finalize any residual state
+        finalizeAllOpenNodes()
         return blocks
     }
 
@@ -251,87 +270,107 @@ struct MarkdownRenderer {
             case .text(let nsAttributedString):
                 handleText(nsAttributedString)
             case .divider:
-                // HR is a block element: end paragraphs and lists first
-                while !listStack.isEmpty { closeListFrame() }
-                flushParagraphBuffer()
+                // HR is a block element: finalize inline and close lists first
+                finalizeInlineNodes()
+                closeListContainersIfAny()
                 appendBlock(.divider)
             case .code(let ns):
-                // Code blocks are standalone blocks, not inside lists/paragraphs
-                while !listStack.isEmpty { closeListFrame() }
-                flushParagraphBuffer()
-                pushParagraph(ns)
+                // Append code text into an active code block node if present.
+                if case .codeBlock(let buffer) = nodeStack.last {
+                    buffer.append(ns)
+                    nodeStack[nodeStack.count - 1] = .codeBlock(buffer: buffer)
+                } else {
+                    // Fallback: treat as paragraph text with monospace styling
+                    pushParagraph(ns)
+                }
             }
         }
     }
 
     private mutating func handleOpen(_ container: Container) {
+#if DEBUG
+        trace("OPEN   \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+#endif
         switch container {
         case .blockQuote:
-            // Enter a new quote context and ensure current paragraph text is flushed
-            // so the quote starts on its own line within the owning container.
-            quoteChildrenStack.append([])
+            nodeStack.append(.blockQuote(children: []))
         case .orderedList:
-            listStack.append(ListFrame(type: .ordered, items: [], currentItem: []))
+            nodeStack.append(.list(type: .ordered, items: []))
         case .unorderedList:
-            listStack.append(ListFrame(type: .unordered, items: [], currentItem: []))
+            nodeStack.append(.list(type: .unordered, items: []))
         case .listItem:
-            guard !listStack.isEmpty else {
-                Log.warning(label: self.LOG_TAG, "Encountered listItem without an active list; ignoring listItem open.")
-                return
-            }
-            closeListItemIfNeeded()
+            nodeStack.append(.listItem(children: []))
         case .paragraph:
-            // Start a fresh paragraph buffer
-            if paragraphBuffer.length > 0 {
-                flushParagraphBuffer()
-            }
+            nodeStack.append(.paragraph(buffer: NSMutableAttributedString()))
         case .header(let level):
-            if headerLevelActive != nil {
-                flushHeaderBuffer()
-            }
-            headerLevelActive = level
-        case .codeBlock, .thematicBreak:
+            nodeStack.append(.header(level: level, buffer: NSMutableAttributedString()))
+        case .codeBlock:
+            nodeStack.append(.codeBlock(buffer: NSMutableAttributedString()))
+        case .thematicBreak:
             break
         }
     }
 
     private mutating func handleClose(_ container: Container) {
+#if DEBUG
+        trace("CLOSE  \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+#endif
         switch container {
         case .blockQuote:
-            flushParagraphBuffer()
-            flushQuote()
+            popBlockQuote()
         case .orderedList, .unorderedList:
-            closeListFrame()
+            popList()
         case .listItem:
-            flushParagraphBuffer()
-            closeListItemIfNeeded()
+            popListItem()
         case .paragraph:
-            flushParagraphBuffer()
+            popParagraphToBlock()
         case .header:
-            flushHeaderBuffer()
-        case .codeBlock, .thematicBreak:
+            popHeaderToBlock()
+        case .codeBlock:
+            popCodeBlockToBlock()
+        case .thematicBreak:
             break
         }
     }
 
     private mutating func handleText(_ ns: NSAttributedString) {
-        if let _ = headerLevelActive {
-            headerBuffer.append(ns)
-        } else {
-            paragraphBuffer.append(ns)
+        guard let top = nodeStack.last else { return }
+        switch top {
+        case .paragraph(let buffer):
+            buffer.append(ns)
+            nodeStack[nodeStack.count - 1] = .paragraph(buffer: buffer)
+        case .header(let level, let buffer):
+            buffer.append(ns)
+            nodeStack[nodeStack.count - 1] = .header(level: level, buffer: buffer)
+        case .codeBlock(let buffer):
+            buffer.append(ns)
+            nodeStack[nodeStack.count - 1] = .codeBlock(buffer: buffer)
+        default:
+            break
         }
     }
 
     // MARK: - Block assembly helpers
     private mutating func appendBlock(_ block: Block) {
-        // Attach content to the deepest structural container that semantically owns it.
-        // For text inside list items (even when wrapped by a quote), we want the text to
-        // belong to the list item so bullets/numbers render correctly. The quote receives
-        // the finalized list block when the list closes.
-        if !listStack.isEmpty {
-            listStack[listStack.count - 1].currentItem.append(block)
-        } else if !quoteChildrenStack.isEmpty {
-            quoteChildrenStack[quoteChildrenStack.count - 1].append(block)
+        // Route to the most recent structural container (listItem or blockQuote)
+        if let idx = nodeStack.lastIndex(where: { node in
+            switch node {
+            case .listItem, .blockQuote: return true
+            default: return false
+            }
+        }) {
+            switch nodeStack[idx] {
+            case .listItem(let children):
+                var newChildren = children
+                newChildren.append(block)
+                nodeStack[idx] = .listItem(children: newChildren)
+            case .blockQuote(let children):
+                var newChildren = children
+                newChildren.append(block)
+                nodeStack[idx] = .blockQuote(children: newChildren)
+            default:
+                blocks.append(block)
+            }
         } else {
             blocks.append(block)
         }
@@ -339,73 +378,150 @@ struct MarkdownRenderer {
 
     private mutating func pushParagraph(_ ns: NSAttributedString) {
         let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
-        if !listStack.isEmpty {
-            // If we're inside an inner quote (depth >= 2), route paragraph to the inner quote so
-            // the quote has visible children; otherwise keep with the list item so bullets render.
-            if quoteChildrenStack.count >= 2 {
-                quoteChildrenStack[quoteChildrenStack.count - 1].append(.text(styled))
-            } else {
-                listStack[listStack.count - 1].currentItem.append(.text(styled))
+        appendBlock(.text(styled))
+    }
+
+    // MARK: - Node finalizers
+    private mutating func popParagraphToBlock() {
+        guard let top = nodeStack.last else { return }
+        if case .paragraph(let buffer) = top {
+            nodeStack.removeLast()
+            if buffer.length > 0 {
+                pushParagraph(buffer)
             }
-        } else if !quoteChildrenStack.isEmpty {
-            // Quoted paragraph outside of any list
-            quoteChildrenStack[quoteChildrenStack.count - 1].append(.text(styled))
-        } else {
-            blocks.append(.text(styled))
         }
     }
 
-    // MARK: - Paragraph/Header/Quote finalizers
-    private mutating func flushParagraphBuffer() {
-        if paragraphBuffer.length > 0 {
-            pushParagraph(paragraphBuffer)
-            paragraphBuffer = NSMutableAttributedString()
+    private mutating func popHeaderToBlock() {
+        guard let top = nodeStack.last else { return }
+        if case .header(let level, let buffer) = top {
+            nodeStack.removeLast()
+            if buffer.length > 0 {
+                let r = NSRange(location: 0, length: buffer.length)
+                buffer.addAttribute(.font, value: headerFont(for: level), range: r)
+                buffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: r)
+                pushParagraph(buffer)
+            }
         }
     }
 
-    private mutating func flushHeaderBuffer() {
-        guard let level = headerLevelActive, headerBuffer.length > 0 else { return }
-        let r = NSRange(location: 0, length: headerBuffer.length)
-        headerBuffer.addAttribute(.font, value: headerFont(for: level), range: r)
-        headerBuffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: r)
-        pushParagraph(headerBuffer)
-        headerBuffer = NSMutableAttributedString()
-        headerLevelActive = nil
-    }
-
-    private mutating func flushQuote() {
-        guard !quoteChildrenStack.isEmpty else { return }
-        let children = quoteChildrenStack.removeLast()
-        appendBlock(.blockQuote(children))
-    }
-
-    // MARK: - List helpers for event consumer
-    private mutating func closeListItemIfNeeded() {
-        guard !listStack.isEmpty else {
-            Log.warning(label: self.LOG_TAG, "No active lists; ignoring closeListItemIfNeeded.")
-            return
-        }
-        let mostRecentListFrame = listStack.count - 1
-        if !listStack[mostRecentListFrame].currentItem.isEmpty {
-            listStack[mostRecentListFrame].items.append(listStack[mostRecentListFrame].currentItem)
-            listStack[mostRecentListFrame].currentItem = []
+    private mutating func popCodeBlockToBlock() {
+        guard let top = nodeStack.last else { return }
+        if case .codeBlock(let buffer) = top {
+            nodeStack.removeLast()
+            if buffer.length > 0 {
+                // Apply monospace font to the entire code buffer once. Background color
+                // will be provided by the SwiftUI view for full-width styling.
+                // Trim trailing newlines added by the parser so we don't render an
+                // extra blank line at the bottom of the code block.
+                var length = buffer.length
+                while length > 0 {
+                    let lastRange = NSRange(location: length - 1, length: 1)
+                    let last = buffer.attributedSubstring(from: lastRange).string
+                    if last == "\n" || last == "\r" { buffer.deleteCharacters(in: lastRange); length -= 1 } else { break }
+                }
+                
+                let r = NSRange(location: 0, length: buffer.length)
+                buffer.addAttribute(.font,
+                                     value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),
+                                     range: r)
+                appendBlock(.code(buffer))
+            }
         }
     }
 
-    private mutating func closeListFrame() {
-        flushParagraphBuffer()
-        guard var frame = listStack.popLast() else {
-            Log.warning(label: self.LOG_TAG, "closeListFrame called but no active lists. Unable to close list frame.")
-            return
+    private mutating func popBlockQuote() {
+        guard let top = nodeStack.last else { return }
+        if case .blockQuote(let children) = top {
+            nodeStack.removeLast()
+            appendBlock(.blockQuote(children))
         }
-        if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
-        let listBlock = Block.list(type: frame.type, items: frame.items)
-        if !listStack.isEmpty {
-            listStack[listStack.count - 1].currentItem.append(listBlock)
-        } else if !quoteChildrenStack.isEmpty {
-            quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
-        } else {
-            blocks.append(listBlock)
+    }
+
+    private mutating func popListItem() {
+        guard let top = nodeStack.last else { return }
+        if case .listItem(let children) = top {
+            nodeStack.removeLast()
+            if let listIndex = nodeStack.lastIndex(where: { node in
+                if case .list = node { return true } else { return false }
+            }) {
+                switch nodeStack[listIndex] {
+                case .list(let type, let items):
+                    var newItems = items
+                    newItems.append(children)
+                    nodeStack[listIndex] = .list(type: type, items: newItems)
+                default:
+                    break
+                }
+            } else {
+                // No parent list found; degrade gracefully by appending children directly
+                for child in children { appendBlock(child) }
+                Log.warning(label: self.LOG_TAG, "listItem closed without a parent list; appended its children directly.")
+            }
+        }
+    }
+
+    private mutating func popList() {
+        guard let top = nodeStack.last else { return }
+        if case .list(let type, let items) = top {
+            nodeStack.removeLast()
+            let listBlock = Block.list(type: type, items: items)
+            appendBlock(listBlock)
+        }
+    }
+
+    private mutating func finalizeInlineNodes() {
+        // Pop and emit paragraph/header nodes sitting on top
+        var keepLooping = true
+        while keepLooping, let top = nodeStack.last {
+            switch top {
+            case .paragraph:
+                popParagraphToBlock()
+            case .header:
+                popHeaderToBlock()
+            case .codeBlock:
+                popCodeBlockToBlock()
+            default:
+                keepLooping = false
+            }
+        }
+    }
+
+    private mutating func closeListContainersIfAny() {
+        // Close any open listItem/list pairs on the top of the stack
+        var didClose = true
+        while didClose, let top = nodeStack.last {
+            didClose = false
+            switch top {
+            case .listItem:
+                popListItem()
+                didClose = true
+            case .list:
+                popList()
+                didClose = true
+            default:
+                break
+            }
+        }
+    }
+
+    private mutating func finalizeAllOpenNodes() {
+        // Close everything in LIFO order
+        while let top = nodeStack.last {
+            switch top {
+            case .paragraph:
+                popParagraphToBlock()
+            case .header:
+                popHeaderToBlock()
+            case .listItem:
+                popListItem()
+            case .list:
+                popList()
+            case .blockQuote:
+                popBlockQuote()
+            case .codeBlock:
+                popCodeBlockToBlock()
+            }
         }
     }
 
