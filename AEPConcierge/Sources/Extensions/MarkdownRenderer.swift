@@ -11,6 +11,7 @@
  */
 
 import UIKit
+import AEPServices
 
 struct MarkdownRenderer {
     enum ListType {
@@ -33,6 +34,8 @@ struct MarkdownRenderer {
         case listItem(ordinal: Int)
         case paragraph
         case header(level: Int)
+        case codeBlock
+        case thematicBreak
     }
 
     enum Event {
@@ -41,13 +44,6 @@ struct MarkdownRenderer {
         case text(NSAttributedString)
         case divider
         case code(NSAttributedString)
-    }
-
-    // Internal parser leaf classification
-    private enum LeafKind {
-        case none
-        case codeBlock
-        case thematicBreak
     }
 
     // Runtime list frame (engine state)
@@ -76,6 +72,9 @@ struct MarkdownRenderer {
     // MARK: Mode/flags
     private var headerLevelActive: Int? = nil
 
+    // MARK: Logging
+    private let LOG_TAG = "MarkdownRenderer"
+
     // MARK: - Public API
     static func buildBlocks(
         markdown: String,
@@ -92,48 +91,51 @@ struct MarkdownRenderer {
     }
 
     private mutating func build() -> [Block] {
-        // Phase 1: build events by diffing container stacks per run
+        // Phase 1: build parent block open/close events by diffing container stacks between a run and
+        // its predecessor
         var events: [Event] = []
         var prevStack: [Container] = []
 
         for run in attributed.runs {
             let runSlice = AttributedString(attributed[run.range])
-            let (nextStack, leafKind) = containersFor(presentation: run.presentationIntent)
-
-            // diff stacks -> close then open
-            let longestCommonPrefixLength = longestCommonPrefix(prevStack, nextStack)
-            if prevStack.count > longestCommonPrefixLength {
-                for idx in stride(from: prevStack.count - 1, through: longestCommonPrefixLength, by: -1) {
+            // Extract the concrete containers for the text based on the run's parse result
+            let currentStack = containersFor(presentation: run.presentationIntent)
+            let longestCommonIndex = longestCommonIndex(prevStack, currentStack)
+            if prevStack.count > longestCommonIndex {
+                for idx in stride(from: prevStack.count - 1, through: longestCommonIndex, by: -1) {
                     events.append(.close(prevStack[idx]))
                 }
             }
-            if nextStack.count > longestCommonPrefixLength {
-                for idx in longestCommonPrefixLength..<nextStack.count {
-                    events.append(.open(nextStack[idx]))
+            if currentStack.count > longestCommonIndex {
+                for idx in longestCommonIndex..<currentStack.count {
+                    events.append(.open(currentStack[idx]))
                 }
             }
 
-            // leaf payloads
-            switch leafKind {
-            case .codeBlock:
-                let ns = nsFromSlice(runSlice)
-                let m = NSMutableAttributedString(attributedString: ns)
-                m.addAttribute(.font, value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular), range: NSRange(location: 0, length: m.length))
-                m.addAttribute(.backgroundColor, value: UIColor.secondarySystemBackground, range: NSRange(location: 0, length: m.length))
-                events.append(.code(m))
-            case .thematicBreak:
+            // Handle special leaf components based on innermost container
+            switch currentStack.last {
+            case .some(.codeBlock):
+                let ns = NSAttributedString(runSlice)
+                let mutable = NSMutableAttributedString(attributedString: ns)
+                mutable.addAttribute(.font,
+                                     value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),
+                                     range: NSRange(location: 0, length: mutable.length))
+                mutable.addAttribute(.backgroundColor,
+                                     value: UIColor.secondarySystemBackground,
+                                     range: NSRange(location: 0, length: mutable.length))
+                events.append(.code(mutable))
+            case .some(.thematicBreak):
                 events.append(.divider)
-            case .none:
-                let ns = nsFromSlice(runSlice)
+            default:
+                let ns = NSAttributedString(runSlice)
                 if ns.length > 0 { events.append(.text(ns)) }
             }
-
-            prevStack = nextStack
+            prevStack = currentStack
         }
 
-        // close any remaining containers at EOF
-        for idx in stride(from: prevStack.count - 1, through: 0, by: -1) {
-            events.append(.close(prevStack[idx]))
+        // This unwinds the final run's common components
+        for index in stride(from: prevStack.count - 1, through: 0, by: -1) {
+            events.append(.close(prevStack[index]))
         }
 
         // Phase 2: consume events centrally
@@ -145,6 +147,161 @@ struct MarkdownRenderer {
         if headerLevelActive != nil { flushHeaderBuffer() }
         while !quoteChildrenStack.isEmpty { flushQuote() }
         return blocks
+    }
+
+    // MARK: - Event production helpers
+
+    /// Builds the outermost to innermost container stack for a markdown run.
+    ///
+    /// - Parameter presentation: The run's `PresentationIntent` (if any).
+    /// - Returns: `containers` ordered outermost to innermost.
+    ///
+    /// PresentationIntent.components come innermost first from the parser. The reverse outermost to
+    /// innermost order is used so container hierarchy aligns correctly.
+    ///
+    /// Using outermost -> innermost
+    ///
+    /// A = [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
+    ///
+    /// B = [.blockQuote, .unorderedList, .listItem(2), .paragraph]
+    ///
+    /// Using innermost to outermost (default parser order, you get the wrong groupings)
+    ///
+    /// A = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
+    ///
+    /// B = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
+    private func containersFor(presentation: PresentationIntent?) -> [Container] {
+        guard let presentation = presentation else {
+            // If there is no presentation intent, default to a standard paragraph container
+            return [.paragraph]
+        }
+
+        var containers: [Container] = []
+
+        // Build container stack from outermost container to innermost by walking reversed components.
+        // Note: `.header`, `.paragraph`, `.codeBlock`, and `.thematicBreak` are
+        // mutually exclusive within a run and should always be the innermost block component (no early break needed).
+        for comp in presentation.components.reversed() {
+            switch comp.kind {
+            case .header(let level):
+                containers.append(.header(level: level))
+            case .codeBlock:
+                containers.append(.codeBlock)
+            case .thematicBreak:
+                containers.append(.thematicBreak)
+            case .blockQuote:
+                containers.append(.blockQuote)
+            case .orderedList:
+                containers.append(.orderedList)
+            case .unorderedList:
+                containers.append(.unorderedList)
+            case .listItem(let ordinal):
+                containers.append(.listItem(ordinal: ordinal))
+            case .paragraph:
+                containers.append(.paragraph)
+            default:
+                break
+            }
+        }
+
+        return containers
+    }
+
+    /// Returns the length of the shared leading sequence between two container stacks.
+    ///
+    /// - Parameters:
+    ///   - first: The first container stack, ordered outermost to innermost.
+    ///   - second: The second container stack, ordered outermost to innermost.
+    /// - Returns: The number of leading containers that are identical in both stacks.
+    private func longestCommonIndex(_ lhs: [Container], _ rhs: [Container]) -> Int {
+        let maxSharedCount = min(lhs.count, rhs.count)
+        var currentIndex = 0
+        while currentIndex < maxSharedCount && lhs[currentIndex] == rhs[currentIndex] {
+            currentIndex += 1
+        }
+        return currentIndex
+    }
+
+    // MARK: - Event consumer
+    private mutating func consume(events: [Event]) {
+        for event in events {
+            switch event {
+            case .open(let container):
+                handleOpen(container)
+            case .close(let container):
+                handleClose(container)
+            case .text(let nsAttributedString):
+                handleText(nsAttributedString)
+            case .divider:
+                // HR is a block element: end paragraphs and lists first
+                while !listStack.isEmpty { closeListFrame() }
+                flushParagraphBuffer()
+                appendBlock(.divider)
+            case .code(let ns):
+                // Code blocks are standalone blocks, not inside lists/paragraphs
+                while !listStack.isEmpty { closeListFrame() }
+                flushParagraphBuffer()
+                pushParagraph(ns)
+            }
+        }
+    }
+
+    private mutating func handleOpen(_ container: Container) {
+        switch container {
+        case .blockQuote:
+            // Enter a new quote context and ensure current paragraph text is flushed
+            // so the quote starts on its own line within the owning container.
+            quoteChildrenStack.append([])
+        case .orderedList:
+            listStack.append(ListFrame(type: .ordered, items: [], currentItem: []))
+        case .unorderedList:
+            listStack.append(ListFrame(type: .unordered, items: [], currentItem: []))
+        case .listItem:
+            guard !listStack.isEmpty else {
+                Log.warning(label: self.LOG_TAG, "Encountered listItem without an active list; ignoring listItem open.")
+                return
+            }
+            closeListItemIfNeeded()
+        case .paragraph:
+            // Start a fresh paragraph buffer
+            if paragraphBuffer.length > 0 {
+                flushParagraphBuffer()
+            }
+        case .header(let level):
+            if headerLevelActive != nil {
+                flushHeaderBuffer()
+            }
+            headerLevelActive = level
+        case .codeBlock, .thematicBreak:
+            break
+        }
+    }
+
+    private mutating func handleClose(_ container: Container) {
+        switch container {
+        case .blockQuote:
+            flushParagraphBuffer()
+            flushQuote()
+        case .orderedList, .unorderedList:
+            closeListFrame()
+        case .listItem:
+            flushParagraphBuffer()
+            closeListItemIfNeeded()
+        case .paragraph:
+            flushParagraphBuffer()
+        case .header:
+            flushHeaderBuffer()
+        case .codeBlock, .thematicBreak:
+            break
+        }
+    }
+
+    private mutating func handleText(_ ns: NSAttributedString) {
+        if let _ = headerLevelActive {
+            headerBuffer.append(ns)
+        } else {
+            paragraphBuffer.append(ns)
+        }
     }
 
     // MARK: - Block assembly helpers
@@ -165,7 +322,8 @@ struct MarkdownRenderer {
     private mutating func pushParagraph(_ ns: NSAttributedString) {
         let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
         if !listStack.isEmpty {
-            // If we're inside an inner quote (depth >= 2), route paragraph to the quote's children.
+            // If we're inside an inner quote (depth >= 2), route paragraph to the inner quote so
+            // the quote has visible children; otherwise keep with the list item so bullets render.
             if quoteChildrenStack.count >= 2 {
                 quoteChildrenStack[quoteChildrenStack.count - 1].append(.text(styled))
             } else {
@@ -203,185 +361,34 @@ struct MarkdownRenderer {
         appendBlock(.blockQuote(children))
     }
 
-    // MARK: - Event production helpers
-
-    /// Builds the outermost to innermost container stack and the terminal leaf kind for a markdown run.
-    ///
-    /// - Parameter presentation: The run's `PresentationIntent` (if any).
-    /// - Returns: `(containers, leaf)` where `containers` is ordered outermost to innermost and
-    ///   `leaf` indicates a terminal block type.
-    ///
-    /// PresentationIntent.components come innermost first from the parser. The reverse outermost to
-    /// innermost order is used so container hierarchy aligns correctly.
-    ///
-    /// Using outermost -> innermost
-    ///
-    /// A = [.blockQuote, .unorderedList, .listItem(1), .orderedList, .listItem(1), .paragraph]
-    ///
-    /// B = [.blockQuote, .unorderedList, .listItem(2), .paragraph]
-    ///
-    /// Using innermost to outermost (default parser order, you get the wrong groupings)
-    ///
-    /// A = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
-    ///
-    /// B = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
-    private func containersFor(presentation: PresentationIntent?) -> ([Container], LeafKind) {
-        guard let presentation = presentation else {
-            // If there is no presentation intent, default to a standard paragraph container
-            return ([.paragraph], .none)
-        }
-
-        var leaf: LeafKind = .none
-        var containers: [Container] = []
-
-        // Build container stack from outermost container to innermost by walking reversed components.
-        // Note: `.header`, `.paragraph`, `.codeBlock`, and `.thematicBreak` are
-        // mutually exclusive within a run and should always be the innermost block component (no early break needed).
-        for comp in presentation.components.reversed() {
-            switch comp.kind {
-            case .header(let level):
-                containers.append(.header(level: level))
-            case .codeBlock:
-                leaf = .codeBlock
-            case .thematicBreak:
-                leaf = .thematicBreak
-            case .blockQuote:
-                containers.append(.blockQuote)
-            case .orderedList:
-                containers.append(.orderedList)
-            case .unorderedList:
-                containers.append(.unorderedList)
-            case .listItem(let ord):
-                containers.append(.listItem(ordinal: ord))
-            case .paragraph:
-                containers.append(.paragraph)
-            default:
-                break
-            }
-        }
-
-        return (containers, leaf)
-    }
-
-    private func longestCommonPrefix(_ a: [Container], _ b: [Container]) -> Int {
-        let n = min(a.count, b.count)
-        var i = 0
-        while i < n && a[i] == b[i] { i += 1 }
-        return i
-    }
-
-    // MARK: - Event consumer
-    private mutating func consume(events: [Event]) {
-        for event in events {
-            switch event {
-            case .open(let c):
-                handleOpen(c)
-            case .close(let c):
-                handleClose(c)
-            case .text(let ns):
-                handleText(ns)
-            case .divider:
-                // HR is a block element: end paragraphs and lists first
-                while !listStack.isEmpty { closeListFrame() }
-                flushParagraphBuffer()
-                appendBlock(.divider)
-            case .code(let ns):
-                // Code blocks are standalone blocks, not inside lists/paragraphs
-                while !listStack.isEmpty { closeListFrame() }
-                flushParagraphBuffer()
-                pushParagraph(ns)
-            }
-        }
-    }
-
-    private mutating func handleOpen(_ c: Container) {
-        switch c {
-        case .blockQuote:
-            // Enter a new quote context and ensure current paragraph text is flushed
-            // so the quote starts on its own line within the owning container.
-            flushParagraphBuffer()
-            quoteChildrenStack.append([])
-        case .orderedList:
-            listStack.append(ListFrame(type: .ordered, items: [], currentItem: []))
-        case .unorderedList:
-            listStack.append(ListFrame(type: .unordered, items: [], currentItem: []))
-        case .listItem:
-            if !listStack.isEmpty {
-                // ensure we are ready to capture children into currentItem
-                if !listStack[listStack.count - 1].currentItem.isEmpty {
-                    // if somehow item has residuals, finalize it before starting
-                    listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
-                    listStack[listStack.count - 1].currentItem = []
-                }
-            }
-        case .paragraph:
-            // Start a fresh paragraph buffer
-            if paragraphBuffer.length > 0 { flushParagraphBuffer() }
-        case .header(let level):
-            if headerLevelActive != nil { flushHeaderBuffer() }
-            headerLevelActive = level
-        }
-    }
-
-    private mutating func handleClose(_ c: Container) {
-        switch c {
-        case .blockQuote:
-            flushParagraphBuffer()
-            flushQuote()
-        case .orderedList, .unorderedList:
-            closeListFrame()
-        case .listItem:
-            closeListItemIfNeeded()
-        case .paragraph:
-            flushParagraphBuffer()
-        case .header:
-            flushHeaderBuffer()
-        }
-    }
-
-    private mutating func handleText(_ ns: NSAttributedString) {
-        if let _ = headerLevelActive {
-            headerBuffer.append(ns)
-        } else {
-            paragraphBuffer.append(ns)
-        }
-    }
-
     // MARK: - List helpers for event consumer
     private mutating func closeListItemIfNeeded() {
-        flushParagraphBuffer()
-        guard !listStack.isEmpty else { return }
-        if !listStack[listStack.count - 1].currentItem.isEmpty {
-            listStack[listStack.count - 1].items.append(listStack[listStack.count - 1].currentItem)
-            listStack[listStack.count - 1].currentItem = []
+        guard !listStack.isEmpty else {
+            Log.warning(label: self.LOG_TAG, "No active lists; ignoring closeListItemIfNeeded.")
+            return
+        }
+        let mostRecentListFrame = listStack.count - 1
+        if !listStack[mostRecentListFrame].currentItem.isEmpty {
+            listStack[mostRecentListFrame].items.append(listStack[mostRecentListFrame].currentItem)
+            listStack[mostRecentListFrame].currentItem = []
         }
     }
 
     private mutating func closeListFrame() {
         flushParagraphBuffer()
-        guard var frame = listStack.popLast() else { return }
+        guard var frame = listStack.popLast() else {
+            Log.warning(label: self.LOG_TAG, "closeListFrame called but no active lists. Unable to close list frame.")
+            return
+        }
         if !frame.currentItem.isEmpty { frame.items.append(frame.currentItem) }
         let listBlock = Block.list(type: frame.type, items: frame.items)
-        if quoteChildrenStack.count >= 2 {
-            // A nested list closed while an inner quote is active: make it a quote child
-            quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
-        } else if !listStack.isEmpty {
+        if !listStack.isEmpty {
             listStack[listStack.count - 1].currentItem.append(listBlock)
         } else if !quoteChildrenStack.isEmpty {
             quoteChildrenStack[quoteChildrenStack.count - 1].append(listBlock)
         } else {
             blocks.append(listBlock)
         }
-    }
-
-    private func nsFromSlice(_ slice: AttributedString, fallbackFont: UIFont? = nil) -> NSAttributedString {
-        var s = slice
-        if let font = fallbackFont {
-            var c = AttributeContainer()
-            c[AttributeScopes.UIKitAttributes.FontAttribute.self] = font
-            s.mergeAttributes(c)
-        }
-        return NSAttributedString(s)
     }
 
     private func applyBaseStyling(_ source: NSAttributedString, textColor: UIColor?, baseFont: UIFont) -> NSAttributedString {
