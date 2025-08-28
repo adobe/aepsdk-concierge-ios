@@ -95,12 +95,29 @@ struct MarkdownRenderer {
         // its predecessor
         var events: [Event] = []
         var prevStack: [Container] = []
+        var prevHadInlineStyling = false
 
         for run in attributed.runs {
             let runSlice = AttributedString(attributed[run.range])
             // Extract the concrete containers for the text based on the run's parse result
             let currentStack = containersFor(presentation: run.presentationIntent)
             let longestCommonIndex = longestCommonIndex(prevStack, currentStack)
+            // Determine whether this run carries inline styling (bold/italic/code/link/etc.)
+            let foundationScope = AttributeScopes.FoundationAttributes.self
+            let uiKitScope = AttributeScopes.UIKitAttributes.self
+            let hasInlineStyling = (run.inlinePresentationIntent != nil)
+                || (run.attributes[foundationScope.LinkAttribute.self] != nil)
+                || (run.attributes[uiKitScope.FontAttribute.self] != nil)
+                || (run.attributes[uiKitScope.UnderlineStyleAttribute.self] != nil)
+
+            if (prevStack.last == .paragraph
+                && currentStack.last == .paragraph
+                && !hasInlineStyling
+                && !prevHadInlineStyling) {
+                events.append(.close(.paragraph))
+                events.append(.open(.paragraph))
+            }
+
             if prevStack.count > longestCommonIndex {
                 for idx in stride(from: prevStack.count - 1, through: longestCommonIndex, by: -1) {
                     events.append(.close(prevStack[idx]))
@@ -131,6 +148,7 @@ struct MarkdownRenderer {
                 if ns.length > 0 { events.append(.text(ns)) }
             }
             prevStack = currentStack
+            prevHadInlineStyling = hasInlineStyling
         }
 
         // This unwinds the final run's common components
