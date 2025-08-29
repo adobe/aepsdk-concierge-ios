@@ -54,8 +54,6 @@ final class ConciergeChatViewModel: ObservableObject {
     }
     var composerEditable: Bool {
         chatState != .processing
-        && inputReducer.state != .recording
-        && inputReducer.state != .transcribing
     }
     var micEnabled: Bool {
         chatState == .idle
