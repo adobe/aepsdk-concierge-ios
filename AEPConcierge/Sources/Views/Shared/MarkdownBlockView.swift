@@ -33,6 +33,13 @@ struct MarkdownBlockView: View {
                 case .text(let ns):
                     MarkdownText(attributed: ns)
                         .fixedSize(horizontal: false, vertical: true)
+                case .code(let ns):
+                    MarkdownText(attributed: ns)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(uiColor: .secondarySystemBackground))
+                        .cornerRadius(8)
                 case .divider:
                     Divider()
                 case .blockQuote(let paras):
@@ -49,19 +56,22 @@ struct MarkdownBlockView: View {
 
 /// Quote block with left rule, supports nested content by stacking paragraphs.
 private struct QuoteBlockView: View {
-    let blocks: [MarkdownRenderer.Block]
+    let blocks: [MarkdownRenderer.MarkdownBlock]
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Rectangle()
-                .fill(Color.secondary)
-                .frame(width: 3)
-                .cornerRadius(2)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
                     switch child {
                     case .text(let ns):
                         MarkdownText(attributed: ns)
                             .fixedSize(horizontal: false, vertical: true)
+                    case .code(let ns):
+                        MarkdownText(attributed: ns)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .cornerRadius(8)
                     case .divider:
                         Divider()
                     case .blockQuote(let nested):
@@ -71,37 +81,124 @@ private struct QuoteBlockView: View {
                     }
                 }
             }
+            .padding(.leading, 6)
+            .background(alignment: .leading) {
+                GeometryReader { proxy in
+                    Rectangle()
+                        .fill(Color.secondary)
+                        .frame(width: 3, height: proxy.size.height)
+                        .cornerRadius(2)
+                        .allowsHitTesting(false)
+                }
+            }
         }
     }
 }
 
 private struct ListBlockView: View {
     let type: MarkdownRenderer.ListType
-    let items: [[MarkdownRenderer.Block]]
+    let items: [[MarkdownRenderer.MarkdownBlock]]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(items.enumerated()), id: \.0) { idx, blocks in
-                HStack(alignment: .top, spacing: 8) {
-                    Text(bullet(for: idx))
-                        .font(.body)
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
-                            switch child {
-                            case .text(let ns):
-                                MarkdownText(attributed: ns)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            case .divider:
-                                Divider()
-                            case .blockQuote(let nested):
-                                QuoteBlockView(blocks: nested)
-                            case .list(let t, let inner):
-                                ListBlockView(type: t, items: inner)
+            ForEach(Array(items.enumerated()), id: \.offset) { pair in
+                let idx = pair.offset
+                let blocks = pair.element
+                Group {
+                    // Special case: list item is a single blockQuote
+                    // Draw the quote rule alongside the bullet so the rule spans the full line of the list row.
+                    if blocks.count == 1, case let .blockQuote(quotedChildren) = blocks[0] {
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(bullet(for: idx))
+                                .font(.body)
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(Array(quotedChildren.enumerated()), id: \.0) { _, child in
+                                    switch child {
+                                    case .text(let ns):
+                                        MarkdownText(attributed: ns)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    case .code(let ns):
+                                        MarkdownText(attributed: ns)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .padding(10)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color(uiColor: .secondarySystemBackground))
+                                            .cornerRadius(8)
+                                    case .divider:
+                                        Divider()
+                                    case .blockQuote(let nested):
+                                        QuoteBlockView(blocks: nested)
+                                    case .list(let t, let inner):
+                                        ListBlockView(type: t, items: inner)
+                                    }
+                                }
+                            }
+                            .padding(.leading, 6)
+                            .background(alignment: .leading) {
+                                GeometryReader { proxy in
+                                    Rectangle()
+                                        .fill(Color.secondary)
+                                        .frame(width: 3, height: proxy.size.height)
+                                        .cornerRadius(2)
+                                        .allowsHitTesting(false)
+                                }
+                            }
+                        }
+                    } else {
+                        // If a list item contains only nested lists (no text/quotes),
+                        // suppress the parent's bullet to avoid a visually empty bullet
+                        // followed by an indented bullet list.
+                        let hasOwnRenderableText = blocks.contains { b in
+                            switch b {
+                            case .text: return true
+                            case .blockQuote: return true
+                            case .divider: return false
+                            case .list: return false
+                            case .code: return true
+                            }
+                        }
+
+                        if hasOwnRenderableText {
+                            HStack(alignment: .top, spacing: 8) {
+                                Text(bullet(for: idx))
+                                    .font(.body)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
+                                        switch child {
+                                        case .text(let ns):
+                                            MarkdownText(attributed: ns)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        case .code(let ns):
+                                            MarkdownText(attributed: ns)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .padding(10)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .background(Color(uiColor: .secondarySystemBackground))
+                                                .cornerRadius(8)
+                                        case .divider:
+                                            Divider()
+                                        case .blockQuote(let nested):
+                                            QuoteBlockView(blocks: nested)
+                                        case .list(let t, let inner):
+                                            ListBlockView(type: t, items: inner)
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Render only the nested lists without an extra bullet at this level
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
+                                    if case .list(let t, let inner) = child {
+                                        ListBlockView(type: t, items: inner)
+                                    } else if case .divider = child {
+                                        Divider()
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                .padding(.leading,  (type == .unordered ? 0 : 0))
             }
         }
     }
