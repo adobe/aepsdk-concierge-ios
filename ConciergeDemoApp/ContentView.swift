@@ -76,9 +76,54 @@ Final paragraph to verify trailing layout.
 
     let stringTest =
 """
+
+> Paragraph with some **bold** and more text continuing on the same line. 1
+
+> Paragraph 2
+
+-----
+
+> Paragraph inside quote 3
+
+Paragraph outside quote 4
+
+-----
+
+> ```swift
+> print("one")
+> print("two")
+> ```
+
+-----
+
+> ```swift
+> print("inside quote")
+> ```
+```swift
+print("outside quote")
+```
+
+```swift
+line 1
+
+line 2
+
+
+line 3
+
+
+
+
+line4
+```
+
 # Header 1
 
 Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
+
+paragraph 2  
+
+\n\nparagraph 3
 
 > Outer quote start
 >
@@ -86,34 +131,41 @@ Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
 >    1. Nested child 2
 >    2. Nested child 3
 >    - Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com). 4
-> 2. Nested child 5
-> - Unordered 6
->   - Nested child with lots of extra text to see how line wrapping works for these elements 7
->   1. Nested ordered 8
->   - Nested ordered 9
-> - Unordered 10
+>    - > 2. Nested child 5
+>      > - Unordered 6
+>      >   - Nested child with lots of extra text to see how line wrapping works for these elements 7
+>      >   1. Nested ordered 8
+>      >   - Nested ordered 9
+>      > - Unordered 10
+> -----
+> 2. Nested child 11
+> - Unordered 12
+>   - Nested child with lots of extra text to see how line wrapping works for these elements 13
+>   1. Nested ordered 14
+>   - Nested ordered 15
+> - Unordered 16
 >
 > Outer quote end
 
----
-
-1. Ordered
-   1. Nested child 1
-   2. Nested child 2
-   - Unordered 3
-2. Nested child 4
-- Unordered 5
-  - Nested childwith lots of extra text to see how line wrapping works for these elements
-  1. Nested ordered 6
-  - Nested ordered 7
-- Unordered 8
-
 ```swift
+1 // Code block with language hint
 print("Hello, Markdown blocks!")
 ```
 
-Final paragraph.
+```swift
+2 // Code block with language hint
+> 2. Nested child 11
+> - Unordered 12
+>   - Nested child with lots of extra text to see how line wrapping works for these elements 13
+>   1. Nested ordered 14
+>   - Nested ordered 15
+> - Unordered 16
+```
 """
+
+    let modelString = """
+        I can help with anything related to Adobe Creative Cloud! Here’s what I can do for you:\n\n1. **Find the Right App**: Need help choosing the best Adobe app for your creative project? I can recommend tools for photo editing, video production, graphic design, animation, and more.\n\n2. **Answer Questions**: Got questions about Creative Cloud plans, pricing, features, or how to get started? I can explain it all.\n\n3. **App-Specific Guidance**: Whether it’s Photoshop, Illustrator, Premiere Pro, After Effects, or any other Adobe app, I can help with features, workflows, and tips.\n\nLet me know what you need, and I’ll make it easy for you! 😊
+        """
 
     var body: some View {
         TabView {
