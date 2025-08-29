@@ -19,16 +19,16 @@ struct MarkdownRenderer {
         case unordered
     }
 
-    enum Block: Equatable {
+    enum MarkdownBlock: Equatable {
         case text(NSAttributedString)
         case divider
-        case list(type: ListType, items: [[Block]])
-        case blockQuote([Block])
+        case list(type: ListType, items: [[MarkdownBlock]])
+        case blockQuote([MarkdownBlock])
         case code(NSAttributedString)
     }
 
     // Outer to inner container order
-    enum Container: Equatable {
+    enum PresentationComponent: Equatable {
         case blockQuote
         case orderedList
         case unorderedList
@@ -39,64 +39,44 @@ struct MarkdownRenderer {
         case thematicBreak
     }
 
-    enum Event {
-        case open(Container)
-        case close(Container)
+    enum BuildEvent {
+        case open(PresentationComponent)
+        case close(PresentationComponent)
         case text(NSAttributedString)
         case divider
         case code(NSAttributedString)
     }
 
     // Unified node for building nested structures (Option B)
-    private enum Node {
-        case blockQuote(children: [Block])
-        case list(type: ListType, items: [[Block]])
-        case listItem(children: [Block])
+    private enum BuildNode {
+        case blockQuote(children: [MarkdownBlock])
+        case list(type: ListType, items: [[MarkdownBlock]])
+        case listItem(children: [MarkdownBlock])
         case paragraph(buffer: NSMutableAttributedString)
         case header(level: Int, buffer: NSMutableAttributedString)
         case codeBlock(buffer: NSMutableAttributedString)
     }
 
-    // MARK: Inputs (immutable)
+    // MARK: Logging
+    private let LOG_TAG = "MarkdownRenderer"
+
+    // MARK: Inputs
     private let attributed: AttributedString
     private let textColor: UIColor?
     private let baseFont: UIFont
 
+    // MARK: Container state
+    private var nodeStack: [BuildNode] = []
+
     // MARK: Output
-    private var blocks: [Block] = []
-
-    // MARK: Container state (unified)
-    private var nodeStack: [Node] = []
-
-    // MARK: Logging
-    private let LOG_TAG = "MarkdownRenderer"
-
-#if DEBUG
-    // MARK: - Debug tracing helpers
-    private func trace(_ message: String) {
-        print("[MarkdownRenderer] " + message)
-    }
-    private func describe(_ container: Container) -> String {
-        switch container {
-        case .blockQuote: return "blockQuote"
-        case .orderedList: return "orderedList"
-        case .unorderedList: return "unorderedList"
-        case .listItem(let ord): return "listItem(ordinal: \(ord))"
-        case .paragraph: return "paragraph"
-        case .header(let level): return "header(\(level))"
-        case .codeBlock: return "codeBlock"
-        case .thematicBreak: return "thematicBreak"
-        }
-    }
-    // container stack description no longer used; keep container describe only
-#endif
+    private var blocks: [MarkdownBlock] = []
 
     // MARK: - Public API
     static func buildBlocks(
         markdown: String,
         textColor: UIColor? = nil,
         baseFont: UIFont = .preferredFont(forTextStyle: .body)
-    ) -> [MarkdownRenderer.Block] {
+    ) -> [MarkdownRenderer.MarkdownBlock] {
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
@@ -106,11 +86,11 @@ struct MarkdownRenderer {
         return builder.build()
     }
 
-    private mutating func build() -> [Block] {
+    private mutating func build() -> [MarkdownBlock] {
         // Phase 1: build parent block open/close events by diffing container stacks between a run and
         // its predecessor
-        var events: [Event] = []
-        var prevStack: [Container] = []
+        var events: [BuildEvent] = []
+        var prevStack: [PresentationComponent] = []
         var prevHadInlineStyling = false
 
         for run in attributed.runs {
@@ -119,13 +99,10 @@ struct MarkdownRenderer {
             let currentStack = containersFor(presentation: run.presentationIntent)
             let longestCommonIndex = longestCommonIndex(prevStack, currentStack)
             // Determine whether this run carries inline styling (bold/italic/code/link/etc.)
-            let foundationScope = AttributeScopes.FoundationAttributes.self
-            let uiKitScope = AttributeScopes.UIKitAttributes.self
-            let hasInlineStyling = (run.inlinePresentationIntent != nil)
-                || (run.attributes[foundationScope.LinkAttribute.self] != nil)
-                || (run.attributes[uiKitScope.FontAttribute.self] != nil)
-                || (run.attributes[uiKitScope.UnderlineStyleAttribute.self] != nil)
-
+            let hasInlineStyling = runHasInlineStyling(run)
+            // Create a new distinct paragraph only if:
+            // 1. The new paragraph block is not due to inline styling OR
+            // 2. Because the previous paragraph had inline styling
             if (prevStack.last == .paragraph
                 && currentStack.last == .paragraph
                 && !hasInlineStyling
@@ -134,9 +111,7 @@ struct MarkdownRenderer {
                 events.append(.open(.paragraph))
             }
 
-            // Force a boundary between distinct code blocks when two successive runs
-            // are both innermost codeBlock components. This prevents separate fenced
-            // blocks from merging into one when their container stacks are identical.
+            // Keep consecutive innermost codeBlock runs with identical containers as distinct blocks
             if (prevStack.last == .codeBlock
                 && currentStack.last == .codeBlock) {
                 events.append(.close(.codeBlock))
@@ -155,9 +130,9 @@ struct MarkdownRenderer {
             }
 
             // Handle special leaf components based on innermost container
-#if DEBUG
-            trace("consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
-#endif
+            #if DEBUG
+            Log.trace(label: LOG_TAG, "consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
+            #endif
             switch currentStack.last {
             case .some(.codeBlock):
                 // Accumulate raw text for code; styling will be applied on code block close
@@ -207,13 +182,13 @@ struct MarkdownRenderer {
     /// A = [.paragraph, .listItem(1), .orderedList, .listItem(1), .unorderedList, .blockQuote]
     ///
     /// B = [.paragraph, .listItem(2), .unorderedList, .blockQuote]
-    private func containersFor(presentation: PresentationIntent?) -> [Container] {
+    private func containersFor(presentation: PresentationIntent?) -> [PresentationComponent] {
         guard let presentation = presentation else {
             // If there is no presentation intent, default to a standard paragraph container
             return [.paragraph]
         }
 
-        var containers: [Container] = []
+        var containers: [PresentationComponent] = []
 
         // Build container stack from outermost container to innermost by walking reversed components.
         // Note: `.header`, `.paragraph`, `.codeBlock`, and `.thematicBreak` are
@@ -250,7 +225,7 @@ struct MarkdownRenderer {
     ///   - first: The first container stack, ordered outermost to innermost.
     ///   - second: The second container stack, ordered outermost to innermost.
     /// - Returns: The number of leading containers that are identical in both stacks.
-    private func longestCommonIndex(_ lhs: [Container], _ rhs: [Container]) -> Int {
+    private func longestCommonIndex(_ lhs: [PresentationComponent], _ rhs: [PresentationComponent]) -> Int {
         let maxSharedCount = min(lhs.count, rhs.count)
         var currentIndex = 0
         while currentIndex < maxSharedCount && lhs[currentIndex] == rhs[currentIndex] {
@@ -260,7 +235,7 @@ struct MarkdownRenderer {
     }
 
     // MARK: - Event consumer
-    private mutating func consume(events: [Event]) {
+    private mutating func consume(events: [BuildEvent]) {
         for event in events {
             switch event {
             case .open(let container):
@@ -287,10 +262,10 @@ struct MarkdownRenderer {
         }
     }
 
-    private mutating func handleOpen(_ container: Container) {
-#if DEBUG
-        trace("OPEN   \(describe(container)) stackDepth(before)=\(nodeStack.count)")
-#endif
+    private mutating func handleOpen(_ container: PresentationComponent) {
+        #if DEBUG
+        Log.trace(label: LOG_TAG, "OPEN   \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+        #endif
         switch container {
         case .blockQuote:
             nodeStack.append(.blockQuote(children: []))
@@ -311,10 +286,10 @@ struct MarkdownRenderer {
         }
     }
 
-    private mutating func handleClose(_ container: Container) {
-#if DEBUG
-        trace("CLOSE  \(describe(container)) stackDepth(before)=\(nodeStack.count)")
-#endif
+    private mutating func handleClose(_ container: PresentationComponent) {
+        #if DEBUG
+        Log.trace(label: LOG_TAG, "CLOSE  \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+        #endif
         switch container {
         case .blockQuote:
             popBlockQuote()
@@ -351,12 +326,14 @@ struct MarkdownRenderer {
     }
 
     // MARK: - Block assembly helpers
-    private mutating func appendBlock(_ block: Block) {
+    private mutating func appendBlock(_ block: MarkdownBlock) {
         // Route to the most recent structural container (listItem or blockQuote)
         if let idx = nodeStack.lastIndex(where: { node in
             switch node {
-            case .listItem, .blockQuote: return true
-            default: return false
+            case .listItem, .blockQuote:
+                return true
+            default:
+                return false
             }
         }) {
             switch nodeStack[idx] {
@@ -418,7 +395,11 @@ struct MarkdownRenderer {
                 while length > 0 {
                     let lastRange = NSRange(location: length - 1, length: 1)
                     let last = buffer.attributedSubstring(from: lastRange).string
-                    if last == "\n" || last == "\r" { buffer.deleteCharacters(in: lastRange); length -= 1 } else { break }
+                    if last == "\n" || last == "\r" {
+                        buffer.deleteCharacters(in: lastRange); length -= 1
+                    } else {
+                        break
+                    }
                 }
                 
                 let r = NSRange(location: 0, length: buffer.length)
@@ -443,7 +424,11 @@ struct MarkdownRenderer {
         if case .listItem(let children) = top {
             nodeStack.removeLast()
             if let listIndex = nodeStack.lastIndex(where: { node in
-                if case .list = node { return true } else { return false }
+                if case .list = node {
+                    return true
+                } else {
+                    return false
+                }
             }) {
                 switch nodeStack[listIndex] {
                 case .list(let type, let items):
@@ -465,7 +450,7 @@ struct MarkdownRenderer {
         guard let top = nodeStack.last else { return }
         if case .list(let type, let items) = top {
             nodeStack.removeLast()
-            let listBlock = Block.list(type: type, items: items)
+            let listBlock = MarkdownBlock.list(type: type, items: items)
             appendBlock(listBlock)
         }
     }
@@ -553,6 +538,17 @@ struct MarkdownRenderer {
         default: return .systemFont(ofSize: 16, weight: .semibold)
         }
     }
+
+    /// Returns true if the run has any inline styling indicators (bold/italic/code/link/underline/font).
+    private func runHasInlineStyling(_ run: AttributedString.Run) -> Bool {
+        if run.inlinePresentationIntent != nil { return true }
+        let foundationScope = AttributeScopes.FoundationAttributes.self
+        let uiKitScope = AttributeScopes.UIKitAttributes.self
+        if run.attributes[foundationScope.LinkAttribute.self] != nil { return true }
+        if run.attributes[uiKitScope.FontAttribute.self] != nil { return true }
+        if run.attributes[uiKitScope.UnderlineStyleAttribute.self] != nil { return true }
+        return false
+    }
 }
 
 #if DEBUG
@@ -599,6 +595,23 @@ extension MarkdownRenderer {
         }
         print("—— End Debug Dump ——\n")
     }
+    // MARK: - Debug tracing helpers
+    private func trace(_ message: String) {
+        print("[MarkdownRenderer] " + message)
+    }
+    private func describe(_ container: PresentationComponent) -> String {
+        switch container {
+        case .blockQuote: return "blockQuote"
+        case .orderedList: return "orderedList"
+        case .unorderedList: return "unorderedList"
+        case .listItem(let ord): return "listItem(ordinal: \(ord))"
+        case .paragraph: return "paragraph"
+        case .header(let level): return "header(\(level))"
+        case .codeBlock: return "codeBlock"
+        case .thematicBreak: return "thematicBreak"
+        }
+    }
 }
+
 #endif
 
