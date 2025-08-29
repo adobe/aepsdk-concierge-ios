@@ -105,8 +105,8 @@ private struct ListBlockView: View {
                 let idx = pair.offset
                 let blocks = pair.element
                 Group {
-                    // Special-case: list item is a single blockQuote → draw the quote rule
-                    // alongside the bullet so the rule spans the full line of the list row.
+                    // Special case: list item is a single blockQuote
+                    // Draw the quote rule alongside the bullet so the rule spans the full line of the list row.
                     if blocks.count == 1, case let .blockQuote(quotedChildren) = blocks[0] {
                         HStack(alignment: .top, spacing: 8) {
                             Text(bullet(for: idx))

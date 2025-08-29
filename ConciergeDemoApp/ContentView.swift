@@ -76,6 +76,47 @@ Final paragraph to verify trailing layout.
 
     let stringTest =
 """
+
+> Paragraph with some **bold** and more text continuing on the same line. 1
+
+> Paragraph 2
+
+-----
+
+> Paragraph inside quote 3
+
+Paragraph outside quote 4
+
+-----
+
+> ```swift
+> print("one")
+> print("two")
+> ```
+
+-----
+
+> ```swift
+> print("inside quote")
+> ```
+```swift
+print("outside quote")
+```
+
+```swift
+line 1
+
+line 2
+
+
+line 3
+
+
+
+
+line4
+```
+
 # Header 1
 
 Paragraph with **bold**, _italic_, `code`, and a [link](https://example.com).
