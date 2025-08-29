@@ -16,6 +16,7 @@ import SwiftUI
 struct ChatComposer: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
+    @State private var glowRotation: Double = 0
 
     @Binding var inputText: String
     @Binding var selectedRange: NSRange
@@ -61,10 +62,19 @@ struct ChatComposer: View {
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12).stroke(Color(UIColor.separator), lineWidth: (colorScheme == .light ? 1 : 0))
-                )
                 .cornerRadius(12)
+                .overlay(
+                    ZStack {
+                        // Base border
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(UIColor.separator), lineWidth: (colorScheme == .light ? 1 : 0))
+                        // Recording glow border – rotating "train" highlight
+                        if case .recording = inputState {
+                            RotatingGlowBorder(color: Color.Secondary, cornerRadius: 12)
+                        }
+                    }
+                )
+                
             }
 
             ComposerDisclaimer()
@@ -73,6 +83,77 @@ struct ChatComposer: View {
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(theme.surfaceDark)
+        .onAppear { startOrStopGlow() }
+        .onChange(of: inputState) { _ in startOrStopGlow() }
+    }
+}
+
+private extension ChatComposer {
+    func startOrStopGlow() {
+        if case .recording = inputState {
+            // Restart animation from zero every time we enter recording
+            glowRotation = 0
+            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
+                glowRotation = 360
+            }
+        } else {
+            // Snap to zero and cancel animation by setting a non-animating state change
+            withAnimation(.none) { glowRotation = 0 }
+        }
+    }
+}
+
+private struct RotatingGlowBorder: View {
+    var color: Color
+    var cornerRadius: CGFloat
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            // One full loop every 1.2 seconds
+            let period: Double = 3.5
+            let phase = (t.remainder(dividingBy: period)) / period
+            let angle = phase * 360.0
+            // Length of the moving highlight arc (degrees around the border)
+            let segmentDegrees: Double = 100 // increase to make the "shrunk" spot longer
+
+            ZStack {
+                // Inner crisp ring
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        AngularGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: color.opacity(0.95), location: 0.5),
+                                .init(color: .clear, location: 1.0)
+                            ]),
+                            center: .center,
+                            startAngle: .degrees(angle),
+                            endAngle: .degrees(angle + segmentDegrees)
+                        ),
+                        lineWidth: 4
+                    )
+                    .blur(radius: 2)
+                    .opacity(0.9)
+                // Outer soft halo
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        AngularGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: color, location: 0.5),
+                                .init(color: .clear, location: 1.0)
+                            ]),
+                            center: .center,
+                            startAngle: .degrees(angle),
+                            endAngle: .degrees(angle + segmentDegrees)
+                        ),
+                        lineWidth: 8
+                    )
+                    .blur(radius: 9)
+                    .opacity(0.35)
+            }
+        }
     }
 }
 
