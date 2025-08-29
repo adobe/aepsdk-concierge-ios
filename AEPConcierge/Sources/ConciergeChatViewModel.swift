@@ -20,6 +20,10 @@ final class ConciergeChatViewModel: ObservableObject {
     var inputText: String { inputReducer.data.text }
     var inputState: InputState { inputReducer.state }
     @Published var chatState: ChatState = .idle
+    // Incremented whenever the latest agent message is updated, to drive scroll behavior
+    @Published var agentScrollTick: Int = 0
+    // Incremented when a user message is appended, to drive bottom scroll
+    @Published var userScrollTick: Int = 0
 
     private let LOG_TAG = "ConciergeChatViewModel"
 
@@ -137,6 +141,10 @@ final class ConciergeChatViewModel: ObservableObject {
         inputReducer.apply(.sendMessage)
 
         messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
+        if isUser {
+            // Trigger scroll-to-bottom for the newly sent user message
+            userScrollTick &+= 1
+        }
 
         if isUser {
             chatState = .processing
@@ -168,6 +176,8 @@ final class ConciergeChatViewModel: ObservableObject {
                                     self.messages[streamingMessageIndex] = current
                                 }
                                 self.lastEmittedResponseText += message
+                                // Notify views to adjust scroll for agent updates
+                                self.agentScrollTick &+= 1
                             } else if state == Constants.StreamState.COMPLETED {
                                 // Emit only the remainder beyond what we already streamed
                                 let fullText = message
@@ -187,6 +197,8 @@ final class ConciergeChatViewModel: ObservableObject {
                                     }
                                 }
                                 self.lastEmittedResponseText = fullText
+                                // Final agent update tick
+                                self.agentScrollTick &+= 1
                             }
                         }
                         
@@ -211,13 +223,14 @@ final class ConciergeChatViewModel: ObservableObject {
                             // Stream completed successfully
                             self.chatState = .idle
                             
-                            // Replace with a fresh message marked for speaking to trigger onAppear
+                            // Mark the existing streaming message for speaking while preserving its id
                             if streamingMessageIndex < self.messages.count {
-                                self.messages[streamingMessageIndex] = Message(
-                                    template: .basic(isUserMessage: false),
-                                    shouldSpeakMessage: true,
-                                    messageBody: accumulatedContent
-                                )
+                                var current = self.messages[streamingMessageIndex]
+                                current.messageBody = accumulatedContent
+                                current.shouldSpeakMessage = true
+                                self.messages[streamingMessageIndex] = current
+                                // Final tick to keep scroll pinned after completion
+                                self.agentScrollTick &+= 1
                             }
                         }
                         
@@ -240,6 +253,7 @@ final class ConciergeChatViewModel: ObservableObject {
         Task { @MainActor in
             messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
             chatState = .idle
+            agentScrollTick &+= 1
         }
     }
 
