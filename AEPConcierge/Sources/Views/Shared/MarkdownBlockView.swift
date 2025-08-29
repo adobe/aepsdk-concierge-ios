@@ -56,7 +56,7 @@ struct MarkdownBlockView: View {
 
 /// Quote block with left rule, supports nested content by stacking paragraphs.
 private struct QuoteBlockView: View {
-    let blocks: [MarkdownRenderer.Block]
+    let blocks: [MarkdownRenderer.MarkdownBlock]
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
@@ -97,7 +97,7 @@ private struct QuoteBlockView: View {
 
 private struct ListBlockView: View {
     let type: MarkdownRenderer.ListType
-    let items: [[MarkdownRenderer.Block]]
+    let items: [[MarkdownRenderer.MarkdownBlock]]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
