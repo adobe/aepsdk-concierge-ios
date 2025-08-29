@@ -33,26 +33,29 @@ struct ChatComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    switch inputState {
-                    case .recording:
-                        ComposerListeningView(onCancel: onCancel, onComplete: onComplete, measuredHeight: measuredHeight)
-                    case .transcribing:
-                        ComposerTranscribingView(onCancel: onCancel, measuredHeight: measuredHeight)
-                    default:
-                        ComposerEditingView(
-                            inputText: $inputText,
-                            selectedRange: $selectedRange,
-                            measuredHeight: $measuredHeight,
-                            isEditable: composerEditable,
-                            onEditingChanged: onEditingChanged,
-                            onMicTap: onMicTap,
-                            micEnabled: micEnabled,
-                            sendEnabled: sendEnabled,
-                            onSend: onSend
-                        )
+            HStack(spacing: 8) {
+                // Stop button outside the input when recording
+                if case .recording = inputState {
+                    Button(action: onComplete) {
+                        BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.circle.fill")
+                            .foregroundColor(Color.Secondary)
                     }
+                    .buttonStyle(.plain)
+                }
+
+                HStack(spacing: 8) {
+                    ComposerEditingView(
+                        inputText: $inputText,
+                        selectedRange: $selectedRange,
+                        measuredHeight: $measuredHeight,
+                        isEditable: composerEditable,
+                        showMic: !(inputState == .recording),
+                        onEditingChanged: onEditingChanged,
+                        onMicTap: onMicTap,
+                        micEnabled: micEnabled,
+                        sendEnabled: sendEnabled,
+                        onSend: onSend
+                    )
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
