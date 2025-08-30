@@ -38,8 +38,16 @@ struct ChatComposer: View {
                 // Stop button outside the input when recording
                 if case .recording = inputState {
                     Button(action: onComplete) {
-                        BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.circle.fill")
-                            .foregroundColor(Color.Secondary)
+                        ZStack {
+                            Circle()
+                                .fill(theme.primary)
+                                .frame(width: 28, height: 28)
+                            // Punch the icon out to create negative space
+                            BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
+                                .foregroundColor(.black) // color irrelevant for destinationOut
+                                .blendMode(.destinationOut)
+                        }
+                        .compositingGroup()
                     }
                     .buttonStyle(.plain)
                 }
@@ -68,7 +76,7 @@ struct ChatComposer: View {
                         // Base border
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color(UIColor.separator), lineWidth: (colorScheme == .light ? 1 : 0))
-                        // Recording glow border – rotating "train" highlight
+                        // Recording glow border
                         if case .recording = inputState {
                             RotatingGlowBorder(color: Color.Secondary, cornerRadius: 12)
                         }
@@ -91,13 +99,13 @@ struct ChatComposer: View {
 private extension ChatComposer {
     func startOrStopGlow() {
         if case .recording = inputState {
-            // Restart animation from zero every time we enter recording
+            // Restart animation from zero every time recording starts
             glowRotation = 0
             withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
                 glowRotation = 360
             }
         } else {
-            // Snap to zero and cancel animation by setting a non-animating state change
+            // Snap to zero and cancel animation by setting a non animating state change
             withAnimation(.none) { glowRotation = 0 }
         }
     }
@@ -110,15 +118,16 @@ private struct RotatingGlowBorder: View {
     var body: some View {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            // One full loop every 1.2 seconds
+            /// Controls the speed at which the glowing border moves around the composer edges
             let period: Double = 3.5
             let phase = (t.remainder(dividingBy: period)) / period
             let angle = phase * 360.0
             // Length of the moving highlight arc (degrees around the border)
-            let segmentDegrees: Double = 100 // increase to make the "shrunk" spot longer
+            // increase to make the spot longer
+            let segmentDegrees: Double = 100
 
             ZStack {
-                // Inner crisp ring
+                // Inner ring
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
                         AngularGradient(
