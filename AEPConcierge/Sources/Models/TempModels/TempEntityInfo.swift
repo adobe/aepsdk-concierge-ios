@@ -10,10 +10,16 @@
  governing permissions and limitations under the License.
  */
 
-public struct TempResponse: Codable {
-    public let message: String
-    public let promptSuggestions: [String]?
-    public let multimodalElements: TempMultimodalElements?
-    public let sources: [TempSource]?
-    public let state: String?
+public struct TempEntityInfo: Codable {
+    public let productName: String?
+    public let productDescription: String?
+    public let description: String?
+    public let productPageURL: String?
+    public let details: String?
+    public let learningResource: String?
+    public let productImageURL: String?
+    public let backgroundColor: String?
+    public let logo: String?
+    public let primary: TempButton?
+    public let secondary: TempButton?
 }
