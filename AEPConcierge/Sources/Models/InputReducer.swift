@@ -107,7 +107,7 @@ final class InputReducer: ObservableObject {
             if case .recording = state { state = .error(.permissionDenied) }
 
         case .sendMessage:
-            if case .editing = state, data.canSend {
+            if data.canSend {
                 data.text = ""
                 data.canSend = false
                 state = .empty

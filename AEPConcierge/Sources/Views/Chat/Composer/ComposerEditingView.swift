@@ -18,6 +18,7 @@ struct ComposerEditingView: View {
     @Binding var selectedRange: NSRange
     @Binding var measuredHeight: CGFloat
     let isEditable: Bool
+    let showMic: Bool
     let onEditingChanged: (Bool) -> Void
     let onMicTap: () -> Void
     let micEnabled: Bool
@@ -37,12 +38,14 @@ struct ComposerEditingView: View {
             .frame(height: max(40, measuredHeight))
             .animation(.easeInOut(duration: 0.15), value: measuredHeight)
 
-            Button(action: onMicTap) {
-                BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
-                    .foregroundColor(micEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+            if showMic {
+                Button(action: onMicTap) {
+                    BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
+                        .foregroundColor(micEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .disabled(!micEnabled)
             }
-            .buttonStyle(.plain)
-            .disabled(!micEnabled)
 
             Button(action: onSend) {
                 BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
