@@ -209,8 +209,15 @@ final class ConciergeChatViewModel: ObservableObject {
                                 let cardText = element.entityInfo?.productDescription ?? "No description"
                                 let cardImage = element.entityInfo?.productImageURL ?? "No image"
                                 let cardImageUrl = URL(string: cardImage)!
+                                let primaryButton = element.entityInfo?.primary
+                                let secondaryButton = element.entityInfo?.secondary
                                                                 
-                                let card = Message(template: .carousel(imageSource: .remote(cardImageUrl), title: cardTitle, body: cardText))
+                                let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
+                                                                       title: cardTitle,
+                                                                       body: cardText,
+                                                                       primaryButton: primaryButton,
+                                                                       secondaryButton: secondaryButton))
+                                
                                 carouselElements.append(card)
                             }
                             
