@@ -201,8 +201,28 @@ final class ConciergeChatViewModel: ObservableObject {
                         }
                         
                         // handle cards in multimodalElements
-//                        g}
-                        
+                        if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
+                            var carouselElements: [Message] = []
+                            for element in elements {
+                                // make a card
+                                let cardTitle = element.entityInfo?.productName ?? "No title"
+                                let cardText = element.entityInfo?.productDescription ?? "No description"
+                                let cardImage = element.entityInfo?.productImageURL ?? "No image"
+                                let cardImageUrl = URL(string: cardImage)!
+                                let primaryButton = element.entityInfo?.primary
+                                let secondaryButton = element.entityInfo?.secondary
+                                                                
+                                let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
+                                                                       title: cardTitle,
+                                                                       body: cardText,
+                                                                       primaryButton: primaryButton,
+                                                                       secondaryButton: secondaryButton))
+                                
+                                carouselElements.append(card)
+                            }
+                            
+                            self.messages.append(Message(template: .carouselGroup(carouselElements)))
+                        }
                     }
                 },
                 onComplete: { [weak self] error in

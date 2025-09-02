@@ -15,6 +15,7 @@ import UIKit
 
 struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.openURL) private var openURL
 
     let template: MessageTemplate
     var messageBody: String?
@@ -161,7 +162,7 @@ struct ChatMessageView: View {
                 Spacer()
             }
             
-        case .carousel(let imageSource, let title, let body):
+        case .productCard(let imageSource, let title, let body, let primaryButton, let secondaryButton):
             VStack(alignment: .leading, spacing: 0) {
                 switch imageSource {
                 case .local(let image):
@@ -201,8 +202,39 @@ struct ChatMessageView: View {
                     Text(body)
                         .font(.system(.subheadline))
                         .foregroundColor(Color.TextBody)
-                        .padding(.bottom, 14)
                         .textSelection(.enabled)
+                    
+                    // Buttons section
+                    if primaryButton != nil || secondaryButton != nil {
+                        HStack(spacing: 12) {
+                            if let primaryButton = primaryButton {
+                                ButtonView(
+                                    text: primaryButton.text,
+                                    style: .primary,
+                                    action: {
+                                        if let url = URL(string: primaryButton.url) {
+                                            openURL(url)
+                                        }
+                                    }
+                                )
+                            }
+                            
+                            if let secondaryButton = secondaryButton {
+                                ButtonView(
+                                    text: secondaryButton.text,
+                                    style: .secondary,
+                                    action: {
+                                        if let url = URL(string: secondaryButton.url) {
+                                            openURL(url)
+                                        }
+                                    }
+                                )
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.top, 8)
+                    }
                 }
                 .padding(14)
                 .frame(width: 350, alignment: .leading)

@@ -11,5 +11,6 @@
  */
 
 public struct TempMultimodalElements: Codable {
+    public let type: String?
     public let elements: [TempElement]
 }
