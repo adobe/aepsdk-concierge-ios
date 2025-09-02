@@ -172,15 +172,6 @@ print("Hello, Markdown blocks!")
             // SwiftUI sample
             Concierge.wrap(
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-
-                        MarkdownBlockView(
-                            markdown: stringTest,
-                            textColor: UIColor(.black)
-                        )
-                        .padding(.horizontal, 20)
-                        .padding(.top, 12)
-                    }
                     VStack(spacing: 0) {
                         Button(action: {
                             MarkdownRenderer.debugDump(stringTest, syntax: .full)
@@ -222,6 +213,15 @@ print("Hello, Markdown blocks!")
                             surfaceDark: Color(UIColor.systemBackground)
                         )
                     )
+                    VStack(alignment: .leading, spacing: 12) {
+
+                        MarkdownBlockView(
+                            markdown: stringTest,
+                            textColor: UIColor(.black)
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                    }
                 }
 
             )
