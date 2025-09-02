@@ -78,8 +78,6 @@
 		4C3A65BE2E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */; };
 		4C3A65CC2E55272400EEEF3B /* ComposerEditingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C12E55272300EEEF3B /* ComposerEditingView.swift */; };
 		4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C72E55272300EEEF3B /* ChatTopBar.swift */; };
-		4C3A65CE2E55272400EEEF3B /* ComposerTranscribingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C32E55272300EEEF3B /* ComposerTranscribingView.swift */; };
-		4C3A65CF2E55272400EEEF3B /* ComposerListeningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C22E55272300EEEF3B /* ComposerListeningView.swift */; };
 		4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C52E55272300EEEF3B /* MessageListView.swift */; };
 		4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65C02E55272300EEEF3B /* ComposerDisclaimer.swift */; };
 		4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */; };
@@ -193,8 +191,6 @@
 		4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposer.swift; sourceTree = "<group>"; };
 		4C3A65C02E55272300EEEF3B /* ComposerDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerDisclaimer.swift; sourceTree = "<group>"; };
 		4C3A65C12E55272300EEEF3B /* ComposerEditingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerEditingView.swift; sourceTree = "<group>"; };
-		4C3A65C22E55272300EEEF3B /* ComposerListeningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerListeningView.swift; sourceTree = "<group>"; };
-		4C3A65C32E55272300EEEF3B /* ComposerTranscribingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerTranscribingView.swift; sourceTree = "<group>"; };
 		4C3A65C52E55272300EEEF3B /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
 		4C3A65C72E55272300EEEF3B /* ChatTopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTopBar.swift; sourceTree = "<group>"; };
 		4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
@@ -437,8 +433,6 @@
 				4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */,
 				4C3A65C02E55272300EEEF3B /* ComposerDisclaimer.swift */,
 				4C3A65C12E55272300EEEF3B /* ComposerEditingView.swift */,
-				4C3A65C22E55272300EEEF3B /* ComposerListeningView.swift */,
-				4C3A65C32E55272300EEEF3B /* ComposerTranscribingView.swift */,
 			);
 			path = Composer;
 			sourceTree = "<group>";
@@ -805,8 +799,6 @@
 				4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */,
 				24C64A212E5CFCDF003C6F5B /* CardObject.swift in Sources */,
 				4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */,
-				4C3A65CE2E55272400EEEF3B /* ComposerTranscribingView.swift in Sources */,
-				4C3A65CF2E55272400EEEF3B /* ComposerListeningView.swift in Sources */,
 				24317CB22E590D2600F138E9 /* TempMultimodalElements.swift in Sources */,
 				24317CAA2E590AE800F138E9 /* TempResponse.swift in Sources */,
 				4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */,
