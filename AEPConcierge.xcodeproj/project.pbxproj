@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		243013762E6748F800F6673E /* TempButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013752E6748F400F6673E /* TempButton.swift */; };
+		243013782E67A27700F6673E /* ButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013772E67A27700F6673E /* ButtonView.swift */; };
 		24317CAA2E590AE800F138E9 /* TempResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CA92E590ACD00F138E9 /* TempResponse.swift */; };
 		24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAB2E590AF400F138E9 /* TempPayload.swift */; };
 		24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAD2E590AFD00F138E9 /* TempHandle.swift */; };
@@ -64,6 +66,7 @@
 		24C64A282E5CFF5D003C6F5B /* ButtonObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24C64A272E5CFF55003C6F5B /* ButtonObject.swift */; };
 		24C64A2A2E5CFF97003C6F5B /* TempHandleItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24C64A292E5CFF90003C6F5B /* TempHandleItem.swift */; };
 		24C64A2C2E5D06F9003C6F5B /* SchemaType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24C64A2B2E5D06F6003C6F5B /* SchemaType.swift */; };
+		24DBEFA72E62151D00F1BF2B /* TempEntityInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24DBEFA62E62151800F1BF2B /* TempEntityInfo.swift */; };
 		24E237E32D6FDB6C00E2686C /* ConciergeInteractionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237E22D6FDB6A00E2686C /* ConciergeInteractionRequest.swift */; };
 		24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237E42D6FDBE500E2686C /* ConciergeInteractionResponse.swift */; };
 		24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237E62D6FDBF800E2686C /* ConciergeResponseMessage.swift */; };
@@ -126,6 +129,8 @@
 /* Begin PBXFileReference section */
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
+		243013752E6748F400F6673E /* TempButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempButton.swift; sourceTree = "<group>"; };
+		243013772E67A27700F6673E /* ButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonView.swift; sourceTree = "<group>"; };
 		24317CA92E590ACD00F138E9 /* TempResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempResponse.swift; sourceTree = "<group>"; };
 		24317CAB2E590AF400F138E9 /* TempPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempPayload.swift; sourceTree = "<group>"; };
 		24317CAD2E590AFD00F138E9 /* TempHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempHandle.swift; sourceTree = "<group>"; };
@@ -173,6 +178,7 @@
 		24C64A272E5CFF55003C6F5B /* ButtonObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonObject.swift; sourceTree = "<group>"; };
 		24C64A292E5CFF90003C6F5B /* TempHandleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempHandleItem.swift; sourceTree = "<group>"; };
 		24C64A2B2E5D06F6003C6F5B /* SchemaType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaType.swift; sourceTree = "<group>"; };
+		24DBEFA62E62151800F1BF2B /* TempEntityInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempEntityInfo.swift; sourceTree = "<group>"; };
 		24E237E22D6FDB6A00E2686C /* ConciergeInteractionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeInteractionRequest.swift; sourceTree = "<group>"; };
 		24E237E42D6FDBE500E2686C /* ConciergeInteractionResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeInteractionResponse.swift; sourceTree = "<group>"; };
 		24E237E62D6FDBF800E2686C /* ConciergeResponseMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeResponseMessage.swift; sourceTree = "<group>"; };
@@ -246,7 +252,9 @@
 		24317CB52E59115A00F138E9 /* TempModels */ = {
 			isa = PBXGroup;
 			children = (
+				243013752E6748F400F6673E /* TempButton.swift */,
 				24317CAF2E590C9400F138E9 /* TempElement.swift */,
+				24DBEFA62E62151800F1BF2B /* TempEntityInfo.swift */,
 				24317CAD2E590AFD00F138E9 /* TempHandle.swift */,
 				24C64A292E5CFF90003C6F5B /* TempHandleItem.swift */,
 				24317CB12E590D1D00F138E9 /* TempMultimodalElements.swift */,
@@ -370,6 +378,7 @@
 			children = (
 				4C3A65C92E55272300EEEF3B /* Chat */,
 				4C3A65CB2E55272300EEEF3B /* Shared */,
+				243013772E67A27700F6673E /* ButtonView.swift */,
 				2498998C2D67C62A0005CBD7 /* CarouselGroupView.swift */,
 				2498998D2D67C62A0005CBD7 /* ChatMessageView.swift */,
 				2498998E2D67C62A0005CBD7 /* ChatView.swift */,
@@ -786,6 +795,7 @@
 				4C3A65B62E53E9EA00EEEF3B /* ConciergeWrapper.swift in Sources */,
 				2482FDE22E3C14C10032F3CA /* TextSpeaker.swift in Sources */,
 				249899812D6696450005CBD7 /* Constants.swift in Sources */,
+				24DBEFA72E62151D00F1BF2B /* TempEntityInfo.swift in Sources */,
 				4C9531572E53D19900772695 /* ChatStates.swift in Sources */,
 				2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */,
 				4C3A65CC2E55272400EEEF3B /* ComposerEditingView.swift in Sources */,
@@ -816,6 +826,7 @@
 				24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */,
 				249899892D67C61A0005CBD7 /* ConciergeResponse.swift in Sources */,
 				24317CB02E590C9B00F138E9 /* TempElement.swift in Sources */,
+				243013782E67A27700F6673E /* ButtonView.swift in Sources */,
 				2498998A2D67C61A0005CBD7 /* MessageTemplate.swift in Sources */,
 				24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */,
 				4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */,
@@ -830,6 +841,7 @@
 				24C64A282E5CFF5D003C6F5B /* ButtonObject.swift in Sources */,
 				24C64A2A2E5CFF97003C6F5B /* TempHandleItem.swift in Sources */,
 				2498997D2D6695D40005CBD7 /* Concierge.swift in Sources */,
+				243013762E6748F800F6673E /* TempButton.swift in Sources */,
 				247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */,
 				2498997F2D6695E10005CBD7 /* Concierge+PublicAPI.swift in Sources */,
 				249899842D67C5F90005CBD7 /* Color+Extensions.swift in Sources */,

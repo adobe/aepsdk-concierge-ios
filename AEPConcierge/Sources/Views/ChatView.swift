@@ -168,18 +168,24 @@ public struct ChatView: View {
             Message(template: .thumbnail(imageSource: .local(Image(systemName: "sparkles.square.filled.on.square")), title: "The title for this message", text: "Here's the thumbnail template with a system image named 'sparkles.square.filled.on.square'")),
             Message(template: .thumbnail(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!), title: nil, text: "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?")),
             Message(template: .divider),
+            Message(template: .productCard(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+                                           title: "Title",
+                                           body: "**1-2 product description lines** - dolor sit amet, consecteatur adipiscing elit, sed do eiusmod tempor incididunt.",
+                                           primaryButton: TempButton(text: "Label", url: "label-url"),
+                                           secondaryButton: TempButton(text: "label", url: "label-url"))),
+            Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .carousel(
+                Message(template: .productCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
                     body: "Product 1 description"
                 )),
-                Message(template: .carousel(
+                Message(template: .productCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
                     body: "Product 2 description"
                 )),
-                Message(template: .carousel(
+                Message(template: .productCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 3",
                     body: "Product 3 description"
