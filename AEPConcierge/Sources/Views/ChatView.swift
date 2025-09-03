@@ -112,6 +112,9 @@ public struct ChatView: View {
                     } else {
                         Concierge.hide()
                     }
+                },
+                onToggleSources: { isOn in
+                    viewModel.stubAgentSources = isOn
                 }
             )
         }
