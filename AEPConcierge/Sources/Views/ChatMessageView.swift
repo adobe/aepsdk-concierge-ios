@@ -19,9 +19,9 @@ struct ChatMessageView: View {
 
     let template: MessageTemplate
     var messageBody: String?
-    var sources: [ConciergeSourceReference]? = nil
+    var sources: [URL]? = nil
 
-    init(template: MessageTemplate, messageBody: String? = nil, sources: [ConciergeSourceReference]? = nil) {
+    init(template: MessageTemplate, messageBody: String? = nil, sources: [URL]? = nil) {
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
