@@ -37,26 +37,23 @@ public struct SourcesListView: View {
                 VStack(spacing: 0) {
                     header
                     if isExpanded {
-                        Divider().background(Color.secondary.opacity(0.2))
+                        Divider().background(Color.black.opacity(0.08))
                         VStack(spacing: 0) {
                             ForEach(Array(sources.enumerated()), id: \ .element.id) { index, source in
                                 SourceRowView(source: source, theme: theme)
                                     .padding(.vertical, 10)
                                 if index < sources.count - 1 {
-                                    Divider().background(Color.secondary.opacity(0.1))
+                                    Divider().background(Color.black.opacity(0.06))
                                 }
                             }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
-                .background(theme.surfaceLight)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                .background(
+                    RoundedCornerShape(radius: 14, corners: [.bottomLeft, .bottomRight])
+                        .fill(theme.agentBubble)
                 )
-                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
             }
         }
         .accessibilityElement(children: .contain)
@@ -74,16 +71,29 @@ public struct SourcesListView: View {
                     .foregroundStyle(theme.textBody)
                 Text("Sources")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.textBody)
+                    .foregroundStyle(theme.onAgent)
                 Spacer()
-                if !initiallyExpanded {
-                    Text("\(sources.count)")
-                        .font(.caption)
-                        .foregroundStyle(theme.textBody.opacity(0.7))
+                // Feedback buttons
+                HStack(spacing: 4) {
+                    Button(action: {}) {
+                        thumbUpImage
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(theme.onAgent)
+
+                    Button(action: {}) {
+                        thumbDownImage
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(theme.onAgent)
                 }
             }
             .contentShape(Rectangle())
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
         .buttonStyle(.plain)
@@ -98,6 +108,24 @@ public struct SourcesListView: View {
                 .renderingMode(.template)
         } else {
             Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+        }
+    }
+
+    @ViewBuilder
+    var thumbUpImage: some View {
+        if let uiImage = UIImage(named: "S2_Icon_ThumbUp_20_N") {
+            Image(uiImage: uiImage).renderingMode(.template)
+        } else {
+            Image(systemName: "hand.thumbsup")
+        }
+    }
+
+    @ViewBuilder
+    var thumbDownImage: some View {
+        if let uiImage = UIImage(named: "S2_Icon_ThumbDown_20_N") {
+            Image(uiImage: uiImage).renderingMode(.template)
+        } else {
+            Image(systemName: "hand.thumbsdown")
         }
     }
 }

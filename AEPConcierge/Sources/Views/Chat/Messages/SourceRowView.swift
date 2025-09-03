@@ -20,13 +20,13 @@ struct SourceRowView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(source.ordinal)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(theme.textBody.opacity(0.8))
+                .foregroundStyle(theme.onAgent.opacity(0.8))
                 .frame(minWidth: 18, alignment: .leading)
 
             Link(destination: source.link) {
                 Text(source.link.absoluteString)
                     .font(.footnote)
-                    .foregroundStyle(theme.primary)
+                    .foregroundStyle(theme.onAgent)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
