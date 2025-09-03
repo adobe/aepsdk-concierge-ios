@@ -26,7 +26,7 @@ struct SourceRowView: View {
             Link(destination: source.link) {
                 Text(source.link.absoluteString)
                     .font(.footnote)
-                    .foregroundStyle(theme.onAgent)
+                    .foregroundStyle(theme.primary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
