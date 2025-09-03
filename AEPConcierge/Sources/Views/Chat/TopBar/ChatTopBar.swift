@@ -23,6 +23,9 @@ struct ChatTopBar: View {
 
     let onToggleMode: (Bool) -> Void
     let onClose: () -> Void
+    // Debug toggle handler
+    let onToggleSources: (Bool) -> Void
+    @State private var showSourcesToggle: Bool = true
 
     var body: some View {
         HStack(alignment: .center) {
@@ -39,15 +42,38 @@ struct ChatTopBar: View {
 
             Spacer()
 
-            Button(action: {
-                showAgentSend.toggle()
-                onToggleMode(showAgentSend)
-            }) {
-                Text(showAgentSend ? "Agent" : "User")
-                    .font(.system(.footnote))
-                    .padding(8)
-                    .background(Color.secondary.opacity(0.15))
-                    .cornerRadius(8)
+            HStack(spacing: 16) {
+                // User/Agent control with caption
+                VStack(alignment: .center, spacing: 4) {
+                    Button(action: {
+                        showAgentSend.toggle()
+                        onToggleMode(showAgentSend)
+                    }) {
+                        Text(showAgentSend ? "Agent" : "User")
+                            .font(.system(.footnote))
+                            .padding(8)
+                            .background(Color.secondary.opacity(0.15))
+                            .cornerRadius(8)
+                    }
+                    Text("Message will be sent from this perspective")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Sources switch with caption
+                VStack(alignment: .center, spacing: 4) {
+                    Toggle(isOn: $showSourcesToggle) { EmptyView() }
+                        .toggleStyle(SwitchToggleStyle(tint: theme.primary))
+                        .onChange(of: showSourcesToggle) { newValue in
+                            onToggleSources(newValue)
+                        }
+                        .labelsHidden()
+                    Text("Attach sources to the agent response")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
 
             Button(action: onClose) {

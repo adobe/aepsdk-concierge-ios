@@ -19,10 +19,12 @@ struct ChatMessageView: View {
 
     let template: MessageTemplate
     var messageBody: String?
+    var sources: [ConciergeSourceReference]? = nil
 
-    init(template: MessageTemplate, messageBody: String? = nil) {
+    init(template: MessageTemplate, messageBody: String? = nil, sources: [ConciergeSourceReference]? = nil) {
         self.template = template
         self.messageBody = messageBody
+        self.sources = sources
     }
     
     var body: some View {
@@ -34,40 +36,63 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
             
         case .basic(let isUserMessage):
-            HStack(alignment: .bottom) {
-                if isUserMessage { Spacer() }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .bottom) {
+                    if isUserMessage { Spacer() }
 
-                // User: SwiftUI Text. Agent: SwiftUI block renderer interleaving text + Divider.
-                Group {
-                    if isUserMessage {
-                        Text(messageBody ?? "")
-                    } else {
-                        MarkdownBlockView(
-                            markdown: messageBody ?? "",
-                            textColor: UIColor(theme.onAgent)
-                        )
-                    }
-                }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .textSelection(.enabled)
-                    .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(isUserMessage ? theme.primary : theme.agentBubble)
-                    )
-                    .compositingGroup()
-                    .contextMenu {
-                        Button(action: {
-                            let source = messageBody ?? ""
-                            // Copy raw markdown (preserve markers)
-                            UIPasteboard.general.string = source
-                        }) {
-                            Label("Copy", systemImage: "doc.on.doc")
+                    // User: SwiftUI Text. Agent: SwiftUI block renderer interleaving text + Divider.
+                    Group {
+                        if isUserMessage {
+                            Text(messageBody ?? "")
+                        } else {
+                            MarkdownBlockView(
+                                markdown: messageBody ?? "",
+                                textColor: UIColor(theme.onAgent)
+                            )
                         }
                     }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, (!isUserMessage && (sources?.isEmpty == false)) ? 6 : 12)
+                        .textSelection(.enabled)
+                        .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
+                        .background(
+                            Group {
+                                if isUserMessage {
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(theme.primary)
+                                } else {
+                                    if let sources, !sources.isEmpty {
+                                        RoundedCornerShape(radius: 14, corners: [.topLeft, .topRight])
+                                            .fill(theme.agentBubble)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(theme.agentBubble)
+                                    }
+                                }
+                            }
+                        )
+                        .compositingGroup()
+                        .contextMenu {
+                            Button(action: {
+                                let source = messageBody ?? ""
+                                // Copy raw markdown (preserve markers)
+                                UIPasteboard.general.string = source
+                            }) {
+                                Label("Copy", systemImage: "doc.on.doc")
+                            }
+                        }
 
-                if !isUserMessage { Spacer() }
+                    if !isUserMessage { Spacer() }
+                }
+
+                // Attach sources dropdown for agent messages only
+                if !isUserMessage, let sources, !sources.isEmpty {
+                    HStack(alignment: .top) {
+                        SourcesListView(sources: sources)
+                        Spacer()
+                    }
+                }
             }
             
         case .thumbnail(let imageSource, let title, let text):
