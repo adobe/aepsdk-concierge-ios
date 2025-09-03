@@ -102,32 +102,26 @@ public struct SourcesListView: View {
     }
 }
 
-#if DEBUG
-struct AgentSourcesListView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            SourcesListView(
-                sources: [
-                    ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!),
-                    ConciergeSourceReference(ordinal: "b.", link: URL(string: "https://example.com/articles/2")!)
-                ],
-                initiallyExpanded: true
-            )
-            .padding()
-            .previewDisplayName("Expanded")
-
-            SourcesListView(
-                sources: [
-                    ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!)
-                ],
-                initiallyExpanded: false
-            )
-            .padding()
-            .previewDisplayName("Collapsed")
-        }
-        .background(Color(UIColor.systemBackground))
-    }
+// MARK: - Previews
+#Preview("Expanded") {
+    SourcesListView(
+        sources: [
+            ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!),
+            ConciergeSourceReference(ordinal: "b.", link: URL(string: "https://example.com/articles/2")!)
+        ],
+        initiallyExpanded: true
+    )
+    .padding()
+    .background(Color(UIColor.systemBackground))
 }
-#endif
 
-
+#Preview("Collapsed") {
+    SourcesListView(
+        sources: [
+            ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!)
+        ],
+        initiallyExpanded: false
+    )
+    .padding()
+    .background(Color(UIColor.systemBackground))
+}
