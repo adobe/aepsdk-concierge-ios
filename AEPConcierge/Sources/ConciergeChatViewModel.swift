@@ -35,8 +35,12 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: Input reducer
     let inputReducer = InputReducer()
     
-    // MARK: - chunk handling
+    // MARK: Chunk handling
     var lastEmittedResponseText: String = ""
+
+    // MARK: Feature flags
+    // Toggle to attach stubbed sources to agent responses for testing until backend supports it
+    var stubAgentSources: Bool = true
 
     init(chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.chatService = chatService
@@ -246,6 +250,10 @@ final class ConciergeChatViewModel: ObservableObject {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
+                                // TODO: Update this logic to reflect real backend response when available
+                                if self.stubAgentSources {
+                                    current.sources = self.generateStubSources(for: accumulatedContent)
+                                }
                                 self.messages[streamingMessageIndex] = current
                                 // Final tick to keep scroll pinned after completion
                                 self.agentScrollTick &+= 1
@@ -269,7 +277,12 @@ final class ConciergeChatViewModel: ObservableObject {
         }
 
         Task { @MainActor in
-            messages.append(Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message))
+            var agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
+            // TODO: Update this logic to reflect real backend response when available
+            if stubAgentSources {
+                agent.sources = generateStubSources(for: response?.message)
+            }
+            messages.append(agent)
             chatState = .idle
             agentScrollTick &+= 1
         }
@@ -296,8 +309,22 @@ final class ConciergeChatViewModel: ObservableObject {
         inputReducer.apply(.inputReceived(newText))
     }
 
-    // MARK: - Combine
-    // No additional subscriptions; views may observe reducer directly
+    // MARK: - Stubs
+    private func generateStubSources(for text: String?) -> [ConciergeSourceReference] {
+        let sampleLinks = [
+            "https://example.com/guide/introduction",
+            "https://example.com/docs/reference#section"
+        ]
+        var refs: [ConciergeSourceReference] = []
+        // Example ordinals, can replace with any other ordinal types for testing
+        let ordinals = ["a.", "b.", "c."]
+        for (index, link) in sampleLinks.enumerated() {
+            if let url = URL(string: link) {
+                refs.append(ConciergeSourceReference(ordinal: ordinals[index], link: url))
+            }
+        }
+        return refs
+    }
 }
 
 // MARK: - Array Safe Access Extension

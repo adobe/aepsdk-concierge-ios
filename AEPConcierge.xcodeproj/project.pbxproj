@@ -72,6 +72,9 @@
 		24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237E62D6FDBF800E2686C /* ConciergeResponseMessage.swift */; };
 		24E237E92D6FDC1500E2686C /* ConciergeMessageItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237E82D6FDC1300E2686C /* ConciergeMessageItem.swift */; };
 		24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237EA2D6FDDED00E2686C /* ConciergeError.swift */; };
+		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
+		4C1738132E67CD6B003E88AF /* ConciergeSourceReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738122E67CD6B003E88AF /* ConciergeSourceReference.swift */; };
+		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
 		4C3A65B62E53E9EA00EEEF3B /* ConciergeWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
@@ -88,6 +91,7 @@
 		4C3A65DF2E5E913200EEEF3B /* MarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */; };
 		4C3A65E12E5E989E00EEEF3B /* MarkdownBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */; };
 		4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */; };
+		4C3D5F982E67DBF700323738 /* RoundedCornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */; };
 		4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */; };
 		4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */; };
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
@@ -185,6 +189,9 @@
 		24E237E82D6FDC1300E2686C /* ConciergeMessageItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeMessageItem.swift; sourceTree = "<group>"; };
 		24E237EA2D6FDDED00E2686C /* ConciergeError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeError.swift; sourceTree = "<group>"; };
 		2A8803C559E307362EE94BF3 /* Pods-AEPConciergeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.release.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.release.xcconfig"; sourceTree = "<group>"; };
+		4C1738102E67C590003E88AF /* SourcesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListView.swift; sourceTree = "<group>"; };
+		4C1738122E67CD6B003E88AF /* ConciergeSourceReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeSourceReference.swift; sourceTree = "<group>"; };
+		4C1738142E67D59D003E88AF /* SourceRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceRowView.swift; sourceTree = "<group>"; };
 		4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeWrapper.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
@@ -201,6 +208,7 @@
 		4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownText.swift; sourceTree = "<group>"; };
 		4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownBlockView.swift; sourceTree = "<group>"; };
 		4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
+		4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundedCornerShape.swift; sourceTree = "<group>"; };
 		4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_AudioWave_20_N.svg; sourceTree = "<group>"; };
 		4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ClockPending_20_N.svg; sourceTree = "<group>"; };
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
@@ -366,6 +374,7 @@
 				24E237E82D6FDC1300E2686C /* ConciergeMessageItem.swift */,
 				249899852D67C61A0005CBD7 /* ConciergeResponse.swift */,
 				24E237E62D6FDBF800E2686C /* ConciergeResponseMessage.swift */,
+				4C1738122E67CD6B003E88AF /* ConciergeSourceReference.swift */,
 				4C3A65D62E55600F00EEEF3B /* InputReducer.swift */,
 				249899862D67C61A0005CBD7 /* Message.swift */,
 				249899872D67C61A0005CBD7 /* MessageTemplate.swift */,
@@ -444,6 +453,8 @@
 			isa = PBXGroup;
 			children = (
 				4C3A65C52E55272300EEEF3B /* MessageListView.swift */,
+				4C1738142E67D59D003E88AF /* SourceRowView.swift */,
+				4C1738102E67C590003E88AF /* SourcesListView.swift */,
 			);
 			path = Messages;
 			sourceTree = "<group>";
@@ -472,6 +483,7 @@
 				4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */,
 				4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
+				4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -824,16 +836,19 @@
 				249899962D67C62A0005CBD7 /* PageIndicator.swift in Sources */,
 				249899782D667FD60005CBD7 /* AEPConcierge.docc in Sources */,
 				24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */,
+				4C1738132E67CD6B003E88AF /* ConciergeSourceReference.swift in Sources */,
 				249899892D67C61A0005CBD7 /* ConciergeResponse.swift in Sources */,
 				24317CB02E590C9B00F138E9 /* TempElement.swift in Sources */,
 				243013782E67A27700F6673E /* ButtonView.swift in Sources */,
 				2498998A2D67C61A0005CBD7 /* MessageTemplate.swift in Sources */,
+				4C3D5F982E67DBF700323738 /* RoundedCornerShape.swift in Sources */,
 				24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */,
 				4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */,
 				4C9531532E4C1C4B00772695 /* Theme.swift in Sources */,
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
 				4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */,
 				24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */,
+				4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */,
 				24C64A262E5CFE92003C6F5B /* MediaObject.swift in Sources */,
 				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				24C64A232E5CFDA5003C6F5B /* PromptObject.swift in Sources */,
@@ -847,6 +862,7 @@
 				249899842D67C5F90005CBD7 /* Color+Extensions.swift in Sources */,
 				2482FDE02E3BED830032F3CA /* SpeechCapturer.swift in Sources */,
 				24317CB72E5CC5CC00F138E9 /* SchemaObject.swift in Sources */,
+				4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */,
 				2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
