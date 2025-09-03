@@ -36,7 +36,7 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
             
         case .basic(let isUserMessage):
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .bottom) {
                     if isUserMessage { Spacer() }
 
@@ -52,12 +52,25 @@ struct ChatMessageView: View {
                         }
                     }
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, (!isUserMessage && (sources?.isEmpty == false)) ? 6 : 12)
                         .textSelection(.enabled)
                         .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(isUserMessage ? theme.primary : theme.agentBubble)
+                            Group {
+                                if isUserMessage {
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(theme.primary)
+                                } else {
+                                    if let sources, !sources.isEmpty {
+                                        RoundedCornerShape(radius: 14, corners: [.topLeft, .topRight])
+                                            .fill(theme.agentBubble)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(theme.agentBubble)
+                                    }
+                                }
+                            }
                         )
                         .compositingGroup()
                         .contextMenu {
