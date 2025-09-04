@@ -15,6 +15,7 @@ import UIKit
 
 struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
     @Environment(\.openURL) private var openURL
 
     let template: MessageTemplate
@@ -39,16 +40,20 @@ struct ChatMessageView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .bottom) {
                     if isUserMessage { Spacer() }
-
-                    // User: SwiftUI Text. Agent: SwiftUI block renderer interleaving text + Divider.
                     Group {
+                        // User text
                         if isUserMessage {
                             Text(messageBody ?? "")
+                        // Agent - Placeholder before message content is available, Markdown renderer otherwise.
                         } else {
-                            MarkdownBlockView(
-                                markdown: messageBody ?? "",
-                                textColor: UIColor(theme.onAgent)
-                            )
+                            if let messageBody, !messageBody.isEmpty {
+                                MarkdownBlockView(
+                                    markdown: messageBody,
+                                    textColor: UIColor(theme.onAgent)
+                                )
+                            } else {
+                                ConciergeResponsePlaceholderView()
+                            }
                         }
                     }
                         .padding(.horizontal, 16)
