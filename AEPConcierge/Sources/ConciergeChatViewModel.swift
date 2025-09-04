@@ -145,7 +145,7 @@ final class ConciergeChatViewModel: ObservableObject {
 
         messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
         if isUser {
-            // Trigger scroll-to-bottom for the newly sent user message
+            // Trigger scroll to bottom for the newly sent user message
             userScrollTick &+= 1
         }
 
@@ -288,7 +288,7 @@ final class ConciergeChatViewModel: ObservableObject {
                 }
             )
         } else {
-            // Non-user messages don't mutate input state here; reducer already cleared input
+            // Agent messages don't change input state here; reducer already cleared input
             chatState = .idle
         }
     }

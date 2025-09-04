@@ -60,4 +60,33 @@ public extension View {
     }
 }
 
+// MARK: - Concierge response placeholder configuration
+
+public struct ConciergeResponsePlaceholderConfig {
+    public var loadingText: String
+    public var primaryDotColor: Color
+
+    public init(loadingText: String = "Thinking...", primaryDotColor: Color = .accentColor) {
+        self.loadingText = loadingText
+        self.primaryDotColor = primaryDotColor
+    }
+}
+
+private struct ConciergePlaceholderConfigKey: EnvironmentKey {
+    static let defaultValue = ConciergeResponsePlaceholderConfig()
+}
+
+public extension EnvironmentValues {
+    var conciergePlaceholderConfig: ConciergeResponsePlaceholderConfig {
+        get { self[ConciergePlaceholderConfigKey.self] }
+        set { self[ConciergePlaceholderConfigKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func conciergePlaceholderConfig(_ config: ConciergeResponsePlaceholderConfig) -> some View {
+        environment(\.conciergePlaceholderConfig, config)
+    }
+}
+
 
