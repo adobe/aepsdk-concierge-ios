@@ -13,18 +13,19 @@
 import SwiftUI
 
 struct SourceRowView: View {
-    let source: ConciergeSourceReference
+    let ordinal: String
+    let link: URL
     let theme: ConciergeTheme
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(source.ordinal)
+            Text(ordinal)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(theme.onAgent.opacity(0.8))
                 .frame(minWidth: 18, alignment: .leading)
 
-            Link(destination: source.link) {
-                Text(source.link.absoluteString)
+            Link(destination: link) {
+                Text(link.absoluteString)
                     .font(.footnote)
                     .foregroundStyle(theme.primary)
                     .lineLimit(1)
@@ -39,7 +40,8 @@ struct SourceRowView: View {
 
 #Preview {
     SourceRowView(
-        source: ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!),
+        ordinal: "1.",
+        link: URL(string: "https://example.com/articles/1")!,
         theme: ConciergeTheme()
     )
     .padding()

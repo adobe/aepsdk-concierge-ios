@@ -16,7 +16,7 @@ import SwiftUI
 public struct SourcesListView: View {
     @Environment(\.conciergeTheme) private var theme
 
-    public let sources: [ConciergeSourceReference]
+    public let sources: [URL]
     private let initiallyExpanded: Bool
 
     @State private var isExpanded: Bool = false
@@ -25,7 +25,7 @@ public struct SourcesListView: View {
     /// - Parameters:
     ///   - sources: The list of sources to display. If empty, the view renders nothing.
     ///   - initiallyExpanded: Whether the list starts expanded.
-    public init(sources: [ConciergeSourceReference], initiallyExpanded: Bool = false) {
+    public init(sources: [URL], initiallyExpanded: Bool = false) {
         self.sources = sources
         self.initiallyExpanded = initiallyExpanded
         self._isExpanded = State(initialValue: initiallyExpanded)
@@ -39,8 +39,8 @@ public struct SourcesListView: View {
                     if isExpanded {
                         Divider().background(Color.black.opacity(0.08))
                         VStack(spacing: 0) {
-                            ForEach(Array(sources.enumerated()), id: \ .element.id) { index, source in
-                                SourceRowView(source: source, theme: theme)
+                            ForEach(Array(sources.enumerated()), id: \.offset) { index, link in
+                                SourceRowView(ordinal: "\(index + 1).", link: link, theme: theme)
                                     .padding(.vertical, 10)
                                 if index < sources.count - 1 {
                                     Divider().background(Color.black.opacity(0.06))
@@ -133,10 +133,7 @@ public struct SourcesListView: View {
 // MARK: - Previews
 #Preview("Expanded") {
     SourcesListView(
-        sources: [
-            ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!),
-            ConciergeSourceReference(ordinal: "b.", link: URL(string: "https://example.com/articles/2")!)
-        ],
+        sources: [URL(string: "https://example.com/articles/1")!, URL(string: "https://example.com/articles/2")!],
         initiallyExpanded: true
     )
     .padding()
@@ -145,9 +142,7 @@ public struct SourcesListView: View {
 
 #Preview("Collapsed") {
     SourcesListView(
-        sources: [
-            ConciergeSourceReference(ordinal: "a.", link: URL(string: "https://example.com/articles/1")!)
-        ],
+        sources: [URL(string: "https://example.com/articles/1")!],
         initiallyExpanded: false
     )
     .padding()
