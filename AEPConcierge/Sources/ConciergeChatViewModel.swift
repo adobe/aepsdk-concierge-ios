@@ -37,6 +37,7 @@ final class ConciergeChatViewModel: ObservableObject {
     
     // MARK: Chunk handling
     var lastEmittedResponseText: String = ""
+    private var latestSources: [URL] = []
 
     // MARK: Feature flags
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
@@ -144,7 +145,7 @@ final class ConciergeChatViewModel: ObservableObject {
 
         messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
         if isUser {
-            // Trigger scroll-to-bottom for the newly sent user message
+            // Trigger scroll to bottom for the newly sent user message
             userScrollTick &+= 1
         }
 
@@ -227,6 +228,20 @@ final class ConciergeChatViewModel: ObservableObject {
                             
                             self.messages.append(Message(template: .carouselGroup(carouselElements)))
                         }
+
+                        // Capture sources from payload as they arrive (used on completion)
+                        if let tempSources = payload.response?.sources {
+                            let urls = tempSources.compactMap { source -> URL? in
+                                guard let url = URL(string: source.url) else {
+                                    Log.trace(label: self.LOG_TAG, "Ignoring invalid source URL: \(source.url)")
+                                    return nil
+                                }
+                                return url
+                            }
+                            if !urls.isEmpty {
+                                self.latestSources = urls
+                            }
+                        }
                     }
                 },
                 onComplete: { [weak self] error in
@@ -250,9 +265,16 @@ final class ConciergeChatViewModel: ObservableObject {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
-                                // TODO: Update this logic to reflect real backend response when available
-                                if self.stubAgentSources {
-                                    current.sources = self.generateStubSources(for: accumulatedContent)
+                                // Attach real sources captured during streaming if present
+                                if !self.latestSources.isEmpty {
+                                    Log.trace(label: self.LOG_TAG, "Using real sources: \(self.latestSources)")
+                                    current.sources = self.latestSources
+                                } else if self.stubAgentSources {
+                                    Log.trace(label: self.LOG_TAG, "Using stubbed sources")
+                                    current.sources = [
+                                        URL(string: "https://example.com/guide/introduction")!,
+                                        URL(string: "https://example.com/docs/reference#section")!
+                                    ]
                                 }
                                 self.messages[streamingMessageIndex] = current
                                 // Final tick to keep scroll pinned after completion
@@ -261,11 +283,12 @@ final class ConciergeChatViewModel: ObservableObject {
                         }
                         
                         self.lastEmittedResponseText = ""
+                        self.latestSources = []
                     }
                 }
             )
         } else {
-            // Non-user messages don't mutate input state here; reducer already cleared input
+            // Agent messages don't change input state here; reducer already cleared input
             chatState = .idle
         }
     }
@@ -280,7 +303,10 @@ final class ConciergeChatViewModel: ObservableObject {
             var agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
             // TODO: Update this logic to reflect real backend response when available
             if stubAgentSources {
-                agent.sources = generateStubSources(for: response?.message)
+                agent.sources = [
+                    URL(string: "https://example.com/guide/introduction")!,
+                    URL(string: "https://example.com/docs/reference#section")!
+                ]
             }
             messages.append(agent)
             chatState = .idle
@@ -307,23 +333,6 @@ final class ConciergeChatViewModel: ObservableObject {
             inputReducer.apply(.addContent)
         }
         inputReducer.apply(.inputReceived(newText))
-    }
-
-    // MARK: - Stubs
-    private func generateStubSources(for text: String?) -> [ConciergeSourceReference] {
-        let sampleLinks = [
-            "https://example.com/guide/introduction",
-            "https://example.com/docs/reference#section"
-        ]
-        var refs: [ConciergeSourceReference] = []
-        // Example ordinals, can replace with any other ordinal types for testing
-        let ordinals = ["a.", "b.", "c."]
-        for (index, link) in sampleLinks.enumerated() {
-            if let url = URL(string: link) {
-                refs.append(ConciergeSourceReference(ordinal: ordinals[index], link: url))
-            }
-        }
-        return refs
     }
 }
 
