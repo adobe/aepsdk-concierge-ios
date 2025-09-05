@@ -86,6 +86,31 @@ public extension View {
     }
 }
 
+// MARK: - Feedback options environment (array of unique strings)
+
+private struct ConciergeFeedbackOptionsKey: EnvironmentKey {
+    static let defaultValue: [String] = [
+        "Helpful and relevant recommendations",
+        "Clear and easy to understand",
+        "Friendly and conversational tone",
+        "Visually appealing presentation",
+        "Other"
+    ]
+}
+
+public extension EnvironmentValues {
+    var conciergeFeedbackOptions: [String] {
+        get { self[ConciergeFeedbackOptionsKey.self] }
+        set { self[ConciergeFeedbackOptionsKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func conciergeFeedbackOptions(_ options: [String]) -> some View {
+        environment(\.conciergeFeedbackOptions, options)
+    }
+}
+
 // MARK: - Concierge response placeholder configuration
 
 public struct ConciergeResponsePlaceholderConfig {
