@@ -66,8 +66,8 @@ struct ChatComposer: View {
                         onSend: onSend
                     )
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white)
                 .cornerRadius(12)
