@@ -32,14 +32,20 @@ struct FeedbackOverlayView: View {
     // Allows providing any number of sentiment options
     private var effectiveOptions: [String] {
         switch sentiment {
-        case .positive: return positiveOptions
-        case .negative: return negativeOptions
+        case .positive: return feedbackConfig.positiveOptions
+        case .negative: return feedbackConfig.negativeOptions
+        }
+    }
+
+    private var notesEnabled: Bool {
+        switch sentiment {
+        case .positive: return feedbackConfig.positiveNotesEnabled
+        case .negative: return feedbackConfig.negativeNotesEnabled
         }
     }
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.conciergePositiveFeedbackOptions) private var positiveOptions
-    @Environment(\.conciergeNegativeFeedbackOptions) private var negativeOptions
+    @Environment(\.conciergeFeedbackConfig) private var feedbackConfig
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
 
@@ -75,23 +81,25 @@ struct FeedbackOverlayView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Notes")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        TextEditor(text: $notes)
-                            .frame(minHeight: 120)
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(theme.surfaceLight)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(borderColor)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(color: .clear, radius: 0)
+                    if notesEnabled {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Notes")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            TextEditor(text: $notes)
+                                .frame(minHeight: 120)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(theme.surfaceLight)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(borderColor)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: .clear, radius: 0)
+                        }
                     }
                 }
                 .padding(20)
@@ -160,13 +168,26 @@ struct FeedbackOverlayView: View {
                         onCancel: { show = false },
                         onSubmit: { _ in show = false }
                     )
-                    .conciergePositiveFeedbackOptions([
-                        "Helpful and relevant recommendations",
-                        "Clear and easy to understand",
-                        "Friendly and conversational tone",
-                        "Visually appealing presentation",
-                        "Other"
-                    ])
+                    .conciergeFeedbackConfig(
+                        ConciergeFeedbackConfig(
+                            positiveOptions: [
+                                "Helpful and relevant recommendations",
+                                "Clear and easy to understand",
+                                "Friendly and conversational tone",
+                                "Visually appealing presentation",
+                                "Other"
+                            ],
+                            negativeOptions: [
+                                "Didn't understand my request",
+                                "Unhelpful or irrelevant information",
+                                "Too vague or lacking detail",
+                                "Errors or poor quality response",
+                                "Other"
+                            ],
+                            positiveNotesEnabled: true,
+                            negativeNotesEnabled: true
+                        )
+                    )
                 }
             }
         }

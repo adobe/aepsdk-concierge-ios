@@ -118,12 +118,53 @@ public extension EnvironmentValues {
     }
 }
 
-public extension View {
-    func conciergePositiveFeedbackOptions(_ options: [String]) -> some View {
-        environment(\.conciergePositiveFeedbackOptions, options)
+// MARK: - Consolidated feedback configuration
+
+public struct ConciergeFeedbackConfig {
+    public var positiveOptions: [String]
+    public var negativeOptions: [String]
+    public var positiveNotesEnabled: Bool
+    public var negativeNotesEnabled: Bool
+
+    public init(
+        positiveOptions: [String] = [
+            "Helpful and relevant recommendations",
+            "Clear and easy to understand",
+            "Friendly and conversational tone",
+            "Visually appealing presentation",
+            "Other"
+        ],
+        negativeOptions: [String] = [
+            "Didn't understand my request",
+            "Unhelpful or irrelevant information",
+            "Too vague or lacking detail",
+            "Errors or poor quality response",
+            "Other"
+        ],
+        positiveNotesEnabled: Bool = true,
+        negativeNotesEnabled: Bool = true
+    ) {
+        self.positiveOptions = positiveOptions
+        self.negativeOptions = negativeOptions
+        self.positiveNotesEnabled = positiveNotesEnabled
+        self.negativeNotesEnabled = negativeNotesEnabled
     }
-    func conciergeNegativeFeedbackOptions(_ options: [String]) -> some View {
-        environment(\.conciergeNegativeFeedbackOptions, options)
+}
+
+private struct ConciergeFeedbackConfigKey: EnvironmentKey {
+    static let defaultValue = ConciergeFeedbackConfig()
+}
+
+public extension EnvironmentValues {
+    var conciergeFeedbackConfig: ConciergeFeedbackConfig {
+        get { self[ConciergeFeedbackConfigKey.self] }
+        set { self[ConciergeFeedbackConfigKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func conciergeFeedbackConfig(_ config: ConciergeFeedbackConfig) -> some View {
+        environment(\.conciergeFeedbackConfig, config)
     }
 }
 
