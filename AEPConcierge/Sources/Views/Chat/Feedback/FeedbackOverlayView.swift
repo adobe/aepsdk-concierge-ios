@@ -11,20 +11,12 @@
  */
 
 import SwiftUI
-
-public enum FeedbackSentiment {
-    case positive
-    case negative
-}
+import AEPServices
 
 struct FeedbackOverlayView: View {
     struct FeedbackPayload {
         let sentiment: FeedbackSentiment
-        let helpful: Bool
-        let clear: Bool
-        let friendly: Bool
-        let visual: Bool
-        let other: Bool
+        let selectedOptions: [String]
         let notes: String
     }
 
@@ -34,16 +26,13 @@ struct FeedbackOverlayView: View {
     let onSubmit: (_ payload: FeedbackPayload) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-    @State private var helpful: Bool = false
-    @State private var clear: Bool = false
-    @State private var friendly: Bool = false
-    @State private var visual: Bool = false
-    @State private var other: Bool = false
+    @Environment(\.conciergeFeedbackOptions) private var options
+    @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
 
     var body: some View {
         ZStack {
-            // Opaque-ish material to obscure underlying content
+            // Opaque material to blur content underneath
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
@@ -59,11 +48,18 @@ struct FeedbackOverlayView: View {
                         .foregroundStyle(.secondary)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        CheckboxRow(isOn: $helpful, label: "Helpful and relevant recommendations", accent: theme.primary)
-                        CheckboxRow(isOn: $clear, label: "Clear and easy to understand", accent: theme.primary)
-                        CheckboxRow(isOn: $friendly, label: "Friendly and conversational tone", accent: theme.primary)
-                        CheckboxRow(isOn: $visual, label: "Visually appealing presentation", accent: theme.primary)
-                        CheckboxRow(isOn: $other, label: "Other", accent: theme.primary)
+                        ForEach(options, id: \.self) { option in
+                            CheckboxRow(
+                                isOn: Binding(
+                                    get: { selectedOptions.contains(option) },
+                                    set: { isOn in
+                                        if isOn { selectedOptions.insert(option) } else { selectedOptions.remove(option) }
+                                    }
+                                ),
+                                label: option,
+                                accent: theme.primary
+                            )
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -78,16 +74,9 @@ struct FeedbackOverlayView: View {
                                         .fill(theme.surfaceLight)
                                 )
                                 .frame(minHeight: 120)
-                            if #available(iOS 16.0, *) {
                                 TextEditor(text: $notes)
                                     .frame(minHeight: 120)
                                     .padding(12)
-                                    .scrollContentBackground(.hidden)
-                            } else {
-                                TextEditor(text: $notes)
-                                    .frame(minHeight: 120)
-                                    .padding(12)
-                            }
                         }
                     }
                 }
@@ -109,13 +98,11 @@ struct FeedbackOverlayView: View {
                     Button(action: {
                         let payload = FeedbackPayload(
                             sentiment: sentiment,
-                            helpful: helpful,
-                            clear: clear,
-                            friendly: friendly,
-                            visual: visual,
-                            other: other,
+                            selectedOptions: Array(selectedOptions),
                             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
                         )
+                        let joined = payload.selectedOptions.joined(separator: ", ")
+                        Log.trace(label: Constants.LOG_TAG, "Feedback submitted. sentiment=\(sentiment) options=[\(joined)] notes=\(payload.notes)")
                         onSubmit(payload)
                     }) {
                         Text("Submit")
@@ -164,6 +151,13 @@ struct FeedbackOverlayView: View {
                         onCancel: { show = false },
                         onSubmit: { _ in show = false }
                     )
+                    .conciergeFeedbackOptions([
+                        "Helpful and relevant recommendations",
+                        "Clear and easy to understand",
+                        "Friendly and conversational tone",
+                        "Visually appealing presentation",
+                        "Other"
+                    ])
                 }
             }
         }
