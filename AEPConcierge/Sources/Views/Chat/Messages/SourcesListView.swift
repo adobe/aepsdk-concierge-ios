@@ -15,6 +15,7 @@ import SwiftUI
 /// A collapsible list of sources
 public struct SourcesListView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.conciergeFeedbackPresenter) private var feedbackPresenter
 
     public let sources: [URL]
     private let initiallyExpanded: Bool
@@ -75,7 +76,9 @@ public struct SourcesListView: View {
                 Spacer()
                 // Feedback buttons
                 HStack(spacing: 4) {
-                    Button(action: {}) {
+                    Button(action: {
+                        feedbackPresenter.present(.positive)
+                    }) {
                         thumbUpImage
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
@@ -83,7 +86,9 @@ public struct SourcesListView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(theme.onAgent)
 
-                    Button(action: {}) {
+                    Button(action: {
+                        feedbackPresenter.present(.negative)
+                    }) {
                         thumbDownImage
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
