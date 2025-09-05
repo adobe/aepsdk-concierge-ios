@@ -60,6 +60,32 @@ public extension View {
     }
 }
 
+// MARK: - Feedback presentation environment
+
+public struct ConciergeFeedbackPresenter {
+    public var present: (_ sentiment: FeedbackSentiment) -> Void
+    public init(present: @escaping (_ sentiment: FeedbackSentiment) -> Void = { _ in }) {
+        self.present = present
+    }
+}
+
+private struct ConciergeFeedbackPresenterKey: EnvironmentKey {
+    static let defaultValue = ConciergeFeedbackPresenter()
+}
+
+public extension EnvironmentValues {
+    var conciergeFeedbackPresenter: ConciergeFeedbackPresenter {
+        get { self[ConciergeFeedbackPresenterKey.self] }
+        set { self[ConciergeFeedbackPresenterKey.self] = newValue }
+    }
+}
+
+public extension View {
+    func conciergeFeedbackPresenter(_ presenter: ConciergeFeedbackPresenter) -> some View {
+        environment(\.conciergeFeedbackPresenter, presenter)
+    }
+}
+
 // MARK: - Concierge response placeholder configuration
 
 public struct ConciergeResponsePlaceholderConfig {
