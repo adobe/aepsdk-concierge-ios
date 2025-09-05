@@ -25,8 +25,21 @@ struct FeedbackOverlayView: View {
     let onCancel: () -> Void
     let onSubmit: (_ payload: FeedbackPayload) -> Void
 
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
+    }
+
+    // Allows providing any number of sentiment options
+    private var effectiveOptions: [String] {
+        switch sentiment {
+        case .positive: return positiveOptions
+        case .negative: return negativeOptions
+        }
+    }
+
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.conciergeFeedbackOptions) private var options
+    @Environment(\.conciergePositiveFeedbackOptions) private var positiveOptions
+    @Environment(\.conciergeNegativeFeedbackOptions) private var negativeOptions
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
 
@@ -43,12 +56,12 @@ struct FeedbackOverlayView: View {
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.primary)
 
-                    Text("What went well? Select all that apply.")
+                    Text(sentiment == .positive ? "What went well? Select all that apply." : "What went wrong? Select all that apply.")
                         .font(.body)
                         .foregroundStyle(.secondary)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        ForEach(options, id: \.self) { option in
+                        ForEach(effectiveOptions, id: \.self) { option in
                             CheckboxRow(
                                 isOn: Binding(
                                     get: { selectedOptions.contains(option) },
@@ -66,18 +79,19 @@ struct FeedbackOverlayView: View {
                         Text("Notes")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        ZStack(alignment: .topLeading) {
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(borderColor)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(theme.surfaceLight)
-                                )
-                                .frame(minHeight: 120)
-                                TextEditor(text: $notes)
-                                    .frame(minHeight: 120)
-                                    .padding(12)
-                        }
+                        TextEditor(text: $notes)
+                            .frame(minHeight: 120)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(theme.surfaceLight)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(borderColor)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(color: .clear, radius: 0)
                     }
                 }
                 .padding(20)
@@ -128,13 +142,8 @@ struct FeedbackOverlayView: View {
                     .stroke(borderColor)
             )
             .padding(.horizontal, 20)
-            .shadow(color: Color.black.opacity(0.25), radius: 24, x: 0, y: 8)
         }
         .accessibilityElement(children: .contain)
-    }
-
-    private var borderColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
     }
 }
 
@@ -151,7 +160,7 @@ struct FeedbackOverlayView: View {
                         onCancel: { show = false },
                         onSubmit: { _ in show = false }
                     )
-                    .conciergeFeedbackOptions([
+                    .conciergePositiveFeedbackOptions([
                         "Helpful and relevant recommendations",
                         "Clear and easy to understand",
                         "Friendly and conversational tone",
