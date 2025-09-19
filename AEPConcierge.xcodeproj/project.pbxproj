@@ -76,6 +76,7 @@
 		24E237EB2D6FDDF200E2686C /* ConciergeError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E237EA2D6FDDED00E2686C /* ConciergeError.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
 		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
+		4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */; };
 		4C3A65B62E53E9EA00EEEF3B /* ConciergeWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
@@ -214,6 +215,7 @@
 		2A8803C559E307362EE94BF3 /* Pods-AEPConciergeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.release.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.release.xcconfig"; sourceTree = "<group>"; };
 		4C1738102E67C590003E88AF /* SourcesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListView.swift; sourceTree = "<group>"; };
 		4C1738142E67D59D003E88AF /* SourceRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceRowView.swift; sourceTree = "<group>"; };
+		4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputReducerTests.swift; sourceTree = "<group>"; };
 		4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeWrapper.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
@@ -362,6 +364,7 @@
 			isa = PBXGroup;
 			children = (
 				249899732D667FD60005CBD7 /* AEPConciergeTests.swift */,
+				4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -898,6 +901,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				249899C32D67D2C40005CBD7 /* AEPConciergeTests.swift in Sources */,
+				4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
