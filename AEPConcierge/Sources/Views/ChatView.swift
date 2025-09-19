@@ -134,8 +134,14 @@ public struct ChatView: View {
                 sendEnabled: reducer.data.canSend,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
-                onCancel: { viewModel.cancelMic() },
-                onComplete: { viewModel.completeMic() },
+                onCancel: {
+                    viewModel.cancelMic()
+                    hapticFeedback.impactOccurred()
+                },
+                onComplete: {
+                    viewModel.completeMic()
+                    hapticFeedback.impactOccurred()
+                },
                 onSend: sendTapped
             )
         }
@@ -147,6 +153,8 @@ public struct ChatView: View {
     // MARK: - Actions
     private func sendTapped() {
         viewModel.sendMessage(isUser: !showAgentSend)
+        hapticFeedback.impactOccurred(intensity: 0.5)
+        hapticFeedback.impactOccurred(intensity: 0.7)
     }
 
     private func handleMicTap() {

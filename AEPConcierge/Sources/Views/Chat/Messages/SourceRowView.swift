@@ -14,6 +14,7 @@ import SwiftUI
 
 struct SourceRowView: View {
     let ordinal: String
+    let title: String
     let link: URL
     let theme: ConciergeTheme
 
@@ -25,7 +26,7 @@ struct SourceRowView: View {
                 .frame(minWidth: 18, alignment: .leading)
 
             Link(destination: link) {
-                Text(link.absoluteString)
+                Text(title)
                     .font(.footnote)
                     .foregroundStyle(theme.primary)
                     .lineLimit(1)
@@ -41,6 +42,7 @@ struct SourceRowView: View {
 #Preview {
     SourceRowView(
         ordinal: "1.",
+        title: "Article for source",
         link: URL(string: "https://example.com/articles/1")!,
         theme: ConciergeTheme()
     )

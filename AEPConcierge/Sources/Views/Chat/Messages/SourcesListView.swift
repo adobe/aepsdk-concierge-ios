@@ -16,7 +16,7 @@ import SwiftUI
 public struct SourcesListView: View {
     @Environment(\.conciergeTheme) private var theme
 
-    public let sources: [URL]
+    public let sources: [TempSource]
     private let initiallyExpanded: Bool
 
     @State private var isExpanded: Bool = false
@@ -25,7 +25,7 @@ public struct SourcesListView: View {
     /// - Parameters:
     ///   - sources: The list of sources to display. If empty, the view renders nothing.
     ///   - initiallyExpanded: Whether the list starts expanded.
-    public init(sources: [URL], initiallyExpanded: Bool = false) {
+    public init(sources: [TempSource], initiallyExpanded: Bool = false) {
         self.sources = sources
         self.initiallyExpanded = initiallyExpanded
         self._isExpanded = State(initialValue: initiallyExpanded)
@@ -34,30 +34,57 @@ public struct SourcesListView: View {
     public var body: some View {
         Group {
             if !sources.isEmpty {
-                VStack(spacing: 0) {
-                    header
-                    if isExpanded {
-                        Divider().background(Color.black.opacity(0.08))
-                        VStack(spacing: 0) {
-                            ForEach(Array(sources.enumerated()), id: \.offset) { index, link in
-                                SourceRowView(ordinal: "\(index + 1).", link: link, theme: theme)
-                                    .padding(.vertical, 10)
-                                if index < sources.count - 1 {
-                                    Divider().background(Color.black.opacity(0.06))
-                                }
-                            }
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                }
-                .background(
-                    RoundedCornerShape(radius: 14, corners: [.bottomLeft, .bottomRight])
-                        .fill(theme.agentBubble)
-                )
+                sourceContent
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Sources")
+    }
+    
+    private var sourceContent: some View {
+        VStack(spacing: 0) {
+            header
+            if isExpanded {
+                expandedContent
+            }
+        }
+        .background(backgroundShape)
+    }
+    
+    private var expandedContent: some View {
+        VStack(spacing: 0) {
+            Divider().background(Color.black.opacity(0.08))
+            sourceRows
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+    
+    private var sourceRows: some View {
+        VStack(spacing: 0) {
+            ForEach(sources, id: \.self) { source in
+                sourceRow(for: source)
+                if source.citationNumber < sources.count {
+                    bottomDivider
+                }
+            }
+        }
+    }
+    
+    private func sourceRow(for source: TempSource) -> some View {
+        SourceRowView(ordinal: "\(source.citationNumber).",
+                      title: source.title,
+                      link: URL(string: source.url) ?? URL(string: "")!,
+                      theme: theme)
+            .padding(.vertical, 10)
+    }
+    
+    private var bottomDivider: some View {
+        Divider().background(Color.black.opacity(0.06))
+    }
+    
+    private var backgroundShape: some View {
+        RoundedCornerShape(radius: 14, corners: [.bottomLeft, .bottomRight])
+            .fill(theme.agentBubble)
     }
 
     private var header: some View {
@@ -133,7 +160,10 @@ public struct SourcesListView: View {
 // MARK: - Previews
 #Preview("Expanded") {
     SourcesListView(
-        sources: [URL(string: "https://example.com/articles/1")!, URL(string: "https://example.com/articles/2")!],
+        sources: [
+            TempSource(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
+            TempSource(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
+        ],
         initiallyExpanded: true
     )
     .padding()
@@ -142,7 +172,10 @@ public struct SourcesListView: View {
 
 #Preview("Collapsed") {
     SourcesListView(
-        sources: [URL(string: "https://example.com/articles/1")!],
+        sources: [
+            TempSource(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
+            TempSource(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
+        ],
         initiallyExpanded: false
     )
     .padding()

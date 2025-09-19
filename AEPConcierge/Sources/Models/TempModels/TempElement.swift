@@ -32,13 +32,13 @@ public struct TempElement: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        id = try container.decode(String.self, forKey: .id)
-        type = try container.decode(String.self, forKey: .type)
-        width = try container.decode(Int.self, forKey: .width)
-        height = try container.decode(Int.self, forKey: .height)
-        thumbnailWidth = try container.decode(Int.self, forKey: .thumbnail_width)
-        thumbnailHeight = try container.decode(Int.self, forKey: .thumbnail_height)
-        entityInfo = try container.decode(TempEntityInfo.self, forKey: .entity_info)
+        id = try? container.decode(String.self, forKey: .id)
+        type = try? container.decode(String.self, forKey: .type)
+        width = try? container.decode(Int.self, forKey: .width)
+        height = try? container.decode(Int.self, forKey: .height)
+        thumbnailWidth = try? container.decode(Int.self, forKey: .thumbnail_width)
+        thumbnailHeight = try? container.decode(Int.self, forKey: .thumbnail_height)
+        entityInfo = try? container.decode(TempEntityInfo.self, forKey: .entity_info)
     }
 
     public func encode(to encoder: Encoder) throws {

@@ -37,7 +37,7 @@ final class ConciergeChatViewModel: ObservableObject {
     
     // MARK: Chunk handling
     var lastEmittedResponseText: String = ""
-    private var latestSources: [URL] = []
+    private var latestSources: [TempSource] = []
 
     // MARK: Feature flags
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
@@ -231,16 +231,7 @@ final class ConciergeChatViewModel: ObservableObject {
 
                         // Capture sources from payload as they arrive (used on completion)
                         if let tempSources = payload.response?.sources {
-                            let urls = tempSources.compactMap { source -> URL? in
-                                guard let url = URL(string: source.url) else {
-                                    Log.trace(label: self.LOG_TAG, "Ignoring invalid source URL: \(source.url)")
-                                    return nil
-                                }
-                                return url
-                            }
-                            if !urls.isEmpty {
-                                self.latestSources = urls
-                            }
+                            self.latestSources = tempSources
                         }
                     }
                 },
@@ -256,7 +247,17 @@ final class ConciergeChatViewModel: ObservableObject {
                             if streamingMessageIndex < self.messages.count {
                                 self.messages.remove(at: streamingMessageIndex)
                             }
-                        } else {
+                        } else if accumulatedContent.isEmpty {
+                            // Remove the placeholder message
+                            if streamingMessageIndex < self.messages.count {
+                                self.messages.remove(at: streamingMessageIndex)
+                            }
+                            
+                            self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
+                            
+                            self.chatState = .idle
+                        }
+                        else {
                             // Stream completed successfully
                             self.chatState = .idle
                             
@@ -272,8 +273,8 @@ final class ConciergeChatViewModel: ObservableObject {
                                 } else if self.stubAgentSources {
                                     Log.trace(label: self.LOG_TAG, "Using stubbed sources")
                                     current.sources = [
-                                        URL(string: "https://example.com/guide/introduction")!,
-                                        URL(string: "https://example.com/docs/reference#section")!
+                                        TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
+                                        TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
                                     ]
                                 }
                                 self.messages[streamingMessageIndex] = current
@@ -304,8 +305,8 @@ final class ConciergeChatViewModel: ObservableObject {
             // TODO: Update this logic to reflect real backend response when available
             if stubAgentSources {
                 agent.sources = [
-                    URL(string: "https://example.com/guide/introduction")!,
-                    URL(string: "https://example.com/docs/reference#section")!
+                    TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
+                    TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
                 ]
             }
             messages.append(agent)
