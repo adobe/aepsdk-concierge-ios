@@ -34,6 +34,7 @@ public enum ChatError: Error, Equatable {
     case networkFailure
     case modelError
     case cancelled
+    case emptyResponse
 }
 
 public enum ChatState: Equatable {

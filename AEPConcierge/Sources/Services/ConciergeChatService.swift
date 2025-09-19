@@ -14,9 +14,9 @@ import AEPServices
 
 class ConciergeChatService: NSObject {
     // MARK: - temporary constants for testing
-    let serviceEndpoint = "https://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/conversations?sessionId=083f7d55-df46-43f3-a70d-626cc324d1ef&requestId=f199b4ed-50db-44cd-9371-291778e81927&configId=51ee226f-9327-4b97-99fb-d5f9877d8198"
+    let serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=161c33da-7b02-4ca4-a9d4-d934282486f3&requestId=dcbd50b6-2094-4cb7-9561-9c41f800da85&configId=3849362c-f325-4418-8cc8-993342b254f7"
     let tempQuery = "Tell me about Photoshop"
-    let tempSurface = "web://bc-conversation-service-dev.corp.ethos11-stage-va7.ethos.adobe.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/index.html"
+    let tempSurface = "web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/ao/index.html"
     
     let LOG_TAG = "ConciergeChatService"
     
@@ -88,6 +88,15 @@ class ConciergeChatService: NSObject {
                                 tempSurface
                             ],
                             Constants.Request.Keys.MESSAGE: query
+                        ]
+                    ],
+                    Constants.Request.Keys.XDM: [
+                        Constants.Request.Keys.IDENTITY_MAP: [
+                            Constants.Request.Keys.ECID: [
+                                [
+                                    Constants.Request.Keys.ID: "90441736653237303030763364899130413871"
+                                ]
+                            ]
                         ]
                     ]
                 ]

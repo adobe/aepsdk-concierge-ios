@@ -65,6 +65,10 @@ enum Constants {
             static let FETCH_CONVERSATIONAL_EXPERIENCE = "fetchConversationalExperience"
             static let SURFACES = "surfaces"
             static let MESSAGE = "message"
+            static let XDM = "xdm"
+            static let IDENTITY_MAP = "identityMap"
+            static let ECID = "ECID"
+            static let ID = "id"
         }
     }
         

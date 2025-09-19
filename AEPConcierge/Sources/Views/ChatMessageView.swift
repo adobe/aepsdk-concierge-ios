@@ -20,9 +20,9 @@ struct ChatMessageView: View {
 
     let template: MessageTemplate
     var messageBody: String?
-    var sources: [URL]? = nil
+    var sources: [TempSource]? = nil
 
-    init(template: MessageTemplate, messageBody: String? = nil, sources: [URL]? = nil) {
+    init(template: MessageTemplate, messageBody: String? = nil, sources: [TempSource]? = nil) {
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
