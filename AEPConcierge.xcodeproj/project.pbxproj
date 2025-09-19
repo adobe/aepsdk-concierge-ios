@@ -23,6 +23,8 @@
 /* Begin PBXBuildFile section */
 		243013762E6748F800F6673E /* TempButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013752E6748F400F6673E /* TempButton.swift */; };
 		243013782E67A27700F6673E /* ButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013772E67A27700F6673E /* ButtonView.swift */; };
+		2430137B2E69E6C800F6673E /* AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 249899492D6679790005CBD7 /* AEPConcierge.framework */; };
+		2430137C2E69E6C800F6673E /* AEPConcierge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 249899492D6679790005CBD7 /* AEPConcierge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		24317CAA2E590AE800F138E9 /* TempResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CA92E590ACD00F138E9 /* TempResponse.swift */; };
 		24317CAC2E590AF800F138E9 /* TempPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAB2E590AF400F138E9 /* TempPayload.swift */; };
 		24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24317CAD2E590AFD00F138E9 /* TempHandle.swift */; };
@@ -107,6 +109,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		2430137D2E69E6C800F6673E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 249899402D6679790005CBD7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 249899482D6679790005CBD7;
+			remoteInfo = AEPConcierge;
+		};
 		24317CA32E5526A200F138E9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 249899402D6679790005CBD7 /* Project object */;
@@ -129,6 +138,20 @@
 			remoteInfo = AEPConcierge;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2430137F2E69E6C800F6673E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				2430137C2E69E6C800F6673E /* AEPConcierge.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -251,6 +274,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */,
+				2430137B2E69E6C800F6673E /* AEPConcierge.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -596,11 +620,13 @@
 				2498999A2D67CCD20005CBD7 /* Frameworks */,
 				2498999B2D67CCD20005CBD7 /* Resources */,
 				3BBC8B100A96683DAA830D81 /* [CP] Embed Pods Frameworks */,
+				2430137F2E69E6C800F6673E /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				249899C22D67CF670005CBD7 /* PBXTargetDependency */,
+				2430137E2E69E6C800F6673E /* PBXTargetDependency */,
 			);
 			name = ConciergeDemoApp;
 			productName = ConciergeDemoApp;
@@ -890,6 +916,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2430137E2E69E6C800F6673E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 249899482D6679790005CBD7 /* AEPConcierge */;
+			targetProxy = 2430137D2E69E6C800F6673E /* PBXContainerItemProxy */;
+		};
 		24317CA42E5526A200F138E9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 249899482D6679790005CBD7 /* AEPConcierge */;
@@ -1191,6 +1222,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ConciergeDemoApp/Preview Content\"";
@@ -1215,6 +1247,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.ConciergeDemoApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1227,6 +1260,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ConciergeDemoApp/Preview Content\"";
@@ -1251,6 +1285,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.ConciergeDemoApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

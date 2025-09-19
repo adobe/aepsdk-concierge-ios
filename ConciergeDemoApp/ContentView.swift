@@ -15,7 +15,7 @@ import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
-@testable import AEPConcierge
+import AEPConcierge
 
 struct ContentView: View {
     var body: some View {
