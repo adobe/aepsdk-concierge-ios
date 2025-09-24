@@ -192,6 +192,65 @@ struct ChatMessageView: View {
                 Spacer()
             }
             
+        case .productCarouselCard(let imageSource, let title, let destination):
+            Button(action: {
+                if let destination = destination {
+                    openURL(destination)
+                }
+            }) {
+                ZStack(alignment: .bottomLeading) {
+                    // Full card image
+                    switch imageSource {
+                    case .local(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 280, height: 200)
+                            .clipped()
+                    case .remote(let url):
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .frame(width: 280, height: 200)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 280, height: 200)
+                                    .clipped()
+                            case .failure:
+                                Image(systemName: "photo")
+                                    .frame(width: 280, height: 200)
+                                    .foregroundColor(.gray)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    }
+                    
+                    // Overlay title bubble at bottom left
+                    Text(title)
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.black.opacity(0.7))
+                        )
+                        .padding(12)
+                }
+            }
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .frame(width: 280, height: 200)
+            .buttonStyle(PlainButtonStyle())
+            
+            
         case .productCard(let imageSource, let title, let body, let primaryButton, let secondaryButton):
             VStack(alignment: .leading, spacing: 0) {
                 switch imageSource {

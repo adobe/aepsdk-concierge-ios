@@ -186,20 +186,15 @@ public struct ChatView: View {
                                            secondaryButton: TempButton(text: "label", url: "label-url"))),
             Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .productCard(
+                Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    body: "Product 1 description"
+                    destination: URL(string:"https://adobe.com")!
                 )),
-                Message(template: .productCard(
+                Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    body: "Product 2 description"
-                )),
-                Message(template: .productCard(
-                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-                    title: "Product 3",
-                    body: "Product 3 description"
+                    destination: URL(string:"https://adobe.com")!
                 ))
             ])),
             Message(template: .divider)
