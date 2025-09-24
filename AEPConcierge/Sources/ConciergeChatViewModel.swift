@@ -157,6 +157,8 @@ final class ConciergeChatViewModel: ObservableObject {
             messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
             
             var accumulatedContent = ""
+            // TODO: TempElement will be replaced with permanent model
+            var accumulatedProducts: [TempElement] = []
             
             chatService.streamChat(text,
                 onChunk: { [weak self] payload in
@@ -207,26 +209,51 @@ final class ConciergeChatViewModel: ObservableObject {
                         
                         // handle cards in multimodalElements
                         if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
-                            var carouselElements: [Message] = []
-                            for element in elements {
-                                // make a card
-                                let cardTitle = element.entityInfo?.productName ?? "No title"
-                                let cardText = element.entityInfo?.productDescription ?? "No description"
-                                let cardImage = element.entityInfo?.productImageURL ?? "No image"
-                                let cardImageUrl = URL(string: cardImage)!
-                                let primaryButton = element.entityInfo?.primary
-                                let secondaryButton = element.entityInfo?.secondary
+                            
+                            // consolidate elements
+                            
+                            
+                            accumulatedProducts.append(contentsOf: elements.filter({ element in
+                                !accumulatedProducts.contains(where: { $0.id == element.id })
+                            }))
+                            
+                            if elements.count == 1, let entityInfo = elements.first?.entityInfo {
+                                // show a single product card
+                                let cardTitle = entityInfo.productName ?? "No title"
+                                let cardText = entityInfo.productDescription ?? "No description"
+                                let imageUrl = entityInfo.productImageURL ?? "No image"
+                                let cardImageUrl = URL(string: imageUrl)!
+                                let primaryButton = entityInfo.primary
+                                let secondaryButton = entityInfo.secondary
                                                                 
                                 let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
                                                                        title: cardTitle,
                                                                        body: cardText,
                                                                        primaryButton: primaryButton,
                                                                        secondaryButton: secondaryButton))
+                                self.messages.append(card)
+                            } else {
+                                // show a carousel of cards
+                                var carouselElements: [Message] = []
+                                for element in elements {
+                                    guard let entityInfo = element.entityInfo else {
+                                        continue
+                                    }
+                                    let cardTitle = entityInfo.productName ?? "No title"
+                                    let imageUrl = entityInfo.productImageURL ?? "No image"
+                                    let cardImageUrl = URL(string: imageUrl)!
+                                    let clickThroughUrl = entityInfo.productPageURL ?? "No link"
+                                    let cardClickThroughURL = URL(string: clickThroughUrl)
+                                                                    
+                                    let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
+                                                                                      title: cardTitle,
+                                                                                      destination: cardClickThroughURL))
+                                    
+                                    carouselElements.append(card)
+                                }
                                 
-                                carouselElements.append(card)
+                                self.messages.append(Message(template: .carouselGroup(carouselElements)))
                             }
-                            
-                            self.messages.append(Message(template: .carouselGroup(carouselElements)))
                         }
 
                         // Capture sources from payload as they arrive (used on completion)
