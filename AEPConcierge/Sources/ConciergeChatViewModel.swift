@@ -36,7 +36,6 @@ final class ConciergeChatViewModel: ObservableObject {
     let inputReducer = InputReducer()
     
     // MARK: Chunk handling
-    var lastEmittedResponseText: String = ""
     private var latestSources: [TempSource] = []
     private var productCardIndex: Int? = nil
 
@@ -171,38 +170,34 @@ final class ConciergeChatViewModel: ObservableObject {
                         // start with handling messages only
                         if let message = payload.response?.message {
                             if state == Constants.StreamState.IN_PROGRESS {
-                                // Emit raw fragment and accumulate locally
+                                // Build up content with each chunk
                                 accumulatedContent += message
                                 print("chunk: \(message)")
                                 print("accumulatedContent: \(accumulatedContent)")
+                                
                                 // Update the streaming message with accumulated content (preserve id)
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = accumulatedContent
                                     self.messages[streamingMessageIndex] = current
                                 }
-                                self.lastEmittedResponseText += message
+                                
                                 // Notify views to adjust scroll for agent updates
                                 self.agentScrollTick &+= 1
                             } else if state == Constants.StreamState.COMPLETED {
-                                // Emit only the remainder beyond what we already streamed
+                                // On completion, do a full replace with the entire text response
                                 let fullText = message
-                                if self.lastEmittedResponseText.count < fullText.count {
-                                    let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
-                                    let delta = String(fullText[startIndex...])
-                                    if !delta.isEmpty {
-                                        accumulatedContent += delta
-                                        print("chunk: \(delta)")
-                                        print("accumulatedContent: \(delta)")
-                                        // Update the streaming message with accumulated content (preserve id)
-                                        if streamingMessageIndex < self.messages.count {
-                                            var current = self.messages[streamingMessageIndex]
-                                            current.messageBody = accumulatedContent
-                                            self.messages[streamingMessageIndex] = current
-                                        }
-                                    }
+                                print("completion - full text: \(fullText)")
+                                
+                                // Replace with complete text response
+                                if streamingMessageIndex < self.messages.count {
+                                    var current = self.messages[streamingMessageIndex]
+                                    current.messageBody = fullText
+                                    self.messages[streamingMessageIndex] = current
                                 }
-                                self.lastEmittedResponseText = fullText
+                                
+                                // Update accumulated content to match final text
+                                accumulatedContent = fullText
                                 // Final agent update tick
                                 self.agentScrollTick &+= 1
                             }
@@ -336,7 +331,6 @@ final class ConciergeChatViewModel: ObservableObject {
     private func clearState() {
         chatState = .idle
         productCardIndex = nil
-        lastEmittedResponseText = ""
         latestSources = []
     }
     
@@ -358,9 +352,7 @@ final class ConciergeChatViewModel: ObservableObject {
                                                    secondaryButton: secondaryButton))
             
             // don't duplicate the product card
-            if let index = self.productCardIndex {
-                self.messages.remove(at: index)
-            }
+            removeProductCard(atIndex: self.productCardIndex)
             self.messages.append(card)
         } else {
             // show a carousel of cards
@@ -383,10 +375,17 @@ final class ConciergeChatViewModel: ObservableObject {
             }
             
             // don't duplicate the product card
-            if let index = self.productCardIndex, index < self.messages.count {
-                self.messages.remove(at: index)
-            }
+            removeProductCard(atIndex: self.productCardIndex)
             self.messages.append(Message(template: .carouselGroup(carouselElements)))
+        }
+    }
+    
+    /// removes the product card if the following conditions are met:
+    /// 1. a valid index was provided
+    /// 2. the index is less than the number of existing messages (prevents out of range errors)
+    private func removeProductCard(atIndex index: Int?) {
+        if let index = index, index < self.messages.count {
+            self.messages.remove(at: index)
         }
     }
 }
