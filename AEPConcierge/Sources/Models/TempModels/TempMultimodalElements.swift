@@ -13,4 +13,40 @@
 public struct TempMultimodalElements: Codable {
     public let type: String?
     public let elements: [TempElement]
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case elements
+    }
+
+    public init(type: String? = nil, elements: [TempElement]) {
+        self.type = type
+        self.elements = elements
+    }
+
+    public init(from decoder: Decoder) throws {
+        // Correct shape is an object with an `elements` array
+        if let container = try? decoder.container(keyedBy: CodingKeys.self) {
+            type = try container.decodeIfPresent(String.self, forKey: .type)
+            elements = try container.decodeIfPresent([TempElement].self, forKey: .elements) ?? []
+            return
+        }
+
+        // Currently server returns array format for intermediate responses; ignore
+        if (try? decoder.unkeyedContainer()) != nil {
+            type = nil
+            elements = []
+            return
+        }
+
+        // Default to empty
+        type = nil
+        elements = []
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(type, forKey: .type)
+        try container.encode(elements, forKey: .elements)
+    }
 }
