@@ -26,7 +26,7 @@ struct ComposerEditingView: View {
     let onSend: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack {
             SelectableTextView(
                 text: $inputText,
                 selectedRange: $selectedRange,
@@ -42,8 +42,10 @@ struct ComposerEditingView: View {
                 Button(action: onMicTap) {
                     BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
                         .foregroundColor(micEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+                        .frame(width: 30, height: 30, alignment: .center)
                 }
                 .buttonStyle(.plain)
+                .contentShape(Rectangle())
                 .disabled(!micEnabled)
             }
 
@@ -51,7 +53,10 @@ struct ComposerEditingView: View {
                 BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(sendEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
+                    .frame(width: 30, height: 30, alignment: .center)
             }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
             .disabled(!sendEnabled)
         }
     }
