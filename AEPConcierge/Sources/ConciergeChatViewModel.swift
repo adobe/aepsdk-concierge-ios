@@ -38,6 +38,7 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: Chunk handling
     var lastEmittedResponseText: String = ""
     private var latestSources: [TempSource] = []
+    private var productCardIndex: Int? = nil
 
     // MARK: Feature flags
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
@@ -209,51 +210,23 @@ final class ConciergeChatViewModel: ObservableObject {
                         
                         // handle cards in multimodalElements
                         if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
-                            
-                            // consolidate elements
-                            
-                            
-                            accumulatedProducts.append(contentsOf: elements.filter({ element in
-                                !accumulatedProducts.contains(where: { $0.id == element.id })
-                            }))
-                            
-                            if elements.count == 1, let entityInfo = elements.first?.entityInfo {
-                                // show a single product card
-                                let cardTitle = entityInfo.productName ?? "No title"
-                                let cardText = entityInfo.productDescription ?? "No description"
-                                let imageUrl = entityInfo.productImageURL ?? "No image"
-                                let cardImageUrl = URL(string: imageUrl)!
-                                let primaryButton = entityInfo.primary
-                                let secondaryButton = entityInfo.secondary
-                                                                
-                                let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
-                                                                       title: cardTitle,
-                                                                       body: cardText,
-                                                                       primaryButton: primaryButton,
-                                                                       secondaryButton: secondaryButton))
-                                self.messages.append(card)
-                            } else {
-                                // show a carousel of cards
-                                var carouselElements: [Message] = []
-                                for element in elements {
-                                    guard let entityInfo = element.entityInfo else {
-                                        continue
-                                    }
-                                    let cardTitle = entityInfo.productName ?? "No title"
-                                    let imageUrl = entityInfo.productImageURL ?? "No image"
-                                    let cardImageUrl = URL(string: imageUrl)!
-                                    let clickThroughUrl = entityInfo.productPageURL ?? "No link"
-                                    let cardClickThroughURL = URL(string: clickThroughUrl)
-                                                                    
-                                    let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
-                                                                                      title: cardTitle,
-                                                                                      destination: cardClickThroughURL))
-                                    
-                                    carouselElements.append(card)
-                                }
-                                
-                                self.messages.append(Message(template: .carouselGroup(carouselElements)))
+                            // consolidate elements - priority given to elements over accumulatedProducts when IDs conflict
+                            // Remove any existing elements that have matching IDs in the new elements
+                            let newElementIds = Set(elements.map { $0.id })
+                            accumulatedProducts.removeAll { existingElement in
+                                newElementIds.contains(existingElement.id)
                             }
+                            
+                            // Add all new elements (they now have priority over any previous versions)
+                            accumulatedProducts.append(contentsOf: elements)
+                            
+                            // set the index of the product card to the last in the list
+                            // so we can update it in the future when necessary
+                            if self.productCardIndex == nil {
+                                self.productCardIndex = streamingMessageIndex + 1
+                            }
+                            
+                            self.renderProductCards(accumulatedProducts)
                         }
 
                         // Capture sources from payload as they arrive (used on completion)
@@ -282,12 +255,9 @@ final class ConciergeChatViewModel: ObservableObject {
                             
                             self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
                             
-                            self.chatState = .idle
+                            self.clearState()
                         }
                         else {
-                            // Stream completed successfully
-                            self.chatState = .idle
-                            
                             // Mark the existing streaming message for speaking while preserving its id
                             if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
@@ -308,16 +278,16 @@ final class ConciergeChatViewModel: ObservableObject {
                                 // Final tick to keep scroll pinned after completion
                                 self.agentScrollTick &+= 1
                             }
+                            
+                            // Stream completed successfully
+                            self.clearState()
                         }
-                        
-                        self.lastEmittedResponseText = ""
-                        self.latestSources = []
                     }
                 }
             )
         } else {
             // Agent messages don't change input state here; reducer already cleared input
-            chatState = .idle
+            self.clearState()
         }
     }
 
@@ -337,7 +307,7 @@ final class ConciergeChatViewModel: ObservableObject {
                 ]
             }
             messages.append(agent)
-            chatState = .idle
+            self.clearState()
             agentScrollTick &+= 1
         }
     }
@@ -361,6 +331,63 @@ final class ConciergeChatViewModel: ObservableObject {
             inputReducer.apply(.addContent)
         }
         inputReducer.apply(.inputReceived(newText))
+    }
+    
+    private func clearState() {
+        chatState = .idle
+        productCardIndex = nil
+        lastEmittedResponseText = ""
+        latestSources = []
+    }
+    
+    /// this must be called from the main thread
+    private func renderProductCards(_ products: [TempElement]) {
+        if products.count == 1, let entityInfo = products.first?.entityInfo {
+            // show a single product card
+            let cardTitle = entityInfo.productName ?? "No title"
+            let cardText = entityInfo.productDescription ?? "No description"
+            let imageUrl = entityInfo.productImageURL ?? "No image"
+            let cardImageUrl = URL(string: imageUrl)!
+            let primaryButton = entityInfo.primary
+            let secondaryButton = entityInfo.secondary
+                                            
+            let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
+                                                   title: cardTitle,
+                                                   body: cardText,
+                                                   primaryButton: primaryButton,
+                                                   secondaryButton: secondaryButton))
+            
+            // don't duplicate the product card
+            if let index = self.productCardIndex {
+                self.messages.remove(at: index)
+            }
+            self.messages.append(card)
+        } else {
+            // show a carousel of cards
+            var carouselElements: [Message] = []
+            for product in products {
+                guard let entityInfo = product.entityInfo else {
+                    continue
+                }
+                let cardTitle = entityInfo.productName ?? "No title"
+                let imageUrl = entityInfo.productImageURL ?? "No image"
+                let cardImageUrl = URL(string: imageUrl)!
+                let clickThroughUrl = entityInfo.productPageURL ?? "No link"
+                let cardClickThroughURL = URL(string: clickThroughUrl)
+                                                
+                let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
+                                                                  title: cardTitle,
+                                                                  destination: cardClickThroughURL))
+                
+                carouselElements.append(card)
+            }
+            
+            // don't duplicate the product card
+            if let index = self.productCardIndex, index < self.messages.count {
+                self.messages.remove(at: index)
+            }
+            self.messages.append(Message(template: .carouselGroup(carouselElements)))
+        }
     }
 }
 
