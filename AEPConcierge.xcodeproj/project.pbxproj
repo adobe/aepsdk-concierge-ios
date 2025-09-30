@@ -94,6 +94,9 @@
 		4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */; };
 		4C3D5F982E67DBF700323738 /* RoundedCornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */; };
 		4C3D5F9A2E69068500323738 /* ConciergeResponsePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F992E69068500323738 /* ConciergeResponsePlaceholderView.swift */; };
+		4C3D5F9C2E6A693F00323738 /* CheckboxRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */; };
+		4C3D5F9E2E6A69CC00323738 /* FeedbackOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */; };
+		4C3D5FA12E6A6F7500323738 /* FeedbackSentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5FA02E6A6F7500323738 /* FeedbackSentiment.swift */; };
 		4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */; };
 		4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */; };
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
@@ -232,6 +235,9 @@
 		4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
 		4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundedCornerShape.swift; sourceTree = "<group>"; };
 		4C3D5F992E69068500323738 /* ConciergeResponsePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeResponsePlaceholderView.swift; sourceTree = "<group>"; };
+		4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxRow.swift; sourceTree = "<group>"; };
+		4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackOverlayView.swift; sourceTree = "<group>"; };
+		4C3D5FA02E6A6F7500323738 /* FeedbackSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSentiment.swift; sourceTree = "<group>"; };
 		4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_AudioWave_20_N.svg; sourceTree = "<group>"; };
 		4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ClockPending_20_N.svg; sourceTree = "<group>"; };
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
@@ -494,6 +500,7 @@
 		4C3A65C92E55272300EEEF3B /* Chat */ = {
 			isa = PBXGroup;
 			children = (
+				4C3D5F9F2E6A6EC500323738 /* Feedback */,
 				4C3A65C42E55272300EEEF3B /* Composer */,
 				4C3A65C62E55272300EEEF3B /* Messages */,
 				4C3A65C82E55272300EEEF3B /* TopBar */,
@@ -505,11 +512,21 @@
 			isa = PBXGroup;
 			children = (
 				4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */,
+				4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */,
 				4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
 				4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		4C3D5F9F2E6A6EC500323738 /* Feedback */ = {
+			isa = PBXGroup;
+			children = (
+				4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */,
+				4C3D5FA02E6A6F7500323738 /* FeedbackSentiment.swift */,
+			);
+			path = Feedback;
 			sourceTree = "<group>";
 		};
 		4C952FBE2E4BE8FD00772695 /* Icons */ = {
@@ -848,6 +865,7 @@
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
 				24317CB42E590F0B00F138E9 /* TempSource.swift in Sources */,
+				4C3D5F9E2E6A69CC00323738 /* FeedbackOverlayView.swift in Sources */,
 				4C9531592E53E86000772695 /* ConciergeOverlayManager.swift in Sources */,
 				4C95314D2E4BF05600772695 /* ConciergeHostingController.swift in Sources */,
 				24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */,
@@ -874,8 +892,10 @@
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
 				4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */,
 				24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */,
+				4C3D5FA12E6A6F7500323738 /* FeedbackSentiment.swift in Sources */,
 				4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */,
 				24C64A262E5CFE92003C6F5B /* MediaObject.swift in Sources */,
+				4C3D5F9C2E6A693F00323738 /* CheckboxRow.swift in Sources */,
 				4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */,
 				24C64A232E5CFDA5003C6F5B /* PromptObject.swift in Sources */,
 				2498998B2D67C61A0005CBD7 /* Message.swift in Sources */,

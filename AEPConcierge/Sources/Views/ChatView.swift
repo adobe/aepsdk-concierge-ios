@@ -20,6 +20,7 @@ public struct ChatView: View {
     // MARK: Environment
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.conciergeFeedbackPresenter) private var feedbackEnvPresenter
     @StateObject private var viewModel: ConciergeChatViewModel
     @ObservedObject private var reducer: InputReducer
     @State private var showAgentSend: Bool = false
@@ -39,6 +40,8 @@ public struct ChatView: View {
     
     // MARK: UI values
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
+    @State private var showFeedbackOverlay: Bool = false
+    @State private var feedbackSentiment: FeedbackSentiment = .positive
     private var composerBackgroundColor: Color {
         colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
     }
@@ -141,6 +144,26 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
+        }
+        // Provide a presenter to child views via environment
+        .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in
+            withAnimation {
+                feedbackSentiment = sentiment
+                showFeedbackOverlay = true
+            }
+        })
+        // Overlay after layout to avoid affecting layout metrics
+        .overlay(alignment: .center) {
+            if showFeedbackOverlay {
+                FeedbackOverlayView(
+                    theme: theme,
+                    sentiment: feedbackSentiment,
+                    onCancel: { showFeedbackOverlay = false },
+                    onSubmit: { _ in showFeedbackOverlay = false }
+                )
+                .transition(.opacity)
+                .zIndex(1000)
+            }
         }
     }
     
