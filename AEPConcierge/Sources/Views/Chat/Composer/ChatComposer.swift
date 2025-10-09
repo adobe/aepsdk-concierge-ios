@@ -21,6 +21,7 @@ struct ChatComposer: View {
     @Binding var inputText: String
     @Binding var selectedRange: NSRange
     @Binding var measuredHeight: CGFloat
+    @Binding var isFocused: Bool
     let inputState: InputState
     let chatState: ChatState
     let composerEditable: Bool
@@ -57,6 +58,7 @@ struct ChatComposer: View {
                         inputText: $inputText,
                         selectedRange: $selectedRange,
                         measuredHeight: $measuredHeight,
+                        isFocused: $isFocused,
                         isEditable: composerEditable,
                         showMic: !(inputState == .recording),
                         onEditingChanged: onEditingChanged,

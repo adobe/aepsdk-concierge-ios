@@ -42,6 +42,7 @@ public struct ChatView: View {
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
     @State private var showFeedbackOverlay: Bool = false
     @State private var feedbackSentiment: FeedbackSentiment = .positive
+    @State private var isInputFocused: Bool = false
     private var composerBackgroundColor: Color {
         colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
     }
@@ -93,7 +94,8 @@ public struct ChatView: View {
             MessageListView(
                 messages: viewModel.messages,
                 agentScrollTick: viewModel.agentScrollTick,
-                userScrollTick: viewModel.userScrollTick
+                userScrollTick: viewModel.userScrollTick,
+                isInputFocused: $isInputFocused
             ) { text in
                 textSpeaker?.utter(text: text)
             }
@@ -130,6 +132,7 @@ public struct ChatView: View {
                 ),
                 selectedRange: $selectedTextRange,
                 measuredHeight: $composerHeight,
+                isFocused: $isInputFocused,
                 inputState: reducer.state,
                 chatState: viewModel.chatState,
                 composerEditable: viewModel.chatState != .processing,
@@ -150,6 +153,10 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
+        }
+        .onChange(of: isInputFocused) { newValue in
+            // Trigger view update when focus changes
+            // The SelectableTextView's updateUIView will handle the actual keyboard dismissal
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in

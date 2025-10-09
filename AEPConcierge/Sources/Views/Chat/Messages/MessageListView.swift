@@ -18,6 +18,7 @@ struct MessageListView: View {
     // A monotonic tick that increases whenever the latest agent message updates
     var agentScrollTick: Int = 0
     var userScrollTick: Int = 0
+    @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
 
     // A sentinel we can scroll to that represents the absolute bottom
@@ -85,6 +86,9 @@ struct MessageListView: View {
                         proxy.scrollTo(bottomAnchorId, anchor: .bottom)
                     }
                 }
+            }
+            .onTapGesture {
+                isInputFocused = false
             }
         }
     }
