@@ -17,6 +17,7 @@ struct ComposerEditingView: View {
     @Binding var inputText: String
     @Binding var selectedRange: NSRange
     @Binding var measuredHeight: CGFloat
+    @Binding var isFocused: Bool
     let isEditable: Bool
     let showMic: Bool
     let onEditingChanged: (Bool) -> Void
@@ -31,6 +32,7 @@ struct ComposerEditingView: View {
                 text: $inputText,
                 selectedRange: $selectedRange,
                 measuredHeight: $measuredHeight,
+                isFocused: $isFocused,
                 isEditable: isEditable,
                 placeholder: "How can I help?",
                 onEditingChanged: onEditingChanged

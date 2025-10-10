@@ -18,6 +18,7 @@ struct SelectableTextView: UIViewRepresentable {
     @Binding var text: String
     @Binding var selectedRange: NSRange
     @Binding var measuredHeight: CGFloat
+    @Binding var isFocused: Bool
     var isEditable: Bool
     var placeholder: String
     var minLines: Int = 1
@@ -69,21 +70,20 @@ struct SelectableTextView: UIViewRepresentable {
                 uiView.isEditable = isEditable
             }
         }
+        
+        // Handle focus state changes
+        DispatchQueue.main.async {
+            if isFocused, !uiView.isFirstResponder, isEditable {
+                uiView.becomeFirstResponder()
+            } else if !isFocused, uiView.isFirstResponder {
+                uiView.resignFirstResponder()
+            }
+        }
+        
         context.coordinator.placeholderLabel?.isHidden = !text.isEmpty
         context.coordinator.recalculateHeight(uiView)
         // Avoid forcing immediate layout; allow the system to coalesce updates
         uiView.setNeedsLayout()
-
-        // Make the text view first responder asynchronously once it's in a window to avoid AttributeGraph cycles
-        if uiView.window != nil,
-           uiView.isFirstResponder == false,
-           context.coordinator.didBecomeFirstResponder == false,
-           isEditable {
-            DispatchQueue.main.async {
-                uiView.becomeFirstResponder()
-                context.coordinator.didBecomeFirstResponder = true
-            }
-        }
 
         if uiView.window != nil, uiView.isFirstResponder == false {
             // Keep cursor positioned where the binding says
@@ -112,7 +112,6 @@ struct SelectableTextView: UIViewRepresentable {
         var parent: SelectableTextView
         var isSettingSelectionProgrammatically: Bool = false
         weak var placeholderLabel: UILabel?
-        var didBecomeFirstResponder: Bool = false
         var lastIsEditable: Bool? = nil
 
         init(_ parent: SelectableTextView) {
@@ -144,10 +143,20 @@ struct SelectableTextView: UIViewRepresentable {
 
         func textViewDidBeginEditing(_ textView: UITextView) {
             parent.onEditingChanged?(true)
+            if !parent.isFocused {
+                DispatchQueue.main.async { [parent] in
+                    parent.isFocused = true
+                }
+            }
         }
 
         func textViewDidEndEditing(_ textView: UITextView) {
             parent.onEditingChanged?(false)
+            if parent.isFocused {
+                DispatchQueue.main.async { [parent] in
+                    parent.isFocused = false
+                }
+            }
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {

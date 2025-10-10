@@ -17,7 +17,7 @@ public struct Message: Identifiable {
     let template: MessageTemplate
     var shouldSpeakMessage = false
     var messageBody: String?
-    var sources: [URL]? = nil
+    var sources: [TempSource]? = nil
     
     public static let divider = Message(template: .divider)
     
@@ -25,7 +25,7 @@ public struct Message: Identifiable {
         ChatMessageView(template: template, messageBody: messageBody, sources: sources)
     }
     
-    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [URL]? = nil) {
+    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [TempSource]? = nil) {
         self.template = template
         self.shouldSpeakMessage = shouldSpeakMessage
         self.messageBody = messageBody
