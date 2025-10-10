@@ -111,24 +111,7 @@ struct ChatMessageView: View {
                             .frame(width: 100)
                             .clipped()
                     case .remote(let url):
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: 100)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 100)
-                                    .clipped()
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .frame(width: 100)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
+                        RemoteImageView(url: url, width: 100, height: 100)
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -208,25 +191,7 @@ struct ChatMessageView: View {
                             .frame(width: 280, height: 200)
                             .clipped()
                     case .remote(let url):
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: 280, height: 200)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 280, height: 200)
-                                    .clipped()
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .frame(width: 280, height: 200)
-                                    .foregroundColor(.gray)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
+                        RemoteImageView(url: url, width: 280, height: 200)
                     }
                     
                     // Overlay title bubble at bottom left
@@ -261,24 +226,7 @@ struct ChatMessageView: View {
                         .frame(width: 350, height: 200)
                         .clipped()
                 case .remote(let url):
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .frame(width: 350, height: 200)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 350, height: 200)
-                                .clipped()
-                        case .failure:
-                            Image(systemName: "photo")
-                                .frame(width: 350, height: 200)
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
+                    RemoteImageView(url: url, width: 350, height: 200)
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
