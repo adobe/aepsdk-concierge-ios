@@ -64,8 +64,13 @@ struct SelectableTextView: UIViewRepresentable {
         if context.coordinator.lastIsEditable != isEditable {
             context.coordinator.lastIsEditable = isEditable
             DispatchQueue.main.async {
-                if !isEditable, uiView.isFirstResponder {
-                    uiView.resignFirstResponder()
+                if !isEditable {
+                    if uiView.isFirstResponder {
+                        uiView.resignFirstResponder()
+                    }
+                    if isFocused {
+                        isFocused = false
+                    }
                 }
                 uiView.isEditable = isEditable
             }
