@@ -111,6 +111,7 @@
 		4C9531552E53D18100772695 /* ConciergeChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */; };
 		4C9531572E53D19900772695 /* ChatStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531562E53D19900772695 /* ChatStates.swift */; };
 		4C9531592E53E86000772695 /* ConciergeOverlayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531582E53E86000772695 /* ConciergeOverlayManager.swift */; };
+		4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -257,6 +258,7 @@
 		4C9531542E53D18100772695 /* ConciergeChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatViewModel.swift; sourceTree = "<group>"; };
 		4C9531562E53D19900772695 /* ChatStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStates.swift; sourceTree = "<group>"; };
 		4C9531582E53E86000772695 /* ConciergeOverlayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeOverlayManager.swift; sourceTree = "<group>"; };
+		4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImageView.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -546,6 +548,7 @@
 				4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */,
 				4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
+				4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */,
 				4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */,
 			);
 			path = Shared;
@@ -887,6 +890,7 @@
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
+				4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */,
 				24317CB42E590F0B00F138E9 /* TempSource.swift in Sources */,
 				4C3D5F9E2E6A69CC00323738 /* FeedbackOverlayView.swift in Sources */,
 				4C9531592E53E86000772695 /* ConciergeOverlayManager.swift in Sources */,

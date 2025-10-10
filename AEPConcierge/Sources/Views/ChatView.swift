@@ -154,10 +154,6 @@ public struct ChatView: View {
         .onAppear {
             hapticFeedback.prepare()
         }
-        .onChange(of: isInputFocused) { newValue in
-            // Trigger view update when focus changes
-            // The SelectableTextView's updateUIView will handle the actual keyboard dismissal
-        }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in
             withAnimation {

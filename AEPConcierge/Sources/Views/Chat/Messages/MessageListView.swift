@@ -88,7 +88,9 @@ struct MessageListView: View {
                 }
             }
             .onTapGesture {
-                isInputFocused = false
+                if isInputFocused {
+                    isInputFocused = false
+                }
             }
         }
     }
