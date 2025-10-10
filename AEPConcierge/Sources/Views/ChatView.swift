@@ -42,6 +42,7 @@ public struct ChatView: View {
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
     @State private var showFeedbackOverlay: Bool = false
     @State private var feedbackSentiment: FeedbackSentiment = .positive
+    @State private var isInputFocused: Bool = false
     private var composerBackgroundColor: Color {
         colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
     }
@@ -93,7 +94,8 @@ public struct ChatView: View {
             MessageListView(
                 messages: viewModel.messages,
                 agentScrollTick: viewModel.agentScrollTick,
-                userScrollTick: viewModel.userScrollTick
+                userScrollTick: viewModel.userScrollTick,
+                isInputFocused: $isInputFocused
             ) { text in
                 textSpeaker?.utter(text: text)
             }
@@ -130,6 +132,7 @@ public struct ChatView: View {
                 ),
                 selectedRange: $selectedTextRange,
                 measuredHeight: $composerHeight,
+                isFocused: $isInputFocused,
                 inputState: reducer.state,
                 chatState: viewModel.chatState,
                 composerEditable: viewModel.chatState != .processing,
@@ -137,13 +140,23 @@ public struct ChatView: View {
                 sendEnabled: reducer.data.canSend,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
-                onCancel: { viewModel.cancelMic() },
-                onComplete: { viewModel.completeMic() },
+                onCancel: {
+                    viewModel.cancelMic()
+                    hapticFeedback.impactOccurred()
+                },
+                onComplete: {
+                    viewModel.completeMic()
+                    hapticFeedback.impactOccurred()
+                },
                 onSend: sendTapped
             )
         }
         .onAppear {
             hapticFeedback.prepare()
+        }
+        .onChange(of: isInputFocused) { newValue in
+            // Trigger view update when focus changes
+            // The SelectableTextView's updateUIView will handle the actual keyboard dismissal
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in
@@ -170,6 +183,8 @@ public struct ChatView: View {
     // MARK: - Actions
     private func sendTapped() {
         viewModel.sendMessage(isUser: !showAgentSend)
+        hapticFeedback.impactOccurred(intensity: 0.5)
+        hapticFeedback.impactOccurred(intensity: 0.7)
     }
 
     private func handleMicTap() {
@@ -201,20 +216,15 @@ public struct ChatView: View {
                                            secondaryButton: TempButton(text: "label", url: "label-url"))),
             Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .productCard(
+                Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    body: "Product 1 description"
+                    destination: URL(string:"https://adobe.com")!
                 )),
-                Message(template: .productCard(
+                Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    body: "Product 2 description"
-                )),
-                Message(template: .productCard(
-                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-                    title: "Product 3",
-                    body: "Product 3 description"
+                    destination: URL(string:"https://adobe.com")!
                 ))
             ])),
             Message(template: .divider)

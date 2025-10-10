@@ -16,6 +16,7 @@ public enum MessageTemplate {
     case basic(isUserMessage: Bool)
     case thumbnail(imageSource: ImageSource, title: String?, text: String)
     case numbered(number: Int?, title: String?, body: String?)
+    case productCarouselCard(imageSource: ImageSource, title: String, destination: URL?)
     case productCard(imageSource: ImageSource, title: String, body: String, primaryButton: TempButton? = nil, secondaryButton: TempButton? = nil)
     case carouselGroup([Message])
     case divider
@@ -23,5 +24,5 @@ public enum MessageTemplate {
 
 public enum ImageSource {
     case local(Image)
-    case remote(URL)
+    case remote(URL?)
 } 

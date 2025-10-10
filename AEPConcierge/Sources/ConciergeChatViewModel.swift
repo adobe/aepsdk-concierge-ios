@@ -36,8 +36,8 @@ final class ConciergeChatViewModel: ObservableObject {
     let inputReducer = InputReducer()
     
     // MARK: Chunk handling
-    var lastEmittedResponseText: String = ""
-    private var latestSources: [URL] = []
+    private var latestSources: [TempSource] = []
+    private var productCardIndex: Int? = nil
 
     // MARK: Feature flags
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
@@ -157,6 +157,8 @@ final class ConciergeChatViewModel: ObservableObject {
             messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
             
             var accumulatedContent = ""
+            // TODO: TempElement will be replaced with permanent model
+            var accumulatedProducts: [TempElement] = []
             
             chatService.streamChat(text,
                 onChunk: { [weak self] payload in
@@ -168,38 +170,34 @@ final class ConciergeChatViewModel: ObservableObject {
                         // start with handling messages only
                         if let message = payload.response?.message {
                             if state == Constants.StreamState.IN_PROGRESS {
-                                // Emit raw fragment and accumulate locally
+                                // Build up content with each chunk
                                 accumulatedContent += message
                                 print("chunk: \(message)")
                                 print("accumulatedContent: \(accumulatedContent)")
+                                
                                 // Update the streaming message with accumulated content (preserve id)
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = accumulatedContent
                                     self.messages[streamingMessageIndex] = current
                                 }
-                                self.lastEmittedResponseText += message
+                                
                                 // Notify views to adjust scroll for agent updates
                                 self.agentScrollTick &+= 1
                             } else if state == Constants.StreamState.COMPLETED {
-                                // Emit only the remainder beyond what we already streamed
+                                // On completion, do a full replace with the entire text response
                                 let fullText = message
-                                if self.lastEmittedResponseText.count < fullText.count {
-                                    let startIndex = fullText.index(fullText.startIndex, offsetBy: self.lastEmittedResponseText.count)
-                                    let delta = String(fullText[startIndex...])
-                                    if !delta.isEmpty {
-                                        accumulatedContent += delta
-                                        print("chunk: \(delta)")
-                                        print("accumulatedContent: \(delta)")
-                                        // Update the streaming message with accumulated content (preserve id)
-                                        if streamingMessageIndex < self.messages.count {
-                                            var current = self.messages[streamingMessageIndex]
-                                            current.messageBody = accumulatedContent
-                                            self.messages[streamingMessageIndex] = current
-                                        }
-                                    }
+                                print("completion - full text: \(fullText)")
+                                
+                                // Replace with complete text response
+                                if streamingMessageIndex < self.messages.count {
+                                    var current = self.messages[streamingMessageIndex]
+                                    current.messageBody = fullText
+                                    self.messages[streamingMessageIndex] = current
                                 }
-                                self.lastEmittedResponseText = fullText
+                                
+                                // Update accumulated content to match final text
+                                accumulatedContent = fullText
                                 // Final agent update tick
                                 self.agentScrollTick &+= 1
                             }
@@ -207,40 +205,28 @@ final class ConciergeChatViewModel: ObservableObject {
                         
                         // handle cards in multimodalElements
                         if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
-                            var carouselElements: [Message] = []
-                            for element in elements {
-                                // make a card
-                                let cardTitle = element.entityInfo?.productName ?? "No title"
-                                let cardText = element.entityInfo?.productDescription ?? "No description"
-                                let cardImage = element.entityInfo?.productImageURL ?? "No image"
-                                let cardImageUrl = URL(string: cardImage)!
-                                let primaryButton = element.entityInfo?.primary
-                                let secondaryButton = element.entityInfo?.secondary
-                                                                
-                                let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
-                                                                       title: cardTitle,
-                                                                       body: cardText,
-                                                                       primaryButton: primaryButton,
-                                                                       secondaryButton: secondaryButton))
-                                
-                                carouselElements.append(card)
+                            // consolidate elements - priority given to elements over accumulatedProducts when IDs conflict
+                            // Remove any existing elements that have matching IDs in the new elements
+                            let newElementIds = Set(elements.map { $0.id })
+                            accumulatedProducts.removeAll { existingElement in
+                                newElementIds.contains(existingElement.id)
                             }
                             
-                            self.messages.append(Message(template: .carouselGroup(carouselElements)))
+                            // Add all new elements (they now have priority over any previous versions)
+                            accumulatedProducts.append(contentsOf: elements)
+                            
+                            // set the index of the product card to the last in the list
+                            // so we can update it in the future when necessary
+                            if self.productCardIndex == nil {
+                                self.productCardIndex = streamingMessageIndex + 1
+                            }
+                            
+                            self.renderProductCards(accumulatedProducts)
                         }
 
                         // Capture sources from payload as they arrive (used on completion)
                         if let tempSources = payload.response?.sources {
-                            let urls = tempSources.compactMap { source -> URL? in
-                                guard let url = URL(string: source.url) else {
-                                    Log.trace(label: self.LOG_TAG, "Ignoring invalid source URL: \(source.url)")
-                                    return nil
-                                }
-                                return url
-                            }
-                            if !urls.isEmpty {
-                                self.latestSources = urls
-                            }
+                            self.latestSources = tempSources
                         }
                     }
                 },
@@ -256,10 +242,17 @@ final class ConciergeChatViewModel: ObservableObject {
                             if streamingMessageIndex < self.messages.count {
                                 self.messages.remove(at: streamingMessageIndex)
                             }
-                        } else {
-                            // Stream completed successfully
-                            self.chatState = .idle
+                        } else if accumulatedContent.isEmpty {
+                            // Remove the placeholder message
+                            if streamingMessageIndex < self.messages.count {
+                                self.messages.remove(at: streamingMessageIndex)
+                            }
                             
+                            self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
+                            
+                            self.clearState()
+                        }
+                        else {
                             // Mark the existing streaming message for speaking while preserving its id
                             if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
@@ -272,24 +265,24 @@ final class ConciergeChatViewModel: ObservableObject {
                                 } else if self.stubAgentSources {
                                     Log.trace(label: self.LOG_TAG, "Using stubbed sources")
                                     current.sources = [
-                                        URL(string: "https://example.com/guide/introduction")!,
-                                        URL(string: "https://example.com/docs/reference#section")!
+                                        TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
+                                        TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
                                     ]
                                 }
                                 self.messages[streamingMessageIndex] = current
                                 // Final tick to keep scroll pinned after completion
                                 self.agentScrollTick &+= 1
                             }
+                            
+                            // Stream completed successfully
+                            self.clearState()
                         }
-                        
-                        self.lastEmittedResponseText = ""
-                        self.latestSources = []
                     }
                 }
             )
         } else {
             // Agent messages don't change input state here; reducer already cleared input
-            chatState = .idle
+            self.clearState()
         }
     }
 
@@ -304,12 +297,12 @@ final class ConciergeChatViewModel: ObservableObject {
             // TODO: Update this logic to reflect real backend response when available
             if stubAgentSources {
                 agent.sources = [
-                    URL(string: "https://example.com/guide/introduction")!,
-                    URL(string: "https://example.com/docs/reference#section")!
+                    TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
+                    TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
                 ]
             }
             messages.append(agent)
-            chatState = .idle
+            self.clearState()
             agentScrollTick &+= 1
         }
     }
@@ -333,6 +326,67 @@ final class ConciergeChatViewModel: ObservableObject {
             inputReducer.apply(.addContent)
         }
         inputReducer.apply(.inputReceived(newText))
+    }
+    
+    private func clearState() {
+        chatState = .idle
+        productCardIndex = nil
+        latestSources = []
+    }
+    
+    /// this must be called from the main thread
+    private func renderProductCards(_ products: [TempElement]) {
+        if products.count == 1, let entityInfo = products.first?.entityInfo {
+            // show a single product card
+            let cardTitle = entityInfo.productName ?? "No title"
+            let cardText = entityInfo.productDescription ?? "No description"
+            let imageUrl = entityInfo.productImageURL ?? "No image"
+            let cardImageUrl = URL(string: imageUrl)!
+            let primaryButton = entityInfo.primary
+            let secondaryButton = entityInfo.secondary
+                                            
+            let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
+                                                   title: cardTitle,
+                                                   body: cardText,
+                                                   primaryButton: primaryButton,
+                                                   secondaryButton: secondaryButton))
+            
+            // don't duplicate the product card
+            removeProductCard(atIndex: self.productCardIndex)
+            self.messages.append(card)
+        } else {
+            // show a carousel of cards
+            var carouselElements: [Message] = []
+            for product in products {
+                guard let entityInfo = product.entityInfo else {
+                    continue
+                }
+                let cardTitle = entityInfo.productName ?? "No title"
+                let imageUrl = entityInfo.productImageURL ?? "No image"
+                let cardImageUrl = URL(string: imageUrl)!
+                let clickThroughUrl = entityInfo.productPageURL ?? "No link"
+                let cardClickThroughURL = URL(string: clickThroughUrl)
+                                                
+                let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
+                                                                  title: cardTitle,
+                                                                  destination: cardClickThroughURL))
+                
+                carouselElements.append(card)
+            }
+            
+            // don't duplicate the product card
+            removeProductCard(atIndex: self.productCardIndex)
+            self.messages.append(Message(template: .carouselGroup(carouselElements)))
+        }
+    }
+    
+    /// removes the product card if the following conditions are met:
+    /// 1. a valid index was provided
+    /// 2. the index is less than the number of existing messages (prevents out of range errors)
+    private func removeProductCard(atIndex index: Int?) {
+        if let index = index, index < self.messages.count {
+            self.messages.remove(at: index)
+        }
     }
 }
 
