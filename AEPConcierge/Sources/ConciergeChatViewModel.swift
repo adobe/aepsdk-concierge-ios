@@ -340,8 +340,7 @@ final class ConciergeChatViewModel: ObservableObject {
             // show a single product card
             let cardTitle = entityInfo.productName ?? "No title"
             let cardText = entityInfo.productDescription ?? "No description"
-            let imageUrl = entityInfo.productImageURL ?? "No image"
-            let cardImageUrl = URL(string: imageUrl)!
+            let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
             let primaryButton = entityInfo.primary
             let secondaryButton = entityInfo.secondary
                                             
@@ -361,11 +360,9 @@ final class ConciergeChatViewModel: ObservableObject {
                 guard let entityInfo = product.entityInfo else {
                     continue
                 }
-                let cardTitle = entityInfo.productName ?? "No title"
-                let imageUrl = entityInfo.productImageURL ?? "No image"
-                let cardImageUrl = URL(string: imageUrl)!
-                let clickThroughUrl = entityInfo.productPageURL ?? "No link"
-                let cardClickThroughURL = URL(string: clickThroughUrl)
+            let cardTitle = entityInfo.productName ?? "No title"
+            let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
+            let cardClickThroughURL = entityInfo.productPageURL.flatMap { URL(string: $0) }
                                                 
                 let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
                                                                   title: cardTitle,
