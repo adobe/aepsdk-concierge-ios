@@ -21,11 +21,15 @@ struct ChatMessageView: View {
     let template: MessageTemplate
     var messageBody: String?
     var sources: [TempSource]? = nil
+    var promptSuggestions: [String]? = nil
+    var onSuggestionTap: ((String) -> Void)? = nil
 
-    init(template: MessageTemplate, messageBody: String? = nil, sources: [TempSource]? = nil) {
+    init(template: MessageTemplate, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
+        self.promptSuggestions = promptSuggestions
+        self.onSuggestionTap = onSuggestionTap
     }
     
     var body: some View {
@@ -282,6 +286,30 @@ struct ChatMessageView: View {
             
         case .carouselGroup(let items):
             CarouselGroupView(items: items)
+
+        case .promptSuggestion(let text):
+            HStack(alignment: .bottom) {
+                Group {
+                    Button(action: { onSuggestionTap?(text) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrowshape.turn.up.right")
+                                .imageScale(.small)
+                                .foregroundColor(theme.onAgent)
+                            Text(text)
+                                .font(.system(.subheadline))
+                                .foregroundColor(theme.onAgent)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(theme.agentBubble)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                Spacer()
+            }
         }
     }
 }
