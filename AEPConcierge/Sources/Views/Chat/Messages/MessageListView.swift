@@ -20,6 +20,7 @@ struct MessageListView: View {
     var userScrollTick: Int = 0
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
+    var onSuggestionTap: ((String) -> Void)? = nil
 
     // A sentinel we can scroll to that represents the absolute bottom
     private let bottomAnchorId: String = "__bottom_anchor__"
@@ -29,7 +30,13 @@ struct MessageListView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(messages) { message in
-                        message.chatMessageView
+                        ChatMessageView(
+                            template: message.template,
+                            messageBody: message.messageBody,
+                            sources: message.sources,
+                            promptSuggestions: message.promptSuggestions,
+                            onSuggestionTap: onSuggestionTap
+                        )
                             .id(message.id)
                             .onAppear {
                                 if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {

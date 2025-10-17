@@ -38,6 +38,7 @@ final class ConciergeChatViewModel: ObservableObject {
     // MARK: Chunk handling
     private var latestSources: [TempSource] = []
     private var productCardIndex: Int? = nil
+    private var latestPromptSuggestions: [String] = []
 
     // MARK: Feature flags
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
@@ -224,6 +225,11 @@ final class ConciergeChatViewModel: ObservableObject {
                             self.renderProductCards(accumulatedProducts)
                         }
 
+                        // capture prompt suggestions if present
+                        if let suggestions = payload.response?.promptSuggestions, !suggestions.isEmpty {
+                            self.latestPromptSuggestions = suggestions
+                        }
+
                         // Capture sources from payload as they arrive (used on completion)
                         if let tempSources = payload.response?.sources {
                             self.latestSources = tempSources
@@ -271,6 +277,14 @@ final class ConciergeChatViewModel: ObservableObject {
                                 }
                                 self.messages[streamingMessageIndex] = current
                                 // Final tick to keep scroll pinned after completion
+                                self.agentScrollTick &+= 1
+                            }
+                            // Append prompt suggestions as their own message bubbles at the end
+                            if !self.latestPromptSuggestions.isEmpty {
+                                for suggestion in self.latestPromptSuggestions {
+                                    self.messages.append(Message(template: .promptSuggestion(text: suggestion)))
+                                }
+                                // Keep scroll pinned to bottom when suggestions are appended
                                 self.agentScrollTick &+= 1
                             }
                             
@@ -332,6 +346,7 @@ final class ConciergeChatViewModel: ObservableObject {
         chatState = .idle
         productCardIndex = nil
         latestSources = []
+        latestPromptSuggestions = []
     }
     
     /// this must be called from the main thread
