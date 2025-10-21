@@ -18,17 +18,19 @@ public struct Message: Identifiable {
     var shouldSpeakMessage = false
     var messageBody: String?
     var sources: [TempSource]? = nil
+    var promptSuggestions: [String]? = nil
     
     public static let divider = Message(template: .divider)
     
     var chatMessageView: ChatMessageView {
-        ChatMessageView(template: template, messageBody: messageBody, sources: sources)
+        ChatMessageView(template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, onSuggestionTap: nil)
     }
     
-    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [TempSource]? = nil) {
+    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil) {
         self.template = template
         self.shouldSpeakMessage = shouldSpeakMessage
         self.messageBody = messageBody
         self.sources = sources
+        self.promptSuggestions = promptSuggestions
     }
 }

@@ -19,6 +19,7 @@ public enum MessageTemplate {
     case productCarouselCard(imageSource: ImageSource, title: String, destination: URL?)
     case productCard(imageSource: ImageSource, title: String, body: String, primaryButton: TempButton? = nil, secondaryButton: TempButton? = nil)
     case carouselGroup([Message])
+    case promptSuggestion(text: String)
     case divider
 }
 

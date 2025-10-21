@@ -98,6 +98,10 @@ public struct ChatView: View {
                 isInputFocused: $isInputFocused
             ) { text in
                 textSpeaker?.utter(text: text)
+            } onSuggestionTap: { suggestion in
+                isInputFocused = true
+                viewModel.applyTextChange(suggestion)
+                selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
             }
         }
         // Safe area respecting top bar
