@@ -24,6 +24,8 @@ final class ConciergeChatViewModel: ObservableObject {
     @Published var agentScrollTick: Int = 0
     // Incremented when a user message is appended, to drive bottom scroll
     @Published var userScrollTick: Int = 0
+    // ID of the user message to scroll to when userScrollTick changes
+    @Published var userMessageToScrollId: UUID? = nil
 
     private let LOG_TAG = "ConciergeChatViewModel"
 
@@ -144,10 +146,15 @@ final class ConciergeChatViewModel: ObservableObject {
         // Clear input via reducer to keep state machine consistent
         inputReducer.apply(.sendMessage)
 
-        messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
+        let newMessage = Message(template: .basic(isUserMessage: isUser), messageBody: text)
+        messages.append(newMessage)
         if isUser {
-            // Trigger scroll to bottom for the newly sent user message
-            userScrollTick &+= 1
+            // Store the user message ID first
+            userMessageToScrollId = newMessage.id
+            // Defer tick increment to ensure ID is published first
+            DispatchQueue.main.async {
+                self.userScrollTick &+= 1
+            }
         }
 
         if isUser {
