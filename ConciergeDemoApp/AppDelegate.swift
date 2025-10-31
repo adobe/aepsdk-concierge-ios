@@ -31,8 +31,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             // tag - sb_concierge
             // environment id: bf7248f92b53/c39620205a4c/launch-321b019dcbf6-development
             
-            MobileCore.configureWith(appId: "bf7248f92b53/c39620205a4c/launch-321b019dcbf6-development")
-            
+            MobileCore.configureWith(appId: "bf7248f92b53/c39620205a4c/launch-321b019dcbf6-development")                        
         }
         
         return true

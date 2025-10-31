@@ -44,6 +44,11 @@ enum Constants {
         static let JSON_CONTENT = "https://ns.adobe.com/concierge/json-content"
     }
     
+    enum EventName {
+        static let SHOW_UI = "Show Brand Concierge UI - Request"
+        static let SHOW_UI_RESPONSE = "Show Brand Concierge UI - Response"
+    }
+    
     enum SSE {
         // intentionally including the space here - this value is used to identify data in SSE responses
         static let DATA_PREFIX = "data: "
@@ -57,6 +62,7 @@ enum Constants {
     
     enum Request {
         static let READ_TIMEOUT = 15.0
+        static let HTTPS = "https://"
         
         enum Keys {
             static let EVENTS = "events"
@@ -69,6 +75,9 @@ enum Constants {
             static let IDENTITY_MAP = "identityMap"
             static let ECID = "ECID"
             static let ID = "id"
+            static let CONFIG_ID = "configId"
+            static let SESSION_ID = "sessionId"
+            static let CONVERSATION_ID = "conversationId"
         }
     }
         
@@ -82,7 +91,14 @@ enum Constants {
         enum Configuration {
             static let NAME = "com.adobe.module.configuration"
 
-            // TODO: define configuration properties for concierge
+            // TODO: swap from edge values to concierge values
+            static let EDGE_SERVER = "edge.domain"
+            static let EDGE_DATASTREAM = "edge.configId"
+            
+            
+            static let SERVER = "concierge.server"
+            static let DATASTREAM = "concierge.configId"
+            static let SURFACES = "concierge.surfaces"
         }
 
         enum EdgeIdentity {

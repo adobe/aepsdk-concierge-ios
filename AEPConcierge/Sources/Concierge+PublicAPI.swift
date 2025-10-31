@@ -12,8 +12,8 @@
 
 import SwiftUI
 import UIKit
-
 import AEPCore
+import AEPServices
 
 public extension Concierge {
     // MARK: - SwiftUI presentation APIs
@@ -25,45 +25,55 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    static func show(
-        title: String? = nil,
-        subtitle: String? = nil,
-        speechCapturer: SpeechCapturing? = nil,
-        textSpeaker: TextSpeaking? = nil
-    ) {
-        if let speechCapturer = speechCapturer {
-            self.speechCapturer = speechCapturer
-        }
-
-        if let textSpeaker = textSpeaker {
-            self.textSpeaker = textSpeaker
-        }
-
-        if let title = title {
-            self.chatTitle = title
-        }
-
-        if let subtitle = subtitle {
-            self.chatSubtitle = subtitle
-        }
-
-        // Construct and present the chat view immediately via the SwiftUI overlay.
-        let view = ChatView(
-            speechCapturer: self.speechCapturer,
-            textSpeaker: self.textSpeaker,
-            title: self.chatTitle,
-            subtitle: self.chatSubtitle,
-            onClose: { Concierge.hide() }
-        )
-        Task { @MainActor in
-            ConciergeOverlayManager.shared.showChat(view)
-        }
-        // Dispatch event to notify extension that UI is presented
-        let showEvent = Event(name: "Showing Chat UI",
+    static func show(title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
+        // Dispatch event to request state data necessary for displaying the UI
+        let showEvent = Event(name: Constants.EventName.SHOW_UI,
                               type: Constants.EventType.concierge,
                               source: EventSource.requestContent,
                               data: nil)
-        MobileCore.dispatch(event: showEvent)
+        
+        MobileCore.dispatch(event: showEvent, timeout: 3.0) { response in
+            guard let response = response, let responseData = response.data else {
+                Log.warning(label: Constants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
+                return
+            }
+            
+            // get shared state, config, settings, etc. out of the response event.
+            // then show the view
+            
+            guard let config = responseData["config"] as? ConciergeConfiguration else {
+                return
+            }            
+            
+            if let speechCapturer = speechCapturer {
+                self.speechCapturer = speechCapturer
+            }
+
+            if let textSpeaker = textSpeaker {
+                self.textSpeaker = textSpeaker
+            }
+
+            if let title = title {
+                self.chatTitle = title
+            }
+
+            if let subtitle = subtitle {
+                self.chatSubtitle = subtitle
+            }
+
+            // Construct and present the chat view immediately via the SwiftUI overlay.
+            let view = ChatView(
+                speechCapturer: self.speechCapturer,
+                textSpeaker: self.textSpeaker,
+                title: self.chatTitle,
+                subtitle: self.chatSubtitle,
+                conciergeConfiguration: config,
+                onClose: { Concierge.hide() }
+            )
+            Task { @MainActor in
+                ConciergeOverlayManager.shared.showChat(view)
+            }
+        }
     }
 
     /// Wraps the app’s content so the Concierge chat overlay can be presented.
@@ -119,7 +129,10 @@ public extension Concierge {
         if let title = title { self.chatTitle = title }
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
 
-        let hosting = ConciergeHostingController(title: title, subtitle: subtitle)
+        // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
+        // as we have in the swiftui version
+        
+        let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(), title: title, subtitle: subtitle)
         presentedUIKitController = hosting
 
         Task { @MainActor in

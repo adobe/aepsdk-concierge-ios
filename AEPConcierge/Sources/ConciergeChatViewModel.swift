@@ -31,6 +31,7 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: Dependencies
     private let chatService: ConciergeChatService
+    private let configuration: ConciergeConfiguration?
     private let speechCapturer: SpeechCapturing?
     private let speaker: TextSpeaking?
 
@@ -46,10 +47,12 @@ final class ConciergeChatViewModel: ObservableObject {
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
     var stubAgentSources: Bool = true
 
-    init(chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
-        self.chatService = chatService
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
+        self.configuration = configuration
+        self.chatService = ConciergeChatService(configuration: configuration)
         self.speechCapturer = speechCapturer
         self.speaker = speaker
+        
         configureSpeech()
     }
 
