@@ -16,7 +16,7 @@ import SwiftUI
 struct MessageListView: View {
     let messages: [Message]
     var userScrollTick: Int = 0
-    @Binding var userMessageToScrollId: UUID?
+    var userMessageToScrollId: UUID?
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)? = nil
@@ -57,8 +57,6 @@ struct MessageListView: View {
                     withAnimation {
                         proxy.scrollTo(messageId, anchor: .top)
                     }
-                    // Reset after scroll to avoid unintended re-scrolls
-                    self.userMessageToScrollId = nil
                 }
             }
                 .onTapGesture {
