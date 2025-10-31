@@ -15,88 +15,54 @@ import SwiftUI
 /// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
     let messages: [Message]
-    // A monotonic tick that increases whenever the latest agent message updates
-    var agentScrollTick: Int = 0
     var userScrollTick: Int = 0
+    var userMessageToScrollId: UUID?
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)? = nil
 
-    // A sentinel we can scroll to that represents the absolute bottom
-    private let bottomAnchorId: String = "__bottom_anchor__"
-
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(messages) { message in
-                        ChatMessageView(
-                            template: message.template,
-                            messageBody: message.messageBody,
-                            sources: message.sources,
-                            promptSuggestions: message.promptSuggestions,
-                            onSuggestionTap: onSuggestionTap
-                        )
-                            .id(message.id)
-                            .onAppear {
-                                if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
-                                    onSpeak(messageBody)
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(messages) { message in
+                            ChatMessageView(
+                                template: message.template,
+                                messageBody: message.messageBody,
+                                sources: message.sources,
+                                promptSuggestions: message.promptSuggestions,
+                                onSuggestionTap: onSuggestionTap
+                            )
+                                .id(message.id)
+                                .onAppear {
+                                    if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
+                                        onSpeak(messageBody)
+                                    }
                                 }
-                            }
+                        }
+                        
+                        // Add spacer to ensure scroll view has enough height to position user message at top
+                        Spacer()
+                            .frame(height: max(0, geometry.size.height - 100))
                     }
-                    // Bottom sentinel to ensure we can scroll to absolute end
-                    Color.clear
-                        .frame(height: 1)
-                        .id(bottomAnchorId)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 12)
-            }
-            // Scroll when the last message id changes (new append). We only handle
-            // user messages here; agent messages are handled by `agentScrollTick`
-            // to avoid a position jump at completion.
-            .onChange(of: messages.last?.id) { _ in
-                guard let lastMessage = messages.last else { return }
-                let isAgentMessage: Bool = {
-                    switch lastMessage.template {
-                    case .divider:
-                        return false
-                    case .basic(let isUserMessage):
-                        return !isUserMessage
-                    default:
-                        // All other templates are agent-authored
-                        return true
-                    }
-                }()
-
-                guard !isAgentMessage else { return }
-                DispatchQueue.main.async {
-                    withAnimation {
-                        proxy.scrollTo(bottomAnchorId, anchor: .bottom)
-                    }
-                }
-            }
-            // Scroll during agent streaming updates (tick increments)
-            .onChange(of: agentScrollTick) { _ in
-                guard let lastMessage = messages.last else { return }
-                DispatchQueue.main.async {
-                    withAnimation {
-                        proxy.scrollTo(lastMessage.id, anchor: .top)
-                    }
-                }
-            }
-            // Scroll precisely to bottom when a user message is sent
+                // Scroll user message to top when sent, allowing agent response to fill screen below
             .onChange(of: userScrollTick) { _ in
+                guard let messageId = userMessageToScrollId else { return }
                 DispatchQueue.main.async {
                     withAnimation {
-                        proxy.scrollTo(bottomAnchorId, anchor: .bottom)
+                        proxy.scrollTo(messageId, anchor: .top)
                     }
                 }
             }
-            .onTapGesture {
-                if isInputFocused {
-                    isInputFocused = false
+                .onTapGesture {
+                    if isInputFocused {
+                        isInputFocused = false
+                    }
                 }
             }
         }
