@@ -20,8 +20,6 @@ final class ConciergeChatViewModel: ObservableObject {
     var inputText: String { inputReducer.data.text }
     var inputState: InputState { inputReducer.state }
     @Published var chatState: ChatState = .idle
-    // Incremented whenever the latest agent message is updated, to drive scroll behavior
-    @Published var agentScrollTick: Int = 0
     // Incremented when a user message is appended, to drive bottom scroll
     @Published var userScrollTick: Int = 0
     // ID of the user message to scroll to when userScrollTick changes
@@ -204,9 +202,6 @@ final class ConciergeChatViewModel: ObservableObject {
                                     current.messageBody = accumulatedContent
                                     self.messages[streamingMessageIndex] = current
                                 }
-                                
-                                // Notify views to adjust scroll for agent updates
-                                self.agentScrollTick &+= 1
                             } else if state == Constants.StreamState.COMPLETED {
                                 // On completion, do a full replace with the entire text response
                                 let fullText = message
@@ -221,8 +216,6 @@ final class ConciergeChatViewModel: ObservableObject {
                                 
                                 // Update accumulated content to match final text
                                 accumulatedContent = fullText
-                                // Final agent update tick
-                                self.agentScrollTick &+= 1
                             }
                         }
                         
@@ -298,16 +291,12 @@ final class ConciergeChatViewModel: ObservableObject {
                                     ]
                                 }
                                 self.messages[streamingMessageIndex] = current
-                                // Final tick to keep scroll pinned after completion
-                                self.agentScrollTick &+= 1
                             }
                             // Append prompt suggestions as their own message bubbles at the end
                             if !self.latestPromptSuggestions.isEmpty {
                                 for suggestion in self.latestPromptSuggestions {
                                     self.messages.append(Message(template: .promptSuggestion(text: suggestion)))
                                 }
-                                // Keep scroll pinned to bottom when suggestions are appended
-                                self.agentScrollTick &+= 1
                             }
                             
                             // Stream completed successfully
@@ -339,7 +328,6 @@ final class ConciergeChatViewModel: ObservableObject {
             }
             messages.append(agent)
             self.clearState()
-            agentScrollTick &+= 1
         }
     }
 

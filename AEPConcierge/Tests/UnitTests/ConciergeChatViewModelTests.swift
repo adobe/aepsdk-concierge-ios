@@ -37,7 +37,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.chatState, .processing)
     }
 
-    func test_streaming_inProgress_accumulates_and_updates_placeholder_and_ticks() {
+    func test_streaming_inProgress_accumulates_and_updates_placeholder() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.shouldCallComplete = false // keep streaming; do not transition to idle
         fakeService.plannedChunks = [
@@ -48,11 +48,9 @@ final class ConciergeChatViewModelTests: XCTestCase {
 
         vm.applyTextChange("q")
         XCTAssertTrue(vm.sendEnabled)
-        let startTick = vm.agentScrollTick
         vm.sendMessage(isUser: true)
-
-        // Wait for Task { @MainActor } updates
-        spinUntil(vm.agentScrollTick >= startTick + 2)
+        // Wait for streaming chunks to apply and accumulate
+        spinUntil(vm.messages.count == 2 && vm.messages[1].messageBody == "Hello world")
 
         XCTAssertEqual(vm.messages.count, 2)
         let agent = vm.messages[1]
@@ -65,7 +63,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.chatState, .idle)
     }
 
-    func test_streaming_completed_appends_only_delta_and_final_tick() {
+    func test_streaming_completed_appends_only_delta() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.plannedChunks = [
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: "Hel"),
@@ -74,10 +72,9 @@ final class ConciergeChatViewModelTests: XCTestCase {
         let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
 
         vm.applyTextChange("go")
-        let startTick = vm.agentScrollTick
         vm.sendMessage(isUser: true)
-
-        spinUntil(vm.agentScrollTick >= startTick + 2)
+        // Wait until final message is applied
+        spinUntil(vm.messages.count == 2 && vm.messages[1].messageBody == "Hello")
 
         XCTAssertEqual(vm.messages.count, 2)
         let agent = vm.messages[1]
