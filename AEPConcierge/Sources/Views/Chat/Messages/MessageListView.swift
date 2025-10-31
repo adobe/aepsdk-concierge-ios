@@ -15,16 +15,11 @@ import SwiftUI
 /// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
     let messages: [Message]
-    // A monotonic tick that increases whenever the latest agent message updates
-    var agentScrollTick: Int = 0
     var userScrollTick: Int = 0
-    var userMessageToScrollId: UUID? = nil
+    @Binding var userMessageToScrollId: UUID?
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)? = nil
-
-    // A sentinel we can scroll to that represents the absolute bottom
-    private let bottomAnchorId: String = "__bottom_anchor__"
 
     var body: some View {
         GeometryReader { geometry in
@@ -46,10 +41,6 @@ struct MessageListView: View {
                                     }
                                 }
                         }
-                        // Bottom sentinel to ensure we can scroll to absolute end
-                        Color.clear
-                            .frame(height: 1)
-                            .id(bottomAnchorId)
                         
                         // Add spacer to ensure scroll view has enough height to position user message at top
                         Spacer()
@@ -66,6 +57,8 @@ struct MessageListView: View {
                     withAnimation {
                         proxy.scrollTo(messageId, anchor: .top)
                     }
+                    // Reset after scroll to avoid unintended re-scrolls
+                    self.userMessageToScrollId = nil
                 }
             }
                 .onTapGesture {

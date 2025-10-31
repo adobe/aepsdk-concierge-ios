@@ -93,9 +93,8 @@ public struct ChatView: View {
 
             MessageListView(
                 messages: viewModel.messages,
-                agentScrollTick: viewModel.agentScrollTick,
                 userScrollTick: viewModel.userScrollTick,
-                userMessageToScrollId: viewModel.userMessageToScrollId,
+                userMessageToScrollId: $viewModel.userMessageToScrollId,
                 isInputFocused: $isInputFocused
             ) { text in
                 textSpeaker?.utter(text: text)
