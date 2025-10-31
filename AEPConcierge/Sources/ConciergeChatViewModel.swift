@@ -55,6 +55,18 @@ final class ConciergeChatViewModel: ObservableObject {
         
         configureSpeech()
     }
+    
+    #if DEBUG
+    // INTERAL FOR TESTING ONLY
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
+        self.configuration = configuration
+        self.chatService = chatService
+        self.speechCapturer = speechCapturer
+        self.speaker = speaker
+        
+        configureSpeech()
+    }
+    #endif
 
     // MARK: - Convenience properties
     var isRecording: Bool {
