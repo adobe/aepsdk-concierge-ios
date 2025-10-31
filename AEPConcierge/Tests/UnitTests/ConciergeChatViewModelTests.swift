@@ -18,9 +18,12 @@ private final class NoopSpeaker: TextSpeaking { func utter(text: String) {} }
 
 @MainActor
 final class ConciergeChatViewModelTests: XCTestCase {
+    
+    private var mockConciergeConfiguration = ConciergeConfiguration()
+    
     func test_sendMessage_ignores_when_text_empty_or_not_idle() {
-        let fakeService = MockChatService()
-        let vm = makeVM(service: fakeService)
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
 
         // Empty text -> ignored
         vm.sendMessage(isUser: true)
@@ -35,13 +38,13 @@ final class ConciergeChatViewModelTests: XCTestCase {
     }
 
     func test_streaming_inProgress_accumulates_and_updates_placeholder_and_ticks() {
-        let fakeService = MockChatService()
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.shouldCallComplete = false // keep streaming; do not transition to idle
         fakeService.plannedChunks = [
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: "Hello "),
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: "world")
         ]
-        let vm = makeVM(service: fakeService)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
 
         vm.applyTextChange("q")
         XCTAssertTrue(vm.sendEnabled)
@@ -63,12 +66,12 @@ final class ConciergeChatViewModelTests: XCTestCase {
     }
 
     func test_streaming_completed_appends_only_delta_and_final_tick() {
-        let fakeService = MockChatService()
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.plannedChunks = [
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: "Hel"),
             makePayload(state: Constants.StreamState.COMPLETED, message: "Hello")
         ]
-        let vm = makeVM(service: fakeService)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
 
         vm.applyTextChange("go")
         let startTick = vm.agentScrollTick
@@ -82,10 +85,10 @@ final class ConciergeChatViewModelTests: XCTestCase {
     }
 
     func test_streaming_error_removes_placeholder_and_sets_error_state() {
-        let fakeService = MockChatService()
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.plannedChunks = []
         fakeService.plannedError = .unreachable
-        let vm = makeVM(service: fakeService)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
 
         vm.applyTextChange("hi")
         vm.sendMessage(isUser: true)
@@ -102,7 +105,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
             TempSource(url: "https://example.com/1", title: "One", startIndex: 0, endIndex: 1, citationNumber: 1),
             TempSource(url: "https://example.com/2", title: "Two", startIndex: 0, endIndex: 1, citationNumber: 2)
         ]
-        let fakeService = MockChatService()
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.plannedChunks = [
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: "Hi"),
             makePayload(state: Constants.StreamState.IN_PROGRESS, message: " there")
@@ -111,7 +114,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         // Also include a chunk that carries sources
         fakeService.plannedChunks.append(makePayload(state: Constants.StreamState.IN_PROGRESS, message: "!", sources: sources))
 
-        let vm = makeVM(service: fakeService)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
         vm.stubAgentSources = false
 
         vm.applyTextChange("x")
@@ -127,16 +130,16 @@ final class ConciergeChatViewModelTests: XCTestCase {
         let agent = vm.messages[1]
         XCTAssertEqual(agent.messageBody, "Hi there!")
         XCTAssertTrue(agent.shouldSpeakMessage)
-        let urls = agent.sources?.map { $0.absoluteString } ?? []
+        let urls = agent.sources?.map { $0.url } ?? []
         XCTAssertEqual(urls.sorted(), ["https://example.com/1", "https://example.com/2"].sorted())
     }
 
     func test_toggleMic_flows_and_endCapture_transcript_updates_input() {
-        let fakeService = MockChatService()
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let capturer = MockSpeechCapturer()
         capturer.available = true
         capturer.transcriptToReturn = "return"
-        let vm = makeVM(service: fakeService, capturer: capturer)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
 
         // Seed initial text and place cursor at end (4)
         vm.applyTextChange("set ")
@@ -155,8 +158,8 @@ final class ConciergeChatViewModelTests: XCTestCase {
     }
     
     // MARK: - Helpers
-    private func makeVM(service: MockChatService = MockChatService(), capturer: MockSpeechCapturer? = nil) -> ConciergeChatViewModel {
-        ConciergeChatViewModel(chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
+    private func makeVM(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil) -> ConciergeChatViewModel {
+        ConciergeChatViewModel(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
     }
 
     private func makePayload(state: String, message: String? = nil, sources: [TempSource]? = nil) -> TempPayload {
