@@ -10,14 +10,13 @@
  governing permissions and limitations under the License.
  */
 
-enum ConciergeError {
-    case invalidData
-    case invalidEndpoint
-    case invalidDatastream
-    case invalidEcid
-    case invalidSurfaces
-    case invalidEcidOrSurfaces
-    case invalidResponseData
-    case timeout
-    case unreachable
+import AEPServices
+
+public struct ConciergeConfiguration: Codable {
+    var server: String?
+    var datastream: String?
+    var ecid: String?
+    var sessionId: String?
+    var conversationId: String?
+    var surfaces: [String] = []
 }

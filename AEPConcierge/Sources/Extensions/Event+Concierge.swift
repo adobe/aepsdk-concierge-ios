@@ -10,14 +10,13 @@
  governing permissions and limitations under the License.
  */
 
-enum ConciergeError {
-    case invalidData
-    case invalidEndpoint
-    case invalidDatastream
-    case invalidEcid
-    case invalidSurfaces
-    case invalidEcidOrSurfaces
-    case invalidResponseData
-    case timeout
-    case unreachable
+import AEPCore
+import AEPServices
+import CoreGraphics
+import Foundation
+
+extension Event {
+    var isShowUiEvent: Bool {
+        type == Constants.EventType.concierge && source == EventSource.requestContent
+    }
 }

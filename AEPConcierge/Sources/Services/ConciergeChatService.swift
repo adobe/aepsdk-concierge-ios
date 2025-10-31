@@ -13,14 +13,13 @@
 import AEPServices
 
 class ConciergeChatService: NSObject {
-    // MARK: - temporary constants for testing
-    let serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=161c33da-7b02-4ca4-a9d4-d934282486f3&requestId=dcbd50b6-2094-4cb7-9561-9c41f800da85&configId=3849362c-f325-4418-8cc8-993342b254f7"
-    let tempQuery = "Tell me about Photoshop"
-    let tempSurface = "web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/ao/index.html"
     
-    let LOG_TAG = "ConciergeChatService"
+    // MARK: - constants
+    private let LOG_TAG = "ConciergeChatService"
+    private let apiPath = "/brand-concierge/conversations"
     
     // MARK: - private members
+    private var conicergeConfiguration: ConciergeConfiguration
     private var session: URLSession!
     private var dataTask: URLSessionDataTask?
     private var serverEventHandler: ((ConciergeResponse?, ConciergeError?) -> Void)?
@@ -31,8 +30,10 @@ class ConciergeChatService: NSObject {
     // TODO: remove the temp code, this is for the demo and testing the UI
     private var tempServerEventHandler: ((TempPayload) -> Void)?
     
-    override init() {
+    init(configuration: ConciergeConfiguration) {
+        self.conicergeConfiguration = configuration
         super.init()
+        
         // TODO: research the use of a delegateQueue here
         session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }
@@ -46,8 +47,9 @@ class ConciergeChatService: NSObject {
     }
     
     func streamChat(_ query: String, onChunk: @escaping (TempPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
-        guard let url = URL(string: serviceEndpoint) else {
-            onComplete(.invalidEndpoint)
+        let urlWithError = createUrl()
+        guard let url = urlWithError.0 else {
+            onComplete(urlWithError.1)
             return
         }
         
@@ -57,7 +59,11 @@ class ConciergeChatService: NSObject {
         self.lastEmittedResponseText = ""
 
         // Use the actual user-provided query
-        let payload = createChatPayload(query: query)
+        let payloadWithError = createChatPayload(query: query)
+        guard let payload = payloadWithError.0 else {
+            onComplete(payloadWithError.1)
+            return
+        }
                 
         var request = URLRequest(url: url)
         request.httpMethod = Constants.HTTPMethods.POST
@@ -67,6 +73,9 @@ class ConciergeChatService: NSObject {
         request.timeoutInterval = Constants.Request.READ_TIMEOUT
         
         dataTask = session.dataTask(with: request)
+        
+        Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+        
         dataTask?.resume()
     }
     
@@ -74,8 +83,45 @@ class ConciergeChatService: NSObject {
         dataTask?.cancel()
         dataTask = nil
     }
+    
+    private func createUrl() -> (URL?, ConciergeError?) {
+        guard let endpoint = conicergeConfiguration.server else {
+            return (nil, .invalidEndpoint)
+        }
         
-    private func createChatPayload(query: String) -> Data? {
+        guard let datastream = conicergeConfiguration.datastream else {
+            return (nil, .invalidDatastream)
+        }
+        
+        var queryItems = [
+            URLQueryItem(name: Constants.Request.Keys.CONFIG_ID, value: datastream)
+        ]
+        
+        if let sessionId = conicergeConfiguration.sessionId {
+            queryItems.append(URLQueryItem(name: Constants.Request.Keys.SESSION_ID, value: sessionId))
+        }
+        
+        if let conversationId = conicergeConfiguration.conversationId {
+            queryItems.append(URLQueryItem(name: Constants.Request.Keys.CONVERSATION_ID, value: conversationId))
+        }
+        
+        var urlComponents = URLComponents(string: "\(Constants.Request.HTTPS)\(endpoint)\(apiPath)")
+        urlComponents?.queryItems = queryItems
+        
+        return (urlComponents?.url, nil)
+    }
+        
+    private func createChatPayload(query: String) -> (Data?, ConciergeError?) {
+        guard let ecid = conicergeConfiguration.ecid else {
+            Log.warning(label: LOG_TAG, "Unable to create concierge request payload. ECID is nil.")
+            return (nil, .invalidEcid)
+        }
+        
+        guard !conicergeConfiguration.surfaces.isEmpty else {
+            Log.warning(label: LOG_TAG, "Unable to create concierge request payload. No surfaces were provided.")
+            return (nil, .invalidSurfaces)
+        }
+        
         // Create proper payload for your API
         let payload = [
             Constants.Request.Keys.EVENTS: [
@@ -83,10 +129,7 @@ class ConciergeChatService: NSObject {
                     Constants.Request.Keys.QUERY: [
                         Constants.Request.Keys.CONVERSATION: [
                             Constants.Request.Keys.FETCH_CONVERSATIONAL_EXPERIENCE: true,
-                            Constants.Request.Keys.SURFACES: [
-                                // TODO: use a surface from configuration
-                                tempSurface
-                            ],
+                            Constants.Request.Keys.SURFACES: conicergeConfiguration.surfaces,
                             Constants.Request.Keys.MESSAGE: query
                         ]
                     ],
@@ -94,7 +137,7 @@ class ConciergeChatService: NSObject {
                         Constants.Request.Keys.IDENTITY_MAP: [
                             Constants.Request.Keys.ECID: [
                                 [
-                                    Constants.Request.Keys.ID: "90441736653237303030763364899130413871"
+                                    Constants.Request.Keys.ID: conicergeConfiguration.ecid
                                 ]
                             ]
                         ]
@@ -104,10 +147,10 @@ class ConciergeChatService: NSObject {
         ]
         
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-            return nil
+            return (nil, .invalidData)
         }
         
-        return jsonData
+        return (jsonData, nil)
     }
 }
 
