@@ -121,14 +121,14 @@ public class Concierge: NSObject, Extension {
 //        }
                 
         // TODO: use datastream from config
-        let datastream = "3849362c-f325-4418-8cc8-993342b254f7"
+        let datastream = "6acf9d12-5018-4f84-8224-aac4900782f0"
 //        guard let datastream = configSharedState.conciergeDatastream else {
 //            errorMessage = "Unable to show Brand Concierge UI - datastream information is unavailable from configuration."
 //            return
 //        }
         
         // TODO: use surfaces provided in configuration
-        let surfaces = ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/ao/index.html"]
+        let surfaces = ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
                 
         
         let config = ConciergeConfiguration(server: server, datastream: datastream, ecid: ecid, surfaces: surfaces)
