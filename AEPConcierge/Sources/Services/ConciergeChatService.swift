@@ -14,6 +14,13 @@ import AEPServices
 
 class ConciergeChatService: NSObject {
     
+    // MARK: - REMOVE ME LATER WHEN WE CAN USE REAL VALUES
+    let USE_TEMPS = true
+    let TEMP_serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=f774384a-68ce-472f-a454-ec6432c0484b&requestId=1c3222a5-686b-4cc0-aaa8-1ecc0be7dd97&configId=6acf9d12-5018-4f84-8224-aac4900782f0"
+    let TEMP_ecid = "38311589222118362203934607554670412837"
+    let TEMP_surface = "web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"
+    
+    
     // MARK: - constants
     private let LOG_TAG = "ConciergeChatService"
     private let apiPath = "/brand-concierge/conversations"
@@ -85,6 +92,12 @@ class ConciergeChatService: NSObject {
     }
     
     private func createUrl() -> (URL?, ConciergeError?) {
+        // TODO: REMOVE ME
+        if USE_TEMPS {
+            return (URL(string: TEMP_serviceEndpoint)!, nil)
+        }
+        
+        
         guard let endpoint = conicergeConfiguration.server else {
             return (nil, .invalidEndpoint)
         }
@@ -129,7 +142,7 @@ class ConciergeChatService: NSObject {
                     Constants.Request.Keys.QUERY: [
                         Constants.Request.Keys.CONVERSATION: [
                             Constants.Request.Keys.FETCH_CONVERSATIONAL_EXPERIENCE: true,
-                            Constants.Request.Keys.SURFACES: conicergeConfiguration.surfaces,
+                            Constants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : conicergeConfiguration.surfaces,
                             Constants.Request.Keys.MESSAGE: query
                         ]
                     ],
@@ -137,7 +150,7 @@ class ConciergeChatService: NSObject {
                         Constants.Request.Keys.IDENTITY_MAP: [
                             Constants.Request.Keys.ECID: [
                                 [
-                                    Constants.Request.Keys.ID: conicergeConfiguration.ecid
+                                    Constants.Request.Keys.ID: USE_TEMPS ? TEMP_ecid : ecid
                                 ]
                             ]
                         ]
