@@ -13,6 +13,8 @@
 import SwiftUI
 
 public enum MessageTemplate {
+    case welcomeHeader(title: String, body: String)
+    case welcomeExample(imageSource: ImageSource, text: String, background: Color)
     case basic(isUserMessage: Bool)
     case thumbnail(imageSource: ImageSource, title: String?, text: String)
     case numbered(number: Int?, title: String?, body: String?)
