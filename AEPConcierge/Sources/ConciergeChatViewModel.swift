@@ -332,7 +332,7 @@ final class ConciergeChatViewModel: ObservableObject {
         // Welcome prompt suggestions
         for example in welcome.examples {
             let message = Message(
-                template: .welcomeExample(
+                template: .welcomePromptSuggestion(
                     imageSource: .remote(example.imageURL),
                     text: example.text,
                     background: example.background

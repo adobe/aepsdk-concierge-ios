@@ -52,7 +52,7 @@ struct ChatMessageView: View {
             .padding(.top, 8)
             .padding(.bottom, 4)
 
-        case .welcomeExample(let imageSource, let text, let background):
+        case .welcomePromptSuggestion(let imageSource, let text, let background):
             Button(action: { onSuggestionTap?(text) }) {
                 HStack(spacing: 0) {
                     // Left image block
