@@ -57,6 +57,7 @@ public struct ChatView: View {
         textSpeaker: TextSpeaking? = nil,
         title: String = "Concierge",
         subtitle: String? = "Powered by Adobe",
+        conciergeConfiguration: ConciergeConfiguration,
         onClose: (() -> Void)? = nil
     ) {
         self.textSpeaker = textSpeaker
@@ -64,7 +65,7 @@ public struct ChatView: View {
         self.subtitleText = subtitle
         self.onClose = onClose
         let vm = ConciergeChatViewModel(
-            chatService: ConciergeChatService(),
+            configuration: conciergeConfiguration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
             speaker: textSpeaker
         )
@@ -78,7 +79,7 @@ public struct ChatView: View {
         self.titleText = "Concierge"
         self.subtitleText = "Powered by Adobe"
         self.onClose = nil
-        let vm = ConciergeChatViewModel(chatService: ConciergeChatService(), speechCapturer: nil, speaker: nil)
+        let vm = ConciergeChatViewModel(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         vm.messages = messages
         _viewModel = StateObject(wrappedValue: vm)
         _reducer = ObservedObject(wrappedValue: vm.inputReducer)
