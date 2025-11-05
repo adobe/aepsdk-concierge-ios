@@ -34,6 +34,56 @@ struct ChatMessageView: View {
     
     var body: some View {
         switch template {
+        case .welcomeHeader(let title, let body):
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title)
+                    .font(.system(.title2, design: .rounded))
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.TextTitle)
+                    .multilineTextAlignment(.leading)
+                    .textSelection(.enabled)
+                Text(body)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundColor(Color.TextBody)
+                    .multilineTextAlignment(.leading)
+                    .textSelection(.enabled)
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+
+        case .welcomeExample(let imageSource, let text, let background):
+            Button(action: { onSuggestionTap?(text) }) {
+                HStack(spacing: 0) {
+                    // Left image block
+                    switch imageSource {
+                    case .local(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 120, height: 88)
+                            .clipped()
+                    case .remote(let url):
+                        RemoteImageView(url: url, width: 120, height: 88)
+                    }
+
+                    // Right text area
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(text)
+                            .font(.system(.body))
+                            .foregroundColor(Color.TextTitle)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+                }
+                .background(background)
+                .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle())
+
         case .divider:
             Rectangle()
                 .frame(height: 1)
