@@ -31,14 +31,12 @@ public class Concierge: NSObject, Extension {
     static var chatSubtitle: String? = "Powered by Adobe"
     static var presentedUIKitController: UIViewController?
     
-//    let conciergeChatService: ConciergeChatService
     var chatView: ChatView? = nil
     
     // MARK: - Extension protocol methods
 
     public required init?(runtime: ExtensionRuntime) {
         self.runtime = runtime
-//        self.conciergeChatService = ConciergeChatService()
         super.init()
     }
 
@@ -46,7 +44,6 @@ public class Concierge: NSObject, Extension {
     /// used for testing
     init(runtime: ExtensionRuntime, conciergeChatService: ConciergeChatService? = nil) {
         self.runtime = runtime
-//        self.conciergeChatService = conciergeChatService ?? ConciergeChatService()
         super.init()
     }
 
@@ -135,7 +132,9 @@ public class Concierge: NSObject, Extension {
         let responseEvent = event.createResponseEvent(name: Constants.EventName.SHOW_UI_RESPONSE,
                                                       type: Constants.EventType.concierge,
                                                       source: EventSource.responseContent,
-                                                      data: ["config": config])
+                                                      data: [
+                                                        Constants.EventData.Key.CONFIG : config
+                                                      ])
         dispatch(event: responseEvent)
     }
     

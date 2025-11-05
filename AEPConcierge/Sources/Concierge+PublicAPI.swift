@@ -32,19 +32,14 @@ public extension Concierge {
                               source: EventSource.requestContent,
                               data: nil)
         
-        MobileCore.dispatch(event: showEvent, timeout: 3.0) { response in
-            guard let response = response, let responseData = response.data else {
+        MobileCore.dispatch(event: showEvent, timeout: Constants.DEFAULT_TIMEOUT) { responseEvent in
+            guard let responseEvent = responseEvent,
+                  let eventData = responseEvent.data,
+                  let config = eventData[Constants.EventData.Key.CONFIG] as? ConciergeConfiguration else {
                 Log.warning(label: Constants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
                 return
             }
-            
-            // get shared state, config, settings, etc. out of the response event.
-            // then show the view
-            
-            guard let config = responseData["config"] as? ConciergeConfiguration else {
-                return
-            }            
-            
+                        
             if let speechCapturer = speechCapturer {
                 self.speechCapturer = speechCapturer
             }
