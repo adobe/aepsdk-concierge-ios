@@ -19,6 +19,8 @@ enum Constants {
     static let EXTENSION_VERSION = "5.0.0"
     static let FRIENDLY_NAME = "Concierge"
     
+    static let DEFAULT_TIMEOUT = 3.0
+    
     enum ContentTypes {
         static let APPLICATION_JSON = "application/json"
     }
@@ -47,6 +49,12 @@ enum Constants {
     enum EventName {
         static let SHOW_UI = "Show Brand Concierge UI - Request"
         static let SHOW_UI_RESPONSE = "Show Brand Concierge UI - Response"
+    }
+    
+    enum EventData {
+        enum Key {
+            static let CONFIG = "config"
+        }
     }
     
     enum SSE {

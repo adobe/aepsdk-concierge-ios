@@ -54,88 +54,78 @@ class ConciergeChatService: NSObject {
     }
     
     func streamChat(_ query: String, onChunk: @escaping (TempPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
-        let urlWithError = createUrl()
-        guard let url = urlWithError.0 else {
-            onComplete(urlWithError.1)
+        do {
+            let url = try createUrl()
+
+            // Register handlers for this streaming session
+            self.onChunkHandler = onChunk
+            self.onCompleteHandler = onComplete
+            self.lastEmittedResponseText = ""
+
+            let payload = try createChatPayload(query: query)
+
+            var request = URLRequest(url: url)
+            request.httpMethod = Constants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(Constants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: Constants.HeaderFields.CONTENT_TYPE)
+            request.setValue(Constants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: Constants.HeaderFields.ACCEPT)
+            request.timeoutInterval = Constants.Request.READ_TIMEOUT
+
+            dataTask = session.dataTask(with: request)
+            Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            dataTask?.resume()
+        } catch {
+            if let error = error as? ConciergeError {
+                Log.warning(label: LOG_TAG, error.localizedDescription)
+                onComplete(error)
+            } else {
+                Log.warning(label: LOG_TAG, ConciergeError.unknown.localizedDescription)
+                onComplete(.unknown)
+            }
+            
             return
         }
-        
-        // Register handlers for this streaming session
-        self.onChunkHandler = onChunk
-        self.onCompleteHandler = onComplete
-        self.lastEmittedResponseText = ""
-
-        // Use the actual user-provided query
-        let payloadWithError = createChatPayload(query: query)
-        guard let payload = payloadWithError.0 else {
-            onComplete(payloadWithError.1)
-            return
+    }
+           
+    private func createUrl() throws -> URL {
+        // TODO: remove prior to release
+        if USE_TEMPS {
+            return URL(string: TEMP_serviceEndpoint)!
         }
                 
-        var request = URLRequest(url: url)
-        request.httpMethod = Constants.HTTPMethods.POST
-        request.httpBody = payload
-        request.setValue(Constants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: Constants.HeaderFields.CONTENT_TYPE)
-        request.setValue(Constants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: Constants.HeaderFields.ACCEPT)
-        request.timeoutInterval = Constants.Request.READ_TIMEOUT
-        
-        dataTask = session.dataTask(with: request)
-        
-        Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
-        
-        dataTask?.resume()
-    }
-    
-    private func disconnect() {
-        dataTask?.cancel()
-        dataTask = nil
-    }
-    
-    private func createUrl() -> (URL?, ConciergeError?) {
-        // TODO: REMOVE ME
-        if USE_TEMPS {
-            return (URL(string: TEMP_serviceEndpoint)!, nil)
-        }
-        
-        
         guard let endpoint = conicergeConfiguration.server else {
-            return (nil, .invalidEndpoint)
+            throw ConciergeError.invalidEndpoint("Unable to create URL for Concierge Service request. Server unavailable from configuration.")
         }
-        
         guard let datastream = conicergeConfiguration.datastream else {
-            return (nil, .invalidDatastream)
+            throw ConciergeError.invalidDatastream("Unable to create URL for Concierge Service request. Datastream unavailable from configuration.")
         }
-        
+
         var queryItems = [
             URLQueryItem(name: Constants.Request.Keys.CONFIG_ID, value: datastream)
         ]
-        
+
         if let sessionId = conicergeConfiguration.sessionId {
             queryItems.append(URLQueryItem(name: Constants.Request.Keys.SESSION_ID, value: sessionId))
         }
-        
+
         if let conversationId = conicergeConfiguration.conversationId {
             queryItems.append(URLQueryItem(name: Constants.Request.Keys.CONVERSATION_ID, value: conversationId))
         }
-        
+
         var urlComponents = URLComponents(string: "\(Constants.Request.HTTPS)\(endpoint)\(apiPath)")
         urlComponents?.queryItems = queryItems
+
+        guard let url = urlComponents?.url else {
+            throw ConciergeError.invalidEndpoint("Unable to create URL for Concierge Service request. Unable to create URL from components.")
+        }
         
-        return (urlComponents?.url, nil)
+        return url
     }
-        
-    private func createChatPayload(query: String) -> (Data?, ConciergeError?) {
-        guard let ecid = conicergeConfiguration.ecid else {
-            Log.warning(label: LOG_TAG, "Unable to create concierge request payload. ECID is nil.")
-            return (nil, .invalidEcid)
-        }
-        
-        guard !conicergeConfiguration.surfaces.isEmpty else {
-            Log.warning(label: LOG_TAG, "Unable to create concierge request payload. No surfaces were provided.")
-            return (nil, .invalidSurfaces)
-        }
-        
-        // Create proper payload for your API
+    
+    private func createChatPayload(query: String) throws -> Data {
+        guard let ecid = conicergeConfiguration.ecid else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
+        guard !conicergeConfiguration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
+
         let payload = [
             Constants.Request.Keys.EVENTS: [
                 [
@@ -158,12 +148,16 @@ class ConciergeChatService: NSObject {
                 ]
             ]
         ]
-        
+
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-            return (nil, .invalidData)
+            throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
         }
-        
-        return (jsonData, nil)
+        return jsonData
+    }
+    
+    private func disconnect() {
+        dataTask?.cancel()
+        dataTask = nil
     }
 }
 

@@ -10,14 +10,37 @@
  governing permissions and limitations under the License.
  */
 
-enum ConciergeError {
-    case invalidData
-    case invalidEndpoint
-    case invalidDatastream
-    case invalidEcid
-    case invalidSurfaces
-    case invalidEcidOrSurfaces
+import Foundation
+
+enum ConciergeError: Error {
+    case invalidData(String)
+    case invalidEndpoint(String)
+    case invalidDatastream(String)
+    case invalidEcid(String)
+    case invalidSurfaces(String)
     case invalidResponseData
-    case timeout
+    case timeout(Int)
+    case unknown
     case unreachable
+}
+
+extension ConciergeError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .invalidData(let message),
+            .invalidEndpoint(let message),
+            .invalidDatastream(let message),
+            .invalidEcid(let message),
+            .invalidSurfaces(let message):
+            return message
+        case .invalidResponseData:
+            return "Response data returned was invalid."
+        case .timeout(let duration):
+            return "Request has timed out after \(duration) seconds."
+        case .unknown:
+            return "Unknown error."
+        case .unreachable:
+            return "Server was unreachable."
+        }
+    }
 }
