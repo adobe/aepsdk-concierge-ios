@@ -45,6 +45,17 @@ final class ConciergeChatViewModel: ObservableObject {
     // Toggle to attach stubbed sources to agent responses for testing until backend supports it
     var stubAgentSources: Bool = true
 
+    // MARK: Session computed flags
+    /// Whether at least one user message exists in the transcript.
+    var hasUserSentMessage: Bool {
+        messages.contains { message in
+            if case .basic(let isUserMessage) = message.template {
+                return isUserMessage
+            }
+            return false
+        }
+    }
+
     init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration)
@@ -311,6 +322,26 @@ final class ConciergeChatViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Welcome landing page content
+    /// Loads initial welcome header and examples if no messages are present.
+    func loadWelcomeIfNeeded() async {
+        guard messages.isEmpty else { return }
+        let welcome = await chatService.fetchWelcome()
+        // Header
+        messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
+        // Welcome prompt suggestions
+        for example in welcome.examples {
+            let message = Message(
+                template: .welcomeExample(
+                    imageSource: .remote(example.imageURL),
+                    text: example.text,
+                    background: example.background
+                )
+            )
+            messages.append(message)
+        }
+    }
+
     private func handle(response: ConciergeResponse?, error: ConciergeError?) {
         if let error = error {
             Log.warning(label: LOG_TAG, "An error occurred while retrieving data from the ConciergeChatService: \(error)")
@@ -344,12 +375,20 @@ final class ConciergeChatViewModel: ObservableObject {
     func applyTextChange(_ newText: String) {
         let wasEmpty = inputReducer.data.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let isEmptyNew = newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // User erased all text. Only apply .deleteContent so state becomes and stays .empty.
         if isEmptyNew && !wasEmpty {
             inputReducer.apply(.deleteContent)
+        // User starts typing from empty. 
+        // First .addContent to move to .editing, then .inputReceived(newText) to set text.
         } else if !isEmptyNew && wasEmpty {
             inputReducer.apply(.addContent)
+            inputReducer.apply(.inputReceived(newText))
+        // User continues typing. Apply .inputReceived(newText) to set text.
+        } else if !isEmptyNew {
+            inputReducer.apply(.inputReceived(newText))
+        } else {
+            // Already empty and still empty: no-op to avoid toggling to editing
         }
-        inputReducer.apply(.inputReceived(newText))
     }
     
     private func clearState() {

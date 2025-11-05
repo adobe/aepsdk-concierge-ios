@@ -44,6 +44,38 @@ class ConciergeChatService: NSObject {
         // TODO: research the use of a delegateQueue here
         session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }
+
+    // TODO: Mocked Welcome landing page content + recommended prompts (temporary until backend support)
+    /// Returns a mocked welcome header and example tiles.
+    func fetchWelcome() async -> (title: String, body: String, examples: [WelcomePromptSuggestion]) {
+        let title = "Welcome to [Name] concierge!"
+        let body = "I’m your personal guide to help you explore and find exactly what you need. Let’s get started!\n\nNot sure where to start? Explore the suggested ideas below."
+
+        let examples: [WelcomePromptSuggestion] = [
+            WelcomePromptSuggestion(
+                text: "I'd like to explore templates to see what I can create.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_142fd6e4e46332d8f41f5aef982448361c0c8c65e.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I want to touch up and enhance my photos.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1e188097a1bc580b26c8be07d894205c5c6ca5560.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I'd like to edit PDFs and make them interactive.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1f6fed23045bbbd57fc17dadc3aa06bcc362f84cb.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I want to turn my clips into polished videos.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png"),
+                backgroundHex: "#FFFFFF"
+            )
+        ]
+
+        return (title, body, examples)
+    }
     
     func setServerEventHandler(_ handler: @escaping (ConciergeResponse?, ConciergeError?) -> Void) {
         self.serverEventHandler = handler

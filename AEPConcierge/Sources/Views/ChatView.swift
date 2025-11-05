@@ -92,8 +92,19 @@ public struct ChatView: View {
             Color(.systemBackground)
                 .ignoresSafeArea()
 
+            // Filter welcome content (header + examples) based on input state and whether the user has interacted
+            let shouldShowWelcome = (reducer.state == .empty) && !viewModel.hasUserSentMessage
+            let displayMessages: [Message] = shouldShowWelcome ? viewModel.messages : viewModel.messages.filter { message in
+                switch message.template {
+                case .welcomeExample, .welcomeHeader:
+                    return false
+                default:
+                    return true
+                }
+            }
+
             MessageListView(
-                messages: viewModel.messages,
+                messages: displayMessages,
                 userScrollTick: viewModel.userScrollTick,
                 userMessageToScrollId: viewModel.userMessageToScrollId,
                 isInputFocused: $isInputFocused
@@ -158,6 +169,7 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
+            Task { await viewModel.loadWelcomeIfNeeded() }
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in
