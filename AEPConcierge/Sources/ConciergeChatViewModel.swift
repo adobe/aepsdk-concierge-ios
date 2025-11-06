@@ -11,6 +11,7 @@
  */
 
 import Foundation
+import SwiftUI
 
 import AEPServices
 
@@ -24,6 +25,8 @@ final class ConciergeChatViewModel: ObservableObject {
     @Published var userScrollTick: Int = 0
     // ID of the user message to scroll to when userScrollTick changes
     @Published var userMessageToScrollId: UUID? = nil
+    // Tracks whether the permission dialog should be shown
+    @Published var showPermissionDialog: Bool = false
 
     private let LOG_TAG = "ConciergeChatViewModel"
 
@@ -137,12 +140,20 @@ final class ConciergeChatViewModel: ObservableObject {
             Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected inputState to be 'empty' or 'editing', but was '\(inputState)'.")
             return
         }
-        guard let capturer = speechCapturer, capturer.isAvailable() else {
-            Log.warning(label: self.LOG_TAG, "startRecording ignored. Expected speech capturer instance is nil.")
-            // Optional: surface an error state instead
-            // inputState = .error(.permissionDenied)
+        guard let capturer = speechCapturer else {
+            Log.warning(label: self.LOG_TAG, "startRecording ignored. Speech capturer instance is nil.")
             return
         }
+        
+        // Check if permissions are available
+        guard capturer.isAvailable() else {
+            Log.debug(label: self.LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                showPermissionDialog = true
+            }
+            return
+        }
+        
         inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         capturer.beginCapture()
     }
@@ -150,6 +161,21 @@ final class ConciergeChatViewModel: ObservableObject {
     // stopRecording behavior moved into cancel/complete + reducer
 
     // finishTranscription handled by reducer via transcriptionComplete/error
+
+    // MARK: - Permission Dialog
+    func dismissPermissionDialog() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            showPermissionDialog = false
+        }
+    }
+    
+    func requestOpenSettings() {
+        // Signal that settings should be opened
+        // The actual opening will be handled by the view layer using SwiftUI's openURL
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            showPermissionDialog = false
+        }
+    }
 
     // MARK: - Sending
     func sendMessage(isUser: Bool) {

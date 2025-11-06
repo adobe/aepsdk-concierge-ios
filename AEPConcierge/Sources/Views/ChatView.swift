@@ -191,6 +191,27 @@ public struct ChatView: View {
                 .zIndex(1000)
             }
         }
+        .overlay(alignment: .center) {
+            if viewModel.showPermissionDialog {
+                ZStack {
+                    // Backdrop with separate fade animation
+                    Color.clear
+                        .background(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                        .onTapGesture {
+                            viewModel.dismissPermissionDialog()
+                        }
+                    
+                    // Dialog card with scale animation
+                    PermissionDialogView(
+                        theme: theme,
+                        onDismiss: { viewModel.dismissPermissionDialog() }
+                    )
+                }
+                .zIndex(1001)
+            }
+        }
     }
     
     // MARK: - Actions
