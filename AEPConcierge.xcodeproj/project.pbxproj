@@ -39,6 +39,7 @@
 		243868C32EB17B18004BF9C0 /* SharedStateResult+Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */; };
+		247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
 		2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDC2E3BEA210032F3CA /* SpeechCapturing.swift */; };
 		2482FDE02E3BED830032F3CA /* SpeechCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDF2E3BED830032F3CA /* SpeechCapturer.swift */; };
@@ -186,6 +187,7 @@
 		243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SharedStateResult+Concierge.swift"; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeInteraction.swift; sourceTree = "<group>"; };
+		247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogView.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
 		2482FDDC2E3BEA210032F3CA /* SpeechCapturing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechCapturing.swift; sourceTree = "<group>"; };
 		2482FDDF2E3BED830032F3CA /* SpeechCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechCapturer.swift; sourceTree = "<group>"; };
@@ -450,6 +452,7 @@
 				2498998E2D67C62A0005CBD7 /* ChatView.swift */,
 				4C3A65B52E53E9EA00EEEF3B /* ConciergeWrapper.swift */,
 				249899902D67C62A0005CBD7 /* PageIndicator.swift */,
+				247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */,
 				4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */,
 			);
 			path = Views;
@@ -811,9 +814,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -850,9 +857,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -957,6 +968,7 @@
 				2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */,
 				243868BD2EB13986004BF9C0 /* ConciergeConfiguration.swift in Sources */,
 				4C5FE3222EBB1128004F9286 /* WelcomePromptSuggestion.swift in Sources */,
+				247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
