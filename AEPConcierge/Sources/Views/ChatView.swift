@@ -97,7 +97,7 @@ public struct ChatView: View {
             let shouldShowWelcome = (reducer.state == .empty) && !viewModel.hasUserSentMessage
             let displayMessages: [Message] = shouldShowWelcome ? viewModel.messages : viewModel.messages.filter { message in
                 switch message.template {
-                case .welcomeExample, .welcomeHeader:
+                case .welcomePromptSuggestion, .welcomeHeader:
                     return false
                 default:
                     return true

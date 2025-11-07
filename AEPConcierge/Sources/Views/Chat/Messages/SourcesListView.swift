@@ -34,7 +34,7 @@ public struct SourcesListView: View {
 
     public var body: some View {
         Group {
-            if !sources.isEmpty {
+            if !uniqueSources.isEmpty {
                 sourceContent
             }
         }
@@ -61,10 +61,12 @@ public struct SourcesListView: View {
     }
     
     private var sourceRows: some View {
-        VStack(spacing: 0) {
-            ForEach(sources, id: \.self) { source in
+        let entries = uniqueSources
+        return VStack(spacing: 0) {
+            ForEach(entries.indices, id: \.self) { index in
+                let source = entries[index]
                 sourceRow(for: source)
-                if source.citationNumber < sources.count {
+                if index < entries.count - 1 {
                     bottomDivider
                 }
             }
@@ -81,6 +83,10 @@ public struct SourcesListView: View {
     
     private var bottomDivider: some View {
         Divider().background(Color.black.opacity(0.06))
+    }
+
+    private var uniqueSources: [TempSource] {
+        CitationRenderer.deduplicate(sources)
     }
     
     private var backgroundShape: some View {

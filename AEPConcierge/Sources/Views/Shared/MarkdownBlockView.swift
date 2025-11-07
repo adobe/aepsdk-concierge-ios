@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// SwiftUI component that renders markdown using the markdown block renderer.
 /// It composes `MarkdownText` and native SwiftUI elements to support full markdown rendering.
@@ -19,6 +20,9 @@ struct MarkdownBlockView: View {
     var textColor: UIColor
     var baseFont: UIFont = .preferredFont(forTextStyle: .body)
     var spacing: CGFloat = 8
+    var citationMarkers: [CitationRenderer.Marker] = []
+    var citationStyle: CitationStyle = .default
+    var onOpenLink: ((URL) -> Void)? = nil
 
     var body: some View {
         let blocks = MarkdownRenderer.buildBlocks(
@@ -26,15 +30,22 @@ struct MarkdownBlockView: View {
             textColor: textColor,
             baseFont: baseFont
         )
+        let transformedBlocks = blocks.map(transformBlock)
 
         return VStack(alignment: .leading, spacing: spacing) {
-            ForEach(Array(blocks.enumerated()), id: \.0) { _, block in
+            ForEach(Array(transformedBlocks.enumerated()), id: \.0) { _, block in
                 switch block {
                 case .text(let ns):
-                    MarkdownText(attributed: ns)
+                    MarkdownText(
+                        attributed: ns,
+                        onOpenLink: onOpenLink
+                    )
                         .fixedSize(horizontal: false, vertical: true)
                 case .code(let ns):
-                    MarkdownText(attributed: ns)
+                    MarkdownText(
+                        attributed: ns,
+                        onOpenLink: onOpenLink
+                    )
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,30 +54,78 @@ struct MarkdownBlockView: View {
                 case .divider:
                     Divider()
                 case .blockQuote(let paras):
-                    QuoteBlockView(blocks: paras)
+                    QuoteBlockView(
+                        blocks: paras,
+                        onOpenLink: onOpenLink
+                    )
                 case .list(let type, let items):
-                    ListBlockView(type: type, items: items)
+                    ListBlockView(
+                        type: type,
+                        items: items,
+                        onOpenLink: onOpenLink
+                    )
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .layoutPriority(1)
     }
+
+    /// Traverses the rendered markdown block tree, replacing citation placeholder tokens with inline attachments
+    /// while preserving the original block structure.
+    ///
+    /// - Parameter block: The block hierarchy produced by `MarkdownRenderer` to inspect and potentially transform.
+    /// - Returns: A transformed block hierarchy with citation tokens swapped for attachments.
+    private func transformBlock(_ block: MarkdownRenderer.MarkdownBlock) -> MarkdownRenderer.MarkdownBlock {
+        switch block {
+        case .text(let ns):
+            let replaced = CitationAttachmentBuilder.replaceTokens(
+                in: ns,
+                markers: citationMarkers,
+                baseFont: baseFont,
+                style: citationStyle
+            )
+            return .text(replaced)
+        case .code(let ns):
+            let replaced = CitationAttachmentBuilder.replaceTokens(
+                in: ns,
+                markers: citationMarkers,
+                baseFont: baseFont,
+                style: citationStyle
+            )
+            return .code(replaced)
+        case .divider:
+            return block
+        case .blockQuote(let children):
+            return .blockQuote(children.map(transformBlock))
+        case .list(let type, let items):
+            let transformedItems = items.map { $0.map(transformBlock) }
+            return .list(type: type, items: transformedItems)
+        }
+    }
 }
 
 /// Quote block with left rule, supports nested content by stacking paragraphs.
 private struct QuoteBlockView: View {
     let blocks: [MarkdownRenderer.MarkdownBlock]
+    let onOpenLink: ((URL) -> Void)?
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
                     switch child {
                     case .text(let ns):
-                        MarkdownText(attributed: ns)
+                        MarkdownText(
+                            attributed: ns,
+                            onOpenLink: onOpenLink
+                        )
                             .fixedSize(horizontal: false, vertical: true)
                     case .code(let ns):
-                        MarkdownText(attributed: ns)
+                        MarkdownText(
+                            attributed: ns,
+                            onOpenLink: onOpenLink
+                        )
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -75,9 +134,16 @@ private struct QuoteBlockView: View {
                     case .divider:
                         Divider()
                     case .blockQuote(let nested):
-                        QuoteBlockView(blocks: nested)
+                        QuoteBlockView(
+                            blocks: nested,
+                            onOpenLink: onOpenLink
+                        )
                     case .list(let t, let children):
-                        ListBlockView(type: t, items: children)
+                        ListBlockView(
+                            type: t,
+                            items: children,
+                            onOpenLink: onOpenLink
+                        )
                     }
                 }
             }
@@ -98,6 +164,7 @@ private struct QuoteBlockView: View {
 private struct ListBlockView: View {
     let type: MarkdownRenderer.ListType
     let items: [[MarkdownRenderer.MarkdownBlock]]
+    let onOpenLink: ((URL) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -115,10 +182,16 @@ private struct ListBlockView: View {
                                 ForEach(Array(quotedChildren.enumerated()), id: \.0) { _, child in
                                     switch child {
                                     case .text(let ns):
-                                        MarkdownText(attributed: ns)
+                                        MarkdownText(
+                                            attributed: ns,
+                                            onOpenLink: onOpenLink
+                                        )
                                             .fixedSize(horizontal: false, vertical: true)
                                     case .code(let ns):
-                                        MarkdownText(attributed: ns)
+                                        MarkdownText(
+                                            attributed: ns,
+                                            onOpenLink: onOpenLink
+                                        )
                                             .fixedSize(horizontal: false, vertical: true)
                                             .padding(10)
                                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -127,9 +200,16 @@ private struct ListBlockView: View {
                                     case .divider:
                                         Divider()
                                     case .blockQuote(let nested):
-                                        QuoteBlockView(blocks: nested)
+                                        QuoteBlockView(
+                                            blocks: nested,
+                                            onOpenLink: onOpenLink
+                                        )
                                     case .list(let t, let inner):
-                                        ListBlockView(type: t, items: inner)
+                                        ListBlockView(
+                                            type: t,
+                                            items: inner,
+                                            onOpenLink: onOpenLink
+                                        )
                                     }
                                 }
                             }
@@ -166,10 +246,16 @@ private struct ListBlockView: View {
                                     ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
                                         switch child {
                                         case .text(let ns):
-                                            MarkdownText(attributed: ns)
+                                            MarkdownText(
+                                                attributed: ns,
+                                                onOpenLink: onOpenLink
+                                            )
                                                 .fixedSize(horizontal: false, vertical: true)
                                         case .code(let ns):
-                                            MarkdownText(attributed: ns)
+                                            MarkdownText(
+                                                attributed: ns,
+                                                onOpenLink: onOpenLink
+                                            )
                                                 .fixedSize(horizontal: false, vertical: true)
                                                 .padding(10)
                                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,9 +264,16 @@ private struct ListBlockView: View {
                                         case .divider:
                                             Divider()
                                         case .blockQuote(let nested):
-                                            QuoteBlockView(blocks: nested)
+                                            QuoteBlockView(
+                                                blocks: nested,
+                                                onOpenLink: onOpenLink
+                                            )
                                         case .list(let t, let inner):
-                                            ListBlockView(type: t, items: inner)
+                                            ListBlockView(
+                                                type: t,
+                                                items: inner,
+                                                onOpenLink: onOpenLink
+                                            )
                                         }
                                     }
                                 }
@@ -190,7 +283,11 @@ private struct ListBlockView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 ForEach(Array(blocks.enumerated()), id: \.0) { _, child in
                                     if case .list(let t, let inner) = child {
-                                        ListBlockView(type: t, items: inner)
+                                        ListBlockView(
+                                            type: t,
+                                            items: inner,
+                                            onOpenLink: onOpenLink
+                                        )
                                     } else if case .divider = child {
                                         Divider()
                                     }
