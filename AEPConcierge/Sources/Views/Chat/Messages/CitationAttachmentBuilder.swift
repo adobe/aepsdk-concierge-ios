@@ -14,14 +14,14 @@ import UIKit
 
 /// Utility responsible for replacing inline citation tokens with tappable badge attachments.
 enum CitationAttachmentBuilder {
-    /// Replaces all citation tokens found in the attributed string with inline attachments.
+    /// Replaces citation placeholder tokens with inline badge attachments.
+    ///
     /// - Parameters:
-    ///   - attributed: The source attributed string produced by the markdown renderer.
-    ///   - markers: Metadata describing each placeholder token.
-    ///   - baseFont: Font used to align the badge with surrounding text.
-    ///   - backgroundColor: Background color for the badge circle.
-    ///   - foregroundColor: Text color for the badge number.
-    /// - Returns: An attributed string with tokens swapped for inline attachments.
+    ///   - attributed: The attributed string produced by the markdown renderer.
+    ///   - markers: Metadata describing each token that should be replaced.
+    ///   - baseFont: The surrounding font, used to align the badge vertically.
+    ///   - style: Colors describing how the badge should be rendered.
+    /// - Returns: An attributed string where every token has been swapped for a badge attachment.
     static func replaceTokens(
         in attributed: NSAttributedString,
         markers: [CitationRenderer.Marker],
@@ -56,6 +56,13 @@ enum CitationAttachmentBuilder {
         return mutable
     }
 
+    /// Produces a single badge attachment for the given citation marker.
+    ///
+    /// - Parameters:
+    ///   - marker: The marker describing citation number and link target.
+    ///   - baseFont: Font used to align the badge with surrounding text.
+    ///   - style: Colors describing badge appearance.
+    /// - Returns: An attributed string containing the attachment and trailing spacing.
     private static func makeAttachment(
         for marker: CitationRenderer.Marker,
         baseFont: UIFont,
@@ -74,7 +81,7 @@ enum CitationAttachmentBuilder {
             font: font,
             size: badgeSize,
             style: style
-        ).withRenderingMode(.alwaysOriginal)
+        )
 
         let baselineOffset = (baseFont.capHeight - badgeSize.height) / 2
         attachment.bounds = CGRect(x: 0, y: baselineOffset, width: badgeSize.width, height: badgeSize.height)
@@ -83,10 +90,20 @@ enum CitationAttachmentBuilder {
         if let url = URL(string: marker.source.url) {
             result.addAttribute(.link, value: url, range: NSRange(location: 0, length: result.length))
         }
-        result.append(NSAttributedString(string: "\u{200A}"))
+        
+        // Add a space after the badge to separate it from the next character.
+        result.append(NSAttributedString(string: " "))
         return result
     }
 
+    /// Draws a pill shaped badge containing the provided text.
+    ///
+    /// - Parameters:
+    ///   - text: The citation number to show inside the badge.
+    ///   - font: Font used to measure and draw the text.
+    ///   - size: Final size of the badge.
+    ///   - style: Colors describing badge appearance.
+    /// - Returns: A rendered `UIImage` representing the badge.
     private static func drawBadgeImage(
         text: String,
         font: UIFont,
