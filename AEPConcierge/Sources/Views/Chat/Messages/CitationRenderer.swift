@@ -47,7 +47,7 @@ enum CitationRenderer {
     ///   - sources: Sources supplied by the concierge service.
     /// - Returns: Decoration data containing annotated markdown, markers, and deduplicated sources.
     static func decorate(markdown: String, sources: [TempSource]) -> Decoration {
-        // No content or no sources means there's nothing to decorate.
+        // Return early when either the markdown or source list is empty.
         guard !markdown.isEmpty, !sources.isEmpty else {
             return Decoration(annotatedMarkdown: markdown, markers: [], deduplicatedSources: [])
         }
@@ -62,7 +62,7 @@ enum CitationRenderer {
         var processed: [ProcessedSource] = []
 
         for source in sources {
-            // Clamp the end index to the bounds of the message to avoid invalid ranges.
+        // Clamp the end index to the bounds of the message to avoid invalid ranges.
             let clampedEnd = max(0, min(source.endIndex, characterCount))
             let normalized = TempSource(
                 url: source.url,
@@ -79,7 +79,7 @@ enum CitationRenderer {
             return Decoration(annotatedMarkdown: markdown, markers: [], deduplicatedSources: [])
         }
 
-        // Sort so we can insert markers in reading order (ties broken by citation number for determinism).
+        // Sort so markers are inserted in reading order (ties broken by citation number for determinism).
         processed.sort { lhs, rhs in
             if lhs.end == rhs.end {
                 return lhs.normalized.citationNumber < rhs.normalized.citationNumber
@@ -112,7 +112,7 @@ enum CitationRenderer {
             markers.append(marker)
         }
 
-        // Present markers in their natural reading order for consumers.
+        // Present markers in natural reading order for consumers.
         markers.sort { $0.endOffset < $1.endOffset }
 
         let deduplicated = deduplicatedSources(from: markers)
