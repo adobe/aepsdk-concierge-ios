@@ -61,10 +61,17 @@ enum CitationAttachmentBuilder {
         baseFont: UIFont,
         style: CitationStyle
     ) -> NSAttributedString {
-        let badgeSize = CGSize(width: 18, height: 18)
+        let baseHeight: CGFloat = 18
+        let font = UIFont.systemFont(ofSize: 11, weight: .semibold)
+        let text = "\(marker.citationNumber)"
+        let textSize = text.size(withAttributes: [.font: font])
+        let horizontalPadding: CGFloat = 10
+        let badgeWidth = max(baseHeight, textSize.width + horizontalPadding)
+        let badgeSize = CGSize(width: ceil(badgeWidth), height: baseHeight)
         let attachment = NSTextAttachment()
         attachment.image = drawBadgeImage(
-            number: marker.citationNumber,
+            text: text,
+            font: font,
             size: badgeSize,
             style: style
         ).withRenderingMode(.alwaysOriginal)
@@ -81,29 +88,31 @@ enum CitationAttachmentBuilder {
     }
 
     private static func drawBadgeImage(
-        number: Int,
+        text: String,
+        font: UIFont,
         size: CGSize,
         style: CitationStyle
     ) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { context in
             let rect = CGRect(origin: .zero, size: size)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
             context.cgContext.setFillColor(style.backgroundColor.cgColor)
-            context.cgContext.fillEllipse(in: rect)
+            context.cgContext.addPath(path.cgPath)
+            context.cgContext.fillPath()
 
-            let text = "\(number)"
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 11, weight: .semibold),
-                .foregroundColor: style.textColor
-            ]
-            let textSize = text.size(withAttributes: attributes)
-            let textRect = CGRect(
-                x: (rect.width - textSize.width) / 2,
-                y: (rect.height - textSize.height) / 2,
-                width: textSize.width,
-                height: textSize.height
-            )
-            text.draw(in: textRect, withAttributes: attributes)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: style.textColor
+        ]
+        let textSize = text.size(withAttributes: attributes)
+        let textRect = CGRect(
+            x: (rect.width - textSize.width) / 2,
+            y: (rect.height - textSize.height) / 2,
+            width: textSize.width,
+            height: textSize.height
+        )
+        text.draw(in: textRect, withAttributes: attributes)
         }
     }
 }
