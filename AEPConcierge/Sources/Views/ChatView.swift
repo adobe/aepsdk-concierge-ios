@@ -21,6 +21,7 @@ public struct ChatView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergeFeedbackPresenter) private var feedbackEnvPresenter
+    @Environment(\.openURL) private var openURL
     @StateObject private var viewModel: ConciergeChatViewModel
     @ObservedObject private var reducer: InputReducer
     @State private var showAgentSend: Bool = false
@@ -189,6 +190,41 @@ public struct ChatView: View {
                 )
                 .transition(.opacity)
                 .zIndex(1000)
+            }
+        }
+        .overlay(alignment: .center) {
+            if viewModel.showPermissionDialog {
+                ZStack {
+                    // Backdrop with separate fade animation
+                    Color.clear
+                        .background(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                viewModel.dismissPermissionDialog()
+                            }
+                        }
+                    
+                    // Dialog card with scale animation
+                    PermissionDialogView(
+                        theme: theme,
+                        onCancel: {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                viewModel.dismissPermissionDialog()
+                            }
+                        },
+                        onOpenSettings: {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                openURL(url)
+                            }
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                viewModel.requestOpenSettings()
+                            }
+                        }
+                    )
+                }
+                .zIndex(1001)
             }
         }
     }

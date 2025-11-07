@@ -154,6 +154,50 @@ final class ConciergeChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.inputReducer.data.text, "set return")
     }
     
+    func test_startRecording_whenPermissionsDenied_showsPermissionDialog() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.available = false // simulate denied permissions
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        XCTAssertFalse(vm.showPermissionDialog)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        
+        XCTAssertTrue(vm.showPermissionDialog)
+        XCTAssertFalse(vm.isRecording)
+        XCTAssertEqual(capturer.beginCaptures, 0)
+    }
+    
+    func test_dismissPermissionDialog_hidesDialog() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.available = false
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        XCTAssertTrue(vm.showPermissionDialog)
+        
+        vm.dismissPermissionDialog()
+        
+        XCTAssertFalse(vm.showPermissionDialog)
+    }
+    
+    func test_requestOpenSettings_hidesDialog() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.available = false
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        XCTAssertTrue(vm.showPermissionDialog)
+        
+        vm.requestOpenSettings()
+        
+        XCTAssertFalse(vm.showPermissionDialog)
+        // Note: The actual URL opening is handled by the view layer using SwiftUI's openURL
+    }
+    
     // MARK: - Helpers
     private func makeVM(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil) -> ConciergeChatViewModel {
         ConciergeChatViewModel(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
