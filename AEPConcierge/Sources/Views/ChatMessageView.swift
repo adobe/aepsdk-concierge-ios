@@ -94,6 +94,9 @@ struct ChatMessageView: View {
             
         case .basic(let isUserMessage):
             let rawSources = sources ?? []
+            // Attempt to decorate the message so citation markers can be injected into the markdown rendering logic.
+            // If decoration fails (ex: no sources or empty body), fall back to rendering the original message and
+            // show the sources untouched.
             let decoration: CitationRenderer.Decoration? = {
                 guard !isUserMessage, let body = messageBody, !body.isEmpty else { return nil }
                 return CitationRenderer.decorate(markdown: body, sources: rawSources)
