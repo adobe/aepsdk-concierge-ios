@@ -226,6 +226,12 @@ extension ConciergeChatService: URLSessionDataDelegate {
                         let srcCount = resp.sources?.count ?? 0
                         let suggCount = resp.promptSuggestions?.count ?? 0
                         Log.debug(label: LOG_TAG, "SSE chunk: state=\(payload.state ?? "n/a"), textLen=\(text.count), sources=\(srcCount), suggestions=\(suggCount)")
+                        if payload.state == Constants.StreamState.COMPLETED {
+                            if let data = try? JSONEncoder().encode(resp),
+                               let json = String(data: data, encoding: .utf8) {
+                                Log.debug(label: LOG_TAG, "SSE final response JSON: \(json)")
+                            }
+                        }
                     } else {
                         Log.debug(label: LOG_TAG, "SSE chunk: state=\(payload.state ?? "n/a") (no response)")
                     }
