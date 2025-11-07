@@ -71,6 +71,11 @@ struct MarkdownBlockView: View {
         .layoutPriority(1)
     }
 
+    /// Traverses the rendered markdown block tree, replacing citation placeholder tokens with inline attachments
+    /// while preserving the original block structure.
+    ///
+    /// - Parameter block: The block hierarchy produced by `MarkdownRenderer` to inspect and potentially transform.
+    /// - Returns: A transformed block hierarchy with citation tokens swapped for attachments.
     private func transformBlock(_ block: MarkdownRenderer.MarkdownBlock) -> MarkdownRenderer.MarkdownBlock {
         switch block {
         case .text(let ns):
