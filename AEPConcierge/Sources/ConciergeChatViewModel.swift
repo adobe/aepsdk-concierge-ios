@@ -286,7 +286,7 @@ final class ConciergeChatViewModel: ObservableObject {
                         }
                         else {
                             // Mark the existing streaming message for speaking while preserving its id
-                                if streamingMessageIndex < self.messages.count {
+                            if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
