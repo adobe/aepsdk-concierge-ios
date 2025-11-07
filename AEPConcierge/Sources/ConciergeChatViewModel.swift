@@ -11,7 +11,6 @@
  */
 
 import Foundation
-import SwiftUI
 
 import AEPServices
 
@@ -148,9 +147,7 @@ final class ConciergeChatViewModel: ObservableObject {
         // Check if permissions are available
         guard capturer.isAvailable() else {
             Log.debug(label: self.LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                showPermissionDialog = true
-            }
+            showPermissionDialog = true
             return
         }
         
@@ -164,17 +161,13 @@ final class ConciergeChatViewModel: ObservableObject {
 
     // MARK: - Permission Dialog
     func dismissPermissionDialog() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            showPermissionDialog = false
-        }
+        showPermissionDialog = false
     }
     
     func requestOpenSettings() {
         // Signal that settings should be opened
         // The actual opening will be handled by the view layer using SwiftUI's openURL
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            showPermissionDialog = false
-        }
+        showPermissionDialog = false
     }
 
     // MARK: - Sending
