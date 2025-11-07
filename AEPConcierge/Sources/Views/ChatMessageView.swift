@@ -17,6 +17,7 @@ struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colorScheme
 
     let template: MessageTemplate
     var messageBody: String?
@@ -53,6 +54,7 @@ struct ChatMessageView: View {
             .padding(.bottom, 4)
 
         case .welcomePromptSuggestion(let imageSource, let text, let background):
+            let resolvedBackground = colorScheme == .dark ? theme.surfaceDark : background
             Button(action: { onSuggestionTap?(text) }) {
                 HStack(spacing: 0) {
                     // Left image block
@@ -79,7 +81,7 @@ struct ChatMessageView: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                 }
-                .background(background)
+                .background(resolvedBackground)
                 .cornerRadius(10)
             }
             .buttonStyle(PlainButtonStyle())
