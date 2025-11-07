@@ -204,8 +204,8 @@ final class ConciergeChatViewModel: ObservableObject {
                             if state == Constants.StreamState.IN_PROGRESS {
                                 // Build up content with each chunk
                                 accumulatedContent += message
-                                print("chunk: \(message)")
-                                print("accumulatedContent: \(accumulatedContent)")
+                                Log.debug(label: self.LOG_TAG, "SSE chunk (len=\(message.count)): \"\(message)\"")
+                                Log.debug(label: self.LOG_TAG, "Accumulated (len=\(accumulatedContent.count))")
                                 
                                 // Update the streaming message with accumulated content (preserve id)
                                 if streamingMessageIndex < self.messages.count {
@@ -216,7 +216,7 @@ final class ConciergeChatViewModel: ObservableObject {
                             } else if state == Constants.StreamState.COMPLETED {
                                 // On completion, do a full replace with the entire text response
                                 let fullText = message
-                                print("completion - full text: \(fullText)")
+                                Log.debug(label: self.LOG_TAG, "Completion received. Full text length=\(fullText.count)")
                                 
                                 // Replace with complete text response
                                 if streamingMessageIndex < self.messages.count {
@@ -286,13 +286,13 @@ final class ConciergeChatViewModel: ObservableObject {
                         }
                         else {
                             // Mark the existing streaming message for speaking while preserving its id
-                            if streamingMessageIndex < self.messages.count {
+                                if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
                                 // Attach real sources captured during streaming if present
                                 if !self.latestSources.isEmpty {
-                                    Log.trace(label: self.LOG_TAG, "Using real sources: \(self.latestSources)")
+                                    Log.trace(label: self.LOG_TAG, "Using real sources: count=\(self.latestSources.count)")
                                     current.sources = self.latestSources
                                 } else if self.stubAgentSources {
                                     Log.trace(label: self.LOG_TAG, "Using stubbed sources")
@@ -397,7 +397,7 @@ final class ConciergeChatViewModel: ObservableObject {
         latestSources = []
         latestPromptSuggestions = []
     }
-    
+
     /// this must be called from the main thread
     private func renderProductCards(_ products: [TempElement]) {
         if products.count == 1, let entityInfo = products.first?.entityInfo {

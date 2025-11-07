@@ -17,6 +17,7 @@ import SwiftUI
 struct MarkdownText: UIViewRepresentable {
     let attributed: NSAttributedString
     var maxWidth: CGFloat? = nil
+    var onOpenLink: ((URL) -> Void)? = nil
 
     final class AutoSizingTextView: UITextView {
         var targetWidth: CGFloat = 0 { didSet { if oldValue != targetWidth { invalidateIntrinsicContentSize() } } }
@@ -43,6 +44,7 @@ struct MarkdownText: UIViewRepresentable {
         tv.adjustsFontForContentSizeCategory = true
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tv.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        tv.delegate = context.coordinator
         return tv
     }
 
@@ -51,6 +53,27 @@ struct MarkdownText: UIViewRepresentable {
         if let w = maxWidth, w > 0 {
             uiView.targetWidth = w
             uiView.textContainer.size = CGSize(width: w, height: CGFloat.greatestFiniteMagnitude)
+        }
+        context.coordinator.parent = self
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        var parent: MarkdownText
+
+        init(parent: MarkdownText) {
+            self.parent = parent
+        }
+
+        func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+            if let handler = parent.onOpenLink {
+                handler(URL)
+                return false
+            }
+            return true
         }
     }
 }

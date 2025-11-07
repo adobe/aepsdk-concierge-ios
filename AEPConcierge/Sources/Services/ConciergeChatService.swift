@@ -213,7 +213,6 @@ extension ConciergeChatService: URLSessionDataDelegate {
             }
             
             let trimmedHandle = String(component.dropFirst(6))
-            print(trimmedHandle)
             guard let handleData = trimmedHandle.data(using: .utf8) else {
                 return
             }
@@ -222,6 +221,14 @@ extension ConciergeChatService: URLSessionDataDelegate {
                 let handle = try JSONDecoder().decode(TempHandle.self, from: handleData)
                 if let handler = self.onChunkHandler,
                    let payload = handle.handle.first?.payload.first {
+                    if let resp = payload.response {
+                        let text = resp.message
+                        let srcCount = resp.sources?.count ?? 0
+                        let suggCount = resp.promptSuggestions?.count ?? 0
+                        Log.debug(label: LOG_TAG, "SSE chunk: state=\(payload.state ?? "n/a"), textLen=\(text.count), sources=\(srcCount), suggestions=\(suggCount)")
+                    } else {
+                        Log.debug(label: LOG_TAG, "SSE chunk: state=\(payload.state ?? "n/a") (no response)")
+                    }
                     handler(payload)
                 }
             } catch {
