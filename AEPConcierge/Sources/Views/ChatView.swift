@@ -210,7 +210,7 @@ public struct ChatView: View {
                     PermissionDialogView(
                         theme: theme,
                         onCancel: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 viewModel.dismissPermissionDialog()
                             }
                         },
@@ -218,7 +218,7 @@ public struct ChatView: View {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
                                 openURL(url)
                             }
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 viewModel.requestOpenSettings()
                             }
                         }
