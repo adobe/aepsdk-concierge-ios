@@ -14,19 +14,15 @@ import SwiftUI
 
 struct PermissionDialogView: View {
     let theme: ConciergeTheme
-    let onDismiss: () -> Void
+    let onCancel: () -> Void
+    let onOpenSettings: () -> Void
     
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.openURL) private var openURL
     
     private var borderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
     }
-    
-    private var settingsURL: URL? {
-        URL(string: UIApplication.openSettingsURLString)
-    }
-    
+
     var body: some View {
         VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -42,7 +38,7 @@ struct PermissionDialogView: View {
                 .padding(20)
                 
                 HStack(spacing: 12) {
-                    Button(action: onDismiss) {
+                    Button(action: onCancel) {
                         Text("Cancel")
                             .font(.body.weight(.semibold))
                             .foregroundStyle(theme.secondary)
@@ -54,12 +50,7 @@ struct PermissionDialogView: View {
                             .stroke(theme.secondary, lineWidth: 1)
                     )
                     
-                    Button(action: {
-                        onDismiss()
-                        if let url = settingsURL {
-                            openURL(url)
-                        }
-                    }) {
+                    Button(action: onOpenSettings) {
                         Text("Open Settings")
                             .font(.body.weight(.semibold))
                             .foregroundStyle(theme.onPrimary)
@@ -111,7 +102,8 @@ struct PermissionDialogView: View {
                         
                         PermissionDialogView(
                             theme: ConciergeTheme(),
-                            onDismiss: { showDialog = false }
+                            onCancel: { showDialog = false },
+                            onOpenSettings: { showDialog = false }
                         )
                     }
                 }
