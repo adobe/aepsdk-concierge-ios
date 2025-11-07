@@ -91,6 +91,14 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
             
         case .basic(let isUserMessage):
+            let rawSources = sources ?? []
+            let decoration: CitationRenderer.Decoration? = {
+                guard !isUserMessage, let body = messageBody, !body.isEmpty else { return nil }
+                return CitationRenderer.decorate(markdown: body, sources: rawSources)
+            }()
+            let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")
+            let markers = decoration?.markers ?? []
+            let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .bottom) {
                     if isUserMessage { Spacer() }
@@ -102,8 +110,18 @@ struct ChatMessageView: View {
                         } else {
                             if let messageBody, !messageBody.isEmpty {
                                 MarkdownBlockView(
-                                    markdown: messageBody,
-                                    textColor: UIColor(theme.onAgent)
+                                    markdown: annotatedBody,
+                                    textColor: UIColor(theme.onAgent),
+                                    citationMarkers: markers,
+                                    citationStyle: .init(
+//                                        backgroundColor: UIColor(theme.primary),
+//                                        textColor: UIColor(theme.onPrimary)
+                                        backgroundColor: UIColor.red,
+                                        textColor: UIColor.white
+                                    ),
+                                    onOpenLink: { url in
+                                        openURL(url)
+                                    }
                                 )
                             } else {
                                 ConciergeResponsePlaceholderView()
@@ -112,7 +130,7 @@ struct ChatMessageView: View {
                     }
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
-                        .padding(.bottom, (!isUserMessage && (sources?.isEmpty == false)) ? 6 : 12)
+                        .padding(.bottom, (!isUserMessage && (!displayedSources.isEmpty)) ? 6 : 12)
                         .textSelection(.enabled)
                         .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
                         .background(
@@ -121,7 +139,7 @@ struct ChatMessageView: View {
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .fill(theme.primary)
                                 } else {
-                                    if let sources, !sources.isEmpty {
+                                    if !displayedSources.isEmpty {
                                         RoundedCornerShape(radius: 14, corners: [.topLeft, .topRight])
                                             .fill(theme.agentBubble)
                                     } else {
@@ -146,9 +164,9 @@ struct ChatMessageView: View {
                 }
 
                 // Attach sources dropdown for agent messages only
-                if !isUserMessage, let sources, !sources.isEmpty {
+                if !isUserMessage, !displayedSources.isEmpty {
                     HStack(alignment: .top) {
-                        SourcesListView(sources: sources)
+                        SourcesListView(sources: displayedSources)
                         Spacer()
                     }
                 }
