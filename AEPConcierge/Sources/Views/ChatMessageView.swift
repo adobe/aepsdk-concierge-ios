@@ -49,7 +49,6 @@ struct ChatMessageView: View {
                     .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
             }
-            .padding(.horizontal)
             .padding(.top, 8)
             .padding(.bottom, 4)
 
@@ -63,10 +62,10 @@ struct ChatMessageView: View {
                         image
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 120, height: 88)
+                            .frame(width: 90, height: 90)
                             .clipped()
                     case .remote(let url):
-                        RemoteImageView(url: url, width: 120, height: 88)
+                        RemoteImageView(url: url, width: 90, height: 90)
                     }
 
                     // Right text area
@@ -80,6 +79,7 @@ struct ChatMessageView: View {
                     }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .background(resolvedBackground)
                 .cornerRadius(10)
