@@ -218,13 +218,27 @@ final class ConciergeChatViewModel: ObservableObject {
                         
                         let state = payload.state
                         
+                        if let response = payload.response {
+                            let text = response.message
+                            let srcCount = response.sources?.count ?? 0
+                            let suggCount = response.promptSuggestions?.count ?? 0
+                            Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(text.count), sources=\(srcCount), suggestions=\(suggCount)")
+                            if state == Constants.StreamState.COMPLETED,
+                               let data = try? JSONEncoder().encode(response),
+                               let json = String(data: data, encoding: .utf8) {
+                                Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json)")
+                            }
+                        } else {
+                            Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
+                        }
+                        
                         // start with handling messages only
                         if let message = payload.response?.message {
                             if state == Constants.StreamState.IN_PROGRESS {
                                 // Build up content with each chunk
                                 accumulatedContent += message
-                                Log.debug(label: self.LOG_TAG, "SSE chunk (len=\(message.count)): \"\(message)\"")
-                                Log.debug(label: self.LOG_TAG, "Accumulated (len=\(accumulatedContent.count))")
+                                Log.trace(label: self.LOG_TAG, "SSE chunk (len=\(message.count)): \"\(message)\"")
+                                Log.trace(label: self.LOG_TAG, "Accumulated (len=\(accumulatedContent.count))")
                                 
                                 // Update the streaming message with accumulated content (preserve id)
                                 if streamingMessageIndex < self.messages.count {
@@ -235,7 +249,7 @@ final class ConciergeChatViewModel: ObservableObject {
                             } else if state == Constants.StreamState.COMPLETED {
                                 // On completion, do a full replace with the entire text response
                                 let fullText = message
-                                Log.debug(label: self.LOG_TAG, "Completion received. Full text length=\(fullText.count)")
+                                Log.trace(label: self.LOG_TAG, "Completion received. Full text length=\(fullText.count)")
                                 
                                 // Replace with complete text response
                                 if streamingMessageIndex < self.messages.count {
