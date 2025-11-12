@@ -86,6 +86,21 @@ enum Constants {
             static let CONFIG_ID = "configId"
             static let SESSION_ID = "sessionId"
             static let CONVERSATION_ID = "conversationId"
+            
+            enum Consent {
+                static let META = "meta"
+                static let STATE = "state"
+                static let ENTRIES = "entries"
+                static let VALUE = "value"
+                static let MAX_AGE = "maxAge"
+                static let KEY = "key"
+            }
+        }
+        
+        enum Values {
+            enum Consent {
+                static let MAX_AGE = 15552000 // seconds in 180 days
+            }
         }
     }
         
@@ -99,14 +114,11 @@ enum Constants {
         enum Configuration {
             static let NAME = "com.adobe.module.configuration"
 
-            // TODO: swap from edge values to concierge values
-            static let EDGE_SERVER = "edge.domain"
-            static let EDGE_DATASTREAM = "edge.configId"
-            
-            
-            static let SERVER = "concierge.server"
-            static let DATASTREAM = "concierge.configId"
-            static let SURFACES = "concierge.surfaces"
+            enum Concierge {
+                static let SERVER = "concierge.server"
+                static let DATASTREAM = "concierge.configId"
+                static let SURFACES = "concierge.surfaces"
+            }
         }
 
         enum EdgeIdentity {
