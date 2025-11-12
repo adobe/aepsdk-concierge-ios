@@ -15,6 +15,8 @@ import SwiftUI
 /// UIKit backed text view that displays an NSAttributedString and auto sizes
 /// to its intrinsic height for use inside SwiftUI stacks.
 struct MarkdownText: UIViewRepresentable {
+    typealias Coordinator = MarkdownTextCoordinator
+
     let attributed: NSAttributedString
     var maxWidth: CGFloat? = nil
     var onOpenLink: ((URL) -> Void)? = nil
@@ -59,21 +61,5 @@ struct MarkdownText: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
-    }
-
-    class Coordinator: NSObject, UITextViewDelegate {
-        var parent: MarkdownText
-
-        init(parent: MarkdownText) {
-            self.parent = parent
-        }
-
-        func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
-            if let handler = parent.onOpenLink {
-                handler(URL)
-                return false
-            }
-            return true
-        }
     }
 }

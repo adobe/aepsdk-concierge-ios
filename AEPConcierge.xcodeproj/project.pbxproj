@@ -111,6 +111,9 @@
 		4C5FE3242EBD2C5E004F9286 /* CitationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */; };
 		4C5FE3272EBD9D2F004F9286 /* CitationAttachmentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE3252EBD9D2F004F9286 /* CitationAttachmentBuilder.swift */; };
 		4C5FE3282EBD9D2F004F9286 /* CitationStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */; };
+		4C5FE32B2EC42C6D004F9286 /* CitationMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE32A2EC42C6D004F9286 /* CitationMarker.swift */; };
+		4C5FE32C2EC42C6D004F9286 /* CitationDecoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE3292EC42C6D004F9286 /* CitationDecoration.swift */; };
+		4C5FE32E2EC42C8D004F9286 /* MarkdownTextCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5FE32D2EC42C8D004F9286 /* MarkdownTextCoordinator.swift */; };
 		4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */; };
 		4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */; };
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
@@ -267,6 +270,9 @@
 		4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationRenderer.swift; sourceTree = "<group>"; };
 		4C5FE3252EBD9D2F004F9286 /* CitationAttachmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationAttachmentBuilder.swift; sourceTree = "<group>"; };
 		4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationStyle.swift; sourceTree = "<group>"; };
+		4C5FE3292EC42C6D004F9286 /* CitationDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationDecoration.swift; sourceTree = "<group>"; };
+		4C5FE32A2EC42C6D004F9286 /* CitationMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationMarker.swift; sourceTree = "<group>"; };
+		4C5FE32D2EC42C8D004F9286 /* MarkdownTextCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextCoordinator.swift; sourceTree = "<group>"; };
 		4C952E4D2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_AudioWave_20_N.svg; sourceTree = "<group>"; };
 		4C952E782E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_ClockPending_20_N.svg; sourceTree = "<group>"; };
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
@@ -431,6 +437,8 @@
 				24C64A242E5CFE65003C6F5B /* NetworkResponse */,
 				24317CB52E59115A00F138E9 /* TempModels */,
 				4C9531562E53D19900772695 /* ChatStates.swift */,
+				4C5FE3292EC42C6D004F9286 /* CitationDecoration.swift */,
+				4C5FE32A2EC42C6D004F9286 /* CitationMarker.swift */,
 				243868BC2EB1396E004BF9C0 /* ConciergeConfiguration.swift */,
 				24E237EA2D6FDDED00E2686C /* ConciergeError.swift */,
 				247618CE2D6FD6DB00CD61FD /* ConciergeInteraction.swift */,
@@ -575,6 +583,7 @@
 				4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
 				4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */,
+				4C5FE32D2EC42C8D004F9286 /* MarkdownTextCoordinator.swift */,
 				4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */,
 				4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */,
 			);
@@ -823,9 +832,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -862,9 +875,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -928,6 +945,7 @@
 				4C9531592E53E86000772695 /* ConciergeOverlayManager.swift in Sources */,
 				4C95314D2E4BF05600772695 /* ConciergeHostingController.swift in Sources */,
 				24E237E72D6FDBFA00E2686C /* ConciergeResponseMessage.swift in Sources */,
+				4C5FE32E2EC42C8D004F9286 /* MarkdownTextCoordinator.swift in Sources */,
 				249899922D67C62A0005CBD7 /* CarouselGroupView.swift in Sources */,
 				24317CB92E5CC82A00F138E9 /* ConciergeJsonContentObject.swift in Sources */,
 				247618CF2D6FD6E400CD61FD /* ConciergeInteraction.swift in Sources */,
@@ -952,6 +970,8 @@
 				24E237E52D6FDBE700E2686C /* ConciergeInteractionResponse.swift in Sources */,
 				4C3A65D72E55600F00EEEF3B /* InputReducer.swift in Sources */,
 				24317CAE2E590B0900F138E9 /* TempHandle.swift in Sources */,
+				4C5FE32B2EC42C6D004F9286 /* CitationMarker.swift in Sources */,
+				4C5FE32C2EC42C6D004F9286 /* CitationDecoration.swift in Sources */,
 				4C3D5FA12E6A6F7500323738 /* FeedbackSentiment.swift in Sources */,
 				4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */,
 				24C64A262E5CFE92003C6F5B /* MediaObject.swift in Sources */,
