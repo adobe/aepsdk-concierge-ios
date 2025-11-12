@@ -27,5 +27,3 @@ final class MarkdownTextCoordinator: NSObject, UITextViewDelegate {
         return true
     }
 }
-
-
