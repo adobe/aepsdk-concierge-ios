@@ -110,13 +110,6 @@ public class Concierge: NSObject, Extension {
             return
         }
         
-        // TODO: remove static values used for testing to override config
-//        {
-//            let server = "edge-int.adobedc.net"
-//            let datastream = "6acf9d12-5018-4f84-8224-aac4900782f0"
-//            let surfaces = ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
-//        }
-        
         guard let server = configSharedState.conciergeServer else {
             errorMessage = "Unable to show Brand Concierge UI - server information is unavailable from configuration."
             return
