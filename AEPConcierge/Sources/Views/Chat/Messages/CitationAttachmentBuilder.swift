@@ -68,8 +68,8 @@ enum CitationAttachmentBuilder {
         baseFont: UIFont,
         style: CitationStyle
     ) -> NSAttributedString {
-        let baseHeight: CGFloat = 18
-        let font = UIFont.systemFont(ofSize: 11, weight: .semibold)
+        let baseHeight: CGFloat = 20
+        let font = UIFont.systemFont(ofSize: 12, weight: .semibold)
         let text = "\(marker.citationNumber)"
         let textSize = text.size(withAttributes: [.font: font])
         let horizontalPadding: CGFloat = 10
@@ -113,23 +113,24 @@ enum CitationAttachmentBuilder {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { context in
             let rect = CGRect(origin: .zero, size: size)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
+            let cornerRadius = min(rect.height / 2, 6)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
             context.cgContext.setFillColor(style.backgroundColor.cgColor)
             context.cgContext.addPath(path.cgPath)
             context.cgContext.fillPath()
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: style.textColor
-        ]
-        let textSize = text.size(withAttributes: attributes)
-        let textRect = CGRect(
-            x: (rect.width - textSize.width) / 2,
-            y: (rect.height - textSize.height) / 2,
-            width: textSize.width,
-            height: textSize.height
-        )
-        text.draw(in: textRect, withAttributes: attributes)
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: style.textColor
+            ]
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (rect.width - textSize.width) / 2,
+                y: (rect.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            text.draw(in: textRect, withAttributes: attributes)
         }
     }
 }
