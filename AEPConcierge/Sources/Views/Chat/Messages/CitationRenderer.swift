@@ -19,38 +19,13 @@ enum CitationRenderer {
     private static let tokenPrefix = "§§CIT"
     private static let tokenSuffix = "§"
 
-    /// Describes a citation marker injected into the markdown stream.
-    struct Marker: Hashable {
-        /// Placeholder token inserted into the markdown.
-        let token: String
-        /// Citation number displayed to the user.
-        let citationNumber: Int
-        /// Normalized source associated with this marker.
-        let source: TempSource
-        /// Ending offset (in characters) within the original markdown.
-        let endOffset: Int
-    }
-
-    /// Result of decorating a markdown string with inline citation markers.
-    struct Decoration {
-        /// Annotated markdown with placeholder tokens inserted.
-        let annotatedMarkdown: String
-        /// Markers describing where each token was added.
-        let markers: [Marker]
-        /// Deduplicated sources ordered by first appearance in the message.
-        let deduplicatedSources: [TempSource]
-    }
-
     /// Inserts placeholder tokens at each citation boundary and returns marker metadata.
     /// - Parameters:
     ///   - markdown: Original agent response text.
     ///   - sources: Sources supplied by the concierge service.
-    /// - Returns: Decoration data containing annotated markdown, markers, and deduplicated sources.
-    static func decorate(markdown: String, sources: [TempSource]) -> Decoration {
-        // Return early when either the markdown or source list is empty.
-        guard !markdown.isEmpty, !sources.isEmpty else {
-            return Decoration(annotatedMarkdown: markdown, markers: [], deduplicatedSources: [])
-        }
+    /// - Returns: A `CitationDecoration` describing the annotated string, or `nil` when no decoration is required.
+    static func decorate(markdown: String, sources: [TempSource]) -> CitationDecoration? {
+        guard !markdown.isEmpty, !sources.isEmpty else { return nil }
 
         let characterCount = markdown.count
 
@@ -74,10 +49,7 @@ enum CitationRenderer {
             processed.append(ProcessedSource(normalized: normalized, end: clampedEnd))
         }
 
-        // If every source collapsed to an invalid range, fall back to the original text.
-        guard !processed.isEmpty else {
-            return Decoration(annotatedMarkdown: markdown, markers: [], deduplicatedSources: [])
-        }
+        guard !processed.isEmpty else { return nil }
 
         // Sort so markers are inserted in reading order (ties broken by citation number for determinism).
         processed.sort { lhs, rhs in
@@ -88,7 +60,7 @@ enum CitationRenderer {
         }
 
         var annotated = markdown
-        var markers: [Marker] = []
+        var markers: [CitationMarker] = []
         var uniqueTokenId = 0
 
         // Insert tokens starting from the highest offset so earlier inserts do not shift later indexes.
@@ -103,7 +75,7 @@ enum CitationRenderer {
             annotated.insert(contentsOf: token, at: insertIndex)
 
             // Capture metadata so downstream code can swap the token for a badge.
-            let marker = Marker(
+            let marker = CitationMarker(
                 token: token,
                 citationNumber: item.normalized.citationNumber,
                 source: item.normalized,
@@ -117,7 +89,7 @@ enum CitationRenderer {
 
         let deduplicated = deduplicatedSources(from: markers)
 
-        return Decoration(
+        return CitationDecoration(
             annotatedMarkdown: annotated,
             markers: markers,
             deduplicatedSources: deduplicated
@@ -127,7 +99,7 @@ enum CitationRenderer {
     /// Deduplicates sources by citation number while preserving first appearance order.
     /// - Parameter markers: Markers ordered by their appearance in the text.
     /// - Returns: Array containing a single representative per citation number.
-    private static func deduplicatedSources(from markers: [Marker]) -> [TempSource] {
+    private static func deduplicatedSources(from markers: [CitationMarker]) -> [TempSource] {
         var seenNumbers: Set<Int> = []
         var result: [TempSource] = []
 
