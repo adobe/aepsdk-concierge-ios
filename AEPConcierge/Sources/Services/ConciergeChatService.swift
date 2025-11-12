@@ -16,8 +16,8 @@ class ConciergeChatService: NSObject {
     
     // MARK: - REMOVE ME LATER WHEN WE CAN USE REAL VALUES
     let USE_TEMPS = true
-    let TEMP_serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=f774384a-68ce-472f-a454-ec6432c0484b&requestId=1c3222a5-686b-4cc0-aaa8-1ecc0be7dd97&configId=6acf9d12-5018-4f84-8224-aac4900782f0"
-    let TEMP_ecid = "38311589222118362203934607554670412837"
+    let TEMP_serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=71476c26-7003-4002-bc2f-aa13416d5b4e&requestId=831b1723-38fc-49f6-8e58-f9d413c918d0&configId=6acf9d12-5018-4f84-8224-aac4900782f0"
+    let TEMP_ecid = "23460916906658555991704675673209093097"
     let TEMP_surface = "web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"
     
     
@@ -198,8 +198,6 @@ extension ConciergeChatService: URLSessionDataDelegate {
 
     /// Called each time the server sends a streaming event
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        
-        // NEW STUFF
         guard let dataString = String(data: data, encoding: .utf8) else {
             return
         }

@@ -110,23 +110,20 @@ public class Concierge: NSObject, Extension {
             return
         }
         
-        // TODO: use server from config
-        let server = "edge-int.adobedc.net"
-//        guard let server = configSharedState.conciergeServer else {
-//            errorMessage = "Unable to show Brand Concierge UI - server information is unavailable from configuration."
-//            return
-//        }
-                
-        // TODO: use datastream from config
-        let datastream = "6acf9d12-5018-4f84-8224-aac4900782f0"
-//        guard let datastream = configSharedState.conciergeDatastream else {
-//            errorMessage = "Unable to show Brand Concierge UI - datastream information is unavailable from configuration."
-//            return
-//        }
+        guard let server = configSharedState.conciergeServer else {
+            errorMessage = "Unable to show Brand Concierge UI - server information is unavailable from configuration."
+            return
+        }
         
-        // TODO: use surfaces provided in configuration
-        let surfaces = ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
-                
+        guard let datastream = configSharedState.conciergeDatastream else {
+            errorMessage = "Unable to show Brand Concierge UI - datastream information is unavailable from configuration."
+            return
+        }
+        
+        guard let surfaces = configSharedState.conciergeSurfaces else {
+            errorMessage = "Unable to show Brand Concierge UI - no surfaces were provided in configuration."
+            return
+        }
         
         let config = ConciergeConfiguration(server: server, datastream: datastream, ecid: ecid, surfaces: surfaces)
         let responseEvent = event.createResponseEvent(name: Constants.EventName.SHOW_UI_RESPONSE,

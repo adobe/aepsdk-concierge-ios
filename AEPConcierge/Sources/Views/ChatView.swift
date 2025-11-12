@@ -248,35 +248,62 @@ public struct ChatView: View {
 
 #Preview {
     struct ChatViewPreview: View {
+        static let examples: [WelcomePromptSuggestion] = [
+            WelcomePromptSuggestion(
+                text: "I'd like to explore templates to see what I can create.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_142fd6e4e46332d8f41f5aef982448361c0c8c65e.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I want to touch up and enhance my photos.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1e188097a1bc580b26c8be07d894205c5c6ca5560.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I'd like to edit PDFs and make them interactive.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1f6fed23045bbbd57fc17dadc3aa06bcc362f84cb.png"),
+                backgroundHex: "#FFFFFF"
+            ),
+            WelcomePromptSuggestion(
+                text: "I want to turn my clips into polished videos.",
+                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png"),
+                backgroundHex: "#FFFFFF"
+            )
+        ]
         var messages = [
-            Message(template: .basic(isUserMessage: true), messageBody: "basic user message"),
-            Message(template: .basic(isUserMessage: false), messageBody: "basic system message"),
-            Message(template: .divider),
-            Message(template: .numbered(number: 1, title: "Numbered template title", body: "numbered template body")),
-            Message(template: .numbered(number: 2, title: "Numbered template title with much longer text", body: "numbered template body with much longer text")),
-            Message(template: .divider),
-            Message(template: .thumbnail(imageSource: .local(Image(systemName: "sparkles.square.filled.on.square")), title: "The title for this message", text: "Here's the thumbnail template with a system image named 'sparkles.square.filled.on.square'")),
-            Message(template: .thumbnail(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!), title: nil, text: "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?")),
-            Message(template: .divider),
-            Message(template: .productCard(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-                                           title: "Title",
-                                           body: "**1-2 product description lines** - dolor sit amet, consecteatur adipiscing elit, sed do eiusmod tempor incididunt.",
-                                           primaryButton: TempButton(text: "Label", url: "label-url"),
-                                           secondaryButton: TempButton(text: "label", url: "label-url"))),
-            Message(template: .divider),
-            Message(template: .carouselGroup([
-                Message(template: .productCarouselCard(
-                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-                    title: "Product 1",
-                    destination: URL(string:"https://adobe.com")!
-                )),
-                Message(template: .productCarouselCard(
-                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-                    title: "Product 2",
-                    destination: URL(string:"https://adobe.com")!
-                ))
-            ])),
-            Message(template: .divider)
+            Message(template: .welcomeHeader(title: "Welcome to Adobe Concierge!", body: "I’m your personal guide to help you explore and find exactly what you need. Let’s get started!\n\nNot sure where to start? Explore the suggested ideas below.")),
+            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[0].imageURL), text: examples[0].text, background: examples[0].background)),
+            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[1].imageURL), text: examples[1].text, background: examples[1].background)),
+            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[2].imageURL), text: examples[2].text, background: examples[2].background)),
+            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[3].imageURL), text: examples[3].text, background: examples[3].background)),
+//            Message(template: .basic(isUserMessage: true), messageBody: "basic user message"),
+//            Message(template: .basic(isUserMessage: false), messageBody: "basic system message"),
+//            Message(template: .divider),
+//            Message(template: .numbered(number: 1, title: "Numbered template title", body: "numbered template body")),
+//            Message(template: .numbered(number: 2, title: "Numbered template title with much longer text", body: "numbered template body with much longer text")),
+//            Message(template: .divider),
+//            Message(template: .thumbnail(imageSource: .local(Image(systemName: "sparkles.square.filled.on.square")), title: "The title for this message", text: "Here's the thumbnail template with a system image named 'sparkles.square.filled.on.square'")),
+//            Message(template: .thumbnail(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!), title: nil, text: "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?")),
+//            Message(template: .divider),
+//            Message(template: .productCard(imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+//                                           title: "Title",
+//                                           body: "**1-2 product description lines** - dolor sit amet, consecteatur adipiscing elit, sed do eiusmod tempor incididunt.",
+//                                           primaryButton: TempButton(text: "Label", url: "label-url"),
+//                                           secondaryButton: TempButton(text: "label", url: "label-url"))),
+//            Message(template: .divider),
+//            Message(template: .carouselGroup([
+//                Message(template: .productCarouselCard(
+//                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+//                    title: "Product 1",
+//                    destination: URL(string:"https://adobe.com")!
+//                )),
+//                Message(template: .productCarouselCard(
+//                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+//                    title: "Product 2",
+//                    destination: URL(string:"https://adobe.com")!
+//                ))
+//            ])),
+//            Message(template: .divider)
         ]
         
         var body: some View {

@@ -219,13 +219,9 @@ final class ConciergeChatViewModel: ObservableObject {
                         let state = payload.state
                         
                         if let response = payload.response {
-                            let text = response.message
-                            let srcCount = response.sources?.count ?? 0
-                            let suggCount = response.promptSuggestions?.count ?? 0
-                            Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(text.count), sources=\(srcCount), suggestions=\(suggCount)")
-                            if state == Constants.StreamState.COMPLETED,
-                               let data = try? JSONEncoder().encode(response),
-                               let json = String(data: data, encoding: .utf8) {
+                            Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(response.message.count), sources=\(response.sources?.count ?? 0), suggestions=\(response.promptSuggestions?.count ?? 0)")
+                            
+                            if state == Constants.StreamState.COMPLETED, let data = try? JSONEncoder().encode(response), let json = String(data: data, encoding: .utf8) {
                                 Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json)")
                             }
                         } else {

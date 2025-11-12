@@ -31,10 +31,14 @@ extension SharedStateResult {
     }
     
     var conciergeServer: String? {
-        value?[Constants.SharedState.Configuration.EDGE_SERVER] as? String
+        value?[Constants.SharedState.Configuration.Concierge.SERVER] as? String
     }
     
     var conciergeDatastream: String? {
-        value?[Constants.SharedState.Configuration.EDGE_DATASTREAM] as? String
+        value?[Constants.SharedState.Configuration.Concierge.DATASTREAM] as? String
+    }
+    
+    var conciergeSurfaces: [String]? {
+        value?[Constants.SharedState.Configuration.Concierge.SURFACES] as? [String]
     }
 }

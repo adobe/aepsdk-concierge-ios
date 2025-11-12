@@ -20,7 +20,7 @@ struct MarkdownBlockView: View {
     var textColor: UIColor
     var baseFont: UIFont = .preferredFont(forTextStyle: .body)
     var spacing: CGFloat = 8
-    var citationMarkers: [CitationRenderer.Marker] = []
+    var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
     var onOpenLink: ((URL) -> Void)? = nil
 
