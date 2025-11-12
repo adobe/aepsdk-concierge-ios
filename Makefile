@@ -24,7 +24,7 @@ IOS_ARCHIVE_DSYM_PATH = $(CURR_DIR)/build/ios.xcarchive/dSYMs/
 # CI variables with defaults. Update the defaults for local development as needed.
 IOS_DEVICE_NAME ?= iPhone 16
 # If OS version is not specified, uses the first device name match in the list of available simulators
-IOS_VERSION ?= 
+IOS_VERSION ?= 18.0
 ifeq ($(strip $(IOS_VERSION)),)
     IOS_DESTINATION = "platform=iOS Simulator,name=$(IOS_DEVICE_NAME)"
 else

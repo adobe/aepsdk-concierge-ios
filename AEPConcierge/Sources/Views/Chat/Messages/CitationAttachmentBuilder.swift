@@ -24,7 +24,7 @@ enum CitationAttachmentBuilder {
     /// - Returns: An attributed string where every token has been swapped for a badge attachment.
     static func replaceTokens(
         in attributed: NSAttributedString,
-        markers: [CitationRenderer.Marker],
+        markers: [CitationMarker],
         baseFont: UIFont,
         style: CitationStyle
     ) -> NSAttributedString {
@@ -64,7 +64,7 @@ enum CitationAttachmentBuilder {
     ///   - style: Colors describing badge appearance.
     /// - Returns: An attributed string containing the attachment and trailing spacing.
     private static func makeAttachment(
-        for marker: CitationRenderer.Marker,
+        for marker: CitationMarker,
         baseFont: UIFont,
         style: CitationStyle
     ) -> NSAttributedString {
