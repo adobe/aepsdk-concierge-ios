@@ -119,8 +119,8 @@ struct ChatMessageView: View {
                                     textColor: UIColor(theme.onAgent),
                                     citationMarkers: markers,
                                     citationStyle: .init(
-                                        backgroundColor: UIColor(theme.primary),
-                                        textColor: UIColor(theme.onPrimary)
+                                        backgroundColor: UIColor(theme.citationBackground),
+                                        textColor: UIColor(theme.citationText)
                                     ),
                                     onOpenLink: { url in
                                         openURL(url)
@@ -384,3 +384,4 @@ struct ChatMessageView: View {
         }
     }
 }
+

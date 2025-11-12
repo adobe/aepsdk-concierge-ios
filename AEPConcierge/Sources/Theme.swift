@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 public struct ConciergeTheme {
     public var primary: Color
@@ -21,6 +22,8 @@ public struct ConciergeTheme {
     public var onAgent: Color
     public var surfaceLight: Color
     public var surfaceDark: Color
+    public var citationBackground: Color
+    public var citationText: Color
 
     public init(
         primary: Color = .accentColor,
@@ -30,7 +33,9 @@ public struct ConciergeTheme {
         agentBubble: Color = Color(UIColor.secondarySystemBackground),
         onAgent: Color = .primary,
         surfaceLight: Color = Color(UIColor.secondarySystemBackground),
-        surfaceDark: Color = Color(UIColor.systemBackground)
+        surfaceDark: Color = Color(UIColor.systemBackground),
+        citationBackground: Color = Color(UIColor.systemGray3),
+        citationText: Color = Color(UIColor.label)
     ) {
         self.primary = primary
         self.secondary = secondary
@@ -40,6 +45,8 @@ public struct ConciergeTheme {
         self.onAgent = onAgent
         self.surfaceLight = surfaceLight
         self.surfaceDark = surfaceDark
+        self.citationBackground = citationBackground
+        self.citationText = citationText
     }
 }
 

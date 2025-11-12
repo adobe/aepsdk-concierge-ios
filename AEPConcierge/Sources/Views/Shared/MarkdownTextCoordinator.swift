@@ -28,3 +28,4 @@ final class MarkdownTextCoordinator: NSObject, UITextViewDelegate {
     }
 }
 
+
