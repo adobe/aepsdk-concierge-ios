@@ -33,6 +33,7 @@ struct CheckboxRow: View {
                 Text(label)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

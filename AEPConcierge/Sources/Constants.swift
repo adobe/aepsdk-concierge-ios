@@ -38,6 +38,7 @@ enum Constants {
         static let ACCEPT = "Accept"
     }
     
+    // SDK Event Hub Event Type
     enum EventType {
         static let concierge = "com.adobe.eventType.concierge"
     }
@@ -72,6 +73,10 @@ enum Constants {
         static let READ_TIMEOUT = 15.0
         static let HTTPS = "https://"
         
+        enum EventType {
+            static let CONVERSATION_FEEDBACK = "conversation.feedback"
+        }
+        
         enum Keys {
             static let EVENTS = "events"
             static let QUERY = "query"
@@ -94,6 +99,18 @@ enum Constants {
                 static let VALUE = "value"
                 static let MAX_AGE = "maxAge"
                 static let KEY = "key"
+            }
+            
+            enum Feedback {
+                static let FEEDBACK = "feedback"
+                static let SOURCE = "source"
+                static let RAW = "raw"
+                static let TEXT = "text"
+                static let PURPOSE = "purpose"
+                static let RATING = "rating"
+                static let SCORE = "score"
+                static let CLASSIFICATION = "classification"
+                static let REASONS = "reasons"
             }
         }
         
