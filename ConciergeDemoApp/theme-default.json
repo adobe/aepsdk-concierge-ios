@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "brandName": "Concierge Demo",
+    "version": "1.0.0",
+    "language": "en-US",
+    "namespace": "brand-concierge"
+  },
+  "behavior": {
+    "multimodalCarousel": {
+      "cardClickAction": "openLink"
+    },
+    "input": {
+      "enableVoiceInput": false,
+      "disableMultiline": true,
+      "showAiChatIcon": null
+    },
+    "chat": {
+      "messageAlignment": "leading",
+      "messageWidth": null
+    },
+    "privacyNotice": {
+      "title": "Privacy Notice",
+      "text": "Privacy notice text."
+    }
+  },
+  "disclaimer": {
+    "text": "AI responses may be inaccurate. Check answers and sources. {Terms}",
+    "links": [
+      {
+        "text": "Terms",
+        "url": "https://www.example.com"
+      }
+    ]
+  },
+  "text": {
+    "welcome.heading": "Welcome to [Name] concierge!",
+    "welcome.subheading": "I'm your personal guide to help you explore and find exactly what you need. Let's get started!\n\nNot sure where to start? Explore the suggested ideas below.",
+    "input.placeholder": "How can I help?",
+    "input.messageInput.aria": "Message input",
+    "input.send.aria": "Send message",
+    "input.aiChatIcon.tooltip": "Ask AI",
+    "input.mic.aria": "Voice input",
+    "card.aria.select": "Select example message",
+    "carousel.prev.aria": "Previous cards",
+    "carousel.next.aria": "Next cards",
+    "scroll.bottom.aria": "Scroll to bottom",
+    "error.network": "I'm sorry, I'm having trouble connecting to our services right now.",
+    "loading.message": "Generating response from our knowledge base",
+    "feedback.dialog.title.positive": "Your feedback is appreciated",
+    "feedback.dialog.title.negative": "Your feedback is appreciated",
+    "feedback.dialog.question.positive": "What went well? Select all that apply.",
+    "feedback.dialog.question.negative": "What went wrong? Select all that apply.",
+    "feedback.dialog.notes": "Notes",
+    "feedback.dialog.submit": "Submit",
+    "feedback.dialog.cancel": "Cancel",
+    "feedback.dialog.notes.placeholder": "Additional notes (optional)",
+    "feedback.toast.success": "Thank you for the feedback.",
+    "feedback.thumbsUp.aria": "Thumbs up",
+    "feedback.thumbsDown.aria": "Thumbs down"
+  },
+  "arrays": {
+    "welcome": {
+      "examples": [
+        {
+          "text": "I'd like to explore templates to see what I can create.",
+          "image": "https://example.com/template.png",
+          "backgroundColor": "#FFFFFF"
+        },
+        {
+          "text": "I want to touch up and enhance my photos.",
+          "image": "https://example.com/photo.png",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    },
+    "feedback": {
+      "positive": {
+        "options": [
+          "Helpful and relevant recommendations",
+          "Clear and easy to understand",
+          "Friendly and conversational tone",
+          "Visually appealing presentation",
+          "Other"
+        ]
+      },
+      "negative": {
+        "options": [
+          "Didn't understand my request",
+          "Unhelpful or irrelevant information",
+          "Too vague or lacking detail",
+          "Errors or poor quality response",
+          "Other"
+        ]
+      }
+    }
+  },
+  "assets": {
+    "icons": {
+      "company": ""
+    }
+  },
+  "typography": {
+    "fontFamily": "",
+    "fontSize": 16,
+    "lineHeight": 1.75,
+    "fontWeight": "regular"
+  },
+  "colors": {
+    "primary": {
+      "primary": "#007BFF",
+      "secondary": "#007BFF",
+      "text": "#131313"
+    },
+    "surface": {
+      "mainContainerBackground": "#FFFFFF",
+      "mainContainerBottomBackground": "#FFFFFF",
+      "messageBlockerBackground": "#FFFFFF",
+      "light": "#F5F5F5",
+      "dark": "#FFFFFF"
+    },
+    "message": {
+      "userBackground": "#EBEEFF",
+      "userText": "#292929",
+      "conciergeBackground": "#FFFFFF",
+      "conciergeText": "#292929",
+      "conciergeLink": "#274DEA"
+    },
+    "button": {
+      "primaryBackground": "#3B63FB",
+      "primaryText": "#FFFFFF",
+      "primaryHover": "#274DEA",
+      "secondaryBorder": "#2C2C2C",
+      "secondaryText": "#2C2C2C",
+      "secondaryHover": "#000000",
+      "secondaryHoverText": "#FFFFFF",
+      "submitFill": "#FFFFFF",
+      "submitFillDisabled": "#C6C6C6",
+      "submitText": "#292929",
+      "submitTextHover": "#292929",
+      "disabledBackground": "#FFFFFF"
+    },
+    "input": {
+      "background": "#FFFFFF",
+      "text": "#292929",
+      "outline": null,
+      "outlineFocus": "#4B75FF"
+    },
+    "citation": {
+      "background": "#E5E5E5",
+      "text": "#131313"
+    },
+    "feedback": {
+      "iconButtonBackground": "#FFFFFF",
+      "iconButtonHoverBackground": "#FFFFFF"
+    },
+    "disclaimer": "#4B4B4B"
+  },
+  "layout": {
+    "inputHeight": 52,
+    "inputHeightMobile": 52,
+    "inputBorderRadius": 12,
+    "inputBorderRadiusMobile": 12,
+    "inputOutlineWidth": 2,
+    "inputFocusOutlineWidth": 2,
+    "inputButtonHeight": 32,
+    "inputButtonWidth": 32,
+    "inputButtonBorderRadius": 8,
+    "messageBorderRadius": 10,
+    "messagePadding": {
+      "top": 8,
+      "bottom": 8,
+      "leading": 16,
+      "trailing": 16
+    },
+    "messageMaxWidth": null,
+    "chatInterfaceMaxWidth": 768,
+    "chatHistoryPadding": 16,
+    "chatHistoryPaddingTopExpanded": 0,
+    "chatHistoryBottomPadding": 0,
+    "messageBlockerHeight": 105,
+    "borderRadiusCard": 16,
+    "buttonHeightSmall": 30,
+    "feedbackContainerGap": 4,
+    "citationsTextFontWeight": "bold",
+    "citationsDesktopButtonFontSize": 14,
+    "disclaimerFontSize": 12,
+    "disclaimerFontWeight": "regular",
+    "inputFontSize": 16,
+    "inputBoxShadow": {
+      "offsetX": 0,
+      "offsetY": 4,
+      "blurRadius": 16,
+      "spreadRadius": 0,
+      "color": "#00000029",
+      "isEnabled": true
+    },
+    "multimodalCardBoxShadow": {
+      "offsetX": 0,
+      "offsetY": 0,
+      "blurRadius": 0,
+      "spreadRadius": 0,
+      "color": "#00000000",
+      "isEnabled": false
+    },
+    "welcomeInputOrder": 3,
+    "welcomeCardsOrder": 2
+  },
+  "components": {
+    "welcome": {
+      "headingColor": "#131313",
+      "subheadingColor": "#666666",
+      "inputOrder": 3,
+      "cardsOrder": 2
+    },
+    "inputBar": {
+      "background": "#FFFFFF",
+      "textColor": "#292929",
+      "border": {
+        "width": 2,
+        "radius": 12,
+        "color": "#4B75FF"
+      },
+      "placeholderColor": "#999999",
+      "icon": null,
+      "voiceEnabled": false
+    },
+    "chatMessage": {
+      "userBackground": "#EBEEFF",
+      "userText": "#292929",
+      "conciergeBackground": "#FFFFFF",
+      "conciergeText": "#292929",
+      "linkColor": "#274DEA",
+      "borderRadius": 10,
+      "padding": {
+        "top": 8,
+        "bottom": 8,
+        "leading": 16,
+        "trailing": 16
+      },
+      "maxWidth": null
+    },
+    "feedback": {
+      "iconButtonBackground": "#FFFFFF",
+      "iconButtonHoverBackground": "#FFFFFF",
+      "iconButtonSizeDesktop": 32,
+      "containerGap": 4,
+      "positiveNotesEnabled": true,
+      "negativeNotesEnabled": true
+    },
+    "carousel": {
+      "cardBorderRadius": 16,
+      "cardBoxShadow": {
+        "offsetX": 0,
+        "offsetY": 0,
+        "blurRadius": 0,
+        "spreadRadius": 0,
+        "color": "#00000000",
+        "isEnabled": false
+      },
+      "cardClickAction": "openLink"
+    },
+    "disclaimer": {
+      "textColor": "#4B4B4B",
+      "fontSize": 12,
+      "fontWeight": "regular"
+    }
+  }
+}
+
