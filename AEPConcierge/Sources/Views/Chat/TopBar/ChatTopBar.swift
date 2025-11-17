@@ -23,8 +23,7 @@ struct ChatTopBar: View {
 
     let onToggleMode: (Bool) -> Void
     let onClose: () -> Void
-    // Debug toggle handler
-    let onToggleSources: (Bool) -> Void
+    
     @State private var showSourcesToggle: Bool = true
 
     var body: some View {
@@ -56,20 +55,6 @@ struct ChatTopBar: View {
                             .cornerRadius(8)
                     }
                     Text("Message will be sent from this perspective")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                // Sources switch with caption
-                VStack(alignment: .center, spacing: 4) {
-                    Toggle(isOn: $showSourcesToggle) { EmptyView() }
-                        .toggleStyle(SwitchToggleStyle(tint: theme.primary))
-                        .onChange(of: showSourcesToggle) { newValue in
-                            onToggleSources(newValue)
-                        }
-                        .labelsHidden()
-                    Text("Attach sources to the agent response")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

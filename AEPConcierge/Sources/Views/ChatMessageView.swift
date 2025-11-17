@@ -19,17 +19,21 @@ struct ChatMessageView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.colorScheme) private var colorScheme
 
+    let messageId: UUID?
     let template: MessageTemplate
     var messageBody: String?
     var sources: [TempSource]? = nil
     var promptSuggestions: [String]? = nil
+    var feedbackSentiment: FeedbackSentiment? = nil
     var onSuggestionTap: ((String) -> Void)? = nil
 
-    init(template: MessageTemplate, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
+        self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
         self.promptSuggestions = promptSuggestions
+        self.feedbackSentiment = feedbackSentiment
         self.onSuggestionTap = onSuggestionTap
     }
     
@@ -169,7 +173,7 @@ struct ChatMessageView: View {
                 // Attach sources dropdown for agent messages only
                 if !isUserMessage, !displayedSources.isEmpty {
                     HStack(alignment: .top) {
-                        SourcesListView(sources: displayedSources)
+                        SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
                         Spacer()
                     }
                 }

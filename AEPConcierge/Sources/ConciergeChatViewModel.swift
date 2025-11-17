@@ -43,10 +43,6 @@ final class ConciergeChatViewModel: ObservableObject {
     private var productCardIndex: Int? = nil
     private var latestPromptSuggestions: [String] = []
 
-    // MARK: Feature flags
-    // Toggle to attach stubbed sources to agent responses for testing until backend supports it
-    var stubAgentSources: Bool = true
-
     // MARK: Session computed flags
     /// Whether at least one user message exists in the transcript.
     var hasUserSentMessage: Bool {
@@ -240,6 +236,7 @@ final class ConciergeChatViewModel: ObservableObject {
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = accumulatedContent
+                                    current.payload = payload
                                     self.messages[streamingMessageIndex] = current
                                 }
                             } else if state == Constants.StreamState.COMPLETED {
@@ -251,6 +248,7 @@ final class ConciergeChatViewModel: ObservableObject {
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = fullText
+                                    current.payload = payload
                                     self.messages[streamingMessageIndex] = current
                                 }
                                 
@@ -319,16 +317,10 @@ final class ConciergeChatViewModel: ObservableObject {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
-                                // Attach real sources captured during streaming if present
+                                // Attach sources captured during streaming if present
                                 if !self.latestSources.isEmpty {
-                                    Log.trace(label: self.LOG_TAG, "Using real sources: count=\(self.latestSources.count)")
+                                    Log.trace(label: self.LOG_TAG, "Using sources: count=\(self.latestSources.count)")
                                     current.sources = self.latestSources
-                                } else if self.stubAgentSources {
-                                    Log.trace(label: self.LOG_TAG, "Using stubbed sources")
-                                    current.sources = [
-                                        TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
-                                        TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
-                                    ]
                                 }
                                 self.messages[streamingMessageIndex] = current
                             }
@@ -378,14 +370,7 @@ final class ConciergeChatViewModel: ObservableObject {
         }
 
         Task { @MainActor in
-            var agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
-            // TODO: Update this logic to reflect real backend response when available
-            if stubAgentSources {
-                agent.sources = [
-                    TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
-                    TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
-                ]
-            }
+            let agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
             messages.append(agent)
             self.clearState()
         }

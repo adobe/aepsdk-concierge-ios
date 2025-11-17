@@ -19,6 +19,8 @@ public struct SourcesListView: View {
 
     public let sources: [TempSource]
     private let initiallyExpanded: Bool
+    public let feedbackSentiment: FeedbackSentiment?
+    public let messageId: UUID?
 
     @State private var isExpanded: Bool = false
 
@@ -26,9 +28,13 @@ public struct SourcesListView: View {
     /// - Parameters:
     ///   - sources: The list of sources to display. If empty, the view renders nothing.
     ///   - initiallyExpanded: Whether the list starts expanded.
-    public init(sources: [TempSource], initiallyExpanded: Bool = false) {
+    ///   - feedbackSentiment: The feedback sentiment that was submitted for this message, if any.
+    ///   - messageId: The ID of the message this sources list belongs to.
+    public init(sources: [TempSource], initiallyExpanded: Bool = false, feedbackSentiment: FeedbackSentiment? = nil, messageId: UUID? = nil) {
         self.sources = sources
         self.initiallyExpanded = initiallyExpanded
+        self.feedbackSentiment = feedbackSentiment
+        self.messageId = messageId
         self._isExpanded = State(initialValue: initiallyExpanded)
     }
 
@@ -110,24 +116,26 @@ public struct SourcesListView: View {
                 // Feedback buttons
                 HStack(spacing: 4) {
                     Button(action: {
-                        feedbackPresenter.present(.positive)
+                        feedbackPresenter.present(.positive, messageId)
                     }) {
                         thumbUpImage
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(theme.onAgent)
+                    .foregroundStyle(thumbUpColor)
+                    .disabled(feedbackSentiment != nil)
 
                     Button(action: {
-                        feedbackPresenter.present(.negative)
+                        feedbackPresenter.present(.negative, messageId)
                     }) {
                         thumbDownImage
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(theme.onAgent)
+                    .foregroundStyle(thumbDownColor)
+                    .disabled(feedbackSentiment != nil)
                 }
             }
             .contentShape(Rectangle())
@@ -165,6 +173,20 @@ public struct SourcesListView: View {
         } else {
             Image(systemName: "hand.thumbsdown")
         }
+    }
+    
+    private var thumbUpColor: Color {
+        guard let sentiment = feedbackSentiment else {
+            return theme.onAgent
+        }
+        return sentiment == .positive ? theme.primary : Color.gray.opacity(0.4)
+    }
+    
+    private var thumbDownColor: Color {
+        guard let sentiment = feedbackSentiment else {
+            return theme.onAgent
+        }
+        return sentiment == .negative ? theme.primary : Color.gray.opacity(0.4)
     }
 }
 

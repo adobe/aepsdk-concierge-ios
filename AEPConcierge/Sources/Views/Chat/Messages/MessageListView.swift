@@ -28,10 +28,12 @@ struct MessageListView: View {
                     VStack(spacing: 12) {
                         ForEach(messages) { message in
                             ChatMessageView(
+                                messageId: message.id,
                                 template: message.template,
                                 messageBody: message.messageBody,
                                 sources: message.sources,
                                 promptSuggestions: message.promptSuggestions,
+                                feedbackSentiment: message.feedbackSentiment,
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
