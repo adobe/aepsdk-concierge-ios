@@ -10,18 +10,8 @@
  governing permissions and limitations under the License.
  */
 
-import Foundation
-
-public enum FeedbackSentiment {
-    case positive
-    case negative
-    
-    func thumbsValue() -> String {
-        switch self {
-        case .negative:
-            return Constants.FeedbackSentiment.THUMBS_DOWN
-        case .positive:
-            return Constants.FeedbackSentiment.THUMBS_UP
-        }
-    }
+struct FeedbackPayload {
+    let sentiment: FeedbackSentiment
+    let selectedOptions: [String]
+    let notes: String
 }

@@ -50,6 +50,7 @@ enum Constants {
     enum EventName {
         static let SHOW_UI = "Show Brand Concierge UI - Request"
         static let SHOW_UI_RESPONSE = "Show Brand Concierge UI - Response"
+        static let FEEDBACK = "Brand Concierge - Chat Feedback"
     }
     
     enum EventData {
@@ -88,6 +89,7 @@ enum Constants {
             static let IDENTITY_MAP = "identityMap"
             static let ECID = "ECID"
             static let ID = "id"
+            static let EVENT_TYPE = "eventType"
             static let CONFIG_ID = "configId"
             static let SESSION_ID = "sessionId"
             static let CONVERSATION_ID = "conversationId"
@@ -111,6 +113,8 @@ enum Constants {
                 static let SCORE = "score"
                 static let CLASSIFICATION = "classification"
                 static let REASONS = "reasons"
+                static let CONVERSATION_ID = "conversationID"
+                static let TURN_ID = "turnID"
             }
         }
         
@@ -118,7 +122,17 @@ enum Constants {
             enum Consent {
                 static let MAX_AGE = 15552000 // seconds in 180 days
             }
+            
+            enum Feedback {
+                static let END_USER = "end-user"
+                static let USER_INPUT = "user input"
+            }
         }
+    }
+    
+    enum FeedbackSentiment {
+        static let THUMBS_DOWN = "Thumbs Down"
+        static let THUMBS_UP = "Thumbs Up"
     }
         
     enum SharedState {
