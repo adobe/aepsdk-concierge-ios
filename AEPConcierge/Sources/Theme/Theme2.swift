@@ -18,10 +18,10 @@ import AEPServices
 
 /// Metadata information about the theme configuration
 public struct ConciergeThemeMetadata: Codable {
-    public var brandName: String = ""
-    public var version: String = "0.0.0"
-    public var language: String = "en-US"
-    public var namespace: String = "brand-concierge"
+    public var brandName: String
+    public var version: String
+    public var language: String
+    public var namespace: String
     
     private enum CodingKeys: String, CodingKey {
         case brandName
@@ -61,7 +61,7 @@ public struct ConciergeThemeMetadata: Codable {
 
 /// Multimodal carousel behavior configuration
 public struct ConciergeMultimodalCarouselBehavior: Codable {
-    public var cardClickAction: String = "openLink"
+    public var cardClickAction: String
     
     public init(cardClickAction: String = "openLink") {
         self.cardClickAction = cardClickAction
@@ -70,9 +70,9 @@ public struct ConciergeMultimodalCarouselBehavior: Codable {
 
 /// Input behavior configuration
 public struct ConciergeInputBehavior: Codable {
-    public var enableVoiceInput: Bool = false
-    public var disableMultiline: Bool = true
-    public var showAiChatIcon: ConciergeIconConfig? = nil
+    public var enableVoiceInput: Bool
+    public var disableMultiline: Bool
+    public var showAiChatIcon: ConciergeIconConfig?
     
     public init(
         enableVoiceInput: Bool = false,
@@ -87,7 +87,7 @@ public struct ConciergeInputBehavior: Codable {
 
 /// Icon configuration (SVG string or URL)
 public struct ConciergeIconConfig: Codable {
-    public var icon: String = ""
+    public var icon: String
     
     public init(icon: String = "") {
         self.icon = icon
@@ -136,8 +136,8 @@ public struct ConciergeChatBehavior: Codable {
 
 /// Privacy notice configuration
 public struct ConciergePrivacyNoticeBehavior: Codable {
-    public var title: String = "Privacy Notice"
-    public var text: String = "Privact notice text."
+    public var title: String
+    public var text: String
     
     public init(
         title: String = "Privacy Notice",
@@ -150,10 +150,10 @@ public struct ConciergePrivacyNoticeBehavior: Codable {
 
 /// Consolidated behavior configuration
 public struct ConciergeBehaviorConfig: Codable {
-    public var multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior()
-    public var input: ConciergeInputBehavior = ConciergeInputBehavior()
-    public var chat: ConciergeChatBehavior = ConciergeChatBehavior()
-    public var privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior()
+    public var multimodalCarousel: ConciergeMultimodalCarouselBehavior
+    public var input: ConciergeInputBehavior
+    public var chat: ConciergeChatBehavior
+    public var privacyNotice: ConciergePrivacyNoticeBehavior
     
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
@@ -170,8 +170,8 @@ public struct ConciergeBehaviorConfig: Codable {
 
 /// Disclaimer configuration with text and links
 public struct ConciergeDisclaimer: Codable {
-    public var text: String = "AI responses may be inaccurate. Check answers and sources. {Terms}"
-    public var links: [ConciergeDisclaimerLink] = []
+    public var text: String
+    public var links: [ConciergeDisclaimerLink]
     
     public init(
         text: String = "AI responses may be inaccurate. Check answers and sources. {Terms}",
@@ -184,8 +184,8 @@ public struct ConciergeDisclaimer: Codable {
 
 /// Disclaimer link configuration
 public struct ConciergeDisclaimerLink: Codable {
-    public var text: String = ""
-    public var url: String = ""
+    public var text: String
+    public var url: String
     
     public init(text: String = "", url: String = "") {
         self.text = text
@@ -197,10 +197,10 @@ public struct ConciergeDisclaimerLink: Codable {
 public struct ConciergeTypography: Codable {
     /// Font family name (ex: "MarkerFelt-Thin")
     /// Expects a single font name. If empty or not provided, uses system font.
-    public var fontFamily: String = ""
-    public var fontSize: CGFloat = 16
-    public var lineHeight: CGFloat = 1.75
-    public var fontWeight: CodableFontWeight = .regular
+    public var fontFamily: String
+    public var fontSize: CGFloat
+    public var lineHeight: CGFloat
+    public var fontWeight: CodableFontWeight
     
     public init(
         fontFamily: String = "",
@@ -217,11 +217,11 @@ public struct ConciergeTypography: Codable {
 
 /// Surface color tokens
 public struct ConciergeSurfaceColors: Codable {
-    public var mainContainerBackground: CodableColor = CodableColor(Color(UIColor.systemBackground))
-    public var mainContainerBottomBackground: CodableColor = CodableColor(Color(UIColor.systemBackground))
-    public var messageBlockerBackground: CodableColor = CodableColor(Color(UIColor.systemBackground))
-    public var light: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground))
-    public var dark: CodableColor = CodableColor(Color(UIColor.systemBackground))
+    public var mainContainerBackground: CodableColor
+    public var mainContainerBottomBackground: CodableColor
+    public var messageBlockerBackground: CodableColor
+    public var light: CodableColor
+    public var dark: CodableColor
     
     public init(
         mainContainerBackground: CodableColor = CodableColor(Color(UIColor.systemBackground)),
@@ -240,11 +240,11 @@ public struct ConciergeSurfaceColors: Codable {
 
 /// Message color tokens
 public struct ConciergeMessageColors: Codable {
-    public var userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground))
-    public var userText: CodableColor = CodableColor(Color.primary)
-    public var conciergeBackground: CodableColor = CodableColor(Color(UIColor.systemBackground))
-    public var conciergeText: CodableColor = CodableColor(Color.primary)
-    public var conciergeLink: CodableColor = CodableColor(Color.accentColor)
+    public var userBackground: CodableColor
+    public var userText: CodableColor
+    public var conciergeBackground: CodableColor
+    public var conciergeText: CodableColor
+    public var conciergeLink: CodableColor
     
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
@@ -263,18 +263,18 @@ public struct ConciergeMessageColors: Codable {
 
 /// Button color tokens
 public struct ConciergeButtonColors: Codable {
-    public var primaryBackground: CodableColor = CodableColor(Color.accentColor)
-    public var primaryText: CodableColor = CodableColor(Color.white)
-    public var primaryHover: CodableColor = CodableColor(Color.accentColor)
-    public var secondaryBorder: CodableColor = CodableColor(Color.primary)
-    public var secondaryText: CodableColor = CodableColor(Color.primary)
-    public var secondaryHover: CodableColor = CodableColor(Color.primary)
-    public var secondaryHoverText: CodableColor = CodableColor(Color.white)
-    public var submitFill: CodableColor = CodableColor(Color.white)
-    public var submitFillDisabled: CodableColor = CodableColor(Color(UIColor.systemGray3))
-    public var submitText: CodableColor = CodableColor(Color.primary)
-    public var submitTextHover: CodableColor = CodableColor(Color.primary)
-    public var disabledBackground: CodableColor = CodableColor(Color.white)
+    public var primaryBackground: CodableColor
+    public var primaryText: CodableColor
+    public var primaryHover: CodableColor
+    public var secondaryBorder: CodableColor
+    public var secondaryText: CodableColor
+    public var secondaryHover: CodableColor
+    public var secondaryHoverText: CodableColor
+    public var submitFill: CodableColor
+    public var submitFillDisabled: CodableColor
+    public var submitText: CodableColor
+    public var submitTextHover: CodableColor
+    public var disabledBackground: CodableColor
     
     public init(
         primaryBackground: CodableColor = CodableColor(Color.accentColor),
@@ -307,10 +307,10 @@ public struct ConciergeButtonColors: Codable {
 
 /// Input color tokens
 public struct ConciergeInputColors: Codable {
-    public var background: CodableColor = CodableColor(Color.white)
-    public var text: CodableColor = CodableColor(Color.primary)
-    public var outline: CodableColor? = nil // TODO: are gradients required?
-    public var outlineFocus: CodableColor = CodableColor(Color.accentColor)
+    public var background: CodableColor
+    public var text: CodableColor
+    public var outline: CodableColor? // TODO: are gradients required?
+    public var outlineFocus: CodableColor
     
     public init(
         background: CodableColor = CodableColor(Color.white),
@@ -327,8 +327,8 @@ public struct ConciergeInputColors: Codable {
 
 /// Citation color tokens
 public struct ConciergeCitationColors: Codable {
-    public var background: CodableColor = CodableColor(Color(UIColor.systemGray3))
-    public var text: CodableColor = CodableColor(Color.primary)
+    public var background: CodableColor
+    public var text: CodableColor
     
     public init(
         background: CodableColor = CodableColor(Color(UIColor.systemGray3)),
@@ -341,8 +341,8 @@ public struct ConciergeCitationColors: Codable {
 
 /// Feedback color tokens
 public struct ConciergeFeedbackColors: Codable {
-    public var iconButtonBackground: CodableColor = CodableColor(Color.white)
-    public var iconButtonHoverBackground: CodableColor = CodableColor(Color.white)
+    public var iconButtonBackground: CodableColor
+    public var iconButtonHoverBackground: CodableColor
     
     public init(
         iconButtonBackground: CodableColor = CodableColor(Color.white),
@@ -355,9 +355,9 @@ public struct ConciergeFeedbackColors: Codable {
 
 /// Primary color tokens
 public struct ConciergePrimaryColors: Codable {
-    public var primary: CodableColor = CodableColor(Color.accentColor)
-    public var secondary: CodableColor = CodableColor(Color.accentColor)
-    public var text: CodableColor = CodableColor(Color.primary)
+    public var primary: CodableColor
+    public var secondary: CodableColor
+    public var text: CodableColor
     
     public init(
         primary: CodableColor = CodableColor(Color.accentColor),
@@ -372,14 +372,14 @@ public struct ConciergePrimaryColors: Codable {
 
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
-    public var primary: ConciergePrimaryColors = ConciergePrimaryColors()
-    public var surface: ConciergeSurfaceColors = ConciergeSurfaceColors()
-    public var message: ConciergeMessageColors = ConciergeMessageColors()
-    public var button: ConciergeButtonColors = ConciergeButtonColors()
-    public var input: ConciergeInputColors = ConciergeInputColors()
-    public var citation: ConciergeCitationColors = ConciergeCitationColors()
-    public var feedback: ConciergeFeedbackColors = ConciergeFeedbackColors()
-    public var disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray))
+    public var primary: ConciergePrimaryColors
+    public var surface: ConciergeSurfaceColors
+    public var message: ConciergeMessageColors
+    public var button: ConciergeButtonColors
+    public var input: ConciergeInputColors
+    public var citation: ConciergeCitationColors
+    public var feedback: ConciergeFeedbackColors
+    public var disclaimer: CodableColor
     
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
@@ -404,39 +404,33 @@ public struct ConciergeThemeColors: Codable {
 
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
-    public var inputHeight: CGFloat = 52
-    public var inputBorderRadius: CGFloat = 12
-    public var inputOutlineWidth: CGFloat = 2
-    public var inputFocusOutlineWidth: CGFloat = 2
-    public var inputButtonHeight: CGFloat = 32
-    public var inputButtonWidth: CGFloat = 32
-    public var inputButtonBorderRadius: CGFloat = 8
-    public var messageBorderRadius: CGFloat = 10
-    public var messagePadding: ConciergePadding = ConciergePadding(vertical: 8, horizontal: 16)
-    public var messageMaxWidth: CGFloat? = nil // nil = no max width, value = max width in points
-    public var chatInterfaceMaxWidth: CGFloat = 768
-    public var chatHistoryPadding: CGFloat = 16
-    public var chatHistoryPaddingTopExpanded: CGFloat = 0
-    public var chatHistoryBottomPadding: CGFloat = 0
-    public var messageBlockerHeight: CGFloat = 105
-    public var borderRadiusCard: CGFloat = 16
-    public var buttonHeightSmall: CGFloat = 30
-    public var feedbackContainerGap: CGFloat = 4
-    public var citationsTextFontWeight: CodableFontWeight = .bold
-    public var citationsDesktopButtonFontSize: CGFloat = 14
-    public var disclaimerFontSize: CGFloat = 12
-    public var disclaimerFontWeight: CodableFontWeight = .regular
-    public var inputFontSize: CGFloat = 16
-    public var inputBoxShadow: ConciergeShadow = ConciergeShadow(
-        offsetX: 0,
-        offsetY: 4,
-        blurRadius: 16,
-        spreadRadius: 0,
-        color: CodableColor(Color.black.opacity(0.16))
-    )
-    public var multimodalCardBoxShadow: ConciergeShadow = .none
-    public var welcomeInputOrder: Int = 3
-    public var welcomeCardsOrder: Int = 2
+    public var inputHeight: CGFloat
+    public var inputBorderRadius: CGFloat
+    public var inputOutlineWidth: CGFloat
+    public var inputFocusOutlineWidth: CGFloat
+    public var inputButtonHeight: CGFloat
+    public var inputButtonWidth: CGFloat
+    public var inputButtonBorderRadius: CGFloat
+    public var messageBorderRadius: CGFloat
+    public var messagePadding: ConciergePadding
+    public var messageMaxWidth: CGFloat? // nil = no max width, value = max width in points
+    public var chatInterfaceMaxWidth: CGFloat
+    public var chatHistoryPadding: CGFloat
+    public var chatHistoryPaddingTopExpanded: CGFloat
+    public var chatHistoryBottomPadding: CGFloat
+    public var messageBlockerHeight: CGFloat
+    public var borderRadiusCard: CGFloat
+    public var buttonHeightSmall: CGFloat
+    public var feedbackContainerGap: CGFloat
+    public var citationsTextFontWeight: CodableFontWeight
+    public var citationsDesktopButtonFontSize: CGFloat
+    public var disclaimerFontSize: CGFloat
+    public var disclaimerFontWeight: CodableFontWeight
+    public var inputFontSize: CGFloat
+    public var inputBoxShadow: ConciergeShadow
+    public var multimodalCardBoxShadow: ConciergeShadow
+    public var welcomeInputOrder: Int
+    public var welcomeCardsOrder: Int
     
     public init(
         inputHeight: CGFloat = 52,
@@ -505,9 +499,9 @@ public struct ConciergeLayout: Codable {
 
 /// Border style configuration
 public struct ConciergeBorderStyle: Codable {
-    public var width: CGFloat = 1
-    public var radius: CGFloat = 0
-    public var color: CodableColor = CodableColor(Color.primary)
+    public var width: CGFloat
+    public var radius: CGFloat
+    public var color: CodableColor
     
     public init(
         width: CGFloat = 1,
@@ -522,10 +516,10 @@ public struct ConciergeBorderStyle: Codable {
 
 /// Welcome screen component style
 public struct ConciergeWelcomeStyle: Codable {
-    public var headingColor: CodableColor = CodableColor(Color.primary)
-    public var subheadingColor: CodableColor = CodableColor(Color.secondary)
-    public var inputOrder: Int = 3
-    public var cardsOrder: Int = 2
+    public var headingColor: CodableColor
+    public var subheadingColor: CodableColor
+    public var inputOrder: Int
+    public var cardsOrder: Int
     
     public init(
         headingColor: CodableColor = CodableColor(Color.primary),
@@ -542,12 +536,12 @@ public struct ConciergeWelcomeStyle: Codable {
 
 /// Input bar component style
 public struct ConciergeInputBarStyle: Codable {
-    public var background: CodableColor = CodableColor(Color.white)
-    public var textColor: CodableColor = CodableColor(Color.primary)
-    public var border: ConciergeBorderStyle = ConciergeBorderStyle()
-    public var placeholderColor: CodableColor = CodableColor(Color.secondary)
-    public var icon: ConciergeIconConfig? = nil
-    public var voiceEnabled: Bool = false
+    public var background: CodableColor
+    public var textColor: CodableColor
+    public var border: ConciergeBorderStyle
+    public var placeholderColor: CodableColor
+    public var icon: ConciergeIconConfig?
+    public var voiceEnabled: Bool
     
     public init(
         background: CodableColor = CodableColor(Color.white),
@@ -568,14 +562,14 @@ public struct ConciergeInputBarStyle: Codable {
 
 /// Chat message component style
 public struct ConciergeChatMessageStyle: Codable {
-    public var userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground))
-    public var userText: CodableColor = CodableColor(Color.primary)
-    public var conciergeBackground: CodableColor = CodableColor(Color(UIColor.systemBackground))
-    public var conciergeText: CodableColor = CodableColor(Color.primary)
-    public var linkColor: CodableColor = CodableColor(Color.accentColor)
-    public var borderRadius: CGFloat = 10
-    public var padding: ConciergePadding = ConciergePadding(vertical: 8, horizontal: 16)
-    public var maxWidth: CGFloat? = nil // nil = no max width, value = max width in points
+    public var userBackground: CodableColor
+    public var userText: CodableColor
+    public var conciergeBackground: CodableColor
+    public var conciergeText: CodableColor
+    public var linkColor: CodableColor
+    public var borderRadius: CGFloat
+    public var padding: ConciergePadding
+    public var maxWidth: CGFloat? // nil = no max width, value = max width in points
     
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
@@ -600,12 +594,12 @@ public struct ConciergeChatMessageStyle: Codable {
 
 /// Feedback component style
 public struct ConciergeFeedbackStyle: Codable {
-    public var iconButtonBackground: CodableColor = CodableColor(Color.white)
-    public var iconButtonHoverBackground: CodableColor = CodableColor(Color.white)
-    public var iconButtonSizeDesktop: CGFloat = 32
-    public var containerGap: CGFloat = 4
-    public var positiveNotesEnabled: Bool = true
-    public var negativeNotesEnabled: Bool = true
+    public var iconButtonBackground: CodableColor
+    public var iconButtonHoverBackground: CodableColor
+    public var iconButtonSizeDesktop: CGFloat
+    public var containerGap: CGFloat
+    public var positiveNotesEnabled: Bool
+    public var negativeNotesEnabled: Bool
     
     public init(
         iconButtonBackground: CodableColor = CodableColor(Color.white),
@@ -626,9 +620,9 @@ public struct ConciergeFeedbackStyle: Codable {
 
 /// Carousel component style
 public struct ConciergeCarouselStyle: Codable {
-    public var cardBorderRadius: CGFloat = 16
-    public var cardBoxShadow: ConciergeShadow = .none
-    public var cardClickAction: String = "openLink"
+    public var cardBorderRadius: CGFloat
+    public var cardBoxShadow: ConciergeShadow
+    public var cardClickAction: String
     
     public init(
         cardBorderRadius: CGFloat = 16,
@@ -643,9 +637,9 @@ public struct ConciergeCarouselStyle: Codable {
 
 /// Disclaimer component style
 public struct ConciergeDisclaimerStyle: Codable {
-    public var textColor: CodableColor = CodableColor(Color(UIColor.systemGray))
-    public var fontSize: CGFloat = 12
-    public var fontWeight: CodableFontWeight = .regular
+    public var textColor: CodableColor
+    public var fontSize: CGFloat
+    public var fontWeight: CodableFontWeight
     
     public init(
         textColor: CodableColor = CodableColor(Color(UIColor.systemGray)),
@@ -660,12 +654,12 @@ public struct ConciergeDisclaimerStyle: Codable {
 
 /// Consolidated component styles
 public struct ConciergeComponentStyles: Codable {
-    public var welcome: ConciergeWelcomeStyle = ConciergeWelcomeStyle()
-    public var inputBar: ConciergeInputBarStyle = ConciergeInputBarStyle()
-    public var chatMessage: ConciergeChatMessageStyle = ConciergeChatMessageStyle()
-    public var feedback: ConciergeFeedbackStyle = ConciergeFeedbackStyle()
-    public var carousel: ConciergeCarouselStyle = ConciergeCarouselStyle()
-    public var disclaimer: ConciergeDisclaimerStyle = ConciergeDisclaimerStyle()
+    public var welcome: ConciergeWelcomeStyle
+    public var inputBar: ConciergeInputBarStyle
+    public var chatMessage: ConciergeChatMessageStyle
+    public var feedback: ConciergeFeedbackStyle
+    public var carousel: ConciergeCarouselStyle
+    public var disclaimer: ConciergeDisclaimerStyle
     
     public init(
         welcome: ConciergeWelcomeStyle = ConciergeWelcomeStyle(),
@@ -686,7 +680,7 @@ public struct ConciergeComponentStyles: Codable {
 
 /// Assets configuration (icons, images, etc.)
 public struct ConciergeAssets: Codable {
-    public var icons: ConciergeIconAssets = ConciergeIconAssets()
+    public var icons: ConciergeIconAssets
     
     public init(icons: ConciergeIconAssets = ConciergeIconAssets()) {
         self.icons = icons
@@ -695,7 +689,7 @@ public struct ConciergeAssets: Codable {
 
 /// Icon assets configuration
 public struct ConciergeIconAssets: Codable {
-    public var company: String = ""
+    public var company: String
     
     public init(company: String = "") {
         self.company = company
@@ -704,9 +698,9 @@ public struct ConciergeIconAssets: Codable {
 
 /// Welcome example card configuration
 public struct ConciergeWelcomeExample: Codable {
-    public var text: String = ""
-    public var image: String? = nil
-    public var backgroundColor: CodableColor? = nil
+    public var text: String
+    public var image: String?
+    public var backgroundColor: CodableColor?
     
     public init(text: String = "", image: String? = nil, backgroundColor: CodableColor? = nil) {
         self.text = text
@@ -718,30 +712,30 @@ public struct ConciergeWelcomeExample: Codable {
 /// Text content and copy configuration (localizable strings)
 /// Maps from web config "text" object with dot-notation keys (ex: "welcome.heading")
 public struct ConciergeCopy: Codable {
-    public var welcomeHeading: String = "Explore what you can do with Adobe apps."
-    public var welcomeSubheading: String = "Choose an option or tell us what interests you and we'll point you in the right direction."
-    public var inputPlaceholder: String = "Tell us what you'd like to do or create"
-    public var inputMessageInputAria: String = "Message input"
-    public var inputSendAria: String = "Send message"
-    public var inputAiChatIconTooltip: String = "Ask AI"
-    public var inputMicAria: String = "Voice input"
-    public var cardAriaSelect: String = "Select example message"
-    public var carouselPrevAria: String = "Previous cards"
-    public var carouselNextAria: String = "Next cards"
-    public var scrollBottomAria: String = "Scroll to bottom"
-    public var errorNetwork: String = "I'm sorry, I'm having trouble connecting to our services right now."
-    public var loadingMessage: String = "Generating response from our knowledge base"
-    public var feedbackDialogTitlePositive: String = "Your feedback is appreciated"
-    public var feedbackDialogTitleNegative: String = "Your feedback is appreciated"
-    public var feedbackDialogQuestionPositive: String = "What went well? Select all that apply."
-    public var feedbackDialogQuestionNegative: String = "What went wrong? Select all that apply."
-    public var feedbackDialogNotes: String = "Notes"
-    public var feedbackDialogSubmit: String = "Submit"
-    public var feedbackDialogCancel: String = "Cancel"
-    public var feedbackDialogNotesPlaceholder: String = "Additional notes (optional)"
-    public var feedbackToastSuccess: String = "Thank you for the feedback."
-    public var feedbackThumbsUpAria: String = "Thumbs up"
-    public var feedbackThumbsDownAria: String = "Thumbs down"
+    public var welcomeHeading: String
+    public var welcomeSubheading: String
+    public var inputPlaceholder: String
+    public var inputMessageInputAria: String
+    public var inputSendAria: String
+    public var inputAiChatIconTooltip: String
+    public var inputMicAria: String
+    public var cardAriaSelect: String
+    public var carouselPrevAria: String
+    public var carouselNextAria: String
+    public var scrollBottomAria: String
+    public var errorNetwork: String
+    public var loadingMessage: String
+    public var feedbackDialogTitlePositive: String
+    public var feedbackDialogTitleNegative: String
+    public var feedbackDialogQuestionPositive: String
+    public var feedbackDialogQuestionNegative: String
+    public var feedbackDialogNotes: String
+    public var feedbackDialogSubmit: String
+    public var feedbackDialogCancel: String
+    public var feedbackDialogNotesPlaceholder: String
+    public var feedbackToastSuccess: String
+    public var feedbackThumbsUpAria: String
+    public var feedbackThumbsDownAria: String
     
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
@@ -825,9 +819,9 @@ public struct ConciergeCopy: Codable {
 
 /// Arrays configuration (welcome examples, feedback options)
 public struct ConciergeArrays: Codable {
-    public var welcomeExamples: [ConciergeWelcomeExample] = []
-    public var feedbackPositiveOptions: [String] = ConciergeArrays.defaultPositive
-    public var feedbackNegativeOptions: [String] = ConciergeArrays.defaultNegative
+    public var welcomeExamples: [ConciergeWelcomeExample]
+    public var feedbackPositiveOptions: [String]
+    public var feedbackNegativeOptions: [String]
     
     private enum DotKeys: String, CodingKey {
         case welcomeExamples = "welcome.examples"
@@ -894,10 +888,10 @@ private struct DynamicCodingKey: CodingKey {
 
 /// Typed representation of processed theme values
 public struct ConciergeThemeTokens: Codable {
-    public var typography: ConciergeTypography = ConciergeTypography()
-    public var colors: ConciergeThemeColors = ConciergeThemeColors()
-    public var layout: ConciergeLayout = ConciergeLayout()
-    public var components: ConciergeComponentStyles = ConciergeComponentStyles()
+    public var typography: ConciergeTypography
+    public var colors: ConciergeThemeColors
+    public var layout: ConciergeLayout
+    public var components: ConciergeComponentStyles
     
     public init(
         typography: ConciergeTypography = ConciergeTypography(),
