@@ -84,7 +84,8 @@ public extension Concierge {
     static func wrap<Content: View>(
         _ content: Content,
         title: String? = nil,
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        hideButton: Bool = false
     ) -> some View {
         if let title = title {
             self.chatTitle = title
@@ -92,7 +93,7 @@ public extension Concierge {
         if let subtitle = subtitle {
             self.chatSubtitle = subtitle
         }
-        return ConciergeWrapper(content: content)
+        return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
     /// Hides the chat overlay if it is currently presented.

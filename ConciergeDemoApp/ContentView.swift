@@ -20,11 +20,15 @@ import AEPConcierge
 struct ContentView: View {
     var body: some View {
         TabView {
+            
+            // MARK: - Manual call
+            
             // SwiftUI sample
             Concierge.wrap(
                 VStack {
                     VStack {
                         Button(action: {
+                            // only call needed to show the concierge ui
                             Concierge.show(
                                 title: "Concierge",
                                 subtitle: "Powered by Adobe"
@@ -47,6 +51,8 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(.systemBackground))
+                    
+                    // optional theming - probably this ultimately gets set by some remote configuration.  leave a manual option?
                     .conciergeTheme(
                         ConciergeTheme(
                             primary: .Brand.red,
@@ -59,10 +65,20 @@ struct ContentView: View {
                             surfaceDark: Color(UIColor.systemBackground)
                         )
                     )
-                }
+                },
+                hideButton: true
             )
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
+            // MARK: - floating button
+            
+            Concierge.wrap(
+                Label(
+                    "hello, world", systemImage: "world"
+                )
+            )
+            .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
+            
             // UIKit sample
             UIKitDemoScreen()
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
