@@ -15,16 +15,19 @@ import SwiftUI
 /// Container that overlays the Concierge chat UI on top of app content when enabled.
 struct ConciergeWrapper<Content: View>: View {
     let content: Content
+    let hideButton: Bool
     @StateObject private var stateManager = ConciergeOverlayManager.shared
     @Environment(\.conciergeTheme) private var theme
 
-    init(content: Content) {
+    init(content: Content, hideButton: Bool = false) {
         self.content = content
+        self.hideButton = hideButton
     }
 
     var body: some View {
         ZStack {
             content
+            
             // View overlay for chat UI (respects safe area by default)
             if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
@@ -32,6 +35,33 @@ struct ConciergeWrapper<Content: View>: View {
                     .transition(.opacity)
                     .zIndex(1)
             }
+            
+            // Floating Concierge button
+            if !hideButton {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: showConcierge) {
+                            Image(systemName: "sparkles.square.filled.on.square")
+                                .font(.system(size: 20))
+                                .foregroundColor(theme.onPrimary)
+                                .padding(20)
+                                .background(
+                                    Circle()
+                                        .fill(theme.primary)
+                                        .shadow(color: .black.opacity(0.6), radius: 20, x: 2, y: 10)
+                                )
+                        }
+                        .padding(.trailing, 5)
+                        .padding(.bottom, 5)
+                    }
+                }
+            }
         }
+    }
+    
+    private func showConcierge() {
+        Concierge.show()
     }
 }
