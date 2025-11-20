@@ -45,4 +45,25 @@ extension Color {
         }
         return Color(hex: value)
     }
+    
+    /// Converts a SwiftUI Color to a hex string in the form "#RRGGBB".
+    /// If conversion fails (e.g., non-RGB color space), returns "#000000".
+    func toHexString() -> String {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        // Handle different color spaces by converting to RGB
+        if uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+            return String(format: "#%02X%02X%02X",
+                         Int(red * 255),
+                         Int(green * 255),
+                         Int(blue * 255))
+        } else {
+            // Fallback for colors that can't be converted to RGB
+            return "#000000"
+        }
+    }
 }
