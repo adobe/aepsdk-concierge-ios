@@ -41,26 +41,6 @@ struct ChatTopBar: View {
 
             Spacer()
 
-            HStack(spacing: 16) {
-                // User/Agent control with caption
-                VStack(alignment: .center, spacing: 4) {
-                    Button(action: {
-                        showAgentSend.toggle()
-                        onToggleMode(showAgentSend)
-                    }) {
-                        Text(showAgentSend ? "Agent" : "User")
-                            .font(.system(.footnote))
-                            .padding(8)
-                            .background(Color.secondary.opacity(0.15))
-                            .cornerRadius(8)
-                    }
-                    Text("Message will be sent from this perspective")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
-
             Button(action: onClose) {
                 BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
                     .foregroundColor(Color.Secondary)
