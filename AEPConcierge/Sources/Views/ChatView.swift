@@ -263,8 +263,10 @@ public struct ChatView: View {
         var currentMessage = viewModel.messages[index]
         
         // attach sentiment
-        // TODO: is there a reason we're doing this?
         currentMessage.feedbackSentiment = feedbackPayload.sentiment
+        
+        // Write the updated message back to the array so UI updates
+        viewModel.messages[index] = currentMessage
         
         // get the payload
         let payload = currentMessage.payload
