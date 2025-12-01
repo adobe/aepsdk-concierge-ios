@@ -16,10 +16,10 @@ on:
 jobs:
   build-and-test:
     name: "CI"
-    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@gha-ios-5.3.2
+    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@gha-ios-5.3.4
     with:
-      ios-device-names: '["iPhone 15"]'
-      ios-versions: '["18.1"]'
+      ios-device-names: '["iPhone 16"]'
+      ios-versions: '["18.5"]'
       run-test-ios-unit: true
       run-build-xcframework-and-app: true
       enable-codecov: true
