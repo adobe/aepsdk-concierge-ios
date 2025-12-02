@@ -17,6 +17,9 @@ public protocol SpeechCapturing: AnyObject {
     
     func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
+    func hasPermissionBeenDenied() -> Bool
+    func hasNeverBeenAskedForPermission() -> Bool
+    func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void)
     func beginCapture()
     func endCapture(completion: @escaping (String?, Error?) -> Void)    
 }

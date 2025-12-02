@@ -33,13 +33,26 @@ class SpeechCapturer: SpeechCapturing {
     
     func initialize(responseProcessor: ((String) -> Void)?) {
         self.responseProcessor = responseProcessor
-        requestSpeechAndMicrophonePermissions()
     }
     
     // MARK: - internal methods
     
     func isAvailable() -> Bool {
         permissionGrantedForAudio && permissionGrantedForSpeech
+    }
+    
+    func hasPermissionBeenDenied() -> Bool {
+        let audioStatus = AVAudioSession.sharedInstance().recordPermission
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        
+        return audioStatus == .denied || speechStatus == .denied || speechStatus == .restricted
+    }
+    
+    func hasNeverBeenAskedForPermission() -> Bool {
+        let audioStatus = AVAudioSession.sharedInstance().recordPermission
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        
+        return audioStatus == .undetermined && speechStatus == .notDetermined
     }
     
     func beginCapture() {
@@ -129,23 +142,35 @@ class SpeechCapturer: SpeechCapturing {
     }
     
     // MARK: - private methods
-    private func requestSpeechAndMicrophonePermissions() {        
+    func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void) {
+        // Use a dispatch group to wait for both permission requests to complete
+        let permissionGroup = DispatchGroup()
+        
+        permissionGroup.enter()
         AVAudioSession.sharedInstance().requestRecordPermission { allowed in
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 if !allowed {
                     Log.debug(label: self.LOG_TAG, "User has denied use of the Microphone.")
                 }
+                permissionGroup.leave()
             }
         }
         
+        permissionGroup.enter()
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 if authStatus != .authorized {
                     Log.debug(label: self.LOG_TAG, "User has declined the request for speech recognition.")
                 }
+                permissionGroup.leave()
             }
+        }
+        
+        // Notify when both permissions have been responded to
+        permissionGroup.notify(queue: .main) {
+            completion()
         }
     }
     

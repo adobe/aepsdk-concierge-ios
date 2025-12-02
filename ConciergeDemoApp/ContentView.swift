@@ -52,7 +52,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(.systemBackground))
                     
-                    // optional theming - probably this ultimately gets set by some remote configuration.  leave a manual option?
+                    // optional theming - default values will be read from a remote configuration
                     .conciergeTheme(
                         ConciergeTheme(
                             primary: .Brand.red,

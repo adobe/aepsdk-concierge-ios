@@ -222,11 +222,16 @@ public struct ChatView: View {
                             }
                         },
                         onOpenSettings: {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                openURL(url)
-                            }
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 viewModel.requestOpenSettings()
+                            }
+                            
+                            // Open app-specific settings
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                Log.debug(label: LOG_TAG, "Opening settings URL: \(url.absoluteString)")
+                                openURL(url)
+                            } else {
+                                Log.error(label: LOG_TAG, "Failed to create settings URL from: \(UIApplication.openSettingsURLString)")
                             }
                         }
                     )

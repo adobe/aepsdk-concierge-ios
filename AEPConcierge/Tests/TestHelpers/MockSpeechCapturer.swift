@@ -15,14 +15,26 @@
 final class MockSpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
     var available: Bool = true
+    var denied: Bool = false
+    var neverAsked: Bool = false
     private(set) var beginCaptures: Int = 0
     private(set) var endCaptures: Int = 0
+    private(set) var permissionRequests: Int = 0
     var transcriptToReturn: String? = nil
 
     func initialize(responseProcessor: ((String) -> Void)?) {
         self.responseProcessor = responseProcessor
     }
     func isAvailable() -> Bool { available }
+    func hasPermissionBeenDenied() -> Bool { denied }
+    func hasNeverBeenAskedForPermission() -> Bool { neverAsked }
+    func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void) {
+        permissionRequests += 1
+        // Simulate async permission request completion
+        DispatchQueue.main.async {
+            completion()
+        }
+    }
     func beginCapture() { beginCaptures += 1 }
     func endCapture(completion: @escaping (String?, Error?) -> Void) {
         endCaptures += 1

@@ -26,6 +26,8 @@ final class ConciergeChatViewModel: ObservableObject {
     @Published var userMessageToScrollId: UUID? = nil
     // Tracks whether the permission dialog should be shown
     @Published var showPermissionDialog: Bool = false
+    // Tracks whether welcome messages have been loaded
+    private var welcomeMessagesLoaded: Bool = false
 
     private let LOG_TAG = "ConciergeChatViewModel"
 
@@ -140,13 +142,35 @@ final class ConciergeChatViewModel: ObservableObject {
             return
         }
         
-        // Check if permissions are available
-        guard capturer.isAvailable() else {
+        // Only request permissions if the user has never been asked before
+        if capturer.hasNeverBeenAskedForPermission() {
+            Log.debug(label: self.LOG_TAG, "Requesting speech and microphone permissions for the first time.")
+            capturer.requestSpeechAndMicrophonePermissions { [weak self] in
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    // After user responds to system prompts, check if permissions were granted
+                    if capturer.isAvailable() {
+                        Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
+                        self.inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
+                        capturer.beginCapture()
+                    } else {
+                        Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
+                        self.showPermissionDialog = true
+                    }
+                }
+            }
+            return
+        }
+        
+        // Always check if permissions are available before proceeding
+        if !capturer.isAvailable() {
+            // Permissions were asked but not granted - show custom dialog
             Log.debug(label: self.LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
             showPermissionDialog = true
             return
         }
         
+        // Permissions granted - proceed with recording
         inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         capturer.beginCapture()
     }
@@ -344,9 +368,12 @@ final class ConciergeChatViewModel: ObservableObject {
     }
 
     // MARK: - Welcome landing page content
-    /// Loads initial welcome header and examples if no messages are present.
+    /// Loads initial welcome header and examples if not already loaded.
     func loadWelcomeIfNeeded() async {
-        guard messages.isEmpty else { return }
+        // Prevent loading if already loaded OR if messages is not empty
+        guard !welcomeMessagesLoaded && messages.isEmpty else { return }
+        welcomeMessagesLoaded = true
+        
         let welcome = await chatService.fetchWelcome()
         // Header
         messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
