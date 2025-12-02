@@ -16,12 +16,13 @@ on:
 jobs:
   build-and-test:
     name: "CI"
-    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@gha-ios-5.3.4
+    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@dev-gha-ios-5.3.5
     with:
+      runner-name: 'macos-15'
       ios-device-names: '["iPhone 16"]'
       ios-versions: '["18.5"]'
-      run-test-ios-unit: true
-      run-build-xcframework-and-app: true
-      enable-codecov: true
+      run-test-ios-unit: ${{ secrets.RUN_TEST_IOS_UNIT }}
+      run-build-xcframework-and-app: ${{ secrets.RUN_BUILD_XCFRAMEWORK_AND_APP }}
+      enable-codecov: ${{ secrets.ENABLE_CODECOV }}
       result-bundle-path: build/reports
-    secrets: inherit
+      secrets: inherit
