@@ -25,4 +25,4 @@ jobs:
       run-build-xcframework-and-app: ${{ secrets.RUN_BUILD_XCFRAMEWORK_AND_APP }}
       enable-codecov: ${{ secrets.ENABLE_CODECOV }}
       result-bundle-path: build/reports
-      secrets: inherit
+    secrets: inherit
