@@ -111,8 +111,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         // Also include a chunk that carries sources
         fakeService.plannedChunks.append(makePayload(state: Constants.StreamState.IN_PROGRESS, message: "!", sources: sources))
 
-        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
-        vm.stubAgentSources = false
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)        
 
         vm.applyTextChange("x")
         vm.sendMessage(isUser: true)
