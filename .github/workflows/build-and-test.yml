@@ -16,7 +16,7 @@ on:
 jobs:
   build-and-test:
     name: "CI"
-    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@dev-gha-ios-5.3.5
+    uses: adobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@gha-ios-5.3.5
     with:
       runner-image: 'macos-15'
       ios-device-names: '["iPhone 16"]'
