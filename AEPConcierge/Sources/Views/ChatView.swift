@@ -191,7 +191,7 @@ public struct ChatView: View {
                     sentiment: feedbackSentiment,
                     onCancel: { showFeedbackOverlay = false },
                     onSubmit: { payload in
-                        sendFeedbackFor(messageId: feedbackMessageId, with: payload)
+                        viewModel.sendFeedbackFor(messageId: feedbackMessageId, with: payload)                        
                         showFeedbackOverlay = false
                     }
                 )
@@ -255,66 +255,6 @@ public struct ChatView: View {
             hapticFeedback.impactOccurred()
             viewModel.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }
-    }
-    
-    private func sendFeedbackFor(messageId: UUID?, with feedbackPayload: FeedbackPayload) {
-        // Update the message with the feedback sentiment
-        guard let messageId = feedbackMessageId, let index = viewModel.messages.firstIndex(where: { $0.id == messageId }) else {
-            Log.debug(label: LOG_TAG, "Unable to send feedback, the message was not retrievable from the chat.")
-            return
-        }
-        
-        // get the message information for which feedback was provided
-        var currentMessage = viewModel.messages[index]
-        
-        // attach sentiment
-        currentMessage.feedbackSentiment = feedbackPayload.sentiment
-        
-        // Write the updated message back to the array so UI updates
-        viewModel.messages[index] = currentMessage
-        
-        // get the payload
-        let payload = currentMessage.payload
-        
-        // generate an edge event to track the feedback
-        var feedbackEventData: [String: Any] = [
-            Constants.Request.Keys.XDM: [
-                Constants.Request.Keys.EVENT_TYPE: Constants.Request.EventType.CONVERSATION_FEEDBACK,
-                Constants.Request.Keys.IDENTITY_MAP: [
-                    Constants.Request.Keys.ECID: [
-                        [
-                            Constants.Request.Keys.ID: conciergeConfiguration.ecid
-                        ]
-                    ]
-                ],
-                Constants.Request.Keys.CONVERSATION: [
-                    Constants.Request.Keys.Feedback.FEEDBACK: [
-                        Constants.Request.Keys.Feedback.SOURCE: Constants.Request.Values.Feedback.END_USER,
-                        Constants.Request.Keys.Feedback.RAW: [
-                            [
-                                Constants.Request.Keys.Feedback.TEXT: feedbackPayload.notes,
-                                Constants.Request.Keys.Feedback.PURPOSE: Constants.Request.Values.Feedback.USER_INPUT
-                            ]
-                        ],
-                        Constants.Request.Keys.Feedback.RATING: [
-                            Constants.Request.Keys.Feedback.SCORE: feedbackPayload.sentiment == .positive ? 1 : 0,
-                            Constants.Request.Keys.Feedback.CLASSIFICATION: feedbackPayload.sentiment.thumbsValue(),
-                            Constants.Request.Keys.Feedback.REASONS: feedbackPayload.selectedOptions
-                        ]
-                    ],
-                    Constants.Request.Keys.Feedback.CONVERSATION_ID: conciergeConfiguration.conversationId ?? "unknown",
-                    Constants.Request.Keys.Feedback.TURN_ID: conciergeConfiguration.sessionId ?? "unknown"
-                ]
-            ]
-        ]
-        
-        
-        
-        let feedbackEvent = Event(name: Constants.EventName.FEEDBACK,
-                                  type: EventType.edge,
-                                  source: EventSource.requestContent,
-                                  data: feedbackEventData)
-        MobileCore.dispatch(event: feedbackEvent)
     }
 }
 
