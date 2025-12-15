@@ -11,7 +11,7 @@
  */
 
 import Foundation
-
+import AEPCore
 import AEPServices
 
 @MainActor
@@ -26,6 +26,8 @@ final class ConciergeChatViewModel: ObservableObject {
     @Published var userMessageToScrollId: UUID? = nil
     // Tracks whether the permission dialog should be shown
     @Published var showPermissionDialog: Bool = false
+    // Tracks whether welcome messages have been loaded
+    private var welcomeMessagesLoaded: Bool = false
 
     private let LOG_TAG = "ConciergeChatViewModel"
 
@@ -42,10 +44,6 @@ final class ConciergeChatViewModel: ObservableObject {
     private var latestSources: [TempSource] = []
     private var productCardIndex: Int? = nil
     private var latestPromptSuggestions: [String] = []
-
-    // MARK: Feature flags
-    // Toggle to attach stubbed sources to agent responses for testing until backend supports it
-    var stubAgentSources: Bool = true
 
     // MARK: Session computed flags
     /// Whether at least one user message exists in the transcript.
@@ -144,13 +142,35 @@ final class ConciergeChatViewModel: ObservableObject {
             return
         }
         
-        // Check if permissions are available
-        guard capturer.isAvailable() else {
+        // Only request permissions if the user has never been asked before
+        if capturer.hasNeverBeenAskedForPermission() {
+            Log.debug(label: self.LOG_TAG, "Requesting speech and microphone permissions for the first time.")
+            capturer.requestSpeechAndMicrophonePermissions { [weak self] in
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    // After user responds to system prompts, check if permissions were granted
+                    if capturer.isAvailable() {
+                        Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
+                        self.inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
+                        capturer.beginCapture()
+                    } else {
+                        Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
+                        self.showPermissionDialog = true
+                    }
+                }
+            }
+            return
+        }
+        
+        // Always check if permissions are available before proceeding
+        if !capturer.isAvailable() {
+            // Permissions were asked but not granted - show custom dialog
             Log.debug(label: self.LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
             showPermissionDialog = true
             return
         }
         
+        // Permissions granted - proceed with recording
         inputReducer.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         capturer.beginCapture()
     }
@@ -240,6 +260,7 @@ final class ConciergeChatViewModel: ObservableObject {
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = accumulatedContent
+                                    current.payload = payload
                                     self.messages[streamingMessageIndex] = current
                                 }
                             } else if state == Constants.StreamState.COMPLETED {
@@ -251,6 +272,7 @@ final class ConciergeChatViewModel: ObservableObject {
                                 if streamingMessageIndex < self.messages.count {
                                     var current = self.messages[streamingMessageIndex]
                                     current.messageBody = fullText
+                                    current.payload = payload
                                     self.messages[streamingMessageIndex] = current
                                 }
                                 
@@ -319,16 +341,10 @@ final class ConciergeChatViewModel: ObservableObject {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = accumulatedContent
                                 current.shouldSpeakMessage = true
-                                // Attach real sources captured during streaming if present
+                                // Attach sources captured during streaming if present
                                 if !self.latestSources.isEmpty {
-                                    Log.trace(label: self.LOG_TAG, "Using real sources: count=\(self.latestSources.count)")
+                                    Log.trace(label: self.LOG_TAG, "Using sources: count=\(self.latestSources.count)")
                                     current.sources = self.latestSources
-                                } else if self.stubAgentSources {
-                                    Log.trace(label: self.LOG_TAG, "Using stubbed sources")
-                                    current.sources = [
-                                        TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
-                                        TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
-                                    ]
                                 }
                                 self.messages[streamingMessageIndex] = current
                             }
@@ -352,9 +368,12 @@ final class ConciergeChatViewModel: ObservableObject {
     }
 
     // MARK: - Welcome landing page content
-    /// Loads initial welcome header and examples if no messages are present.
+    /// Loads initial welcome header and examples if not already loaded.
     func loadWelcomeIfNeeded() async {
-        guard messages.isEmpty else { return }
+        // Prevent loading if already loaded OR if messages is not empty
+        guard !welcomeMessagesLoaded && messages.isEmpty else { return }
+        welcomeMessagesLoaded = true
+        
         let welcome = await chatService.fetchWelcome()
         // Header
         messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
@@ -378,14 +397,7 @@ final class ConciergeChatViewModel: ObservableObject {
         }
 
         Task { @MainActor in
-            var agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
-            // TODO: Update this logic to reflect real backend response when available
-            if stubAgentSources {
-                agent.sources = [
-                    TempSource(url: "https://example.com/guide/introduction", title: "Introduction source", startIndex: 1, endIndex: 2, citationNumber: 1),
-                    TempSource(url: "https://example.com/docs/reference#section", title: "Reference section in docs", startIndex: 1, endIndex: 2, citationNumber: 2)
-                ]
-            }
+            let agent = Message(template: .basic(isUserMessage: false), shouldSpeakMessage: true, messageBody: response?.message)
             messages.append(agent)
             self.clearState()
         }
@@ -477,6 +489,68 @@ final class ConciergeChatViewModel: ObservableObject {
         if let index = index, index < self.messages.count {
             self.messages.remove(at: index)
         }
+    }
+    
+    // MARK: - feedback
+    
+    func sendFeedbackFor(messageId: UUID?, with feedbackPayload: FeedbackPayload) {
+        // Update the message with the feedback sentiment
+        guard let messageId = messageId, let index = messages.firstIndex(where: { $0.id == messageId }) else {
+            Log.debug(label: LOG_TAG, "Unable to send feedback, the message was not retrievable from the chat.")
+            return
+        }
+        
+        guard let configuration = configuration else {
+            Log.debug(label: LOG_TAG, "Unable to send feedback, configuration is not available.")
+            return
+        }
+        
+        // get the message information for which feedback was provided
+        var currentMessage = messages[index]
+        
+        // attach sentiment
+        currentMessage.feedbackSentiment = feedbackPayload.sentiment
+        
+        // Write the updated message back to the array so UI updates
+        messages[index] = currentMessage
+                
+        // generate an edge event to track the feedback
+        let feedbackEventData: [String: Any] = [
+            Constants.Request.Keys.XDM: [
+                Constants.Request.Keys.EVENT_TYPE: Constants.Request.EventType.CONVERSATION_FEEDBACK,
+                Constants.Request.Keys.IDENTITY_MAP: [
+                    Constants.Request.Keys.ECID: [
+                        [
+                            Constants.Request.Keys.ID: configuration.ecid
+                        ]
+                    ]
+                ],
+                Constants.Request.Keys.CONVERSATION: [
+                    Constants.Request.Keys.Feedback.FEEDBACK: [
+                        Constants.Request.Keys.Feedback.SOURCE: Constants.Request.Values.Feedback.END_USER,
+                        Constants.Request.Keys.Feedback.RAW: [
+                            [
+                                Constants.Request.Keys.Feedback.TEXT: feedbackPayload.notes,
+                                Constants.Request.Keys.Feedback.PURPOSE: Constants.Request.Values.Feedback.USER_INPUT
+                            ]
+                        ],
+                        Constants.Request.Keys.Feedback.RATING: [
+                            Constants.Request.Keys.Feedback.SCORE: feedbackPayload.sentiment == .positive ? 1 : 0,
+                            Constants.Request.Keys.Feedback.CLASSIFICATION: feedbackPayload.sentiment.thumbsValue(),
+                            Constants.Request.Keys.Feedback.REASONS: feedbackPayload.selectedOptions
+                        ]
+                    ],
+                    Constants.Request.Keys.Feedback.CONVERSATION_ID: configuration.conversationId ?? "unknown",
+                    Constants.Request.Keys.Feedback.TURN_ID: configuration.sessionId ?? "unknown"
+                ]
+            ]
+        ]
+        
+        let feedbackEvent = Event(name: Constants.EventName.FEEDBACK,
+                                  type: EventType.edge,
+                                  source: EventSource.requestContent,
+                                  data: feedbackEventData)
+        MobileCore.dispatch(event: feedbackEvent)
     }
 }
 

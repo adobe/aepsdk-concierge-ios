@@ -14,12 +14,7 @@ import SwiftUI
 import AEPServices
 
 struct FeedbackOverlayView: View {
-    struct FeedbackPayload {
-        let sentiment: FeedbackSentiment
-        let selectedOptions: [String]
-        let notes: String
-    }
-
+    
     let theme: ConciergeTheme
     let sentiment: FeedbackSentiment
     let onCancel: () -> Void

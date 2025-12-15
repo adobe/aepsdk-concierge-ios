@@ -48,7 +48,7 @@ class ConciergeChatService: NSObject {
     // TODO: Mocked Welcome landing page content + recommended prompts (temporary until backend support)
     /// Returns a mocked welcome header and example tiles.
     func fetchWelcome() async -> (title: String, body: String, examples: [WelcomePromptSuggestion]) {
-        let title = "Welcome to [Name] concierge!"
+        let title = "Welcome to Adobe concierge!"
         let body = "I’m your personal guide to help you explore and find exactly what you need. Let’s get started!\n\nNot sure where to start? Explore the suggested ideas below."
 
         let examples: [WelcomePromptSuggestion] = [

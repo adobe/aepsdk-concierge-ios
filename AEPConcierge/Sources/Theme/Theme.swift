@@ -70,8 +70,8 @@ public extension View {
 // MARK: - Feedback presentation environment
 
 public struct ConciergeFeedbackPresenter {
-    public var present: (_ sentiment: FeedbackSentiment) -> Void
-    public init(present: @escaping (_ sentiment: FeedbackSentiment) -> Void = { _ in }) {
+    public var present: (_ sentiment: FeedbackSentiment, _ messageId: UUID?) -> Void
+    public init(present: @escaping (_ sentiment: FeedbackSentiment, _ messageId: UUID?) -> Void = { _, _ in }) {
         self.present = present
     }
 }
