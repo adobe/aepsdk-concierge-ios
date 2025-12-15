@@ -11,7 +11,7 @@
  */
 
 import SwiftUI
-
+import AEPCore
 import AEPServices
 
 public struct ChatView: View {
@@ -35,6 +35,9 @@ public struct ChatView: View {
     // Header content
     private let titleText: String
     private let subtitleText: String?
+    
+    // TODO: need a better way to manage state across all these views
+    private var conciergeConfiguration: ConciergeConfiguration
 
     // MARK: Derived values
     private var currentMessageIndex: Int { viewModel.messages.count - 1 }
@@ -43,6 +46,7 @@ public struct ChatView: View {
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
     @State private var showFeedbackOverlay: Bool = false
     @State private var feedbackSentiment: FeedbackSentiment = .positive
+    @State private var feedbackMessageId: UUID? = nil
     @State private var isInputFocused: Bool = false
     private var composerBackgroundColor: Color {
         colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
@@ -65,6 +69,7 @@ public struct ChatView: View {
         self.titleText = title
         self.subtitleText = subtitle
         self.onClose = onClose
+        self.conciergeConfiguration = conciergeConfiguration
         let vm = ConciergeChatViewModel(
             configuration: conciergeConfiguration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
@@ -80,6 +85,7 @@ public struct ChatView: View {
         self.titleText = "Concierge"
         self.subtitleText = "Powered by Adobe"
         self.onClose = nil
+        self.conciergeConfiguration = ConciergeConfiguration()
         let vm = ConciergeChatViewModel(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         vm.messages = messages
         _viewModel = StateObject(wrappedValue: vm)
@@ -134,9 +140,6 @@ public struct ChatView: View {
                     } else {
                         Concierge.hide()
                     }
-                },
-                onToggleSources: { isOn in
-                    viewModel.stubAgentSources = isOn
                 }
             )
         }
@@ -173,9 +176,10 @@ public struct ChatView: View {
             Task { await viewModel.loadWelcomeIfNeeded() }
         }
         // Provide a presenter to child views via environment
-        .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment in
+        .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in
             withAnimation {
                 feedbackSentiment = sentiment
+                feedbackMessageId = messageId
                 showFeedbackOverlay = true
             }
         })
@@ -186,7 +190,10 @@ public struct ChatView: View {
                     theme: theme,
                     sentiment: feedbackSentiment,
                     onCancel: { showFeedbackOverlay = false },
-                    onSubmit: { _ in showFeedbackOverlay = false }
+                    onSubmit: { payload in
+                        viewModel.sendFeedbackFor(messageId: feedbackMessageId, with: payload)                        
+                        showFeedbackOverlay = false
+                    }
                 )
                 .transition(.opacity)
                 .zIndex(1000)
@@ -215,11 +222,16 @@ public struct ChatView: View {
                             }
                         },
                         onOpenSettings: {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                openURL(url)
-                            }
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 viewModel.requestOpenSettings()
+                            }
+                            
+                            // Open app-specific settings
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                Log.debug(label: LOG_TAG, "Opening settings URL: \(url.absoluteString)")
+                                openURL(url)
+                            } else {
+                                Log.error(label: LOG_TAG, "Failed to create settings URL from: \(UIApplication.openSettingsURLString)")
                             }
                         }
                     )
@@ -271,11 +283,11 @@ public struct ChatView: View {
             )
         ]
         var messages = [
-            Message(template: .welcomeHeader(title: "Welcome to Adobe Concierge!", body: "I’m your personal guide to help you explore and find exactly what you need. Let’s get started!\n\nNot sure where to start? Explore the suggested ideas below.")),
-            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[0].imageURL), text: examples[0].text, background: examples[0].background)),
-            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[1].imageURL), text: examples[1].text, background: examples[1].background)),
-            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[2].imageURL), text: examples[2].text, background: examples[2].background)),
-            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[3].imageURL), text: examples[3].text, background: examples[3].background)),
+//            Message(template: .welcomeHeader(title: "Welcome to Adobe Concierge!", body: "I’m your personal guide to help you explore and find exactly what you need. Let’s get started!\n\nNot sure where to start? Explore the suggested ideas below.")),
+//            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[0].imageURL), text: examples[0].text, background: examples[0].background)),
+//            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[1].imageURL), text: examples[1].text, background: examples[1].background)),
+//            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[2].imageURL), text: examples[2].text, background: examples[2].background)),
+//            Message(template: .welcomePromptSuggestion(imageSource: .remote(examples[3].imageURL), text: examples[3].text, background: examples[3].background)),
 //            Message(template: .basic(isUserMessage: true), messageBody: "basic user message"),
 //            Message(template: .basic(isUserMessage: false), messageBody: "basic system message"),
 //            Message(template: .divider),
@@ -290,20 +302,20 @@ public struct ChatView: View {
 //                                           body: "**1-2 product description lines** - dolor sit amet, consecteatur adipiscing elit, sed do eiusmod tempor incididunt.",
 //                                           primaryButton: TempButton(text: "Label", url: "label-url"),
 //                                           secondaryButton: TempButton(text: "label", url: "label-url"))),
-//            Message(template: .divider),
-//            Message(template: .carouselGroup([
-//                Message(template: .productCarouselCard(
-//                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-//                    title: "Product 1",
-//                    destination: URL(string:"https://adobe.com")!
-//                )),
-//                Message(template: .productCarouselCard(
-//                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
-//                    title: "Product 2",
-//                    destination: URL(string:"https://adobe.com")!
-//                ))
-//            ])),
-//            Message(template: .divider)
+            Message(template: .divider),
+            Message(template: .carouselGroup([
+                Message(template: .productCarouselCard(
+                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+                    title: "Product 1",
+                    destination: URL(string:"https://adobe.com")!
+                )),
+                Message(template: .productCarouselCard(
+                    imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
+                    title: "Product 2",
+                    destination: URL(string:"https://adobe.com")!
+                ))
+            ])),
+            Message(template: .divider)
         ]
         
         var body: some View {

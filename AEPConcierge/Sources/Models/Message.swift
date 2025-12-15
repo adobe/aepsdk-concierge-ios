@@ -15,22 +15,26 @@ import SwiftUI
 public struct Message: Identifiable {
     public let id = UUID()
     let template: MessageTemplate
+    var payload: TempPayload? = nil
     var shouldSpeakMessage = false
     var messageBody: String?
     var sources: [TempSource]? = nil
     var promptSuggestions: [String]? = nil
+    var feedbackSentiment: FeedbackSentiment? = nil
     
     public static let divider = Message(template: .divider)
     
     var chatMessageView: ChatMessageView {
-        ChatMessageView(template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, onSuggestionTap: nil)
+        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, onSuggestionTap: nil)
     }
     
-    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil) {
+    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [TempSource]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, payload: TempPayload? = nil) {
         self.template = template
+        self.payload = payload
         self.shouldSpeakMessage = shouldSpeakMessage
         self.messageBody = messageBody
         self.sources = sources
         self.promptSuggestions = promptSuggestions
+        self.feedbackSentiment = feedbackSentiment
     }
 }

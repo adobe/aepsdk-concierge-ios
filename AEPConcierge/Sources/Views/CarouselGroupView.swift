@@ -18,20 +18,19 @@ struct CarouselGroupView: View {
     @State private var currentIndex = 0
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, message in
                     message.chatMessageView
-                        .padding(.horizontal)
                         .tag(index)
                 }
             }
-            .frame(minHeight: 400)
-            .frame(minWidth: 350)
+            .frame(idealWidth: 150, idealHeight: 200)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             
             PageIndicator(numberOfPages: items.count, currentIndex: $currentIndex)
-                .padding(.bottom, 8)
+                .padding(.top, 16)
         }
+        .padding(.vertical, 8)
     }
-} 
+}

@@ -111,8 +111,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         // Also include a chunk that carries sources
         fakeService.plannedChunks.append(makePayload(state: Constants.StreamState.IN_PROGRESS, message: "!", sources: sources))
 
-        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)
-        vm.stubAgentSources = false
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService)        
 
         vm.applyTextChange("x")
         vm.sendMessage(isUser: true)
@@ -154,10 +153,11 @@ final class ConciergeChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.inputReducer.data.text, "set return")
     }
     
-    func test_startRecording_whenPermissionsDenied_showsPermissionDialog() {
+    func test_startRecording_whenPermissionsNotGranted_showsPermissionDialog() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let capturer = MockSpeechCapturer()
-        capturer.available = false // simulate denied permissions
+        capturer.available = false
+        capturer.neverAsked = false // Already asked before
         let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
         
         XCTAssertFalse(vm.showPermissionDialog)
@@ -167,12 +167,14 @@ final class ConciergeChatViewModelTests: XCTestCase {
         XCTAssertTrue(vm.showPermissionDialog)
         XCTAssertFalse(vm.isRecording)
         XCTAssertEqual(capturer.beginCaptures, 0)
+        XCTAssertEqual(capturer.permissionRequests, 0) // Should not request again
     }
     
     func test_dismissPermissionDialog_hidesDialog() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let capturer = MockSpeechCapturer()
         capturer.available = false
+        capturer.neverAsked = false
         let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
         
         vm.toggleMic(currentSelectionLocation: 0)
@@ -187,6 +189,7 @@ final class ConciergeChatViewModelTests: XCTestCase {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let capturer = MockSpeechCapturer()
         capturer.available = false
+        capturer.neverAsked = false
         let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
         
         vm.toggleMic(currentSelectionLocation: 0)
@@ -196,6 +199,65 @@ final class ConciergeChatViewModelTests: XCTestCase {
         
         XCTAssertFalse(vm.showPermissionDialog)
         // Note: The actual URL opening is handled by the view layer using SwiftUI's openURL
+    }
+    
+    func test_startRecording_requestsPermissionsWhenNeverAsked() async {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.available = false
+        capturer.neverAsked = true // First time asking
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        XCTAssertEqual(capturer.permissionRequests, 0)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        
+        XCTAssertEqual(capturer.permissionRequests, 1)
+        
+        // Wait for async completion
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        
+        XCTAssertFalse(vm.isRecording) // Should not start recording because permissions still not available
+        XCTAssertTrue(vm.showPermissionDialog) // Should show dialog after user denies
+    }
+    
+    func test_startRecording_requestsPermissionsAndStartsRecordingWhenGranted() async {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.neverAsked = true // First time asking
+        capturer.available = false // Not available initially
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        XCTAssertEqual(capturer.permissionRequests, 0)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        
+        XCTAssertEqual(capturer.permissionRequests, 1)
+        
+        // Simulate user granting permissions
+        capturer.available = true
+        
+        // Wait for async completion
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        
+        XCTAssertTrue(vm.isRecording) // Should start recording after permissions granted
+        XCTAssertFalse(vm.showPermissionDialog) // Should not show dialog
+        XCTAssertEqual(capturer.beginCaptures, 1)
+    }
+    
+    func test_startRecording_showsDialogWhenPreviouslyDenied() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let capturer = MockSpeechCapturer()
+        capturer.available = false
+        capturer.neverAsked = false // Already asked before
+        capturer.denied = false // Not explicitly denied (could be restricted or just not granted)
+        let vm = makeVM(configuration: mockConciergeConfiguration, service: fakeService, capturer: capturer)
+        
+        vm.toggleMic(currentSelectionLocation: 0)
+        
+        XCTAssertTrue(vm.showPermissionDialog) // Should show dialog if already asked but not available
+        XCTAssertEqual(capturer.permissionRequests, 0) // Should not request again
+        XCTAssertFalse(vm.isRecording)
     }
     
     // MARK: - Helpers
