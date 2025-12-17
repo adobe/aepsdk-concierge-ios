@@ -42,7 +42,7 @@ public enum CSSValueConverter {
         if isValidHexColor(normalizedColorString) {
             color = CodableColor(Color.fromHexString(normalizedColorString))
         } else {
-            Log.warning(label: ConciergeConstants.LOG_TAG, "Unsupported box shadow color value '\(colorString)'. Expected hex format (#RRGGBB). Defaulting to #000000.")
+            Log.warning(label: Constants.LOG_TAG, "Unsupported box shadow color value '\(colorString)'. Expected hex format (#RRGGBB). Defaulting to #000000.")
             color = CodableColor(Color.fromHexString("#000000"))
         }
         

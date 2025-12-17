@@ -15,10 +15,10 @@ import AEPServices
 // MARK: - CSS Key to Property Mapper
 
 /// Maps CSS variable names (ex: "--input-box-shadow") directly to property assignments
-/// Used to convert web CSS theme format to ConciergeTheme2 structure
+/// Used to convert web CSS theme format to ConciergeTheme structure
 public enum CSSKeyMapper {
     /// Direct assignment function that converts CSS value and applies it to theme
-    public typealias Assignment = (String, inout ConciergeTheme2) -> Void
+    public typealias Assignment = (String, inout ConciergeTheme) -> Void
     
     /// Mapping from CSS variable name (without --) to direct assignment function
     private static let cssToAssignmentMap: [String: Assignment] = [
@@ -158,8 +158,8 @@ public enum CSSKeyMapper {
         "feedback-icon-btn-size-desktop": { cssValue, theme in theme.components.feedback.iconButtonSizeDesktop = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
     ]
     
-    /// Applies CSS value to ConciergeTheme2 using the mapped assignment function
-    public static func apply(cssKey: String, cssValue: String, to theme: inout ConciergeTheme2) {
+    /// Applies CSS value to ConciergeTheme using the mapped assignment function
+    public static func apply(cssKey: String, cssValue: String, to theme: inout ConciergeTheme) {
         // Remove -- prefix if present
         let normalizedKey = cssKey.hasPrefix("--") ? String(cssKey.dropFirst(2)) : cssKey
         
@@ -167,7 +167,7 @@ public enum CSSKeyMapper {
         if let assignment = cssToAssignmentMap[normalizedKey] {
             assignment(cssValue, &theme)
         } else {
-            Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
+            Log.debug(label: Constants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
         }
     }
 }
