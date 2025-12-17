@@ -10,15 +10,15 @@
  governing permissions and limitations under the License.
  */
 
-import AEPCore
 import AEPServices
-import CoreGraphics
-import Foundation
 
-/// AEP Event extensions for Concierge.
-extension Event {
-    /// Whether this event is a request to show the chat UI.
-    var isShowUiEvent: Bool {
-        type == ConciergeConstants.EventType.concierge && source == EventSource.requestContent
-    }
+/// Configuration for the Concierge service connection.
+public struct ConciergeConfiguration: Codable {
+    var server: String?
+    var datastream: String?
+    var ecid: String?
+    var sessionId: String?
+    var conversationId: String?
+    var surfaces: [String] = []
 }
+
