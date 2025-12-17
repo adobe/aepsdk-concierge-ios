@@ -24,13 +24,13 @@ enum CitationRenderer {
     ///   - markdown: Original agent response text.
     ///   - sources: Sources supplied by the concierge service.
     /// - Returns: A `CitationDecoration` describing the annotated string, or `nil` when no decoration is required.
-    static func decorate(markdown: String, sources: [TempSource]) -> CitationDecoration? {
+    static func decorate(markdown: String, sources: [Source]) -> CitationDecoration? {
         guard !markdown.isEmpty, !sources.isEmpty else { return nil }
 
         let characterCount = markdown.count
 
         struct ProcessedSource {
-            let normalized: TempSource
+            let normalized: Source
             let end: Int
         }
 
@@ -39,7 +39,7 @@ enum CitationRenderer {
         for source in sources {
         // Clamp the end index to the bounds of the message to avoid invalid ranges.
             let clampedEnd = max(0, min(source.endIndex, characterCount))
-            let normalized = TempSource(
+            let normalized = Source(
                 url: source.url,
                 title: source.title,
                 startIndex: source.startIndex,
@@ -99,9 +99,9 @@ enum CitationRenderer {
     /// Deduplicates sources by citation number while preserving first appearance order.
     /// - Parameter markers: Markers ordered by their appearance in the text.
     /// - Returns: Array containing a single representative per citation number.
-    private static func deduplicatedSources(from markers: [CitationMarker]) -> [TempSource] {
+    private static func deduplicatedSources(from markers: [CitationMarker]) -> [Source] {
         var seenNumbers: Set<Int> = []
-        var result: [TempSource] = []
+        var result: [Source] = []
 
         for marker in markers {
             if seenNumbers.insert(marker.citationNumber).inserted {
@@ -113,9 +113,9 @@ enum CitationRenderer {
     }
 
     /// Deduplicates the provided array by citation number while preserving order.
-    static func deduplicate(_ sources: [TempSource]) -> [TempSource] {
+    static func deduplicate(_ sources: [Source]) -> [Source] {
         var seenNumbers: Set<Int> = []
-        var result: [TempSource] = []
+        var result: [Source] = []
 
         for source in sources {
             if seenNumbers.insert(source.citationNumber).inserted {
@@ -131,5 +131,3 @@ enum CitationRenderer {
         return "\(tokenPrefix)\(id)\(tokenSuffix)"
     }
 }
-
-

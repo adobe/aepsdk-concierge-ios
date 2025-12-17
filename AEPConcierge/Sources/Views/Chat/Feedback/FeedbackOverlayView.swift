@@ -119,7 +119,7 @@ struct FeedbackOverlayView: View {
                             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
                         )
                         let joined = payload.selectedOptions.joined(separator: ", ")
-                        Log.trace(label: Constants.LOG_TAG, "Feedback submitted. sentiment=\(sentiment) options=[\(joined)] notes=\(payload.notes)")
+                        Log.trace(label: ConciergeConstants.LOG_TAG, "Feedback submitted. sentiment=\(sentiment) options=[\(joined)] notes=\(payload.notes)")
                         onSubmit(payload)
                     }) {
                         Text("Submit")

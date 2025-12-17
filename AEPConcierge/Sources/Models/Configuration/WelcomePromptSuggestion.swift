@@ -10,15 +10,18 @@
  governing permissions and limitations under the License.
  */
 
-import AEPCore
-import AEPServices
-import CoreGraphics
-import Foundation
+import SwiftUI
 
-/// AEP Event extensions for Concierge.
-extension Event {
-    /// Whether this event is a request to show the chat UI.
-    var isShowUiEvent: Bool {
-        type == ConciergeConstants.EventType.concierge && source == EventSource.requestContent
+/// Model representing a welcome example prompt suggestion shown on initial open.
+struct WelcomePromptSuggestion {
+    let text: String
+    let imageURL: URL?
+    let background: Color
+
+    init(text: String, imageURL: URL?, backgroundHex: String) {
+        self.text = text
+        self.imageURL = imageURL
+        self.background = Color.fromHexString(backgroundHex)
     }
 }
+

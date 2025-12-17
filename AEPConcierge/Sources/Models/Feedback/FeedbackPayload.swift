@@ -10,15 +10,12 @@
  governing permissions and limitations under the License.
  */
 
-import AEPCore
-import AEPServices
-import CoreGraphics
 import Foundation
 
-/// AEP Event extensions for Concierge.
-extension Event {
-    /// Whether this event is a request to show the chat UI.
-    var isShowUiEvent: Bool {
-        type == ConciergeConstants.EventType.concierge && source == EventSource.requestContent
-    }
+/// Payload for submitting user feedback on a message.
+struct FeedbackPayload {
+    let sentiment: FeedbackSentiment
+    let selectedOptions: [String]
+    let notes: String
 }
+

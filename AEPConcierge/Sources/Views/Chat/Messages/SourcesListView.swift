@@ -12,12 +12,12 @@
 
 import SwiftUI
 
-/// A collapsible list of sources
+/// A collapsible list of sources.
 public struct SourcesListView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergeFeedbackPresenter) private var feedbackPresenter
 
-    public let sources: [TempSource]
+    public let sources: [Source]
     private let initiallyExpanded: Bool
     public let feedbackSentiment: FeedbackSentiment?
     public let messageId: UUID?
@@ -30,7 +30,7 @@ public struct SourcesListView: View {
     ///   - initiallyExpanded: Whether the list starts expanded.
     ///   - feedbackSentiment: The feedback sentiment that was submitted for this message, if any.
     ///   - messageId: The ID of the message this sources list belongs to.
-    public init(sources: [TempSource], initiallyExpanded: Bool = false, feedbackSentiment: FeedbackSentiment? = nil, messageId: UUID? = nil) {
+    public init(sources: [Source], initiallyExpanded: Bool = false, feedbackSentiment: FeedbackSentiment? = nil, messageId: UUID? = nil) {
         self.sources = sources
         self.initiallyExpanded = initiallyExpanded
         self.feedbackSentiment = feedbackSentiment
@@ -79,7 +79,7 @@ public struct SourcesListView: View {
         }
     }
     
-    private func sourceRow(for source: TempSource) -> some View {
+    private func sourceRow(for source: Source) -> some View {
         SourceRowView(ordinal: "\(source.citationNumber).",
                       title: source.title,
                       link: URL(string: source.url) ?? URL(string: "")!,
@@ -91,7 +91,7 @@ public struct SourcesListView: View {
         Divider().background(Color.black.opacity(0.06))
     }
 
-    private var uniqueSources: [TempSource] {
+    private var uniqueSources: [Source] {
         CitationRenderer.deduplicate(sources)
     }
     
@@ -194,8 +194,8 @@ public struct SourcesListView: View {
 #Preview("Expanded") {
     SourcesListView(
         sources: [
-            TempSource(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
-            TempSource(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
+            Source(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
+            Source(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
         ],
         initiallyExpanded: true
     )
@@ -206,8 +206,8 @@ public struct SourcesListView: View {
 #Preview("Collapsed") {
     SourcesListView(
         sources: [
-            TempSource(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
-            TempSource(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
+            Source(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
+            Source(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
         ],
         initiallyExpanded: false
     )
