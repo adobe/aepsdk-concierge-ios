@@ -13,15 +13,17 @@
 import Foundation
 import AEPCore
 
+/// SharedStateResult extensions for accessing Concierge configuration values.
 extension SharedStateResult {
+    /// Extracts the ECID from the Edge Identity shared state.
     var ecid: String? {
-        guard let identityMap = value?[Constants.SharedState.EdgeIdentity.IDENTITY_MAP] as? [AnyHashable: Any] else {
+        guard let identityMap = value?[ConciergeConstants.SharedState.EdgeIdentity.IDENTITY_MAP] as? [AnyHashable: Any] else {
             return nil
         }
 
-        guard let ecidArray = identityMap[Constants.SharedState.EdgeIdentity.ECID] as? [[AnyHashable: Any]],
+        guard let ecidArray = identityMap[ConciergeConstants.SharedState.EdgeIdentity.ECID] as? [[AnyHashable: Any]],
               let firstEcid = ecidArray.first,
-              let ecid = firstEcid[Constants.SharedState.EdgeIdentity.ID] as? String,
+              let ecid = firstEcid[ConciergeConstants.SharedState.EdgeIdentity.ID] as? String,
               !ecid.isEmpty
         else {
             return nil
@@ -30,15 +32,18 @@ extension SharedStateResult {
         return ecid
     }
     
+    /// The Concierge server endpoint from configuration.
     var conciergeServer: String? {
-        value?[Constants.SharedState.Configuration.Concierge.SERVER] as? String
+        value?[ConciergeConstants.SharedState.Configuration.Concierge.SERVER] as? String
     }
     
+    /// The Concierge datastream ID from configuration.
     var conciergeDatastream: String? {
-        value?[Constants.SharedState.Configuration.Concierge.DATASTREAM] as? String
+        value?[ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM] as? String
     }
     
+    /// The Concierge surfaces from configuration.
     var conciergeSurfaces: [String]? {
-        value?[Constants.SharedState.Configuration.Concierge.SURFACES] as? [String]
+        value?[ConciergeConstants.SharedState.Configuration.Concierge.SURFACES] as? [String]
     }
 }

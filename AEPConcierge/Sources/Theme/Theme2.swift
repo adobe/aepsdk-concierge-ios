@@ -1009,7 +1009,7 @@ public struct ConciergeTheme2: Codable {
         do {
             text = try container.decodeIfPresent(ConciergeCopy.self, forKey: .text) ?? ConciergeCopy()
         } catch {
-            Log.warning(label: Constants.LOG_TAG, "Failed to decode theme copy: \(error)")
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Failed to decode theme copy: \(error)")
             print("Failed to decode theme copy: \(error)")
             text = ConciergeCopy()
         }
@@ -1018,7 +1018,7 @@ public struct ConciergeTheme2: Codable {
         do {
             arrays = try container.decodeIfPresent(ConciergeArrays.self, forKey: .arrays) ?? ConciergeArrays()
         } catch {
-            Log.warning(label: Constants.LOG_TAG, "Failed to decode theme arrays: \(error)")
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Failed to decode theme arrays: \(error)")
             print("Failed to decode theme arrays: \(error)")
             arrays = ConciergeArrays()
         }
