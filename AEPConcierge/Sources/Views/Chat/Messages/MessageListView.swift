@@ -70,5 +70,3 @@ struct MessageListView: View {
         }
     }
 }
-
-
