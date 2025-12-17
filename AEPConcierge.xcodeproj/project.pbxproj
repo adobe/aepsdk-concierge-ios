@@ -113,13 +113,21 @@
 		4CDB0DBF2EC82C6B000B85D0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB62EC82C6B000B85D0 /* Theme.swift */; };
 		4CDB0DC02EC82C6B000B85D0 /* ThemeCSSMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */; };
 		4CDB0DC12EC82C6B000B85D0 /* ThemeLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */; };
-		4CDB0DC22EC82C6B000B85D0 /* Theme2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB72EC82C6B000B85D0 /* Theme2.swift */; };
 		4CDB0DCF2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */; };
 		4CDB0DD02EC82CA2000B85D0 /* Theme2DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCB2EC82CA2000B85D0 /* Theme2DecodingTests.swift */; };
 		4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */; };
 		4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */; };
 		4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */; };
 		4CDB0DD62EC84A64000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD52EC84A64000B85D0 /* theme-default.json */; };
+		4CF60BD92EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */; };
+		4CF60BDA2EF37A1E008CE4F0 /* ConciergeThemeContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */; };
+		4CF60BDB2EF37A1E008CE4F0 /* ConciergeThemeStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */; };
+		4CF60BDC2EF37A1E008CE4F0 /* ConciergeThemeColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD22EF37A1E008CE4F0 /* ConciergeThemeColors.swift */; };
+		4CF60BDD2EF37A1E008CE4F0 /* ConciergeThemeAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD02EF37A1E008CE4F0 /* ConciergeThemeAssets.swift */; };
+		4CF60BDE2EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD52EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift */; };
+		4CF60BDF2EF37A1E008CE4F0 /* ConciergeThemeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD42EF37A1E008CE4F0 /* ConciergeThemeLayout.swift */; };
+		4CF60BE02EF37A1E008CE4F0 /* ConciergeThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */; };
+		4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -264,7 +272,6 @@
 		4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImageView.swift; sourceTree = "<group>"; };
 		4CDB0DB42EC6E887000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DB62EC82C6B000B85D0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		4CDB0DB72EC82C6B000B85D0 /* Theme2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme2.swift; sourceTree = "<group>"; };
 		4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverter.swift; sourceTree = "<group>"; };
 		4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSMapper.swift; sourceTree = "<group>"; };
 		4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeLoader.swift; sourceTree = "<group>"; };
@@ -275,6 +282,15 @@
 		4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeLoaderTests.swift; sourceTree = "<group>"; };
 		4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTestHelpers.swift; sourceTree = "<group>"; };
 		4CDB0DD52EC84A64000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
+		4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeTheme.swift; sourceTree = "<group>"; };
+		4CF60BD02EF37A1E008CE4F0 /* ConciergeThemeAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeAssets.swift; sourceTree = "<group>"; };
+		4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeBehavior.swift; sourceTree = "<group>"; };
+		4CF60BD22EF37A1E008CE4F0 /* ConciergeThemeColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeColors.swift; sourceTree = "<group>"; };
+		4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeContent.swift; sourceTree = "<group>"; };
+		4CF60BD42EF37A1E008CE4F0 /* ConciergeThemeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeLayout.swift; sourceTree = "<group>"; };
+		4CF60BD52EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeMetadata.swift; sourceTree = "<group>"; };
+		4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeStyles.swift; sourceTree = "<group>"; };
+		4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeTokens.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -646,14 +662,30 @@
 		4CDB0DBC2EC82C6B000B85D0 /* Theme */ = {
 			isa = PBXGroup;
 			children = (
+				4CF60BD82EF37A1E008CE4F0 /* Models */,
 				4CDB0DB62EC82C6B000B85D0 /* Theme.swift */,
-				4CDB0DB72EC82C6B000B85D0 /* Theme2.swift */,
 				4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */,
 				4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */,
 				4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */,
 				4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */,
 			);
 			path = Theme;
+			sourceTree = "<group>";
+		};
+		4CF60BD82EF37A1E008CE4F0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */,
+				4CF60BD02EF37A1E008CE4F0 /* ConciergeThemeAssets.swift */,
+				4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */,
+				4CF60BD22EF37A1E008CE4F0 /* ConciergeThemeColors.swift */,
+				4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */,
+				4CF60BD42EF37A1E008CE4F0 /* ConciergeThemeLayout.swift */,
+				4CF60BD52EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift */,
+				4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */,
+				4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		7612B62A0685DFA04959FFBC /* Pods */ = {
@@ -972,6 +1004,15 @@
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
 				24037AC22EF3648600FF4031 /* Concierge+PublicAPI.swift in Sources */,
+				4CF60BD92EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift in Sources */,
+				4CF60BDA2EF37A1E008CE4F0 /* ConciergeThemeContent.swift in Sources */,
+				4CF60BDB2EF37A1E008CE4F0 /* ConciergeThemeStyles.swift in Sources */,
+				4CF60BDC2EF37A1E008CE4F0 /* ConciergeThemeColors.swift in Sources */,
+				4CF60BDD2EF37A1E008CE4F0 /* ConciergeThemeAssets.swift in Sources */,
+				4CF60BDE2EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift in Sources */,
+				4CF60BDF2EF37A1E008CE4F0 /* ConciergeThemeLayout.swift in Sources */,
+				4CF60BE02EF37A1E008CE4F0 /* ConciergeThemeTokens.swift in Sources */,
+				4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */,
 				24037AC32EF3648600FF4031 /* Concierge.swift in Sources */,
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
@@ -1008,7 +1049,6 @@
 				4CDB0DBF2EC82C6B000B85D0 /* Theme.swift in Sources */,
 				4CDB0DC02EC82C6B000B85D0 /* ThemeCSSMapper.swift in Sources */,
 				4CDB0DC12EC82C6B000B85D0 /* ThemeLoader.swift in Sources */,
-				4CDB0DC22EC82C6B000B85D0 /* Theme2.swift in Sources */,
 				243013782E67A27700F6673E /* ButtonView.swift in Sources */,
 				4C3D5F982E67DBF700323738 /* RoundedCornerShape.swift in Sources */,
 				4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */,
