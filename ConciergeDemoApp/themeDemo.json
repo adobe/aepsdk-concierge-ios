@@ -1,0 +1,80 @@
+[
+  {
+    "disclaimer": {
+      "links": [
+        {
+          "text": "Terms",
+          "url": "https://www.example.com"
+        }
+      ],
+      "text": "Demo theme active. AI responses may be inaccurate. Check answers and sources. {Terms}"
+    },
+    "metadata": {
+      "brandName": "Concierge Demo Theme",
+      "language": "en-US",
+      "namespace": "concierge-demo-theme",
+      "version": "1.0.0"
+    },
+    "theme": {
+      "--button-primary-background": "#39FF14",
+      "--button-primary-text": "#0B0014",
+      "--button-secondary-border": "#FFF700",
+      "--button-secondary-text": "#FFF700",
+      "--citations-background-color": "#FF7A00",
+      "--citations-text-color": "#12002B",
+      "--color-primary": "#00FFEA",
+      "--color-text": "#FF00D4",
+      "--disclaimer-color": "#FF7A00",
+      "--input-background": "#003BFF",
+      "--input-focus-outline-color": "#39FF14",
+      "--input-text-color": "#FFFFFF",
+      "--main-container-background": "#12002B",
+      "--main-container-bottom-background": "#001A00",
+      "--message-blocker-background": "#2B0000",
+      "--message-concierge-background": "#FF00D4",
+      "--message-concierge-link-color": "#FFF700",
+      "--message-concierge-text": "#001A00",
+      "--message-user-background": "#00FFEA",
+      "--message-user-text": "#1A0033"
+    }
+  },
+  {
+    "disclaimer": {
+      "links": [
+        {
+          "text": "Terms",
+          "url": "https://www.example.com"
+        }
+      ],
+      "text": "Demo theme active. AI responses may be inaccurate. Check answers and sources. {Terms}"
+    },
+    "metadata": {
+      "brandName": "Concierge Demo Theme",
+      "language": "en-US",
+      "namespace": "concierge-demo-theme",
+      "version": "1.0.0"
+    },
+    "theme": {
+      "--button-primary-background": "#39FF14",
+      "--button-primary-text": "#0B0014",
+      "--button-secondary-border": "#FFF700",
+      "--button-secondary-text": "#FFF700",
+      "--citations-background-color": "#FF7A00",
+      "--citations-text-color": "#12002B",
+      "--color-primary": "#00FFEA",
+      "--color-text": "#FF00D4",
+      "--disclaimer-color": "#FF7A00",
+      "--input-background": "#003BFF",
+      "--input-focus-outline-color": "#39FF14",
+      "--input-text-color": "#FFFFFF",
+      "--main-container-background": "#12002B",
+      "--main-container-bottom-background": "#001A00",
+      "--message-blocker-background": "#2B0000",
+      "--message-concierge-background": "#FF00D4",
+      "--message-concierge-link-color": "#FFF700",
+      "--message-concierge-text": "#001A00",
+      "--message-user-background": "#00FFEA",
+      "--message-user-text": "#1A0033"
+    }
+  }
+]

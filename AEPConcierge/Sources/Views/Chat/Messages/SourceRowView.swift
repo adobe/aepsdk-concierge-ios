@@ -15,25 +15,34 @@ import SwiftUI
 struct SourceRowView: View {
     let ordinal: String
     let title: String
-    let link: URL
+    let link: URL?
     let theme: ConciergeTheme
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(ordinal)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(theme.onAgent.opacity(0.8))
+                .foregroundStyle(theme.colors.message.conciergeText.color.opacity(0.8))
                 .frame(minWidth: 18, alignment: .leading)
 
-            Link(destination: link) {
+            if let link = link {
+                Link(destination: link) {
+                    Text(title)
+                        .font(.footnote)
+                        .foregroundStyle(theme.colors.message.conciergeLink.color)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityHint("Opens in browser")
+            } else {
                 Text(title)
                     .font(.footnote)
-                    .foregroundStyle(theme.primary)
+                    .foregroundStyle(theme.colors.message.conciergeLink.color)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .accessibilityHint("Opens in browser")
         }
         .padding(.horizontal, 12)
     }
@@ -43,7 +52,7 @@ struct SourceRowView: View {
     SourceRowView(
         ordinal: "1.",
         title: "Article for source",
-        link: URL(string: "https://example.com/articles/1")!,
+        link: URL(string: "https://example.com/articles/1"),
         theme: ConciergeTheme()
     )
     .padding()

@@ -47,16 +47,16 @@ struct ButtonView: View {
     private var textColor: Color {
         switch style {
         case .primary:
-            return theme.onPrimary
+            return theme.colors.button.primaryText.color
         case .secondary:
-            return theme.primary
+            return theme.colors.button.secondaryText.color
         }
     }
     
     private var backgroundColor: Color {
         switch style {
         case .primary:
-            return theme.primary
+            return theme.colors.button.primaryBackground.color
         case .secondary:
             return Color.clear
         }
@@ -67,7 +67,7 @@ struct ButtonView: View {
         case .primary:
             return Color.clear
         case .secondary:
-            return theme.primary
+            return theme.colors.button.secondaryBorder.color
         }
     }
     
