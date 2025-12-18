@@ -96,7 +96,7 @@ public struct SourcesListView: View {
     }
     
     private var backgroundShape: some View {
-        RoundedCornerShape(radius: 14, corners: [.bottomLeft, .bottomRight])
+        RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
             .fill(theme.colors.message.conciergeBackground.color)
     }
 

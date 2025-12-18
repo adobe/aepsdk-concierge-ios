@@ -114,18 +114,18 @@ public struct ChatView: View {
             }
 
             VStack(spacing: 0) {
-                MessageListView(
-                    messages: displayMessages,
-                    userScrollTick: controller.userScrollTick,
-                    userMessageToScrollId: controller.userMessageToScrollId,
-                    isInputFocused: $isInputFocused
-                ) { text in
-                    textSpeaker?.utter(text: text)
-                } onSuggestionTap: { suggestion in
-                    isInputFocused = true
-                    controller.applyTextChange(suggestion)
-                    selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
-                }
+            MessageListView(
+                messages: displayMessages,
+                userScrollTick: controller.userScrollTick,
+                userMessageToScrollId: controller.userMessageToScrollId,
+                isInputFocused: $isInputFocused
+            ) { text in
+                textSpeaker?.utter(text: text)
+            } onSuggestionTap: { suggestion in
+                isInputFocused = true
+                controller.applyTextChange(suggestion)
+                selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
+            }
                 .padding(.horizontal, theme.layout.chatHistoryPadding)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
@@ -244,7 +244,11 @@ public struct ChatView: View {
                 .zIndex(1001)
             }
         }
-        .font(theme.typography.fontFamily.isEmpty ? nil : .custom(theme.typography.fontFamily, size: theme.typography.fontSize))
+        .font(
+            theme.typography.fontFamily.isEmpty
+                ? .system(size: theme.typography.fontSize)
+                : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
+        )
     }
     
     // MARK: - Actions

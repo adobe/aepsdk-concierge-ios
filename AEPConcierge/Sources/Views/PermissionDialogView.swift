@@ -23,6 +23,10 @@ struct PermissionDialogView: View {
     private var borderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
     }
+    
+    private var dialogSurfaceBackgroundColor: Color {
+        colorScheme == .dark ? theme.colors.surface.dark.color : theme.colors.surface.light.color
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,7 +72,7 @@ struct PermissionDialogView: View {
             .frame(maxWidth: 400)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(theme.colors.surface.light.color)
+                    .fill(dialogSurfaceBackgroundColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

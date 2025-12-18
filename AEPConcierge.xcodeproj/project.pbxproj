@@ -114,7 +114,7 @@
 		4CDB0DC02EC82C6B000B85D0 /* ThemeCSSMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */; };
 		4CDB0DC12EC82C6B000B85D0 /* ThemeLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */; };
 		4CDB0DCF2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */; };
-		4CDB0DD02EC82CA2000B85D0 /* Theme2DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCB2EC82CA2000B85D0 /* Theme2DecodingTests.swift */; };
+		4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCB2EC82CA2000B85D0 /* ThemeDecodingTests.swift */; };
 		4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */; };
 		4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */; };
 		4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */; };
@@ -129,6 +129,16 @@
 		4CF60BE02EF37A1E008CE4F0 /* ConciergeThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */; };
 		4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */; };
 		4CF60BE22EF37E81008CE4F0 /* themeDemo.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DE72F123456000B85D0 /* themeDemo.json */; };
+		4CF60BE52EF3A274008CE4F0 /* SourcesProbeSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BE42EF3A274008CE4F0 /* SourcesProbeSnapshotTests.swift */; };
+		4CF60BE92EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BE72EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift */; };
+		4CF60BEB2EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BE62EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift */; };
+		4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */; };
+		4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */; };
+		4CF60C122F000001008CE4F0 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 4CF60C112F000001008CE4F0 /* SnapshotTesting */; };
+		4CF60C142F000001008CE4F0 /* ComposerSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C132F000001008CE4F0 /* ComposerSnapshotTests.swift */; };
+		4CF60C182F000002008CE4F0 /* MessageBubbleSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C172F000002008CE4F0 /* MessageBubbleSnapshotTests.swift */; };
+		4CF60C1C2F000003008CE4F0 /* CitationsSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C1B2F000003008CE4F0 /* CitationsSnapshotTests.swift */; };
+		4CF60C2E2F100001008CE4F0 /* GlobalTypographySnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C2D2F100001008CE4F0 /* GlobalTypographySnapshotTests.swift */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPConcierge.framework */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -277,7 +287,7 @@
 		4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSMapper.swift; sourceTree = "<group>"; };
 		4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeLoader.swift; sourceTree = "<group>"; };
 		4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTypes.swift; sourceTree = "<group>"; };
-		4CDB0DCB2EC82CA2000B85D0 /* Theme2DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme2DecodingTests.swift; sourceTree = "<group>"; };
+		4CDB0DCB2EC82CA2000B85D0 /* ThemeDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeDecodingTests.swift; sourceTree = "<group>"; };
 		4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverterTests.swift; sourceTree = "<group>"; };
 		4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSMapperTests.swift; sourceTree = "<group>"; };
 		4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeLoaderTests.swift; sourceTree = "<group>"; };
@@ -293,6 +303,15 @@
 		4CF60BD52EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeMetadata.swift; sourceTree = "<group>"; };
 		4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeStyles.swift; sourceTree = "<group>"; };
 		4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeTokens.swift; sourceTree = "<group>"; };
+		4CF60BE42EF3A274008CE4F0 /* SourcesProbeSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesProbeSnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60BE62EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackOverlaySnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60BE72EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogSnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKeyCoverageTests.swift; sourceTree = "<group>"; };
+		4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestEnvironment.swift; sourceTree = "<group>"; };
+		4CF60C132F000001008CE4F0 /* ComposerSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerSnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60C172F000002008CE4F0 /* MessageBubbleSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleSnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60C1B2F000003008CE4F0 /* CitationsSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationsSnapshotTests.swift; sourceTree = "<group>"; };
+		4CF60C2D2F100001008CE4F0 /* GlobalTypographySnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalTypographySnapshotTests.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		A609B1D994354F9C6B8622C5 /* Pods-AEPConcierge.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConcierge.release.xcconfig"; path = "Target Support Files/Pods-AEPConcierge/Pods-AEPConcierge.release.xcconfig"; sourceTree = "<group>"; };
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPConciergeTests/Pods-AEPConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -318,6 +337,7 @@
 			files = (
 				249899542D6679790005CBD7 /* AEPConcierge.framework in Frameworks */,
 				FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */,
+				4CF60C122F000001008CE4F0 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -491,6 +511,7 @@
 				243868C02EB1758E004BF9C0 /* Event+Concierge.swift */,
 				4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */,
 				243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */,
+				4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -555,11 +576,13 @@
 		4C2923DD2E7E21F400D2D2C1 /* UnitTests */ = {
 			isa = PBXGroup;
 			children = (
+				4CF60BE32EF39D7B008CE4F0 /* SnapshotTests */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
 				4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */,
-				4CDB0DCB2EC82CA2000B85D0 /* Theme2DecodingTests.swift */,
 				4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */,
 				4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */,
+				4CDB0DCB2EC82CA2000B85D0 /* ThemeDecodingTests.swift */,
+				4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */,
 				4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */,
 			);
 			path = UnitTests;
@@ -665,6 +688,7 @@
 		4CDB0DBC2EC82C6B000B85D0 /* Theme */ = {
 			isa = PBXGroup;
 			children = (
+				4CF60BED2EF3A4B0008CE4F0 /* Extensions */,
 				4CF60BD82EF37A1E008CE4F0 /* Models */,
 				4CDB0DB62EC82C6B000B85D0 /* Theme.swift */,
 				4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */,
@@ -689,6 +713,27 @@
 				4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		4CF60BE32EF39D7B008CE4F0 /* SnapshotTests */ = {
+			isa = PBXGroup;
+			children = (
+				4CF60C1B2F000003008CE4F0 /* CitationsSnapshotTests.swift */,
+				4CF60C132F000001008CE4F0 /* ComposerSnapshotTests.swift */,
+				4CF60BE62EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift */,
+				4CF60C2D2F100001008CE4F0 /* GlobalTypographySnapshotTests.swift */,
+				4CF60C172F000002008CE4F0 /* MessageBubbleSnapshotTests.swift */,
+				4CF60BE72EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift */,
+				4CF60BE42EF3A274008CE4F0 /* SourcesProbeSnapshotTests.swift */,
+			);
+			path = SnapshotTests;
+			sourceTree = "<group>";
+		};
+		4CF60BED2EF3A4B0008CE4F0 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 		7612B62A0685DFA04959FFBC /* Pods */ = {
@@ -765,6 +810,9 @@
 				249899562D6679790005CBD7 /* PBXTargetDependency */,
 			);
 			name = UnitTests;
+			packageProductDependencies = (
+				4CF60C112F000001008CE4F0 /* SnapshotTesting */,
+			);
 			productName = AEPConciergeTests;
 			productReference = 249899532D6679790005CBD7 /* UnitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -824,6 +872,9 @@
 				Base,
 			);
 			mainGroup = 2498993F2D6679790005CBD7;
+			packageReferences = (
+				4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			productRefGroup = 2498994A2D6679790005CBD7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1016,6 +1067,7 @@
 				4CF60BDE2EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift in Sources */,
 				4CF60BDF2EF37A1E008CE4F0 /* ConciergeThemeLayout.swift in Sources */,
 				4CF60BE02EF37A1E008CE4F0 /* ConciergeThemeTokens.swift in Sources */,
+				4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */,
 				4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */,
 				24037AC32EF3648600FF4031 /* Concierge.swift in Sources */,
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
@@ -1074,14 +1126,22 @@
 				4C2923E02E7E223200D2D2C1 /* MockChatService.swift in Sources */,
 				249899C32D67D2C40005CBD7 /* AEPConciergeTests.swift in Sources */,
 				4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */,
+				4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */,
 				4C2923DC2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift in Sources */,
 				4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */,
 				4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */,
 				4C2923E42E7E27CA00D2D2C1 /* MockSpeaker.swift in Sources */,
+				4CF60BE52EF3A274008CE4F0 /* SourcesProbeSnapshotTests.swift in Sources */,
 				4CDB0DCF2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift in Sources */,
-				4CDB0DD02EC82CA2000B85D0 /* Theme2DecodingTests.swift in Sources */,
+				4CF60BE92EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift in Sources */,
+				4CF60BEB2EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift in Sources */,
+				4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */,
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
 				4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */,
+				4CF60C142F000001008CE4F0 /* ComposerSnapshotTests.swift in Sources */,
+				4CF60C182F000002008CE4F0 /* MessageBubbleSnapshotTests.swift in Sources */,
+				4CF60C1C2F000003008CE4F0 /* CitationsSnapshotTests.swift in Sources */,
+				4CF60C2E2F100001008CE4F0 /* GlobalTypographySnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1525,6 +1585,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.12.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4CF60C112F000001008CE4F0 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 249899402D6679790005CBD7 /* Project object */;
 }
