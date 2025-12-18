@@ -13,14 +13,14 @@
 import XCTest
 @testable import AEPConcierge
 
-final class Theme2DecodingTests: XCTestCase {
+final class ThemeDecodingTests: XCTestCase {
     
-    var theme: ConciergeTheme2?
+    var theme: ConciergeTheme?
     
     override func setUp() {
         super.setUp()
         let bundle = ThemeTestHelpers.makeTestBundle()
-        theme = ConciergeTheme2Loader.load(from: "theme-default", in: bundle)
+        theme = ConciergeThemeLoader.load(from: "theme-default", in: bundle)
     }
     
     // MARK: - Full JSON Decoding Tests
@@ -356,11 +356,11 @@ final class Theme2DecodingTests: XCTestCase {
         
         // When
         let decoder = JSONDecoder()
-        let theme: ConciergeTheme2?
+        let theme: ConciergeTheme?
         do {
-            theme = try decoder.decode(ConciergeTheme2.self, from: minimalJSON)
+            theme = try decoder.decode(ConciergeTheme.self, from: minimalJSON)
         } catch {
-            print("Decoding ConciergeTheme2 failed with error: \(error)")
+            print("Decoding ConciergeTheme failed with error: \(error)")
             theme = nil
         }
         
@@ -382,7 +382,7 @@ final class Theme2DecodingTests: XCTestCase {
         
         // When
         let decoder = JSONDecoder()
-        let theme = try? decoder.decode(ConciergeTheme2.self, from: jsonWithEmptyTheme)
+        let theme = try? decoder.decode(ConciergeTheme.self, from: jsonWithEmptyTheme)
         
         // Then
         XCTAssertNotNil(theme)
@@ -405,7 +405,7 @@ final class Theme2DecodingTests: XCTestCase {
         let encodedData = try encoder.encode(originalTheme)
         
         let decoder = JSONDecoder()
-        let decodedTheme = try decoder.decode(ConciergeTheme2.self, from: encodedData)
+        let decodedTheme = try decoder.decode(ConciergeTheme.self, from: encodedData)
         
         // Then
         XCTAssertEqual(decodedTheme.metadata.brandName, originalTheme.metadata.brandName)

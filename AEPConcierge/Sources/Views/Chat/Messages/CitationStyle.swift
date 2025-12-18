@@ -16,10 +16,12 @@ import UIKit
 struct CitationStyle {
     let backgroundColor: UIColor
     let textColor: UIColor
+    let font: UIFont
 
     static let `default` = CitationStyle(
         backgroundColor: UIColor.gray,
-        textColor: UIColor.white
+        textColor: UIColor.white,
+        font: UIFont.systemFont(ofSize: 12, weight: .semibold)
     )
 }
 

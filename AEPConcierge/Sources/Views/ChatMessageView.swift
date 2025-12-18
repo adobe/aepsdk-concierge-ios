@@ -129,7 +129,11 @@ struct ChatMessageView: View {
                                     citationMarkers: markers,
                                     citationStyle: .init(
                                         backgroundColor: UIColor(theme.colors.citation.background.color),
-                                        textColor: UIColor(theme.colors.citation.text.color)
+                                        textColor: UIColor(theme.colors.citation.text.color),
+                                        font: UIFont.systemFont(
+                                            ofSize: theme.layout.citationsDesktopButtonFontSize,
+                                            weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
+                                        )
                                     ),
                                     onOpenLink: { url in
                                         openURL(url)
@@ -141,6 +145,8 @@ struct ChatMessageView: View {
                         }
                     }
                         .padding(theme.layout.messagePadding.edgeInsets)
+                        // Allow themes to cap bubble width (nil means unconstrained).
+                        .frame(maxWidth: theme.layout.messageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
                         .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
                         .background(

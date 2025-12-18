@@ -19,8 +19,8 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_apply_withDoubleDashPrefix_normalizesKey() {
         // Given
-        var theme = ConciergeTheme2()
-        let cssKey = "--input-height"
+        var theme = ConciergeTheme()
+        let cssKey = "--input-height-mobile"
         let cssValue = "52px"
         
         // When
@@ -32,8 +32,8 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_apply_withoutPrefix_works() {
         // Given
-        var theme = ConciergeTheme2()
-        let cssKey = "input-height"
+        var theme = ConciergeTheme()
+        let cssKey = "input-height-mobile"
         let cssValue = "52px"
         
         // When
@@ -47,7 +47,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_fontFamily_mapsToTypography() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "font-family"
         let cssValue = "Arial"
         
@@ -60,7 +60,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_lineHeightBody_mapsToTypography() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "line-height-body"
         let cssValue = "1.75"
         
@@ -75,7 +75,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_colorPrimary_mapsToPrimaryColor() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "color-primary"
         let cssValue = "#007BFF"
         
@@ -88,7 +88,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_colorText_mapsToPrimaryText() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "color-text"
         let cssValue = "#131313"
         
@@ -101,7 +101,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_mainContainerBackground_mapsToSurface() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "main-container-background"
         let cssValue = "#FFFFFF"
         
@@ -114,7 +114,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_messageUserBackground_mapsToMessageColors() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "message-user-background"
         let cssValue = "#EBEEFF"
         
@@ -127,7 +127,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_buttonPrimaryBackground_mapsToButtonColors() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "button-primary-background"
         let cssValue = "#3B63FB"
         
@@ -140,7 +140,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputBackground_mapsToInputColors() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-background"
         let cssValue = "#FFFFFF"
         
@@ -153,7 +153,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_disclaimerColor_mapsToDisclaimer() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "disclaimer-color"
         let cssValue = "#4B4B4B"
         
@@ -168,7 +168,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputBorderRadiusMobile_setsLayoutValues() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-border-radius-mobile"
         let cssValue = "18px"
         
@@ -181,7 +181,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputBorderRadiusDesktop_isIgnored() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let originalRadius = theme.layout.inputBorderRadius
         let cssKey = "input-border-radius"
         let cssValue = "25px"
@@ -195,7 +195,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputHeightMobile_setsLayoutValues() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-height-mobile"
         let cssValue = "64px"
         
@@ -208,7 +208,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputHeightDesktop_isIgnored() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let originalHeight = theme.layout.inputHeight
         let cssKey = "input-height"
         let cssValue = "80px"
@@ -222,7 +222,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_messagePadding_mapsToLayout() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "message-padding"
         let cssValue = "8px 16px"
         
@@ -238,7 +238,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputBoxShadow_mapsToLayout() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-box-shadow"
         let cssValue = "0 4px 16px 0 #00000029"
         
@@ -254,7 +254,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_messageMaxWidth_100Percent_mapsToNil() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "message-max-width"
         let cssValue = "100%"
         
@@ -267,7 +267,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_messageMaxWidth_pxValue_mapsToCGFloat() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "message-max-width"
         let cssValue = "768px"
         
@@ -281,7 +281,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_citationsTextFontWeight_mapsToLayout() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "citations-text-font-weight"
         let cssValue = "700"
         
@@ -289,14 +289,14 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.layout.citationsTextFontWeight, .bold)
+        XCTAssertEqual(theme.layout.citationsTextFontWeight, CodableFontWeight.bold)
     }
     
     // MARK: - Multiple Property Mapping Tests
     
     func test_welcomeInputOrder_mapsToLayout() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "welcome-input-order"
         let cssValue = "3"
         
@@ -309,7 +309,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_welcomeCardsOrder_mapsToLayout() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "welcome-cards-order"
         let cssValue = "2"
         
@@ -324,7 +324,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_unknownKey_isSilentlyIgnored() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let originalInputHeight = theme.layout.inputHeight
         let cssKey = "unknown-css-key"
         let cssValue = "some value"
@@ -338,7 +338,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputOutlineColor_gradient_setsToNil() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-outline-color"
         let cssValue = "linear-gradient(to right, #000, #fff)"
         
@@ -351,7 +351,7 @@ final class ThemeCSSMapperTests: XCTestCase {
     
     func test_inputOutlineColor_solidColor_setsValue() {
         // Given
-        var theme = ConciergeTheme2()
+        var theme = ConciergeTheme()
         let cssKey = "input-outline-color"
         let cssValue = "#4B75FF"
         

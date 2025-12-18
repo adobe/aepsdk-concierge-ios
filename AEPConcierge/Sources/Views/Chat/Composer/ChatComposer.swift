@@ -78,6 +78,11 @@ struct ChatComposer: View {
                         // Base border
                         RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
                             .stroke(theme.components.inputBar.border.color.color, lineWidth: theme.components.inputBar.border.width)
+                        // Focus outline (theme-driven)
+                        if isFocused {
+                            RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
+                                .stroke(theme.colors.input.outlineFocus.color, lineWidth: theme.layout.inputFocusOutlineWidth)
+                        }
                         // Recording glow border
                         if case .recording = inputState {
                             RotatingGlowBorder(color: Color.Secondary, cornerRadius: theme.layout.inputBorderRadius)

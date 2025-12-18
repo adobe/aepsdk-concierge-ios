@@ -68,8 +68,9 @@ enum CitationAttachmentBuilder {
         baseFont: UIFont,
         style: CitationStyle
     ) -> NSAttributedString {
-        let baseHeight: CGFloat = 20
-        let font = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        let font = style.font
+        // Keep a minimum badge height for tap target and consistent layout.
+        let baseHeight: CGFloat = max(20, ceil(font.lineHeight + 6))
         let text = "\(marker.citationNumber)"
         let textSize = text.size(withAttributes: [.font: font])
         let horizontalPadding: CGFloat = 10

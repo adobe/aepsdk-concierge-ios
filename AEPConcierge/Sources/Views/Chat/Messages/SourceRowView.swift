@@ -26,7 +26,7 @@ struct SourceRowView: View {
                 .frame(minWidth: 18, alignment: .leading)
 
             if let link = link {
-                Link(destination: link) {
+            Link(destination: link) {
                     Text(title)
                         .font(.footnote)
                         .foregroundStyle(theme.colors.message.conciergeLink.color)

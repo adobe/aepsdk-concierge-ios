@@ -18,7 +18,7 @@ struct ComposerDisclaimer: View {
 
     var body: some View {
         Text(attributedDisclaimerText)
-            .font(.system(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUI()))
+            .font(.system(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUIFontWeight()))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -60,21 +60,3 @@ struct ComposerDisclaimer: View {
         return result
     }
 }
-
-private extension CodableFontWeight {
-    func toSwiftUI() -> Font.Weight {
-        switch self {
-        case .ultraLight: return .ultraLight
-        case .thin: return .thin
-        case .light: return .light
-        case .regular: return .regular
-        case .medium: return .medium
-        case .semibold: return .semibold
-        case .bold: return .bold
-        case .heavy: return .heavy
-        case .black: return .black
-        }
-    }
-}
-
-

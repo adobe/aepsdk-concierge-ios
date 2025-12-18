@@ -80,19 +80,30 @@ struct FeedbackOverlayView: View {
                             Text(theme.text.feedbackDialogNotes)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            TextEditor(text: $notes)
-                                .frame(minHeight: 120)
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(theme.colors.surface.light.color)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(borderColor)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .shadow(color: .clear, radius: 0)
+                            ZStack(alignment: .topLeading) {
+                                TextEditor(text: $notes)
+                                    .frame(minHeight: 120)
+                                    .padding(12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(theme.colors.surface.light.color)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(borderColor)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .shadow(color: .clear, radius: 0)
+                                
+                                if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text(theme.text.feedbackDialogNotesPlaceholder)
+                                        .font(.body)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.top, 20)
+                                        .padding(.leading, 18)
+                                        .allowsHitTesting(false)
+                                }
+                            }
                         }
                     }
                 }

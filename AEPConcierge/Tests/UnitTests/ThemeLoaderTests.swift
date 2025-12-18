@@ -22,7 +22,7 @@ final class ThemeLoaderTests: XCTestCase {
         let bundle = ThemeTestHelpers.makeTestBundle()
         
         // When
-        let theme = ConciergeTheme2Loader.load(from: "theme-default", in: bundle)
+        let theme = ConciergeThemeLoader.load(from: "theme-default", in: bundle)
         
         // Then
         XCTAssertNotNil(theme)
@@ -33,7 +33,7 @@ final class ThemeLoaderTests: XCTestCase {
         let bundle = ThemeTestHelpers.makeTestBundle()
         
         // When
-        let theme = ConciergeTheme2Loader.load(from: "non-existent-file", in: bundle)
+        let theme = ConciergeThemeLoader.load(from: "non-existent-file", in: bundle)
         
         // Then
         XCTAssertNil(theme)
@@ -41,30 +41,30 @@ final class ThemeLoaderTests: XCTestCase {
     
     // MARK: - default() Tests
     
-    func test_default_returnsConciergeTheme2() {
+    func test_default_returnsConciergeTheme() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
-        XCTAssertNotNil(theme)
+        XCTAssertEqual(theme.layout.inputHeight, CGFloat(52))
     }
     
     func test_default_allPropertiesInitialized() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
         // Verify key properties have default values
         XCTAssertEqual(theme.layout.inputHeight, CGFloat(52))
         XCTAssertEqual(theme.layout.inputBorderRadius, CGFloat(12))
         XCTAssertEqual(theme.typography.fontSize, CGFloat(16))
-        XCTAssertEqual(theme.typography.fontWeight, .regular)
-        XCTAssertEqual(theme.behavior.chat.messageAlignment, .leading)
+        XCTAssertEqual(theme.typography.fontWeight, CodableFontWeight.regular)
+        XCTAssertEqual(theme.behavior.chat.messageAlignment, ConciergeTextAlignment.leading)
     }
     
     func test_default_hasDefaultColors() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
         // Colors should be initialized (not nil)
@@ -75,7 +75,7 @@ final class ThemeLoaderTests: XCTestCase {
     
     func test_default_hasDefaultLayout() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
         XCTAssertEqual(theme.layout.inputHeight, CGFloat(52))
@@ -86,31 +86,28 @@ final class ThemeLoaderTests: XCTestCase {
     
     func test_default_hasDefaultComponents() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
-        XCTAssertNotNil(theme.components.welcome)
-        XCTAssertNotNil(theme.components.inputBar)
-        XCTAssertNotNil(theme.components.chatMessage)
-        XCTAssertNotNil(theme.components.feedback)
-        XCTAssertNotNil(theme.components.carousel)
-        XCTAssertNotNil(theme.components.disclaimer)
+        XCTAssertEqual(theme.components.welcome.inputOrder, 3)
+        XCTAssertEqual(theme.components.welcome.cardsOrder, 2)
+        XCTAssertEqual(theme.components.feedback.iconButtonSizeDesktop, 32)
     }
     
     func test_default_hasDefaultBehavior() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
         XCTAssertEqual(theme.behavior.multimodalCarousel.cardClickAction, "openLink")
         XCTAssertFalse(theme.behavior.input.enableVoiceInput)
         XCTAssertTrue(theme.behavior.input.disableMultiline)
-        XCTAssertEqual(theme.behavior.chat.messageAlignment, .leading)
+        XCTAssertEqual(theme.behavior.chat.messageAlignment, ConciergeTextAlignment.leading)
     }
     
     func test_default_hasDefaultCopy() {
         // When
-        let theme = ConciergeTheme2Loader.default()
+        let theme = ConciergeThemeLoader.default()
         
         // Then
         XCTAssertFalse(theme.copy.welcomeHeading.isEmpty)

@@ -76,12 +76,17 @@ struct SelectableTextView: UIViewRepresentable {
             }
         }
         
-        // Handle focus state changes
-        DispatchQueue.main.async {
-            if isFocused, !uiView.isFirstResponder, isEditable {
-                uiView.becomeFirstResponder()
-            } else if !isFocused, uiView.isFirstResponder {
-                uiView.resignFirstResponder()
+        // Handle focus state changes.
+        //
+        // Note: During snapshot/unit testing we intentionally avoid changing first responder status to keep
+        // screenshots deterministic (caret blink, selection highlighting, and keyboard-driven layout can vary).
+        if !TestEnvironment.isRunningTests {
+            DispatchQueue.main.async {
+                if isFocused, !uiView.isFirstResponder, isEditable {
+                    uiView.becomeFirstResponder()
+                } else if !isFocused, uiView.isFirstResponder {
+                    uiView.resignFirstResponder()
+                }
             }
         }
         

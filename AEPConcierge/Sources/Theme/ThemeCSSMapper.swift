@@ -157,6 +157,12 @@ public enum CSSKeyMapper {
         // Components - Feedback
         "feedback-icon-btn-size-desktop": { cssValue, theme in theme.components.feedback.iconButtonSizeDesktop = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
     ]
+
+    /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.
+    /// This is primarily intended for unit tests to ensure theme token coverage and to prevent silent drift.
+    public static var supportedCSSKeys: Set<String> {
+        Set(cssToAssignmentMap.keys)
+    }
     
     /// Applies CSS value to ConciergeTheme using the mapped assignment function
     public static func apply(cssKey: String, cssValue: String, to theme: inout ConciergeTheme) {
