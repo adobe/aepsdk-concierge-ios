@@ -125,7 +125,7 @@ public enum ConciergeTextAlignment: String, Codable {
         case "center", "justify":
             self = .center
         default:
-            Log.warning(label: Constants.LOG_TAG, "Unknown message alignment '\(rawValue)', defaulting to leading.")
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Unknown message alignment '\(rawValue)', defaulting to leading.")
             self = .leading
         }
     }

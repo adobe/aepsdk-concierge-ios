@@ -167,7 +167,7 @@ public enum CSSKeyMapper {
         if let assignment = cssToAssignmentMap[normalizedKey] {
             assignment(cssValue, &theme)
         } else {
-            Log.debug(label: Constants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
+            Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
         }
     }
 }

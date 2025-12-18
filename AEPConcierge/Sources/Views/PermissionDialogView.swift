@@ -13,11 +13,12 @@
 import SwiftUI
 
 struct PermissionDialogView: View {
-    let theme: ConciergeTheme
+    // Uses the environment theme instead of requiring callers to pass one explicitly.
     let onCancel: () -> Void
     let onOpenSettings: () -> Void
     
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.conciergeTheme) private var theme
     
     private var borderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
@@ -41,25 +42,25 @@ struct PermissionDialogView: View {
                     Button(action: onCancel) {
                         Text("Cancel")
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.secondary)
+                            .foregroundStyle(theme.colors.button.secondaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(theme.secondary, lineWidth: 1)
+                            .stroke(theme.colors.button.secondaryBorder.color, lineWidth: 1)
                     )
                     
                     Button(action: onOpenSettings) {
                         Text("Open Settings")
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.onPrimary)
+                            .foregroundStyle(theme.colors.button.primaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(theme.primary)
+                            .fill(theme.colors.button.primaryBackground.color)
                     )
                 }
                 .padding(20)
@@ -67,7 +68,7 @@ struct PermissionDialogView: View {
             .frame(maxWidth: 400)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(theme.surfaceLight)
+                    .fill(theme.colors.surface.light.color)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -87,6 +88,14 @@ struct PermissionDialogView: View {
     }
 }
 
+// Compatibility initializer for existing call sites that still pass a theme explicitly.
+extension PermissionDialogView {
+    init(theme: ConciergeTheme, onCancel: @escaping () -> Void, onOpenSettings: @escaping () -> Void) {
+        self.onCancel = onCancel
+        self.onOpenSettings = onOpenSettings
+    }
+}
+
 #Preview("PermissionDialogView") {
     struct PermissionDialogPreviewHost: View {
         @State private var showDialog: Bool = true
@@ -101,10 +110,10 @@ struct PermissionDialogView: View {
                             .onTapGesture { showDialog = false }
                         
                         PermissionDialogView(
-                            theme: ConciergeTheme(),
                             onCancel: { showDialog = false },
                             onOpenSettings: { showDialog = false }
                         )
+                        .conciergeTheme(ConciergeTheme())
                     }
                 }
             }

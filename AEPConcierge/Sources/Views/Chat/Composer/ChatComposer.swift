@@ -41,7 +41,7 @@ struct ChatComposer: View {
                     Button(action: onComplete) {
                         ZStack {
                             Circle()
-                                .fill(theme.primary)
+                                .fill(theme.colors.primary.primary.color)
                                 .frame(width: 28, height: 28)
                             // Punch the icon out to create negative space
                             BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
@@ -71,16 +71,16 @@ struct ChatComposer: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white)
-                .cornerRadius(12)
+                .background(theme.components.inputBar.background.color)
+                .cornerRadius(theme.layout.inputBorderRadius)
                 .overlay(
                     ZStack {
                         // Base border
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(UIColor.separator), lineWidth: (colorScheme == .light ? 1 : 0))
+                        RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
+                            .stroke(theme.components.inputBar.border.color.color, lineWidth: theme.components.inputBar.border.width)
                         // Recording glow border
                         if case .recording = inputState {
-                            RotatingGlowBorder(color: Color.Secondary, cornerRadius: 12)
+                            RotatingGlowBorder(color: Color.Secondary, cornerRadius: theme.layout.inputBorderRadius)
                         }
                     }
                 )
@@ -92,7 +92,7 @@ struct ChatComposer: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
-        .background(theme.surfaceDark)
+        .background(theme.colors.surface.mainContainerBottomBackground.color)
         .onAppear { startOrStopGlow() }
         .onChange(of: inputState) { _ in startOrStopGlow() }
     }
