@@ -17,8 +17,28 @@ public struct ConciergeConfiguration: Codable {
     var server: String?
     var datastream: String?
     var ecid: String?
-    var sessionId: String?
+    
+    var sessionId: String? {
+        mutating get {
+            if self._sessionId == nil {
+                self._sessionId = UUID().uuidString
+            }
+            
+            return self._sessionId
+        }
+    }
+    private var _sessionId: String?
+    
     var conversationId: String?
     var surfaces: [String] = []
+    
+    init(server: String? = nil, datastream: String? = nil, ecid: String? = nil, _sessionId: String? = nil, conversationId: String? = nil, surfaces: [String] = []) {
+        self.server = server
+        self.datastream = datastream
+        self.ecid = ecid
+        self._sessionId = _sessionId
+        self.conversationId = conversationId
+        self.surfaces = surfaces
+    }
 }
 
