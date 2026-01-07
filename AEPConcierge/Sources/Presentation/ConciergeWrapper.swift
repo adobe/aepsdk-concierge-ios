@@ -45,11 +45,11 @@ struct ConciergeWrapper<Content: View>: View {
                         Button(action: showConcierge) {
                             Image(systemName: "sparkles.square.filled.on.square")
                                 .font(.system(size: 20))
-                                .foregroundColor(theme.onPrimary)
+                                .foregroundColor(theme.colors.primary.text.color)
                                 .padding(20)
                                 .background(
                                     Circle()
-                                        .fill(theme.primary)
+                                        .fill(theme.colors.primary.primary.color)
                                         .shadow(color: .black.opacity(0.6), radius: 20, x: 2, y: 10)
                                 )
                         }

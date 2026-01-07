@@ -58,7 +58,7 @@ struct ChatMessageView: View {
             .padding(.bottom, 4)
 
         case .welcomePromptSuggestion(let imageSource, let text, let background):
-            let resolvedBackground = colorScheme == .dark ? theme.surfaceDark : background
+            let resolvedBackground = colorScheme == .dark ? theme.colors.surface.dark.color : background
             Button(action: { onSuggestionTap?(text) }) {
                 HStack(spacing: 0) {
                     // Left image block
@@ -109,9 +109,13 @@ struct ChatMessageView: View {
             let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")
             let markers = decoration?.markers ?? []
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
-            VStack(alignment: .leading, spacing: 0) {
+            
+            let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
+            
+            VStack(alignment: alignment, spacing: 0) {
                 HStack(alignment: .bottom) {
                     if isUserMessage { Spacer() }
+                    else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                     Group {
                         // User text
                         if isUserMessage {
@@ -121,11 +125,15 @@ struct ChatMessageView: View {
                             if let messageBody, !messageBody.isEmpty {
                                 MarkdownBlockView(
                                     markdown: annotatedBody,
-                                    textColor: UIColor(theme.onAgent),
+                                    textColor: UIColor(theme.colors.message.conciergeText.color),
                                     citationMarkers: markers,
                                     citationStyle: .init(
-                                        backgroundColor: UIColor(theme.citationBackground),
-                                        textColor: UIColor(theme.citationText)
+                                        backgroundColor: UIColor(theme.colors.citation.background.color),
+                                        textColor: UIColor(theme.colors.citation.text.color),
+                                        font: UIFont.systemFont(
+                                            ofSize: theme.layout.citationsDesktopButtonFontSize,
+                                            weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
+                                        )
                                     ),
                                     onOpenLink: { url in
                                         openURL(url)
@@ -136,23 +144,23 @@ struct ChatMessageView: View {
                             }
                         }
                     }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, (!isUserMessage && (!displayedSources.isEmpty)) ? 6 : 12)
+                        .padding(theme.layout.messagePadding.edgeInsets)
+                        // Allow themes to cap bubble width (nil means unconstrained).
+                        .frame(maxWidth: theme.layout.messageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
-                        .foregroundColor(isUserMessage ? theme.onPrimary : theme.onAgent)
+                        .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
                         .background(
                             Group {
                                 if isUserMessage {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(theme.primary)
+                                    RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                        .fill(theme.colors.message.userBackground.color)
                                 } else {
                                     if !displayedSources.isEmpty {
-                                        RoundedCornerShape(radius: 14, corners: [.topLeft, .topRight])
-                                            .fill(theme.agentBubble)
+                                        RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
+                                            .fill(theme.colors.message.conciergeBackground.color)
                                     } else {
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .fill(theme.agentBubble)
+                                        RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                            .fill(theme.colors.message.conciergeBackground.color)
                                     }
                                 }
                             }
@@ -169,6 +177,7 @@ struct ChatMessageView: View {
                         }
 
                     if !isUserMessage { Spacer() }
+                    else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                 }
 
                 // Attach sources dropdown for agent messages only
@@ -370,16 +379,16 @@ struct ChatMessageView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "arrowshape.turn.up.right")
                                 .imageScale(.small)
-                                .foregroundColor(theme.onAgent)
+                                .foregroundColor(theme.colors.message.conciergeText.color)
                             Text(text)
                                 .font(.system(.subheadline))
-                                .foregroundColor(theme.onAgent)
+                                .foregroundColor(theme.colors.message.conciergeText.color)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(theme.agentBubble)
+                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                .fill(theme.colors.message.conciergeBackground.color)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())

@@ -82,7 +82,7 @@ public struct SourcesListView: View {
     private func sourceRow(for source: Source) -> some View {
         SourceRowView(ordinal: "\(source.citationNumber).",
                       title: source.title,
-                      link: URL(string: source.url) ?? URL(string: "")!,
+                      link: URL(string: source.url),
                       theme: theme)
             .padding(.vertical, 10)
     }
@@ -96,8 +96,8 @@ public struct SourcesListView: View {
     }
     
     private var backgroundShape: some View {
-        RoundedCornerShape(radius: 14, corners: [.bottomLeft, .bottomRight])
-            .fill(theme.agentBubble)
+        RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
+            .fill(theme.colors.message.conciergeBackground.color)
     }
 
     private var header: some View {
@@ -108,10 +108,10 @@ public struct SourcesListView: View {
         }) {
             HStack(spacing: 8) {
                 chevronImage
-                    .foregroundStyle(theme.textBody)
+                    .foregroundStyle(theme.colors.message.conciergeText.color)
                 Text("Sources")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.onAgent)
+                    .foregroundStyle(theme.colors.message.conciergeText.color)
                 Spacer()
                 // Feedback buttons
                 HStack(spacing: 4) {
@@ -177,16 +177,16 @@ public struct SourcesListView: View {
     
     private var thumbUpColor: Color {
         guard let sentiment = feedbackSentiment else {
-            return theme.onAgent
+            return theme.colors.message.conciergeText.color
         }
-        return sentiment == .positive ? theme.primary : Color.gray.opacity(0.4)
+        return sentiment == .positive ? theme.colors.primary.primary.color : Color.gray.opacity(0.4)
     }
     
     private var thumbDownColor: Color {
         guard let sentiment = feedbackSentiment else {
-            return theme.onAgent
+            return theme.colors.message.conciergeText.color
         }
-        return sentiment == .negative ? theme.primary : Color.gray.opacity(0.4)
+        return sentiment == .negative ? theme.colors.primary.primary.color : Color.gray.opacity(0.4)
     }
 }
 

@@ -10,15 +10,53 @@
  governing permissions and limitations under the License.
  */
 
+import Foundation
 import SwiftUI
 
 struct ComposerDisclaimer: View {
+    @Environment(\.conciergeTheme) private var theme
+
     var body: some View {
-        Text("AI responses may be inaccurate or misleading. Be sure to double check answers and sources.")
-            .font(.system(.footnote))
-            .foregroundColor(.secondary)
+        Text(attributedDisclaimerText)
+            .font(.system(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUIFontWeight()))
             .fixedSize(horizontal: false, vertical: true)
     }
+
+    private var attributedDisclaimerText: AttributedString {
+        let text = theme.disclaimer.text
+        let links = theme.disclaimer.links
+
+        var result = AttributedString()
+        result.foregroundColor = theme.components.disclaimer.textColor.color
+
+        var remainingText = text[...]
+        while let openBraceIndex = remainingText.firstIndex(of: "{"),
+              let closeBraceIndex = remainingText[openBraceIndex...].firstIndex(of: "}") {
+            // Append prefix text.
+            let prefix = String(remainingText[..<openBraceIndex])
+            result.append(AttributedString(prefix))
+
+            // Extract token inside braces.
+            let tokenStart = remainingText.index(after: openBraceIndex)
+            let token = String(remainingText[tokenStart..<closeBraceIndex])
+
+            var tokenString = AttributedString(token)
+
+            if let link = links.first(where: { $0.text == token }),
+               let url = URL(string: link.url) {
+                tokenString.link = url
+                tokenString.foregroundColor = theme.colors.primary.text.color
+                tokenString.underlineStyle = .single
+            }
+
+            result.append(tokenString)
+
+            // Continue after close brace.
+            remainingText = remainingText[remainingText.index(after: closeBraceIndex)...]
+        }
+
+        // Append trailing text.
+        result.append(AttributedString(String(remainingText)))
+        return result
+    }
 }
-
-

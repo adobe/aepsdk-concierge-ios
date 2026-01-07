@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 import AEPServices
 
 // MARK: - Reusable CSS-like Types
@@ -148,6 +149,36 @@ public enum CodableFontWeight: String, Codable {
     case bold
     case heavy
     case black
+
+    /// Converts a theme font weight into the closest UIKit `UIFont.Weight`.
+    func toUIFontWeight() -> UIFont.Weight {
+        switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        }
+    }
+
+    /// Converts a theme font weight into the closest SwiftUI `Font.Weight`.
+    func toSwiftUIFontWeight() -> Font.Weight {
+        switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        }
+    }
 }
 
 /// Codable wrapper for SwiftUI Color to enable JSON encoding/decoding
