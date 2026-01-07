@@ -15,7 +15,6 @@ import AEPServices
 
 struct FeedbackOverlayView: View {
     
-    let theme: ConciergeTheme
     let sentiment: FeedbackSentiment
     let onCancel: () -> Void
     let onSubmit: (_ payload: FeedbackPayload) -> Void
@@ -27,20 +26,20 @@ struct FeedbackOverlayView: View {
     // Allows providing any number of sentiment options
     private var effectiveOptions: [String] {
         switch sentiment {
-        case .positive: return feedbackConfig.positiveOptions
-        case .negative: return feedbackConfig.negativeOptions
+        case .positive: return theme.arrays.feedbackPositiveOptions
+        case .negative: return theme.arrays.feedbackNegativeOptions
         }
     }
 
     private var notesEnabled: Bool {
         switch sentiment {
-        case .positive: return feedbackConfig.positiveNotesEnabled
-        case .negative: return feedbackConfig.negativeNotesEnabled
+        case .positive: return theme.components.feedback.positiveNotesEnabled
+        case .negative: return theme.components.feedback.negativeNotesEnabled
         }
     }
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.conciergeFeedbackConfig) private var feedbackConfig
+    @Environment(\.conciergeTheme) private var theme
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
 
@@ -53,11 +52,11 @@ struct FeedbackOverlayView: View {
 
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Your feedback is appreciated")
+                    Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.primary)
 
-                    Text(sentiment == .positive ? "What went well? Select all that apply." : "What went wrong? Select all that apply.")
+                    Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
                         .font(.body)
                         .foregroundStyle(.secondary)
 
@@ -71,29 +70,40 @@ struct FeedbackOverlayView: View {
                                     }
                                 ),
                                 label: option,
-                                accent: theme.primary
+                                accent: theme.colors.primary.primary.color
                             )
                         }
                     }
 
                     if notesEnabled {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Notes")
+                            Text(theme.text.feedbackDialogNotes)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            TextEditor(text: $notes)
-                                .frame(minHeight: 120)
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(theme.surfaceLight)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(borderColor)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .shadow(color: .clear, radius: 0)
+                            ZStack(alignment: .topLeading) {
+                                TextEditor(text: $notes)
+                                    .frame(minHeight: 120)
+                                    .padding(12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(theme.colors.surface.light.color)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(borderColor)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .shadow(color: .clear, radius: 0)
+                                
+                                if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text(theme.text.feedbackDialogNotesPlaceholder)
+                                        .font(.body)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.top, 20)
+                                        .padding(.leading, 18)
+                                        .allowsHitTesting(false)
+                                }
+                            }
                         }
                     }
                 }
@@ -101,15 +111,15 @@ struct FeedbackOverlayView: View {
 
                 HStack(spacing: 12) {
                     Button(action: onCancel) {
-                        Text("Cancel")
+                        Text(theme.text.feedbackDialogCancel)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.secondary)
+                            .foregroundStyle(theme.colors.button.secondaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(theme.secondary, lineWidth: 1)
+                            .stroke(theme.colors.button.secondaryBorder.color, lineWidth: 1)
                     )
 
                     Button(action: {
@@ -122,15 +132,15 @@ struct FeedbackOverlayView: View {
                         Log.trace(label: ConciergeConstants.LOG_TAG, "Feedback submitted. sentiment=\(sentiment) options=[\(joined)] notes=\(payload.notes)")
                         onSubmit(payload)
                     }) {
-                        Text("Submit")
+                        Text(theme.text.feedbackDialogSubmit)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.onPrimary)
+                            .foregroundStyle(theme.colors.button.primaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(theme.primary)
+                            .fill(theme.colors.button.primaryBackground.color)
                     )
                 }
                 .padding(20)
@@ -138,7 +148,7 @@ struct FeedbackOverlayView: View {
             .frame(maxWidth: 560)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(theme.surfaceLight)
+                    .fill(theme.colors.surface.light.color)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -158,31 +168,11 @@ struct FeedbackOverlayView: View {
                 Color(UIColor.systemBackground).ignoresSafeArea()
                 if show {
                     FeedbackOverlayView(
-                        theme: ConciergeTheme(),
                         sentiment: .positive,
                         onCancel: { show = false },
                         onSubmit: { _ in show = false }
                     )
-                    .conciergeFeedbackConfig(
-                        ConciergeFeedbackConfig(
-                            positiveOptions: [
-                                "Helpful and relevant recommendations",
-                                "Clear and easy to understand",
-                                "Friendly and conversational tone",
-                                "Visually appealing presentation",
-                                "Other"
-                            ],
-                            negativeOptions: [
-                                "Didn't understand my request",
-                                "Unhelpful or irrelevant information",
-                                "Too vague or lacking detail",
-                                "Errors or poor quality response",
-                                "Other"
-                            ],
-                            positiveNotesEnabled: true,
-                            negativeNotesEnabled: true
-                        )
-                    )
+                    .conciergeTheme(ConciergeTheme())
                 }
             }
         }

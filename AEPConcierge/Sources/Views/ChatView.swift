@@ -99,7 +99,7 @@ public struct ChatView: View {
     public var body: some View {
         ZStack(alignment: .bottom) {
             // Full background color ignoring safe area (dynamic for light/dark)
-            Color(.systemBackground)
+            theme.colors.surface.mainContainerBackground.color
                 .ignoresSafeArea()
 
             // Filter welcome content (header + examples) based on input state and whether the user has interacted
@@ -113,6 +113,7 @@ public struct ChatView: View {
                 }
             }
 
+            VStack(spacing: 0) {
             MessageListView(
                 messages: displayMessages,
                 userScrollTick: controller.userScrollTick,
@@ -125,6 +126,10 @@ public struct ChatView: View {
                 controller.applyTextChange(suggestion)
                 selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
             }
+                .padding(.horizontal, theme.layout.chatHistoryPadding)
+                .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
+            }
+            .frame(maxWidth: .infinity)
         }
         // Safe area respecting top bar
         .safeAreaInset(edge: .top) {
@@ -190,7 +195,6 @@ public struct ChatView: View {
         .overlay(alignment: .center) {
             if showFeedbackOverlay {
                 FeedbackOverlayView(
-                    theme: theme,
                     sentiment: feedbackSentiment,
                     onCancel: { showFeedbackOverlay = false },
                     onSubmit: { payload in
@@ -206,8 +210,7 @@ public struct ChatView: View {
             if controller.showPermissionDialog {
                 ZStack {
                     // Backdrop with separate fade animation
-                    Color.clear
-                        .background(.ultraThinMaterial)
+                    theme.colors.surface.messageBlockerBackground.color
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .onTapGesture {
@@ -218,7 +221,6 @@ public struct ChatView: View {
                     
                     // Dialog card with scale animation
                     PermissionDialogView(
-                        theme: theme,
                         onCancel: {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 controller.dismissPermissionDialog()
@@ -242,6 +244,11 @@ public struct ChatView: View {
                 .zIndex(1001)
             }
         }
+        .font(
+            theme.typography.fontFamily.isEmpty
+                ? .system(size: theme.typography.fontSize)
+                : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
+        )
     }
     
     // MARK: - Actions
@@ -305,6 +312,7 @@ public struct ChatView: View {
         
         var body: some View {
             ChatView(messages: messages)
+                .conciergeTheme(ConciergeTheme())
         }
     }
     

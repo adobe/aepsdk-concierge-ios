@@ -18,6 +18,26 @@ import AudioToolbox
 import AEPConcierge
 
 struct ContentView: View {
+    private enum DemoThemeFile: String, CaseIterable, Identifiable {
+        case defaultTheme = "theme-default"
+        case demoTheme = "themeDemo"
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .defaultTheme:
+                return "Default"
+            case .demoTheme:
+                return "Demo"
+            }
+        }
+    }
+
+    @State private var selectedThemeFile: DemoThemeFile = .defaultTheme
+    @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
+    @State private var themeLoadStatusText: String = ""
+
     var body: some View {
         TabView {
             
@@ -27,6 +47,27 @@ struct ContentView: View {
             Concierge.wrap(
                 VStack {
                     VStack {
+                        Picker("Theme", selection: $selectedThemeFile) {
+                            ForEach(DemoThemeFile.allCases) { themeFile in
+                                Text(themeFile.title).tag(themeFile)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+
+                        Text("Loaded theme: \(loadedTheme.metadata.brandName)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                        
+                        Text(themeLoadStatusText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 2)
+
                         Button(action: {
                             // only call needed to show the concierge ui
                             Concierge.show(
@@ -51,23 +92,11 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(.systemBackground))
-                    
-                    // optional theming - default values will be read from a remote configuration
-                    .conciergeTheme(
-                        ConciergeTheme(
-                            primary: .Brand.red,
-                            secondary: .Brand.red,
-                            onPrimary: .white,
-                            textBody: .primary,
-                            agentBubble: Color(UIColor.systemGray5),
-                            onAgent: .primary,
-                            surfaceLight: Color(UIColor.secondarySystemBackground),
-                            surfaceDark: Color(UIColor.systemBackground)
-                        )
-                    )
                 },
                 hideButton: true
             )
+            // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
+            .conciergeTheme(loadedTheme)
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
             // MARK: - floating button
@@ -83,6 +112,24 @@ struct ContentView: View {
             UIKitDemoScreen()
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
         }
+        .onAppear {
+            loadTheme()
+        }
+        .onChange(of: selectedThemeFile) { _ in
+            loadTheme()
+        }
+    }
+
+    private func loadTheme() {
+        let filename = selectedThemeFile.rawValue
+        
+        if let url = Bundle.main.url(forResource: filename, withExtension: "json") {
+            themeLoadStatusText = "Theme file: \(url.lastPathComponent)"
+        } else {
+            themeLoadStatusText = "Theme file missing in main bundle: \(filename).json"
+        }
+        
+        loadedTheme = ConciergeThemeLoader.load(from: filename, in: .main) ?? ConciergeThemeLoader.default()
     }
 }
 
