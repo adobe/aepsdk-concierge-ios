@@ -50,7 +50,7 @@ struct ChatTopBar: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
-        .background(theme.surfaceDark)
+        .background(theme.colors.surface.mainContainerBackground.color)
     }
 }
 

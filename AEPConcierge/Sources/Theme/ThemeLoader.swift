@@ -13,28 +13,28 @@
 import Foundation
 import AEPServices
 
-/// Helper for loading ConciergeTheme2 from a bundled JSON file
-public enum ConciergeTheme2Loader {
-    /// Loads a ConciergeTheme2 from a bundled JSON file
+/// Helper for loading ConciergeTheme from a bundled JSON file
+public enum ConciergeThemeLoader {
+    /// Loads a ConciergeTheme from a bundled JSON file
     /// - Parameters:
     ///   - filename: Name of the JSON file (without extension) in the bundle
     ///   - bundle: Bundle to search for the file (defaults to main bundle)
-    /// - Returns: Decoded ConciergeTheme2 instance, or nil if loading/decoding fails
+    /// - Returns: Decoded ConciergeTheme instance, or nil if loading/decoding fails
     /// - Note: JSON keys should match the web styleConfiguration format for cross platform compatibility
-    public static func load(from filename: String, in bundle: Bundle = .main) -> ConciergeTheme2? {
+    public static func load(from filename: String, in bundle: Bundle = .main) -> ConciergeTheme? {
         guard let url = bundle.url(forResource: filename, withExtension: "json") else {
-            print("[ConciergeTheme2Loader] Missing resource \(filename).json in bundle \(bundle.bundlePath)")
+            print("[ConciergeThemeLoader] Missing resource \(filename).json in bundle \(bundle.bundlePath)")
             return nil
         }
         
         guard let data = try? Data(contentsOf: url) else {
-            print("[ConciergeTheme2Loader] Failed to read data for \(filename).json at \(url.path)")
+            print("[ConciergeThemeLoader] Failed to read data for \(filename).json at \(url.path)")
             return nil
         }
         
         let decoder = JSONDecoder()
         do {
-            return try decoder.decode(ConciergeTheme2.self, from: data)
+            return try decoder.decode(ConciergeTheme.self, from: data)
         } catch let decodingError as DecodingError {
             let message: String
             switch decodingError {
@@ -47,18 +47,17 @@ public enum ConciergeTheme2Loader {
             @unknown default:
                 message = "\(decodingError)"
             }
-            print("[ConciergeTheme2Loader] Failed to decode theme '\(filename).json': \(message)")
+            print("[ConciergeThemeLoader] Failed to decode theme '\(filename).json': \(message)")
             return nil
         } catch {
-            print("[ConciergeTheme2Loader] Failed to decode theme '\(filename).json': \(error)")
+            print("[ConciergeThemeLoader] Failed to decode theme '\(filename).json': \(error)")
             return nil
         }
     }
     
-    /// Creates a default ConciergeTheme2 instance
-    /// - Returns: A ConciergeTheme2 with all default values
-    public static func `default`() -> ConciergeTheme2 {
-        ConciergeTheme2()
+    /// Creates a default ConciergeTheme instance
+    /// - Returns: A ConciergeTheme with all default values
+    public static func `default`() -> ConciergeTheme {
+        ConciergeTheme()
     }
 }
-

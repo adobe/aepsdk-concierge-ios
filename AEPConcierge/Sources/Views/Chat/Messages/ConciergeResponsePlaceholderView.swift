@@ -31,7 +31,7 @@ struct ConciergeResponsePlaceholderView: View {
     var body: some View {
         HStack(alignment: .center) {
             Text(placeholderConfig.loadingText)
-                .foregroundColor(theme.onAgent)
+                .foregroundColor(theme.colors.message.conciergeText.color)
                 .lineLimit(1)
                 .truncationMode(.tail)
 
@@ -43,7 +43,7 @@ struct ConciergeResponsePlaceholderView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(theme.agentBubble)
+                .fill(theme.colors.message.conciergeBackground.color)
         )
     }
 }

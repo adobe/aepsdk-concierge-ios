@@ -13,12 +13,12 @@
 @testable import AEPConcierge
 
 final class MockChatService: ConciergeChatService {
-    var plannedChunks: [TempPayload] = []
+    var plannedChunks: [ConversationPayload] = []
     var plannedError: ConciergeError? = nil
     var shouldCallComplete: Bool = true
     private var pendingOnComplete: ((ConciergeError?) -> Void)? = nil
 
-    override func streamChat(_ query: String, onChunk: @escaping (TempPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
+    override func streamChat(_ query: String, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
         // Immediately emit planned chunks then complete
         for chunk in plannedChunks {
             onChunk(chunk)
