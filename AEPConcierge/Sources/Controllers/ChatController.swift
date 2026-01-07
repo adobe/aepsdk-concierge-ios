@@ -260,6 +260,11 @@ final class ChatController: ObservableObject {
         // Get the message information for which feedback was provided
         var currentMessage = messages[index]
         
+        guard let messagePayload = currentMessage.payload else {
+            Log.debug(label: LOG_TAG, "Unable to send feedback, message payload is not available.")
+            return
+        }
+        
         // Attach sentiment
         currentMessage.feedbackSentiment = feedbackPayload.sentiment
         
@@ -292,17 +297,13 @@ final class ChatController: ObservableObject {
                             ConciergeConstants.Request.Keys.Feedback.REASONS: feedbackPayload.selectedOptions
                         ]
                     ],
-                    ConciergeConstants.Request.Keys.Feedback.CONVERSATION_ID: configuration.conversationId ?? "unknown",
-                    ConciergeConstants.Request.Keys.Feedback.TURN_ID: configuration.sessionId ?? "unknown"
+                    ConciergeConstants.Request.Keys.Feedback.CONVERSATION_ID: messagePayload.conversationId ?? "unknown",
+                    ConciergeConstants.Request.Keys.Feedback.TURN_ID: messagePayload.interactionId ?? "unknown"
                 ]
             ]
         ]
         
-        let feedbackEvent = Event(name: ConciergeConstants.EventName.FEEDBACK,
-                                  type: EventType.edge,
-                                  source: EventSource.requestContent,
-                                  data: feedbackEventData)
-        MobileCore.dispatch(event: feedbackEvent)
+        chatService.sendFeedback(data: feedbackEventData)
     }
     
     // MARK: - Private Methods
@@ -332,7 +333,9 @@ final class ChatController: ObservableObject {
                     if let response = payload.response {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(response.message.count), sources=\(response.sources?.count ?? 0), suggestions=\(response.promptSuggestions?.count ?? 0)")
                         
-                        if state == ConciergeConstants.StreamState.COMPLETED, let data = try? JSONEncoder().encode(response), let json = String(data: data, encoding: .utf8) {
+                        if state == ConciergeConstants.StreamState.COMPLETED,
+                            let data = try? JSONEncoder().encode(response),
+                            let json = String(data: data, encoding: .utf8) {
                             Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json)")
                         }
                     } else {
