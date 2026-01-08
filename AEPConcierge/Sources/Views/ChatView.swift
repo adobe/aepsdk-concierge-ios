@@ -200,7 +200,7 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
-            Task { await controller.loadWelcomeIfNeeded() }
+            Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in

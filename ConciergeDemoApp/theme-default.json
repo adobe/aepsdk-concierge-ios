@@ -28,7 +28,7 @@
     "links": [
       {
         "text": "Terms",
-        "url": "https://www.example.com"
+        "url": "https://www.adobe.com/legal/licenses-terms/adobe-gen-ai-user-guidelines.html"
       }
     ]
   },
@@ -62,12 +62,22 @@
     "welcome.examples": [
       {
         "text": "I'd like to explore templates to see what I can create.",
-        "image": "https://example.com/template.png",
+        "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_142fd6e4e46332d8f41f5aef982448361c0c8c65e.png",
         "backgroundColor": "#FFFFFF"
       },
       {
         "text": "I want to touch up and enhance my photos.",
-        "image": "https://example.com/photo.png",
+        "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1e188097a1bc580b26c8be07d894205c5c6ca5560.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      {
+        "text": "I'd like to edit PDFs and make them interactive.",
+        "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1f6fed23045bbbd57fc17dadc3aa06bcc362f84cb.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      {
+        "text": "I want to turn my clips into polished videos.",
+        "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png",
         "backgroundColor": "#FFFFFF"
       }
     ],
