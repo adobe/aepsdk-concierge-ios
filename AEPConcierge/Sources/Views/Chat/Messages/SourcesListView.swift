@@ -123,6 +123,7 @@ public struct SourcesListView: View {
                         normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
                         activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
                         isDisabled: feedbackSentiment != nil,
+                        accessibilityLabel: theme.text.feedbackThumbsUpAria,
                         action: {
                         feedbackPresenter.present(.positive, messageId)
                         },
@@ -137,6 +138,7 @@ public struct SourcesListView: View {
                         normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
                         activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
                         isDisabled: feedbackSentiment != nil,
+                        accessibilityLabel: theme.text.feedbackThumbsDownAria,
                         action: {
                         feedbackPresenter.present(.negative, messageId)
                         },

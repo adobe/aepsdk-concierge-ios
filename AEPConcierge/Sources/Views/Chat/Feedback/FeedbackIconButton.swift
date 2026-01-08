@@ -19,6 +19,7 @@ struct FeedbackIconButton<Label: View>: View {
     let normalBackgroundColor: Color
     let activeBackgroundColor: Color
     let isDisabled: Bool
+    let accessibilityLabel: String?
     let action: () -> Void
     @ViewBuilder let label: () -> Label
 
@@ -41,6 +42,7 @@ struct FeedbackIconButton<Label: View>: View {
         .onHover { isHovering in
             isPointerHovering = isHovering
         }
+        .accessibilityLabel(accessibilityLabel ?? "Feedback")
         .disabled(isDisabled)
     }
 }

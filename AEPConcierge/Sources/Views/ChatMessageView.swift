@@ -90,6 +90,8 @@ struct ChatMessageView: View {
                 .cornerRadius(theme.layout.borderRadiusCard)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(theme.text.cardAriaSelect)
+            .accessibilityHint(text)
 
         case .divider:
             Rectangle()
