@@ -45,12 +45,12 @@ struct ChatMessageView: View {
                 Text(title)
                     .font(.system(.title2, design: .rounded))
                     .fontWeight(.semibold)
-                    .foregroundColor(Color.TextTitle)
+                    .foregroundColor(theme.colors.primary.text.color)
                     .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
                 Text(body)
                     .font(.system(.body, design: .rounded))
-                    .foregroundColor(Color.TextBody)
+                    .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                     .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
             }
@@ -77,7 +77,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(text)
                             .font(.system(.body))
-                            .foregroundColor(Color.TextTitle)
+                            .foregroundColor(theme.colors.primary.text.color)
                             .multilineTextAlignment(.leading)
                             .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -210,11 +210,11 @@ struct ChatMessageView: View {
                             Text(title)
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
                         Text(text)
-                            .foregroundColor(Color.TextBody)
+                            .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                             .textSelection(.enabled)
                     }
                     .padding(.horizontal, 14)
@@ -239,7 +239,7 @@ struct ChatMessageView: View {
                             Text("\(number)")
                                 .font(.system(.body, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                         }
                     }
                     
@@ -248,12 +248,12 @@ struct ChatMessageView: View {
                             Text(title)
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
                         if let body = body {
                             Text(body)
-                                .foregroundColor(Color.TextBody)
+                                .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                                 .textSelection(.enabled)
                         }
                     }
@@ -329,12 +329,12 @@ struct ChatMessageView: View {
                     Text(title)
                         .font(.system(.headline, design: .rounded))
                         .bold()
-                        .foregroundColor(Color.TextTitle)
+                        .foregroundColor(theme.colors.primary.text.color)
                         .textSelection(.enabled)
                     
                     Text(body)
                         .font(.system(.subheadline))
-                        .foregroundColor(Color.TextBody)
+                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                         .textSelection(.enabled)
                     
                     // Buttons section

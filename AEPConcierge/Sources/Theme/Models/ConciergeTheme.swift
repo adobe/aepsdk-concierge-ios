@@ -70,7 +70,7 @@ public struct ConciergeTheme: Codable {
     }
     
     public var components: ConciergeComponentStyles {
-        // Derived convenience property. Canonical sources are typography/colors/layout/behavior.
+        // Derived convenience property.
         derivedComponents
     }
     
@@ -181,10 +181,8 @@ public struct ConciergeTheme: Codable {
 // MARK: - Derived component styles
 
 private extension ConciergeTheme {
-    /// Derived per-component styles from canonical theme tokens.
-    ///
-    /// Canonical sources:
-    /// - typography/colors/layout/behavior
+    /// Component styles derived from canonical theme values.
+    /// Groups theme values into component styles for easier use.
     var derivedComponents: ConciergeComponentStyles {
         var resolved = ConciergeComponentStyles()
 

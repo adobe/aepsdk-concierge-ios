@@ -134,6 +134,10 @@ private extension ThemeKeyCoverageTests {
         "message-concierge-background": "colors.message.conciergeBackground",
         "message-concierge-text": "colors.message.conciergeText",
         "message-concierge-link-color": "colors.message.conciergeLink",
+        
+        // Colors - Citations
+        "citations-background-color": "colors.citation.background",
+        "citations-text-color": "colors.citation.text",
 
         // Colors - Button
         "button-primary-background": "colors.button.primaryBackground",
