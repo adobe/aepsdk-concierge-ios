@@ -209,7 +209,6 @@ private extension ConciergeTheme {
         resolved.feedback.iconButtonSizeDesktop = layout.feedbackIconButtonSize
         resolved.feedback.containerGap = layout.feedbackContainerGap
         resolved.feedback.iconButtonBackground = colors.feedback.iconButtonBackground
-        resolved.feedback.iconButtonHoverBackground = colors.feedback.iconButtonHoverBackground
         // Note: notes toggles are currently modeled as component style booleans and default to enabled.
 
         // MARK: Carousel

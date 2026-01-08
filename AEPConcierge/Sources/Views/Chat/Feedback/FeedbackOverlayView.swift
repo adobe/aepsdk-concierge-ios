@@ -42,9 +42,6 @@ struct FeedbackOverlayView: View {
     @Environment(\.conciergeTheme) private var theme
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
-    
-    @State private var isCancelPointerHovering: Bool = false
-    @State private var isSubmitPointerHovering: Bool = false
 
     var body: some View {
         ZStack {
@@ -120,11 +117,8 @@ struct FeedbackOverlayView: View {
                             .frame(height: 44)
                     }
                     .buttonStyle(
-                        ConciergeActionButtonStyle(theme: theme, variant: .secondary, isHovered: isCancelPointerHovering)
+                        ConciergeActionButtonStyle(theme: theme, variant: .secondary)
                     )
-                    .onHover { isHovering in
-                        isCancelPointerHovering = isHovering
-                    }
 
                     Button(action: {
                         let payload = FeedbackPayload(
@@ -142,11 +136,8 @@ struct FeedbackOverlayView: View {
                             .frame(height: 44)
                     }
                     .buttonStyle(
-                        ConciergeActionButtonStyle(theme: theme, variant: .primary, isHovered: isSubmitPointerHovering)
+                        ConciergeActionButtonStyle(theme: theme, variant: .primary)
                     )
-                    .onHover { isHovering in
-                        isSubmitPointerHovering = isHovering
-                    }
                 }
                 .padding(20)
             }

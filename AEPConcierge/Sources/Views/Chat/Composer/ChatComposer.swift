@@ -60,7 +60,7 @@ struct ChatComposer: View {
                         measuredHeight: $measuredHeight,
                         isFocused: $isFocused,
                         isEditable: composerEditable,
-                        showMic: !(inputState == .recording),
+                        showMic: theme.behavior.input.enableVoiceInput && !(inputState == .recording),
                         onEditingChanged: onEditingChanged,
                         onMicTap: onMicTap,
                         micEnabled: micEnabled,

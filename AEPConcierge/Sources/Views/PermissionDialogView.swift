@@ -20,9 +20,6 @@ struct PermissionDialogView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
     
-    @State private var isCancelPointerHovering: Bool = false
-    @State private var isOpenSettingsPointerHovering: Bool = false
-    
     private var borderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
     }
@@ -55,13 +52,9 @@ struct PermissionDialogView: View {
                     .buttonStyle(
                         ConciergeActionButtonStyle(
                             theme: theme,
-                            variant: .secondary,
-                            isHovered: isCancelPointerHovering
+                            variant: .secondary
                         )
                     )
-                    .onHover { isHovering in
-                        isCancelPointerHovering = isHovering
-                    }
                     
                     Button(action: onOpenSettings) {
                         Text("Open Settings")
@@ -72,13 +65,9 @@ struct PermissionDialogView: View {
                     .buttonStyle(
                         ConciergeActionButtonStyle(
                             theme: theme,
-                            variant: .primary,
-                            isHovered: isOpenSettingsPointerHovering
+                            variant: .primary
                         )
                     )
-                    .onHover { isHovering in
-                        isOpenSettingsPointerHovering = isHovering
-                    }
                 }
                 .padding(20)
             }

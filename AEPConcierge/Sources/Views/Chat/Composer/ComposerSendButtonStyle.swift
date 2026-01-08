@@ -16,15 +16,13 @@ import SwiftUI
 struct ComposerSendButtonStyle: SwiftUI.ButtonStyle {
     let theme: ConciergeTheme
     let isEnabled: Bool
-    let isHovered: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        let isActive = configuration.isPressed || isHovered
         let foregroundColor: Color = {
             if !isEnabled {
                 return theme.colors.button.submitText.color.opacity(0.5)
             }
-            return isActive ? theme.colors.button.submitTextHover.color : theme.colors.button.submitText.color
+            return theme.colors.button.submitText.color
         }()
 
         return configuration.label
@@ -34,7 +32,7 @@ struct ComposerSendButtonStyle: SwiftUI.ButtonStyle {
                 RoundedRectangle(cornerRadius: theme.layout.inputButtonBorderRadius, style: .continuous)
                     .fill(isEnabled ? theme.colors.button.submitFill.color : theme.colors.button.submitFillDisabled.color)
             )
-            .opacity(isActive ? 0.92 : 1.0)
+            .opacity(configuration.isPressed ? 0.92 : 1.0)
     }
 }
 

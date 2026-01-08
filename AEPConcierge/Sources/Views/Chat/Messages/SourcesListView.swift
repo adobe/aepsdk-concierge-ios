@@ -121,7 +121,7 @@ public struct SourcesListView: View {
                         iconButtonSize: iconButtonSize,
                         foregroundColor: thumbUpColor,
                         normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
+                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
                         isDisabled: feedbackSentiment != nil,
                         accessibilityLabel: theme.text.feedbackThumbsUpAria,
                         action: {
@@ -136,7 +136,7 @@ public struct SourcesListView: View {
                         iconButtonSize: iconButtonSize,
                         foregroundColor: thumbDownColor,
                         normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
+                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
                         isDisabled: feedbackSentiment != nil,
                         accessibilityLabel: theme.text.feedbackThumbsDownAria,
                         action: {

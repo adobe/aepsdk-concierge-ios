@@ -45,15 +45,11 @@ public enum CSSKeyMapper {
         // Colors - Button
         "button-primary-background": { cssValue, theme in theme.colors.button.primaryBackground = CSSValueConverter.parseColor(cssValue) },
         "button-primary-text": { cssValue, theme in theme.colors.button.primaryText = CSSValueConverter.parseColor(cssValue) },
-        "button-primary-hover": { cssValue, theme in theme.colors.button.primaryHover = CSSValueConverter.parseColor(cssValue) },
         "button-secondary-border": { cssValue, theme in theme.colors.button.secondaryBorder = CSSValueConverter.parseColor(cssValue) },
         "button-secondary-text": { cssValue, theme in theme.colors.button.secondaryText = CSSValueConverter.parseColor(cssValue) },
-        "button-secondary-hover": { cssValue, theme in theme.colors.button.secondaryHover = CSSValueConverter.parseColor(cssValue) },
-        "color-button-secondary-hover-text": { cssValue, theme in theme.colors.button.secondaryHoverText = CSSValueConverter.parseColor(cssValue) },
         "submit-button-fill-color": { cssValue, theme in theme.colors.button.submitFill = CSSValueConverter.parseColor(cssValue) },
         "submit-button-fill-color-disabled": { cssValue, theme in theme.colors.button.submitFillDisabled = CSSValueConverter.parseColor(cssValue) },
         "color-button-submit": { cssValue, theme in theme.colors.button.submitText = CSSValueConverter.parseColor(cssValue) },
-        "color-button-submit-hover": { cssValue, theme in theme.colors.button.submitTextHover = CSSValueConverter.parseColor(cssValue) },
         "button-disabled-background": { cssValue, theme in theme.colors.button.disabledBackground = CSSValueConverter.parseColor(cssValue) },
         
         // Colors - Input
@@ -75,7 +71,6 @@ public enum CSSKeyMapper {
         
         // Colors - Feedback
         "feedback-icon-btn-background": { cssValue, theme in theme.colors.feedback.iconButtonBackground = CSSValueConverter.parseColor(cssValue) },
-        "feedback-icon-btn-hover-background": { cssValue, theme in theme.colors.feedback.iconButtonHoverBackground = CSSValueConverter.parseColor(cssValue) },
         
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
