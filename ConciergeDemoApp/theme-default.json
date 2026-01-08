@@ -63,22 +63,22 @@
       {
         "text": "I'd like to explore templates to see what I can create.",
         "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_142fd6e4e46332d8f41f5aef982448361c0c8c65e.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#F5F5F5"
       },
       {
         "text": "I want to touch up and enhance my photos.",
         "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1e188097a1bc580b26c8be07d894205c5c6ca5560.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#F5F5F5"
       },
       {
         "text": "I'd like to edit PDFs and make them interactive.",
         "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1f6fed23045bbbd57fc17dadc3aa06bcc362f84cb.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#F5F5F5"
       },
       {
         "text": "I want to turn my clips into polished videos.",
         "image": "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#F5F5F5"
       }
     ],
     "feedback.positive.options": [
@@ -105,7 +105,7 @@
     "--welcome-input-order": "3",
     "--welcome-cards-order": "2",
     "--font-family": "",
-    "--color-primary": "#007BFF",
+    "--color-primary": "#EB1000",
     "--color-text": "#131313",
     "--line-height-body": "1.75",
     "--main-container-background": "#FFFFFF",
@@ -118,7 +118,7 @@
     "--input-background": "#FFFFFF",
     "--input-outline-color": null,
     "--input-outline-width": "2px",
-    "--input-box-shadow": "0 4px 16px 0 #00000029",
+    "--input-box-shadow": "0 2px 8px 0 #00000014",
     "--input-focus-outline-width": "2px",
     "--input-focus-outline-color": "#4B75FF",
     "--input-font-size": "16px",
@@ -138,7 +138,7 @@
     "--message-user-text": "#292929",
     "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
-    "--message-concierge-background": "#FFFFFF",
+    "--message-concierge-background": "#F5F5F5",
     "--message-concierge-text": "#292929",
     "--message-max-width": "100%",
     "--chat-interface-max-width": "768px",
@@ -147,7 +147,7 @@
     "--chat-history-bottom-padding": "0",
     "--message-blocker-height": "105px",
     "--citations-text-font-weight": "700",
-    "--citations-desktop-button-font-size": "14px",
+    "--citations-desktop-button-font-size": "12px",
     "--feedback-icon-btn-background": "#FFFFFF",
     "--feedback-icon-btn-hover-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",

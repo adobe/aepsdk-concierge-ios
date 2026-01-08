@@ -29,15 +29,18 @@ struct ConciergeResponsePlaceholderView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 12) {
             Text(placeholderConfig.loadingText)
                 .foregroundColor(theme.colors.message.conciergeText.color)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-            Spacer(minLength: 8)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
 
             LoadingDotsView(dotColors: [placeholderConfig.primaryDotColor, lighterDotColor1, lighterDotColor2])
+                // Keep the dots in a stable trailing area, separate from the text wrapping.
+                .frame(width: 46, alignment: .trailing)
+                .layoutPriority(0)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

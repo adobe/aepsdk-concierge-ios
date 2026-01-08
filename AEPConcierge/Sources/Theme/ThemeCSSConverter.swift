@@ -222,7 +222,7 @@ public enum CSSValueConverter {
 extension CSSValueConverter {
     private static func isValidHexColor(_ cssValue: String) -> Bool {
         let trimmed = cssValue.hasPrefix("#") ? String(cssValue.dropFirst()) : cssValue
-        guard trimmed.count == 6 else {
+        guard trimmed.count == 6 || trimmed.count == 8 else {
             return false
         }
         

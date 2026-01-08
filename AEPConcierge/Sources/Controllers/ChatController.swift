@@ -229,7 +229,7 @@ final class ChatController: ObservableObject {
         guard !welcomeMessagesLoaded && messages.isEmpty else { return }
         welcomeMessagesLoaded = true
         
-        // Prefer theme-provided welcome content (server configuration) when available.
+        // Prefer welcome content provided by the theme when available.
         let title = theme.copy.welcomeHeading
         let body = theme.copy.welcomeSubheading
         let examples = theme.welcomeExamples

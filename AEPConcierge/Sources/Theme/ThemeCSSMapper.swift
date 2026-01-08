@@ -42,6 +42,10 @@ public enum CSSKeyMapper {
         "message-concierge-text": { cssValue, theme in theme.colors.message.conciergeText = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-link-color": { cssValue, theme in theme.colors.message.conciergeLink = CSSValueConverter.parseColor(cssValue) },
         
+        // Colors - Citations
+        "citations-background-color": { cssValue, theme in theme.colors.citation.background = CSSValueConverter.parseColor(cssValue) },
+        "citations-text-color": { cssValue, theme in theme.colors.citation.text = CSSValueConverter.parseColor(cssValue) },
+        
         // Colors - Button
         "button-primary-background": { cssValue, theme in theme.colors.button.primaryBackground = CSSValueConverter.parseColor(cssValue) },
         "button-primary-text": { cssValue, theme in theme.colors.button.primaryText = CSSValueConverter.parseColor(cssValue) },
