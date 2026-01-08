@@ -17,10 +17,9 @@ struct ConciergePressableButtonStyle: SwiftUI.ButtonStyle {
     let theme: ConciergeTheme
     let variant: ConciergeButtonVariant
     let isEnabled: Bool
-    let isHovered: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        let isActive = (configuration.isPressed || isHovered) && isEnabled
+        let isActive = configuration.isPressed && isEnabled
 
         return configuration.label
             .foregroundColor(foregroundColor(isActive: isActive))
@@ -39,7 +38,7 @@ struct ConciergePressableButtonStyle: SwiftUI.ButtonStyle {
         case .primary:
             return theme.colors.button.primaryText.color
         case .secondary:
-            return isActive ? theme.colors.button.secondaryHoverText.color : theme.colors.button.secondaryText.color
+            return theme.colors.button.secondaryText.color
         }
     }
 
@@ -49,9 +48,9 @@ struct ConciergePressableButtonStyle: SwiftUI.ButtonStyle {
             if !isEnabled {
                 return theme.colors.button.disabledBackground.color
             }
-            return isActive ? theme.colors.button.primaryHover.color : theme.colors.button.primaryBackground.color
+            return theme.colors.button.primaryBackground.color.opacity(isActive ? 0.92 : 1.0)
         case .secondary:
-            return isActive ? theme.colors.button.secondaryHover.color : Color.clear
+            return isActive ? theme.colors.button.secondaryBorder.color.opacity(0.12) : Color.clear
         }
     }
 
@@ -60,8 +59,7 @@ struct ConciergePressableButtonStyle: SwiftUI.ButtonStyle {
         case .primary:
             return Color.clear
         case .secondary:
-            // When active, match the filled state color to avoid a mismatched outline.
-            return isActive ? theme.colors.button.secondaryHover.color : theme.colors.button.secondaryBorder.color
+            return theme.colors.button.secondaryBorder.color
         }
     }
 

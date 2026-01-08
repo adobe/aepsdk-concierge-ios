@@ -23,8 +23,6 @@ struct FeedbackIconButton<Label: View>: View {
     let action: () -> Void
     @ViewBuilder let label: () -> Label
 
-    @State private var isPointerHovering: Bool = false
-
     var body: some View {
         Button(action: action) {
             label()
@@ -35,13 +33,9 @@ struct FeedbackIconButton<Label: View>: View {
             FeedbackIconButtonStyle(
                 foregroundColor: foregroundColor,
                 normalBackgroundColor: normalBackgroundColor,
-                activeBackgroundColor: activeBackgroundColor,
-                isHovered: isPointerHovering
+                activeBackgroundColor: activeBackgroundColor
             )
         )
-        .onHover { isHovering in
-            isPointerHovering = isHovering
-        }
         .accessibilityLabel(accessibilityLabel ?? "Feedback")
         .disabled(isDisabled)
     }
@@ -51,10 +45,9 @@ private struct FeedbackIconButtonStyle: SwiftUI.ButtonStyle {
     let foregroundColor: Color
     let normalBackgroundColor: Color
     let activeBackgroundColor: Color
-    let isHovered: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        let isActive = configuration.isPressed || isHovered
+        let isActive = configuration.isPressed
         return configuration.label
             .foregroundStyle(foregroundColor)
             .background(

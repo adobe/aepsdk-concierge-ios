@@ -148,7 +148,7 @@ struct ChatMessageView: View {
                     }
                         .padding(theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
-                        .frame(maxWidth: theme.layout.messageMaxWidth, alignment: .leading)
+                        .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
                         .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
                         .background(
@@ -409,5 +409,15 @@ struct ChatMessageView: View {
                 Spacer()
             }
         }
+    }
+}
+
+private extension ChatMessageView {
+    var resolvedMessageMaxWidth: CGFloat? {
+        // Prefer explicit point widths only; percent-based values decode to 0.0-1.0 and are not meaningful as points.
+        if let behaviorWidth = theme.behavior.chat.messageWidth, behaviorWidth > 1 {
+            return behaviorWidth
+        }
+        return theme.layout.messageMaxWidth
     }
 }

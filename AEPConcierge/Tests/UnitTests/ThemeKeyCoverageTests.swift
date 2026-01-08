@@ -138,15 +138,11 @@ private extension ThemeKeyCoverageTests {
         // Colors - Button
         "button-primary-background": "colors.button.primaryBackground",
         "button-primary-text": "colors.button.primaryText",
-        "button-primary-hover": "colors.button.primaryHover",
         "button-secondary-border": "colors.button.secondaryBorder",
         "button-secondary-text": "colors.button.secondaryText",
-        "button-secondary-hover": "colors.button.secondaryHover",
-        "color-button-secondary-hover-text": "colors.button.secondaryHoverText",
         "submit-button-fill-color": "colors.button.submitFill",
         "submit-button-fill-color-disabled": "colors.button.submitFillDisabled",
         "color-button-submit": "colors.button.submitText",
-        "color-button-submit-hover": "colors.button.submitTextHover",
         "button-disabled-background": "colors.button.disabledBackground",
 
         // Colors - Input
@@ -157,7 +153,6 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Feedback
         "feedback-icon-btn-background": "colors.feedback.iconButtonBackground",
-        "feedback-icon-btn-hover-background": "colors.feedback.iconButtonHoverBackground",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",

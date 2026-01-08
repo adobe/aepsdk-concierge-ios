@@ -63,43 +63,31 @@ public struct ConciergeMessageColors: Codable {
 public struct ConciergeButtonColors: Codable {
     public var primaryBackground: CodableColor
     public var primaryText: CodableColor
-    public var primaryHover: CodableColor
     public var secondaryBorder: CodableColor
     public var secondaryText: CodableColor
-    public var secondaryHover: CodableColor
-    public var secondaryHoverText: CodableColor
     public var submitFill: CodableColor
     public var submitFillDisabled: CodableColor
     public var submitText: CodableColor
-    public var submitTextHover: CodableColor
     public var disabledBackground: CodableColor
     
     public init(
         primaryBackground: CodableColor = CodableColor(Color.accentColor),
         primaryText: CodableColor = CodableColor(Color.white),
-        primaryHover: CodableColor = CodableColor(Color.accentColor),
         secondaryBorder: CodableColor = CodableColor(Color.primary),
         secondaryText: CodableColor = CodableColor(Color.primary),
-        secondaryHover: CodableColor = CodableColor(Color.primary),
-        secondaryHoverText: CodableColor = CodableColor(Color.white),
         // Default composer submit control renders as an icon without a background.
         submitFill: CodableColor = CodableColor(Color.clear),
         submitFillDisabled: CodableColor = CodableColor(Color.clear),
         submitText: CodableColor = CodableColor(Color.accentColor),
-        submitTextHover: CodableColor = CodableColor(Color.accentColor),
         disabledBackground: CodableColor = CodableColor(Color.clear)
     ) {
         self.primaryBackground = primaryBackground
         self.primaryText = primaryText
-        self.primaryHover = primaryHover
         self.secondaryBorder = secondaryBorder
         self.secondaryText = secondaryText
-        self.secondaryHover = secondaryHover
-        self.secondaryHoverText = secondaryHoverText
         self.submitFill = submitFill
         self.submitFillDisabled = submitFillDisabled
         self.submitText = submitText
-        self.submitTextHover = submitTextHover
         self.disabledBackground = disabledBackground
     }
 }
@@ -141,15 +129,12 @@ public struct ConciergeCitationColors: Codable {
 /// Feedback color tokens
 public struct ConciergeFeedbackColors: Codable {
     public var iconButtonBackground: CodableColor
-    public var iconButtonHoverBackground: CodableColor
     
     public init(
         // Default feedback icons render without a background unless explicitly themed.
-        iconButtonBackground: CodableColor = CodableColor(Color.clear),
-        iconButtonHoverBackground: CodableColor = CodableColor(Color.clear)
+        iconButtonBackground: CodableColor = CodableColor(Color.clear)
     ) {
         self.iconButtonBackground = iconButtonBackground
-        self.iconButtonHoverBackground = iconButtonHoverBackground
     }
 }
 

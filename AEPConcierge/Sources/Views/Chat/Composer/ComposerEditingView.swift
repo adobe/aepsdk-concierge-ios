@@ -29,8 +29,6 @@ struct ComposerEditingView: View {
     let sendEnabled: Bool
     let onSend: () -> Void
     
-    @State private var isSendPointerHovering: Bool = false
-
     var body: some View {
         HStack {
             SelectableTextView(
@@ -44,6 +42,7 @@ struct ComposerEditingView: View {
                 font: resolvedInputFont,
                 textColor: UIColor(theme.components.inputBar.textColor.color),
                 placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
+                maxLines: theme.behavior.input.disableMultiline ? 1 : 4,
                 onEditingChanged: onEditingChanged
             )
             .frame(height: max(40, measuredHeight))
@@ -68,15 +67,11 @@ struct ComposerEditingView: View {
             .buttonStyle(
                 ComposerSendButtonStyle(
                     theme: theme,
-                    isEnabled: sendEnabled,
-                    isHovered: isSendPointerHovering
+                    isEnabled: sendEnabled
                 )
             )
             .contentShape(Rectangle())
             .accessibilityLabel(theme.text.inputSendAria)
-            .onHover { isHovering in
-                isSendPointerHovering = isHovering
-            }
             .disabled(!sendEnabled)
         }
     }

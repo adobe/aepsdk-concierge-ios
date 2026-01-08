@@ -16,11 +16,10 @@ import SwiftUI
 struct ConciergeActionButtonStyle: SwiftUI.ButtonStyle {
     let theme: ConciergeTheme
     let variant: ConciergeButtonVariant
-    let isHovered: Bool
     var cornerRadius: CGFloat = 10
 
     func makeBody(configuration: Configuration) -> some View {
-        let isActive = configuration.isPressed || isHovered
+        let isPressed = configuration.isPressed
 
         let foregroundColor: Color
         let backgroundColor: Color
@@ -30,13 +29,13 @@ struct ConciergeActionButtonStyle: SwiftUI.ButtonStyle {
         switch variant {
         case .primary:
             foregroundColor = theme.colors.button.primaryText.color
-            backgroundColor = isActive ? theme.colors.button.primaryHover.color : theme.colors.button.primaryBackground.color
+            backgroundColor = theme.colors.button.primaryBackground.color
             borderColor = .clear
             borderWidth = 0
         case .secondary:
-            foregroundColor = isActive ? theme.colors.button.secondaryHoverText.color : theme.colors.button.secondaryText.color
-            backgroundColor = isActive ? theme.colors.button.secondaryHover.color : .clear
-            borderColor = isActive ? theme.colors.button.secondaryHover.color : theme.colors.button.secondaryBorder.color
+            foregroundColor = theme.colors.button.secondaryText.color
+            backgroundColor = .clear
+            borderColor = theme.colors.button.secondaryBorder.color
             borderWidth = 1
         }
 
@@ -50,7 +49,7 @@ struct ConciergeActionButtonStyle: SwiftUI.ButtonStyle {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(borderColor, lineWidth: borderWidth)
             )
-            .opacity(isActive ? 0.96 : 1.0)
+            .opacity(isPressed ? 0.96 : 1.0)
     }
 }
 

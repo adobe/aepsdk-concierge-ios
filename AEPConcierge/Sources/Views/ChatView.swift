@@ -189,7 +189,7 @@ public struct ChatView: View {
                 inputState: inputController.state,
                 chatState: controller.chatState,
                 composerEditable: controller.chatState != .processing,
-                micEnabled: controller.micEnabled,
+                micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
                 sendEnabled: inputController.data.canSend,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,

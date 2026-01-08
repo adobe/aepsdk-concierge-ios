@@ -21,8 +21,6 @@ struct ButtonView: View {
     let variant: ConciergeButtonVariant
     let action: () -> Void
     
-    @State private var isPointerHovering: Bool = false
-    
     init(text: String, variant: ConciergeButtonVariant = .primary, action: @escaping () -> Void) {
         self.text = text
         self.variant = variant
@@ -42,13 +40,9 @@ struct ButtonView: View {
             ConciergePressableButtonStyle(
                 theme: theme,
                 variant: variant,
-                isEnabled: isEnabled,
-                isHovered: isPointerHovering
+                isEnabled: isEnabled
             )
         )
-        .onHover { isHovering in
-            isPointerHovering = isHovering
-        }
     }
 }
 
