@@ -33,7 +33,7 @@
     ]
   },
   "text": {
-    "welcome.heading": "Welcome to [Name] concierge!",
+    "welcome.heading": "Welcome to Brand Concierge!",
     "welcome.subheading": "I'm your personal guide to help you explore and find exactly what you need. Let's get started!\n\nNot sure where to start? Explore the suggested ideas below.",
     "input.placeholder": "How can I help?",
     "input.messageInput.aria": "Message input",

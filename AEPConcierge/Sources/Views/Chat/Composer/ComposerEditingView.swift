@@ -40,6 +40,7 @@ struct ComposerEditingView: View {
                 isFocused: $isFocused,
                 isEditable: isEditable,
                 placeholder: theme.text.inputPlaceholder,
+                accessibilityLabel: theme.text.inputMessageInputAria,
                 font: resolvedInputFont,
                 textColor: UIColor(theme.components.inputBar.textColor.color),
                 placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
@@ -56,6 +57,7 @@ struct ComposerEditingView: View {
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
+                .accessibilityLabel(theme.text.inputMicAria)
                 .disabled(!micEnabled)
             }
 
@@ -71,6 +73,7 @@ struct ComposerEditingView: View {
                 )
             )
             .contentShape(Rectangle())
+            .accessibilityLabel(theme.text.inputSendAria)
             .onHover { isHovering in
                 isSendPointerHovering = isHovering
             }

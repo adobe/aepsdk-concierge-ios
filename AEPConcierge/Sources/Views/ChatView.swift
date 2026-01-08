@@ -150,6 +150,12 @@ public struct ChatView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .conciergePlaceholderConfig(
+            ConciergeResponsePlaceholderConfig(
+                loadingText: theme.text.loadingMessage,
+                primaryDotColor: theme.colors.primary.primary.color
+            )
+        )
         // Safe area respecting top bar
         .safeAreaInset(edge: .top) {
             ChatTopBar(
@@ -223,6 +229,21 @@ public struct ChatView: View {
                 )
                 .transition(.opacity)
                 .zIndex(1000)
+            }
+        }
+        .overlay(alignment: .top) {
+            if controller.chatState == .error(.networkFailure) {
+                Text(theme.text.errorNetwork)
+                    .font(.subheadline)
+                    .foregroundStyle(theme.colors.message.conciergeText.color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(theme.colors.message.conciergeBackground.color.opacity(0.96))
+                    )
+                    .padding(.top, 12)
+                    .padding(.horizontal, 16)
             }
         }
         .overlay(alignment: .center) {

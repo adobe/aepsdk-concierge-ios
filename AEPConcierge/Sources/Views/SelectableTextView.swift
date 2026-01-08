@@ -21,6 +21,7 @@ struct SelectableTextView: UIViewRepresentable {
     @Binding var isFocused: Bool
     var isEditable: Bool
     var placeholder: String
+    var accessibilityLabel: String? = nil
     var font: UIFont? = nil
     var textColor: UIColor? = nil
     var placeholderTextColor: UIColor? = nil
@@ -41,6 +42,7 @@ struct SelectableTextView: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textView.accessibilityTraits.insert(.allowsDirectInteraction)
+        textView.accessibilityLabel = accessibilityLabel ?? placeholder
 
         // Placeholder label
         let placeholderLabel = UILabel()
@@ -61,6 +63,11 @@ struct SelectableTextView: UIViewRepresentable {
     func updateUIView(_ uiView: UITextView, context: Context) {
         if uiView.text != text {
             uiView.text = text
+        }
+
+        let resolvedAccessibilityLabel = accessibilityLabel ?? placeholder
+        if uiView.accessibilityLabel != resolvedAccessibilityLabel {
+            uiView.accessibilityLabel = resolvedAccessibilityLabel
         }
 
         let resolvedFont = font ?? UIFont.preferredFont(forTextStyle: .body)
