@@ -71,8 +71,15 @@ struct ChatComposer: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: theme.layout.inputHeight)
                 .background(theme.components.inputBar.background.color)
                 .cornerRadius(theme.layout.inputBorderRadius)
+                .shadow(
+                    color: theme.layout.inputBoxShadow.isEnabled ? theme.layout.inputBoxShadow.color.color : .clear,
+                    radius: theme.layout.inputBoxShadow.blurRadius,
+                    x: theme.layout.inputBoxShadow.offsetX,
+                    y: theme.layout.inputBoxShadow.offsetY
+                )
                 .overlay(
                     ZStack {
                         // Base border

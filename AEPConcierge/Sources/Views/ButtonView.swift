@@ -15,14 +15,17 @@ import SwiftUI
 /// Reusable button component with primary and secondary styling options
 struct ButtonView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.isEnabled) private var isEnabled
     
     let text: String
-    let style: ButtonStyle
+    let variant: ConciergeButtonVariant
     let action: () -> Void
     
-    init(text: String, style: ButtonStyle = .primary, action: @escaping () -> Void) {
+    @State private var isPointerHovering: Bool = false
+    
+    init(text: String, variant: ConciergeButtonVariant = .primary, action: @escaping () -> Void) {
         self.text = text
-        self.style = style
+        self.variant = variant
         self.action = action
     }
     
@@ -31,70 +34,31 @@ struct ButtonView: View {
             Text(text)
                 .font(.system(.subheadline, design: .rounded))
                 .fontWeight(.medium)
-                .foregroundColor(textColor)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(backgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(borderColor, lineWidth: borderWidth)
-                )
-                .cornerRadius(20)
+                .frame(minHeight: theme.layout.buttonHeightSmall)
         }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var textColor: Color {
-        switch style {
-        case .primary:
-            return theme.colors.button.primaryText.color
-        case .secondary:
-            return theme.colors.button.secondaryText.color
-        }
-    }
-    
-    private var backgroundColor: Color {
-        switch style {
-        case .primary:
-            return theme.colors.button.primaryBackground.color
-        case .secondary:
-            return Color.clear
-        }
-    }
-    
-    private var borderColor: Color {
-        switch style {
-        case .primary:
-            return Color.clear
-        case .secondary:
-            return theme.colors.button.secondaryBorder.color
-        }
-    }
-    
-    private var borderWidth: CGFloat {
-        switch style {
-        case .primary:
-            return 0
-        case .secondary:
-            return 1
+        .buttonStyle(
+            ConciergePressableButtonStyle(
+                theme: theme,
+                variant: variant,
+                isEnabled: isEnabled,
+                isHovered: isPointerHovering
+            )
+        )
+        .onHover { isHovering in
+            isPointerHovering = isHovering
         }
     }
 }
-
-public enum ButtonStyle {
-    case primary
-    case secondary
-}
-
-
 
 #Preview {
     VStack(spacing: 16) {
-        ButtonView(text: "Primary Button", style: .primary) {
+        ButtonView(text: "Primary Button", variant: .primary) {
             print("Primary button tapped")
         }
         
-        ButtonView(text: "Secondary Button", style: .secondary) {
+        ButtonView(text: "Secondary Button", variant: .secondary) {
             print("Secondary button tapped")
         }
     }

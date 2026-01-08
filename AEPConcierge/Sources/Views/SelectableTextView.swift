@@ -21,6 +21,9 @@ struct SelectableTextView: UIViewRepresentable {
     @Binding var isFocused: Bool
     var isEditable: Bool
     var placeholder: String
+    var font: UIFont? = nil
+    var textColor: UIColor? = nil
+    var placeholderTextColor: UIColor? = nil
     var minLines: Int = 1
     var maxLines: Int = 4
     var onEditingChanged: ((Bool) -> Void)?
@@ -28,8 +31,8 @@ struct SelectableTextView: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.backgroundColor = .clear
-        textView.font = UIFont.preferredFont(forTextStyle: .body)
-        textView.textColor = .label
+        textView.font = font ?? UIFont.preferredFont(forTextStyle: .body)
+        textView.textColor = textColor ?? .label
         textView.isScrollEnabled = false
         textView.showsVerticalScrollIndicator = true
         textView.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
@@ -42,7 +45,7 @@ struct SelectableTextView: UIViewRepresentable {
         // Placeholder label
         let placeholderLabel = UILabel()
         placeholderLabel.text = placeholder
-        placeholderLabel.textColor = .secondaryLabel
+        placeholderLabel.textColor = placeholderTextColor ?? .secondaryLabel
         placeholderLabel.numberOfLines = 1
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
         textView.addSubview(placeholderLabel)
@@ -58,6 +61,26 @@ struct SelectableTextView: UIViewRepresentable {
     func updateUIView(_ uiView: UITextView, context: Context) {
         if uiView.text != text {
             uiView.text = text
+        }
+
+        let resolvedFont = font ?? UIFont.preferredFont(forTextStyle: .body)
+        if uiView.font != resolvedFont {
+            uiView.font = resolvedFont
+        }
+
+        let resolvedTextColor = textColor ?? UIColor.label
+        if uiView.textColor != resolvedTextColor {
+            uiView.textColor = resolvedTextColor
+        }
+
+        if let placeholderLabel = context.coordinator.placeholderLabel {
+            if placeholderLabel.text != placeholder {
+                placeholderLabel.text = placeholder
+            }
+            let resolvedPlaceholderTextColor = placeholderTextColor ?? UIColor.secondaryLabel
+            if placeholderLabel.textColor != resolvedPlaceholderTextColor {
+                placeholderLabel.textColor = resolvedPlaceholderTextColor
+            }
         }
         // Defer editable state changes and only apply the value when it differs from the last value to avoid
         // first responder recalculation during the same layout pass (which can cause AttributeGraph cycles)

@@ -82,11 +82,12 @@ public struct ConciergeButtonColors: Codable {
         secondaryText: CodableColor = CodableColor(Color.primary),
         secondaryHover: CodableColor = CodableColor(Color.primary),
         secondaryHoverText: CodableColor = CodableColor(Color.white),
-        submitFill: CodableColor = CodableColor(Color.white),
-        submitFillDisabled: CodableColor = CodableColor(Color(UIColor.systemGray3)),
-        submitText: CodableColor = CodableColor(Color.primary),
-        submitTextHover: CodableColor = CodableColor(Color.primary),
-        disabledBackground: CodableColor = CodableColor(Color.white)
+        // Default composer submit control renders as an icon without a background.
+        submitFill: CodableColor = CodableColor(Color.clear),
+        submitFillDisabled: CodableColor = CodableColor(Color.clear),
+        submitText: CodableColor = CodableColor(Color.accentColor),
+        submitTextHover: CodableColor = CodableColor(Color.accentColor),
+        disabledBackground: CodableColor = CodableColor(Color.clear)
     ) {
         self.primaryBackground = primaryBackground
         self.primaryText = primaryText
@@ -143,8 +144,9 @@ public struct ConciergeFeedbackColors: Codable {
     public var iconButtonHoverBackground: CodableColor
     
     public init(
-        iconButtonBackground: CodableColor = CodableColor(Color.white),
-        iconButtonHoverBackground: CodableColor = CodableColor(Color.white)
+        // Default feedback icons render without a background unless explicitly themed.
+        iconButtonBackground: CodableColor = CodableColor(Color.clear),
+        iconButtonHoverBackground: CodableColor = CodableColor(Color.clear)
     ) {
         self.iconButtonBackground = iconButtonBackground
         self.iconButtonHoverBackground = iconButtonHoverBackground

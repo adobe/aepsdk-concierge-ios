@@ -91,7 +91,7 @@ final class ThemeLoaderTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.components.welcome.inputOrder, 3)
         XCTAssertEqual(theme.components.welcome.cardsOrder, 2)
-        XCTAssertEqual(theme.components.feedback.iconButtonSizeDesktop, 32)
+        XCTAssertEqual(theme.layout.feedbackIconButtonSize, 44)
     }
     
     func test_default_hasDefaultBehavior() {

@@ -87,7 +87,7 @@ struct ChatMessageView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .background(resolvedBackground)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
             }
             .buttonStyle(PlainButtonStyle())
 
@@ -219,7 +219,7 @@ struct ChatMessageView: View {
                     .padding(.vertical, 10)
                 }
                 .background(Color.PrimaryLight)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
                 
                 Spacer()
             }
@@ -259,7 +259,7 @@ struct ChatMessageView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(Color.PrimaryLight)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
                 
                 Spacer()
             }
@@ -299,8 +299,13 @@ struct ChatMessageView: View {
                         .padding(12)
                 }
             }
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .cornerRadius(theme.layout.borderRadiusCard)
+            .shadow(
+                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+                x: theme.layout.multimodalCardBoxShadow.offsetX,
+                y: theme.layout.multimodalCardBoxShadow.offsetY
+            )
             .frame(width: 280, height: 200)
             .buttonStyle(PlainButtonStyle())
             
@@ -336,7 +341,7 @@ struct ChatMessageView: View {
                             if let primaryButton = primaryButton {
                                 ButtonView(
                                     text: primaryButton.text,
-                                    style: .primary,
+                                    variant: .primary,
                                     action: {
                                         if let url = URL(string: primaryButton.url) {
                                             openURL(url)
@@ -348,7 +353,7 @@ struct ChatMessageView: View {
                             if let secondaryButton = secondaryButton {
                                 ButtonView(
                                     text: secondaryButton.text,
-                                    style: .secondary,
+                                    variant: .secondary,
                                     action: {
                                         if let url = URL(string: secondaryButton.url) {
                                             openURL(url)
@@ -366,7 +371,13 @@ struct ChatMessageView: View {
                 .frame(width: 350, alignment: .leading)
             }
             .background(Color.PrimaryLight)
-            .cornerRadius(10)
+            .cornerRadius(theme.layout.borderRadiusCard)
+            .shadow(
+                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+                x: theme.layout.multimodalCardBoxShadow.offsetX,
+                y: theme.layout.multimodalCardBoxShadow.offsetY
+            )
             .frame(width: 350)
             
         case .carouselGroup(let items):

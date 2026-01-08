@@ -120,7 +120,7 @@ public struct ConciergeFeedbackStyle: Codable {
     public init(
         iconButtonBackground: CodableColor = CodableColor(Color.white),
         iconButtonHoverBackground: CodableColor = CodableColor(Color.white),
-        iconButtonSizeDesktop: CGFloat = 32,
+        iconButtonSizeDesktop: CGFloat = 44,
         containerGap: CGFloat = 4,
         positiveNotesEnabled: Bool = true,
         negativeNotesEnabled: Bool = true
