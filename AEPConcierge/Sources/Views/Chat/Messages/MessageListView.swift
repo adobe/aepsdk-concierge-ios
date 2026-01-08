@@ -26,54 +26,33 @@ struct MessageListView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollViewReader { proxy in
-                ZStack(alignment: .bottomTrailing) {
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            ForEach(messages) { message in
-                                ChatMessageView(
-                                    messageId: message.id,
-                                    template: message.template,
-                                    messageBody: message.messageBody,
-                                    sources: message.sources,
-                                    promptSuggestions: message.promptSuggestions,
-                                    feedbackSentiment: message.feedbackSentiment,
-                                    onSuggestionTap: onSuggestionTap
-                                )
-                                    .id(message.id)
-                                    .onAppear {
-                                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
-                                            onSpeak(messageBody)
-                                        }
-                                    }
-                            }
-                            
-                            // Add spacer to ensure scroll view has enough height to position user message at top
-                            Spacer()
-                                .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
-                        .padding(.bottom, theme.layout.chatHistoryBottomPadding)
-                    }
-                    
-                    Button(action: {
-                        guard let lastId = messages.last?.id else { return }
-                        withAnimation {
-                            proxy.scrollTo(lastId, anchor: .bottom)
-                        }
-                    }) {
-                        Image(systemName: "arrow.down")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(theme.colors.message.conciergeText.color)
-                            .padding(10)
-                            .background(
-                                Circle().fill(theme.colors.message.conciergeBackground.color.opacity(0.9))
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(messages) { message in
+                            ChatMessageView(
+                                messageId: message.id,
+                                template: message.template,
+                                messageBody: message.messageBody,
+                                sources: message.sources,
+                                promptSuggestions: message.promptSuggestions,
+                                feedbackSentiment: message.feedbackSentiment,
+                                onSuggestionTap: onSuggestionTap
                             )
+                                .id(message.id)
+                                .onAppear {
+                                    if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
+                                        onSpeak(messageBody)
+                                    }
+                                }
+                        }
+                        
+                        // Add spacer to ensure scroll view has enough height to position user message at top
+                        Spacer()
+                            .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
                     }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 12)
-                    .padding(.bottom, 12)
-                    .accessibilityLabel(theme.text.scrollBottomAria)
+                    .padding(.horizontal)
+                    .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
+                    .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
                 // Scroll user message to top when sent, allowing agent response to fill screen below
                 .onChange(of: userScrollTick) { _ in
