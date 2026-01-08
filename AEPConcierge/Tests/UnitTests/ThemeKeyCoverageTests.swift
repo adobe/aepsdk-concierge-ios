@@ -207,8 +207,8 @@ private extension ThemeKeyCoverageTests {
         "welcome-input-order": "layout.welcomeInputOrder",
         "welcome-cards-order": "layout.welcomeCardsOrder",
 
-        // Components - Feedback
-        "feedback-icon-btn-size-desktop": "components.feedback.iconButtonSizeDesktop",
+        // Layout - Feedback
+        "feedback-icon-btn-size-desktop": "layout.feedbackIconButtonSize",
 
         // Components - Top Bar
     ]
@@ -282,28 +282,9 @@ private extension ThemeKeyCoverageTests {
             return true
         }
 
-        // Components: most component style properties are not currently driven by CSS variables on iOS.
-        // (Top bar colors and feedback icon button size are the exceptions and are covered by the mapper.)
-        let allowlistedComponentPrefixes: [String] = [
-            "components.welcome.",
-            "components.inputBar.",
-            "components.chatMessage.",
-            "components.carousel.",
-            "components.disclaimer.",
-        ]
-        if allowlistedComponentPrefixes.contains(where: { path.hasPrefix($0) }) {
-            return true
-        }
-
-        // Feedback component properties aside from iconButtonSizeDesktop are not driven directly by CSS variables.
-        let allowlistedFeedbackProperties: Set<String> = [
-            "components.feedback.iconButtonBackground",
-            "components.feedback.iconButtonHoverBackground",
-            "components.feedback.containerGap",
-            "components.feedback.positiveNotesEnabled",
-            "components.feedback.negativeNotesEnabled",
-        ]
-        if allowlistedFeedbackProperties.contains(path) {
+        // Components are derived from canonical tokens on iOS. We intentionally do not require CSS coverage
+        // for component style fields because they are not the source of truth.
+        if path.hasPrefix("components.") {
             return true
         }
 

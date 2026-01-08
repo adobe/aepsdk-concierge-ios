@@ -70,8 +70,8 @@ public struct ConciergeTheme: Codable {
     }
     
     public var components: ConciergeComponentStyles {
-        get { theme.components }
-        set { theme.components = newValue }
+        // Derived convenience property. Canonical sources are typography/colors/layout/behavior.
+        derivedComponents
     }
     
     public var copy: ConciergeCopy {
@@ -175,5 +175,62 @@ public struct ConciergeTheme: Codable {
         try container.encode(text, forKey: .text)
         try container.encode(arrays, forKey: .arrays)
         try container.encode(theme, forKey: .theme)
+    }
+}
+
+// MARK: - Derived component styles
+
+private extension ConciergeTheme {
+    /// Derived per-component styles from canonical theme tokens.
+    ///
+    /// Canonical sources:
+    /// - typography/colors/layout/behavior
+    var derivedComponents: ConciergeComponentStyles {
+        var resolved = ConciergeComponentStyles()
+
+        // MARK: Input bar
+        resolved.inputBar.background = colors.input.background
+        resolved.inputBar.textColor = colors.input.text
+        resolved.inputBar.placeholderColor = CodableColor(colors.input.text.color.opacity(0.6))
+        resolved.inputBar.border = ConciergeBorderStyle(
+            width: layout.inputOutlineWidth,
+            radius: layout.inputBorderRadius,
+            color: colors.input.outline ?? CodableColor(.clear)
+        )
+        resolved.inputBar.voiceEnabled = behavior.input.enableVoiceInput
+        resolved.inputBar.icon = behavior.input.showAiChatIcon
+
+        // MARK: Disclaimer
+        resolved.disclaimer.textColor = colors.disclaimer
+        resolved.disclaimer.fontSize = layout.disclaimerFontSize
+        resolved.disclaimer.fontWeight = layout.disclaimerFontWeight
+
+        // MARK: Feedback
+        resolved.feedback.iconButtonSizeDesktop = layout.feedbackIconButtonSize
+        resolved.feedback.containerGap = layout.feedbackContainerGap
+        resolved.feedback.iconButtonBackground = colors.feedback.iconButtonBackground
+        resolved.feedback.iconButtonHoverBackground = colors.feedback.iconButtonHoverBackground
+        // Note: notes toggles are currently modeled as component style booleans and default to enabled.
+
+        // MARK: Carousel
+        resolved.carousel.cardBorderRadius = layout.borderRadiusCard
+        resolved.carousel.cardBoxShadow = layout.multimodalCardBoxShadow
+        resolved.carousel.cardClickAction = behavior.multimodalCarousel.cardClickAction
+
+        // MARK: Welcome
+        resolved.welcome.inputOrder = layout.welcomeInputOrder
+        resolved.welcome.cardsOrder = layout.welcomeCardsOrder
+
+        // MARK: Chat message
+        resolved.chatMessage.userBackground = colors.message.userBackground
+        resolved.chatMessage.userText = colors.message.userText
+        resolved.chatMessage.conciergeBackground = colors.message.conciergeBackground
+        resolved.chatMessage.conciergeText = colors.message.conciergeText
+        resolved.chatMessage.linkColor = colors.message.conciergeLink
+        resolved.chatMessage.borderRadius = layout.messageBorderRadius
+        resolved.chatMessage.padding = layout.messagePadding
+        resolved.chatMessage.maxWidth = layout.messageMaxWidth
+
+        return resolved
     }
 }

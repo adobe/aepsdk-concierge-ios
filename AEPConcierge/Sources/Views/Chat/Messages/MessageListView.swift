@@ -14,6 +14,8 @@ import SwiftUI
 
 /// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
+    @Environment(\.conciergeTheme) private var theme
+
     let messages: [Message]
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
@@ -46,11 +48,11 @@ struct MessageListView: View {
                         
                         // Add spacer to ensure scroll view has enough height to position user message at top
                         Spacer()
-                            .frame(height: max(0, geometry.size.height - 100))
+                            .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
                     }
                     .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
+                    .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
                 // Scroll user message to top when sent, allowing agent response to fill screen below
             .onChange(of: userScrollTick) { _ in

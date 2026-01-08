@@ -42,6 +42,9 @@ struct FeedbackOverlayView: View {
     @Environment(\.conciergeTheme) private var theme
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
+    
+    @State private var isCancelPointerHovering: Bool = false
+    @State private var isSubmitPointerHovering: Bool = false
 
     var body: some View {
         ZStack {
@@ -113,14 +116,15 @@ struct FeedbackOverlayView: View {
                     Button(action: onCancel) {
                         Text(theme.text.feedbackDialogCancel)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.colors.button.secondaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(theme.colors.button.secondaryBorder.color, lineWidth: 1)
+                    .buttonStyle(
+                        ConciergeActionButtonStyle(theme: theme, variant: .secondary, isHovered: isCancelPointerHovering)
                     )
+                    .onHover { isHovering in
+                        isCancelPointerHovering = isHovering
+                    }
 
                     Button(action: {
                         let payload = FeedbackPayload(
@@ -134,14 +138,15 @@ struct FeedbackOverlayView: View {
                     }) {
                         Text(theme.text.feedbackDialogSubmit)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.colors.button.primaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(theme.colors.button.primaryBackground.color)
+                    .buttonStyle(
+                        ConciergeActionButtonStyle(theme: theme, variant: .primary, isHovered: isSubmitPointerHovering)
                     )
+                    .onHover { isHovering in
+                        isSubmitPointerHovering = isHovering
+                    }
                 }
                 .padding(20)
             }

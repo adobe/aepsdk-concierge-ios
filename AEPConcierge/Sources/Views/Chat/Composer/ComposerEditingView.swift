@@ -11,9 +11,12 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// Text entry row with editable field plus mic and send controls.
 struct ComposerEditingView: View {
+    @Environment(\.conciergeTheme) private var theme
+
     @Binding var inputText: String
     @Binding var selectedRange: NSRange
     @Binding var measuredHeight: CGFloat
@@ -25,6 +28,8 @@ struct ComposerEditingView: View {
     let micEnabled: Bool
     let sendEnabled: Bool
     let onSend: () -> Void
+    
+    @State private var isSendPointerHovering: Bool = false
 
     var body: some View {
         HStack {
@@ -34,7 +39,10 @@ struct ComposerEditingView: View {
                 measuredHeight: $measuredHeight,
                 isFocused: $isFocused,
                 isEditable: isEditable,
-                placeholder: "How can I help?",
+                placeholder: theme.text.inputPlaceholder,
+                font: resolvedInputFont,
+                textColor: UIColor(theme.components.inputBar.textColor.color),
+                placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
                 onEditingChanged: onEditingChanged
             )
             .frame(height: max(40, measuredHeight))
@@ -43,8 +51,8 @@ struct ComposerEditingView: View {
             if showMic {
                 Button(action: onMicTap) {
                     BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
-                        .foregroundColor(micEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
-                        .frame(width: 30, height: 30, alignment: .center)
+                        .foregroundColor(micEnabled ? theme.colors.primary.primary.color : Color.secondary.opacity(0.5))
+                        .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
@@ -54,13 +62,33 @@ struct ComposerEditingView: View {
             Button(action: onSend) {
                 BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(sendEnabled ? Color.Secondary : Color.secondary.opacity(0.5))
-                    .frame(width: 30, height: 30, alignment: .center)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(
+                ComposerSendButtonStyle(
+                    theme: theme,
+                    isEnabled: sendEnabled,
+                    isHovered: isSendPointerHovering
+                )
+            )
             .contentShape(Rectangle())
+            .onHover { isHovering in
+                isSendPointerHovering = isHovering
+            }
             .disabled(!sendEnabled)
         }
+    }
+}
+
+private extension ComposerEditingView {
+    var resolvedInputFont: UIFont {
+        let fontSize = theme.layout.inputFontSize
+        if theme.typography.fontFamily.isEmpty {
+            return UIFont.systemFont(ofSize: fontSize, weight: theme.typography.fontWeight.toUIFontWeight())
+        }
+
+        // If the font is not available at runtime, fall back to the system font.
+        return UIFont(name: theme.typography.fontFamily, size: fontSize)
+            ?? UIFont.systemFont(ofSize: fontSize, weight: theme.typography.fontWeight.toUIFontWeight())
     }
 }
 

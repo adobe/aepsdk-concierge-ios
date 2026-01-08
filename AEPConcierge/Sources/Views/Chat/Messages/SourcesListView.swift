@@ -114,28 +114,36 @@ public struct SourcesListView: View {
                     .foregroundStyle(theme.colors.message.conciergeText.color)
                 Spacer()
                 // Feedback buttons
-                HStack(spacing: 4) {
-                    Button(action: {
+                HStack(spacing: theme.layout.feedbackContainerGap) {
+                    let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
+                    
+                    FeedbackIconButton(
+                        iconButtonSize: iconButtonSize,
+                        foregroundColor: thumbUpColor,
+                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                        activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
+                        isDisabled: feedbackSentiment != nil,
+                        action: {
                         feedbackPresenter.present(.positive, messageId)
-                    }) {
-                        thumbUpImage
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(thumbUpColor)
-                    .disabled(feedbackSentiment != nil)
-
-                    Button(action: {
+                        },
+                        label: {
+                            thumbUpImage
+                        }
+                    )
+                    
+                    FeedbackIconButton(
+                        iconButtonSize: iconButtonSize,
+                        foregroundColor: thumbDownColor,
+                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                        activeBackgroundColor: theme.colors.feedback.iconButtonHoverBackground.color,
+                        isDisabled: feedbackSentiment != nil,
+                        action: {
                         feedbackPresenter.present(.negative, messageId)
-                    }) {
-                        thumbDownImage
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(thumbDownColor)
-                    .disabled(feedbackSentiment != nil)
+                        },
+                        label: {
+                            thumbDownImage
+                        }
+                    )
                 }
             }
             .contentShape(Rectangle())
