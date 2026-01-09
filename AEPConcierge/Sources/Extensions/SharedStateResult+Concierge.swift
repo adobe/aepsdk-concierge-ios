@@ -46,4 +46,15 @@ extension SharedStateResult {
     var conciergeSurfaces: [String]? {
         value?[ConciergeConstants.SharedState.Configuration.Concierge.SURFACES] as? [String]
     }
+    
+    /// Value for collect out of consents shared state
+    var collectValue: String {
+        guard let consents = value?[ConciergeConstants.SharedState.Consent.CONSENTS] as? [String: Any],
+              let collect = consents[ConciergeConstants.SharedState.Consent.COLLECT] as? [String: Any],
+              let val = collect[ConciergeConstants.SharedState.Consent.VAL] as? String else {
+            return ConciergeConstants.Defaults.CONSENT_VALUE
+        }
+        
+        return val
+    }
 }
