@@ -14,6 +14,7 @@ import AEPCore
 import AEPConcierge
 import AEPEdge
 import AEPEdgeIdentity
+import AEPEdgeConsent
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -23,6 +24,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let extensions = [
             AEPEdgeIdentity.Identity.self,
             Edge.self,
+            Consent.self,
             Concierge.self
         ]
         

@@ -52,6 +52,11 @@ public class Concierge: NSObject, Extension {
         registerListener(type: ConciergeConstants.EventType.concierge,
                          source: EventSource.requestContent,
                          listener: handleRequestContentEvent)
+        
+        // Register listener for consent changes
+        registerListener(type: EventType.edgeConsent,
+                         source: EventSource.responseContent,
+                         listener: handleConsentChange)
     }
 
     public func onUnregistered() {
@@ -82,6 +87,10 @@ public class Concierge: NSObject, Extension {
         }
     }
     
+    private func handleConsentChange(_ event: Event) {
+        print(event)
+    }
+    
     private func handleShowChatUIRequestEvent(_ event: Event) {
         Log.trace(label: ConciergeConstants.LOG_TAG, "Received show chat UI event - '\(event.id.uuidString)'.")
 
@@ -94,12 +103,15 @@ public class Concierge: NSObject, Extension {
                 dispatch(event: createEmptyResponseEvent(for: event))
             }
         }
-                
+        
         guard let configSharedState = getConfiguration(for: event) else {
             errorMessage = "Unable to show Brand Concierge UI - Configuration shared state is not available."
             return
         }
         
+        let consentSharedState = getConsentSharedState(for: event)
+        let consentValue = consentSharedState != nil ? consentSharedState?.collectValue : ConciergeConstants.Defaults.CONSENT_VALUE
+                
         guard let edgeIdentitySharedState = getEdgeIdentitySharedState(for: event) else {
             errorMessage = "Unable to show Brand Concierge UI - EdgeIdentity shared state is not available."
             return
@@ -125,7 +137,7 @@ public class Concierge: NSObject, Extension {
             return
         }
         
-        let config = ConciergeConfiguration(server: server, datastream: datastream, ecid: ecid, surfaces: surfaces)
+        let config = ConciergeConfiguration(consentCollectValue: consentValue, datastream: datastream, ecid: ecid, server: server, surfaces: surfaces)
         let responseEvent = event.createResponseEvent(name: ConciergeConstants.EventName.SHOW_UI_RESPONSE,
                                                       type: ConciergeConstants.EventType.concierge,
                                                       source: EventSource.responseContent,
@@ -160,6 +172,16 @@ public class Concierge: NSObject, Extension {
         }
         
         return edgeIdentitySharedState
+    }
+    
+    private func getConsentSharedState(for event: Event) -> SharedStateResult? {
+        guard let consentSharedState = getXDMSharedState(extensionName: ConciergeConstants.SharedState.Consent.NAME, event: event),
+              consentSharedState.status == .set
+        else {
+            return nil
+        }
+        
+        return consentSharedState
     }
 }
 
