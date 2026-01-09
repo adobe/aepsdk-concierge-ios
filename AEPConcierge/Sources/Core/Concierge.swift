@@ -52,11 +52,6 @@ public class Concierge: NSObject, Extension {
         registerListener(type: ConciergeConstants.EventType.concierge,
                          source: EventSource.requestContent,
                          listener: handleRequestContentEvent)
-        
-        // Register listener for consent changes
-        registerListener(type: EventType.edgeConsent,
-                         source: EventSource.responseContent,
-                         listener: handleConsentChange)
     }
 
     public func onUnregistered() {
@@ -85,10 +80,6 @@ public class Concierge: NSObject, Extension {
         if event.isShowUiEvent {
             handleShowChatUIRequestEvent(event)
         }
-    }
-    
-    private func handleConsentChange(_ event: Event) {
-        print(event)
     }
     
     private func handleShowChatUIRequestEvent(_ event: Event) {
