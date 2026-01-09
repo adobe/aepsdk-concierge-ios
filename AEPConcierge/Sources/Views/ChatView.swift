@@ -54,6 +54,25 @@ public struct ChatView: View {
     private var composerBorderColor: Color {
         Color(UIColor.separator)
     }
+    
+    private var globalLineSpacing: CGFloat {
+        let multiplier = theme.typography.lineHeight
+        guard multiplier.isFinite, multiplier > 0 else {
+            return 0
+        }
+        
+        let fontSize = theme.typography.fontSize
+        let baseFont: UIFont = {
+            if theme.typography.fontFamily.isEmpty {
+                return UIFont.systemFont(ofSize: fontSize)
+            }
+            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        }()
+        
+        let targetLineHeight = fontSize * multiplier
+        let additionalSpacing = targetLineHeight - baseFont.lineHeight
+        return max(0, additionalSpacing)
+    }
 
     // MARK: - Initializers
     
@@ -131,6 +150,12 @@ public struct ChatView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .conciergePlaceholderConfig(
+            ConciergeResponsePlaceholderConfig(
+                loadingText: theme.text.loadingMessage,
+                primaryDotColor: theme.colors.primary.primary.color
+            )
+        )
         // Safe area respecting top bar
         .safeAreaInset(edge: .top) {
             ChatTopBar(
@@ -164,7 +189,7 @@ public struct ChatView: View {
                 inputState: inputController.state,
                 chatState: controller.chatState,
                 composerEditable: controller.chatState != .processing,
-                micEnabled: controller.micEnabled,
+                micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
                 sendEnabled: inputController.data.canSend,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
@@ -181,7 +206,7 @@ public struct ChatView: View {
         }
         .onAppear {
             hapticFeedback.prepare()
-            Task { await controller.loadWelcomeIfNeeded() }
+            Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in
@@ -204,6 +229,21 @@ public struct ChatView: View {
                 )
                 .transition(.opacity)
                 .zIndex(1000)
+            }
+        }
+        .overlay(alignment: .top) {
+            if controller.chatState == .error(.networkFailure) {
+                Text(theme.text.errorNetwork)
+                    .font(.subheadline)
+                    .foregroundStyle(theme.colors.message.conciergeText.color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(theme.colors.message.conciergeBackground.color.opacity(0.96))
+                    )
+                    .padding(.top, 12)
+                    .padding(.horizontal, 16)
             }
         }
         .overlay(alignment: .center) {
@@ -249,6 +289,7 @@ public struct ChatView: View {
                 ? .system(size: theme.typography.fontSize)
                 : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
         )
+        .lineSpacing(globalLineSpacing)
     }
     
     // MARK: - Actions

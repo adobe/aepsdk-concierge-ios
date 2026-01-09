@@ -32,6 +32,7 @@ public struct ConciergeLayout: Codable {
     public var borderRadiusCard: CGFloat
     public var buttonHeightSmall: CGFloat
     public var feedbackContainerGap: CGFloat
+    public var feedbackIconButtonSize: CGFloat
     public var citationsTextFontWeight: CodableFontWeight
     public var citationsDesktopButtonFontSize: CGFloat
     public var disclaimerFontSize: CGFloat
@@ -47,33 +48,38 @@ public struct ConciergeLayout: Codable {
         inputBorderRadius: CGFloat = 12,
         inputOutlineWidth: CGFloat = 2,
         inputFocusOutlineWidth: CGFloat = 2,
-        inputButtonHeight: CGFloat = 32,
-        inputButtonWidth: CGFloat = 32,
+        // Keep defaults aligned with the current composer button layout (30x30).
+        inputButtonHeight: CGFloat = 30,
+        inputButtonWidth: CGFloat = 30,
         inputButtonBorderRadius: CGFloat = 8,
         messageBorderRadius: CGFloat = 10,
         messagePadding: ConciergePadding = ConciergePadding(vertical: 8, horizontal: 16),
         messageMaxWidth: CGFloat? = nil,
         chatInterfaceMaxWidth: CGFloat = 768,
         chatHistoryPadding: CGFloat = 16,
-        chatHistoryPaddingTopExpanded: CGFloat = 0,
-        chatHistoryBottomPadding: CGFloat = 0,
+        // Keep defaults aligned with the current message list layout.
+        chatHistoryPaddingTopExpanded: CGFloat = 8,
+        chatHistoryBottomPadding: CGFloat = 12,
         messageBlockerHeight: CGFloat = 105,
         borderRadiusCard: CGFloat = 16,
         buttonHeightSmall: CGFloat = 30,
         feedbackContainerGap: CGFloat = 4,
+        feedbackIconButtonSize: CGFloat = 44,
         citationsTextFontWeight: CodableFontWeight = .bold,
         citationsDesktopButtonFontSize: CGFloat = 14,
         disclaimerFontSize: CGFloat = 12,
         disclaimerFontWeight: CodableFontWeight = .regular,
         inputFontSize: CGFloat = 16,
-        inputBoxShadow: ConciergeShadow = ConciergeShadow(
+        // Default UI does not apply a composer shadow unless explicitly configured by a theme.
+        inputBoxShadow: ConciergeShadow = .none,
+        // Default matches the current product carousel card drop shadow.
+        multimodalCardBoxShadow: ConciergeShadow = ConciergeShadow(
             offsetX: 0,
-            offsetY: 4,
-            blurRadius: 16,
+            offsetY: 2,
+            blurRadius: 8,
             spreadRadius: 0,
-            color: CodableColor(Color.black.opacity(0.16))
+            color: CodableColor(Color.black.opacity(0.08))
         ),
-        multimodalCardBoxShadow: ConciergeShadow = .none,
         welcomeInputOrder: Int = 3,
         welcomeCardsOrder: Int = 2
     ) {
@@ -95,6 +101,7 @@ public struct ConciergeLayout: Codable {
         self.borderRadiusCard = borderRadiusCard
         self.buttonHeightSmall = buttonHeightSmall
         self.feedbackContainerGap = feedbackContainerGap
+        self.feedbackIconButtonSize = feedbackIconButtonSize
         self.citationsTextFontWeight = citationsTextFontWeight
         self.citationsDesktopButtonFontSize = citationsDesktopButtonFontSize
         self.disclaimerFontSize = disclaimerFontSize
@@ -119,7 +126,9 @@ public struct ConciergeTypography: Codable {
     public init(
         fontFamily: String = "",
         fontSize: CGFloat = 16,
-        lineHeight: CGFloat = 1.75,
+        // Interpreted as a multiplier (ex: 1.25 means 125% line height).
+        // Default is 1.0 to match typical system typography unless a theme explicitly overrides it.
+        lineHeight: CGFloat = 1.0,
         fontWeight: CodableFontWeight = .regular
     ) {
         self.fontFamily = fontFamily

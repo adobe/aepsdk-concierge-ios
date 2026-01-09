@@ -11,6 +11,7 @@
  */
 
 import Foundation
+import SwiftUI
 import AEPCore
 import AEPServices
 
@@ -223,24 +224,49 @@ final class ChatController: ObservableObject {
     // MARK: - Welcome Content
     
     /// Loads initial welcome header and examples if not already loaded.
-    func loadWelcomeIfNeeded() async {
+    func loadWelcomeIfNeeded(theme: ConciergeTheme) async {
         // Prevent loading if already loaded OR if messages is not empty
         guard !welcomeMessagesLoaded && messages.isEmpty else { return }
         welcomeMessagesLoaded = true
         
+        // Prefer welcome content provided by the theme when available.
+        let title = theme.copy.welcomeHeading
+        let body = theme.copy.welcomeSubheading
+        let examples = theme.welcomeExamples
+        
+        if !title.isEmpty || !body.isEmpty {
+            messages.append(Message(template: .welcomeHeader(title: title, body: body)))
+        }
+        
+        if !examples.isEmpty {
+            for example in examples {
+                let url = example.image.flatMap { URL(string: $0) }
+                let background = example.backgroundColor?.color ?? Color(UIColor.secondarySystemBackground)
+                let message = Message(
+                    template: .welcomePromptSuggestion(
+                        imageSource: .remote(url),
+                        text: example.text,
+                        background: background
+                    )
+                )
+                messages.append(message)
+            }
+            return
+        }
+        
+        // Fallback to service defaults until the backend provides welcome content.
         let welcome = await chatService.fetchWelcome()
-        // Header
         messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
-        // Welcome prompt suggestions
         for example in welcome.examples {
-            let message = Message(
-                template: .welcomePromptSuggestion(
-                    imageSource: .remote(example.imageURL),
-                    text: example.text,
-                    background: example.background
+            messages.append(
+                Message(
+                    template: .welcomePromptSuggestion(
+                        imageSource: .remote(example.imageURL),
+                        text: example.text,
+                        background: example.background
+                    )
                 )
             )
-            messages.append(message)
         }
     }
     

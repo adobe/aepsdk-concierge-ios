@@ -36,12 +36,9 @@ final class ComposerSnapshotTests: XCTestCase {
         probeTheme.layout.inputBorderRadius = 28
         probeTheme.layout.inputFocusOutlineWidth = 6
         probeTheme.colors.input.outlineFocus = CodableColor(.green)
-        probeTheme.components.inputBar.background = CodableColor(.black)
-        probeTheme.components.inputBar.border = ConciergeBorderStyle(
-            width: 3,
-            radius: 0,
-            color: CodableColor(.pink)
-        )
+        probeTheme.colors.input.background = CodableColor(.black)
+        probeTheme.layout.inputOutlineWidth = 3
+        probeTheme.colors.input.outline = CodableColor(.pink)
         
         let view = ComposerProbeHost(
             theme: probeTheme,
