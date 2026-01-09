@@ -70,10 +70,10 @@ enum CitationAttachmentBuilder {
     ) -> NSAttributedString {
         let font = style.font
         // Keep a minimum badge height for tap target and consistent layout.
-        let baseHeight: CGFloat = max(20, ceil(font.lineHeight + 6))
+        let baseHeight: CGFloat = max(16, ceil(font.lineHeight + 4))
         let text = "\(marker.citationNumber)"
         let textSize = text.size(withAttributes: [.font: font])
-        let horizontalPadding: CGFloat = 10
+        let horizontalPadding: CGFloat = 8
         let badgeWidth = max(baseHeight, textSize.width + horizontalPadding)
         let badgeSize = CGSize(width: ceil(badgeWidth), height: baseHeight)
         let attachment = NSTextAttachment()
@@ -114,7 +114,7 @@ enum CitationAttachmentBuilder {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { context in
             let rect = CGRect(origin: .zero, size: size)
-            let cornerRadius = min(rect.height / 2, 6)
+            let cornerRadius = min(rect.height / 2, 5)
             let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
             context.cgContext.setFillColor(style.backgroundColor.cgColor)
             context.cgContext.addPath(path.cgPath)
