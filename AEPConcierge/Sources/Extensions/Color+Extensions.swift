@@ -35,15 +35,25 @@ extension Color {
         )
     }
 
-    /// Parses a hex string in the form "#RRGGBB" or "RRGGBB" into a SwiftUI Color.
+    /// Parses a hex string in the form "#RRGGBB", "RRGGBB", "#RRGGBBAA", or "RRGGBBAA" into a SwiftUI Color.
     /// If parsing fails, returns the provided default color (system background by default).
     static func fromHexString(_ hexString: String, default defaultColor: Color = Color(UIColor.systemBackground)) -> Color {
         let cleaned = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "#", with: "")
-        guard cleaned.count == 6, let value = UInt(cleaned, radix: 16) else {
-            return defaultColor
+        
+        if cleaned.count == 6, let value = UInt(cleaned, radix: 16) {
+            return Color(hex: value)
         }
-        return Color(hex: value)
+        
+        // Support #RRGGBBAA (CSS-style hex with trailing alpha).
+        if cleaned.count == 8, let value = UInt(cleaned, radix: 16) {
+            let rgb = value >> 8
+            let alphaByte = value & 0xff
+            let alpha = Double(alphaByte) / 255.0
+            return Color(hex: rgb, alpha: alpha)
+        }
+        
+        return defaultColor
     }
     
     /// Converts a SwiftUI Color to a hex string in the form "#RRGGBB".

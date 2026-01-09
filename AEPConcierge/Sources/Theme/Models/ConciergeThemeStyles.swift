@@ -111,7 +111,6 @@ public struct ConciergeChatMessageStyle: Codable {
 /// Feedback component style
 public struct ConciergeFeedbackStyle: Codable {
     public var iconButtonBackground: CodableColor
-    public var iconButtonHoverBackground: CodableColor
     public var iconButtonSizeDesktop: CGFloat
     public var containerGap: CGFloat
     public var positiveNotesEnabled: Bool
@@ -119,14 +118,12 @@ public struct ConciergeFeedbackStyle: Codable {
     
     public init(
         iconButtonBackground: CodableColor = CodableColor(Color.white),
-        iconButtonHoverBackground: CodableColor = CodableColor(Color.white),
-        iconButtonSizeDesktop: CGFloat = 32,
+        iconButtonSizeDesktop: CGFloat = 44,
         containerGap: CGFloat = 4,
         positiveNotesEnabled: Bool = true,
         negativeNotesEnabled: Bool = true
     ) {
         self.iconButtonBackground = iconButtonBackground
-        self.iconButtonHoverBackground = iconButtonHoverBackground
         self.iconButtonSizeDesktop = iconButtonSizeDesktop
         self.containerGap = containerGap
         self.positiveNotesEnabled = positiveNotesEnabled

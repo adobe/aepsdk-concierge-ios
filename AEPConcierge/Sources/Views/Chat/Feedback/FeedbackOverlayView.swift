@@ -113,13 +113,11 @@ struct FeedbackOverlayView: View {
                     Button(action: onCancel) {
                         Text(theme.text.feedbackDialogCancel)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.colors.button.secondaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(theme.colors.button.secondaryBorder.color, lineWidth: 1)
+                    .buttonStyle(
+                        ConciergeActionButtonStyle(theme: theme, variant: .secondary)
                     )
 
                     Button(action: {
@@ -134,13 +132,11 @@ struct FeedbackOverlayView: View {
                     }) {
                         Text(theme.text.feedbackDialogSubmit)
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(theme.colors.button.primaryText.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(theme.colors.button.primaryBackground.color)
+                    .buttonStyle(
+                        ConciergeActionButtonStyle(theme: theme, variant: .primary)
                     )
                 }
                 .padding(20)
