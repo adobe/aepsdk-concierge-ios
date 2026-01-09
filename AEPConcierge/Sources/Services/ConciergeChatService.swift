@@ -17,7 +17,7 @@ class ConciergeChatService: NSObject {
     
     // MARK: - Temporary Configuration (Remove before release)
     
-    private let USE_TEMPS = true
+    private let USE_TEMPS = false
     private let TEMP_serviceEndpoint = "https://edge-int.adobedc.net/brand-concierge/conversations?sessionId=71476c26-7003-4002-bc2f-aa13416d5b4e&requestId=831b1723-38fc-49f6-8e58-f9d413c918d0&configId=6acf9d12-5018-4f84-8224-aac4900782f0"
     private let TEMP_ecid = "23460916906658555991704675673209093097"
     private let TEMP_surface = "web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"
@@ -78,7 +78,7 @@ class ConciergeChatService: NSObject {
         return (title, body, examples)
     }
     
-    // MARK: - Streaming Chat
+    // MARK: - Streaming Chat / Queries
     
     func streamChat(_ query: String, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
         do {
@@ -113,6 +113,43 @@ class ConciergeChatService: NSObject {
         }
     }
     
+    // MARK: - Feedback reporting
+    
+    func sendFeedback(data: [String: Any]) {
+        do {
+            let url = try createUrl()
+            
+            let payload = try createFeedbackPayload(data: data)
+            var request = URLRequest(url: url)
+            request.httpMethod = ConciergeConstants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
+            request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
+
+            Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            
+            session.dataTask(with: request) { _, response, error in
+                if let error = error {
+                    Log.warning(label: self.LOG_TAG, error.localizedDescription)
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
+                }
+            }.resume()
+            
+        } catch {
+            if let error = error as? ConciergeError {
+                Log.warning(label: LOG_TAG, error.localizedDescription)
+            } else {
+                Log.warning(label: LOG_TAG, ConciergeError.unknown.localizedDescription)
+            }
+            
+            return
+        }
+    }
+    
     // MARK: - Private Methods
            
     private func createUrl() throws -> URL {
@@ -124,9 +161,12 @@ class ConciergeChatService: NSObject {
         guard let endpoint = configuration.server else {
             throw ConciergeError.invalidEndpoint("Unable to create URL for Concierge Service request. Server unavailable from configuration.")
         }
-        guard let datastream = configuration.datastream else {
-            throw ConciergeError.invalidDatastream("Unable to create URL for Concierge Service request. Datastream unavailable from configuration.")
-        }
+        
+//        guard let datastream = configuration.datastream else {
+//            throw ConciergeError.invalidDatastream("Unable to create URL for Concierge Service request. Datastream unavailable from configuration.")
+//        }
+        
+        let datastream = "6acf9d12-5018-4f84-8224-aac4900782f0"
 
         var queryItems = [
             URLQueryItem(name: ConciergeConstants.Request.Keys.CONFIG_ID, value: datastream)
@@ -180,6 +220,14 @@ class ConciergeChatService: NSObject {
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
             throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
         }
+        return jsonData
+    }
+    
+    private func createFeedbackPayload(data: [String: Any]) throws -> Data {
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: data) else {
+            throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge feedback event.")
+        }
+        
         return jsonData
     }
     
