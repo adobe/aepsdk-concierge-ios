@@ -14,6 +14,7 @@ import SwiftUI
 
 /// Horizontally paged carousel of message cards with a page indicator.
 struct CarouselGroupView: View {
+    @Environment(\.conciergeTheme) private var theme
     let items: [Message]
     @State private var currentIndex = 0
     
@@ -28,8 +29,26 @@ struct CarouselGroupView: View {
             .frame(idealWidth: 150, idealHeight: 200)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             
-            PageIndicator(numberOfPages: items.count, currentIndex: $currentIndex)
-                .padding(.top, 16)
+            HStack(spacing: 16) {
+                Button(action: { currentIndex = max(0, currentIndex - 1) }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(currentIndex <= 0)
+                .accessibilityLabel(theme.text.carouselPrevAria)
+
+                PageIndicator(numberOfPages: items.count, currentIndex: $currentIndex)
+
+                Button(action: { currentIndex = min(items.count - 1, currentIndex + 1) }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(currentIndex >= items.count - 1)
+                .accessibilityLabel(theme.text.carouselNextAria)
+            }
+            .padding(.top, 16)
         }
         .padding(.vertical, 8)
     }

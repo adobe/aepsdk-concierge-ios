@@ -134,19 +134,19 @@ private extension ThemeKeyCoverageTests {
         "message-concierge-background": "colors.message.conciergeBackground",
         "message-concierge-text": "colors.message.conciergeText",
         "message-concierge-link-color": "colors.message.conciergeLink",
+        
+        // Colors - Citations
+        "citations-background-color": "colors.citation.background",
+        "citations-text-color": "colors.citation.text",
 
         // Colors - Button
         "button-primary-background": "colors.button.primaryBackground",
         "button-primary-text": "colors.button.primaryText",
-        "button-primary-hover": "colors.button.primaryHover",
         "button-secondary-border": "colors.button.secondaryBorder",
         "button-secondary-text": "colors.button.secondaryText",
-        "button-secondary-hover": "colors.button.secondaryHover",
-        "color-button-secondary-hover-text": "colors.button.secondaryHoverText",
         "submit-button-fill-color": "colors.button.submitFill",
         "submit-button-fill-color-disabled": "colors.button.submitFillDisabled",
         "color-button-submit": "colors.button.submitText",
-        "color-button-submit-hover": "colors.button.submitTextHover",
         "button-disabled-background": "colors.button.disabledBackground",
 
         // Colors - Input
@@ -157,7 +157,6 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Feedback
         "feedback-icon-btn-background": "colors.feedback.iconButtonBackground",
-        "feedback-icon-btn-hover-background": "colors.feedback.iconButtonHoverBackground",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",
@@ -207,8 +206,8 @@ private extension ThemeKeyCoverageTests {
         "welcome-input-order": "layout.welcomeInputOrder",
         "welcome-cards-order": "layout.welcomeCardsOrder",
 
-        // Components - Feedback
-        "feedback-icon-btn-size-desktop": "components.feedback.iconButtonSizeDesktop",
+        // Layout - Feedback
+        "feedback-icon-btn-size-desktop": "layout.feedbackIconButtonSize",
 
         // Components - Top Bar
     ]
@@ -282,28 +281,9 @@ private extension ThemeKeyCoverageTests {
             return true
         }
 
-        // Components: most component style properties are not currently driven by CSS variables on iOS.
-        // (Top bar colors and feedback icon button size are the exceptions and are covered by the mapper.)
-        let allowlistedComponentPrefixes: [String] = [
-            "components.welcome.",
-            "components.inputBar.",
-            "components.chatMessage.",
-            "components.carousel.",
-            "components.disclaimer.",
-        ]
-        if allowlistedComponentPrefixes.contains(where: { path.hasPrefix($0) }) {
-            return true
-        }
-
-        // Feedback component properties aside from iconButtonSizeDesktop are not driven directly by CSS variables.
-        let allowlistedFeedbackProperties: Set<String> = [
-            "components.feedback.iconButtonBackground",
-            "components.feedback.iconButtonHoverBackground",
-            "components.feedback.containerGap",
-            "components.feedback.positiveNotesEnabled",
-            "components.feedback.negativeNotesEnabled",
-        ]
-        if allowlistedFeedbackProperties.contains(path) {
+        // Components are derived from canonical tokens on iOS. We intentionally do not require CSS coverage
+        // for component style fields because they are not the source of truth.
+        if path.hasPrefix("components.") {
             return true
         }
 

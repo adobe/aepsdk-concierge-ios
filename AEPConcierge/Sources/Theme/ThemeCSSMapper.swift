@@ -42,28 +42,26 @@ public enum CSSKeyMapper {
         "message-concierge-text": { cssValue, theme in theme.colors.message.conciergeText = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-link-color": { cssValue, theme in theme.colors.message.conciergeLink = CSSValueConverter.parseColor(cssValue) },
         
+        // Colors - Citations
+        "citations-background-color": { cssValue, theme in theme.colors.citation.background = CSSValueConverter.parseColor(cssValue) },
+        "citations-text-color": { cssValue, theme in theme.colors.citation.text = CSSValueConverter.parseColor(cssValue) },
+        
         // Colors - Button
         "button-primary-background": { cssValue, theme in theme.colors.button.primaryBackground = CSSValueConverter.parseColor(cssValue) },
         "button-primary-text": { cssValue, theme in theme.colors.button.primaryText = CSSValueConverter.parseColor(cssValue) },
-        "button-primary-hover": { cssValue, theme in theme.colors.button.primaryHover = CSSValueConverter.parseColor(cssValue) },
         "button-secondary-border": { cssValue, theme in theme.colors.button.secondaryBorder = CSSValueConverter.parseColor(cssValue) },
         "button-secondary-text": { cssValue, theme in theme.colors.button.secondaryText = CSSValueConverter.parseColor(cssValue) },
-        "button-secondary-hover": { cssValue, theme in theme.colors.button.secondaryHover = CSSValueConverter.parseColor(cssValue) },
-        "color-button-secondary-hover-text": { cssValue, theme in theme.colors.button.secondaryHoverText = CSSValueConverter.parseColor(cssValue) },
         "submit-button-fill-color": { cssValue, theme in theme.colors.button.submitFill = CSSValueConverter.parseColor(cssValue) },
         "submit-button-fill-color-disabled": { cssValue, theme in theme.colors.button.submitFillDisabled = CSSValueConverter.parseColor(cssValue) },
         "color-button-submit": { cssValue, theme in theme.colors.button.submitText = CSSValueConverter.parseColor(cssValue) },
-        "color-button-submit-hover": { cssValue, theme in theme.colors.button.submitTextHover = CSSValueConverter.parseColor(cssValue) },
         "button-disabled-background": { cssValue, theme in theme.colors.button.disabledBackground = CSSValueConverter.parseColor(cssValue) },
         
         // Colors - Input
         "input-background": { cssValue, theme in
-            let color = CSSValueConverter.parseColor(cssValue)
-            theme.colors.input.background = color
+            theme.colors.input.background = CSSValueConverter.parseColor(cssValue)
         },
         "input-text-color": { cssValue, theme in
-            let color = CSSValueConverter.parseColor(cssValue)
-            theme.colors.input.text = color
+            theme.colors.input.text = CSSValueConverter.parseColor(cssValue)
         },
         "input-outline-color": { cssValue, theme in
             // Handle gradients - if starts with "linear-gradient", set to nil
@@ -77,12 +75,10 @@ public enum CSSKeyMapper {
         
         // Colors - Feedback
         "feedback-icon-btn-background": { cssValue, theme in theme.colors.feedback.iconButtonBackground = CSSValueConverter.parseColor(cssValue) },
-        "feedback-icon-btn-hover-background": { cssValue, theme in theme.colors.feedback.iconButtonHoverBackground = CSSValueConverter.parseColor(cssValue) },
         
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
-            let color = CSSValueConverter.parseColor(cssValue)
-            theme.colors.disclaimer = color
+            theme.colors.disclaimer = CSSValueConverter.parseColor(cssValue)
         },
         
         // Layout - Input
@@ -139,12 +135,8 @@ public enum CSSKeyMapper {
         "citations-desktop-button-font-size": { cssValue, theme in theme.layout.citationsDesktopButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         
         // Layout - Disclaimer
-        "disclaimer-font-size": { cssValue, theme in
-            theme.layout.disclaimerFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12
-        },
-        "disclaimer-font-weight": { cssValue, theme in
-            theme.layout.disclaimerFontWeight = CSSValueConverter.parseFontWeight(cssValue)
-        },
+        "disclaimer-font-size": { cssValue, theme in theme.layout.disclaimerFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "disclaimer-font-weight": { cssValue, theme in theme.layout.disclaimerFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         
         // Layout - Welcome Order (also sets components)
         "welcome-input-order": { cssValue, theme in
@@ -154,8 +146,8 @@ public enum CSSKeyMapper {
             theme.layout.welcomeCardsOrder = CSSValueConverter.parseOrder(cssValue)
         },
         
-        // Components - Feedback
-        "feedback-icon-btn-size-desktop": { cssValue, theme in theme.components.feedback.iconButtonSizeDesktop = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
+        // Layout - Feedback (button hit target size)
+        "feedback-icon-btn-size-desktop": { cssValue, theme in theme.layout.feedbackIconButtonSize = CSSValueConverter.parsePxValue(cssValue) ?? 44 },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

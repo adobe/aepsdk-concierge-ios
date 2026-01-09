@@ -31,11 +31,11 @@ struct ChatTopBar: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(.title3, design: .rounded).weight(.semibold))
-                    .foregroundColor(Color.primary)
+                    .foregroundColor(theme.colors.primary.text.color)
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.system(.footnote))
-                        .foregroundColor(Color.secondary)
+                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                 }
             }
 
@@ -43,7 +43,7 @@ struct ChatTopBar: View {
 
             Button(action: onClose) {
                 BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
-                    .foregroundColor(Color.Secondary)
+                    .foregroundColor(theme.colors.primary.primary.color)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Close")

@@ -134,6 +134,11 @@
 		4CF60BEB2EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BE62EF3A389008CE4F0 /* FeedbackOverlaySnapshotTests.swift */; };
 		4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */; };
 		4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */; };
+		4CF60BF92F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF72F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift */; };
+		4CF60BFA2F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF52F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift */; };
+		4CF60BFB2F0F2DF4008CE4F0 /* ConciergeButtonVariant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF62F0F2DF4008CE4F0 /* ConciergeButtonVariant.swift */; };
+		4CF60BFC2F0F2DF4008CE4F0 /* FeedbackIconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */; };
+		4CF60BFE2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BFD2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift */; };
 		4CF60C122F000001008CE4F0 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 4CF60C112F000001008CE4F0 /* SnapshotTesting */; };
 		4CF60C142F000001008CE4F0 /* ComposerSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C132F000001008CE4F0 /* ComposerSnapshotTests.swift */; };
 		4CF60C182F000002008CE4F0 /* MessageBubbleSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60C172F000002008CE4F0 /* MessageBubbleSnapshotTests.swift */; };
@@ -308,6 +313,11 @@
 		4CF60BE72EF3A389008CE4F0 /* PermissionDialogSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogSnapshotTests.swift; sourceTree = "<group>"; };
 		4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeKeyCoverageTests.swift; sourceTree = "<group>"; };
 		4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestEnvironment.swift; sourceTree = "<group>"; };
+		4CF60BF52F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeActionButtonStyle.swift; sourceTree = "<group>"; };
+		4CF60BF62F0F2DF4008CE4F0 /* ConciergeButtonVariant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeButtonVariant.swift; sourceTree = "<group>"; };
+		4CF60BF72F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergePressableButtonStyle.swift; sourceTree = "<group>"; };
+		4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackIconButton.swift; sourceTree = "<group>"; };
+		4CF60BFD2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerSendButtonStyle.swift; sourceTree = "<group>"; };
 		4CF60C132F000001008CE4F0 /* ComposerSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerSnapshotTests.swift; sourceTree = "<group>"; };
 		4CF60C172F000002008CE4F0 /* MessageBubbleSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleSnapshotTests.swift; sourceTree = "<group>"; };
 		4CF60C1B2F000003008CE4F0 /* CitationsSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationsSnapshotTests.swift; sourceTree = "<group>"; };
@@ -602,6 +612,7 @@
 		4C3A65C42E55272300EEEF3B /* Composer */ = {
 			isa = PBXGroup;
 			children = (
+				4CF60BFD2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift */,
 				4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */,
 				4C3A65C02E55272300EEEF3B /* ComposerDisclaimer.swift */,
 				4C3A65C12E55272300EEEF3B /* ComposerEditingView.swift */,
@@ -645,6 +656,9 @@
 		4C3A65CB2E55272300EEEF3B /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				4CF60BF52F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift */,
+				4CF60BF62F0F2DF4008CE4F0 /* ConciergeButtonVariant.swift */,
+				4CF60BF72F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift */,
 				4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */,
 				4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
@@ -660,6 +674,7 @@
 			isa = PBXGroup;
 			children = (
 				4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */,
+				4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */,
 			);
 			path = Feedback;
 			sourceTree = "<group>";
@@ -1114,6 +1129,11 @@
 				249899842D67C5F90005CBD7 /* Color+Extensions.swift in Sources */,
 				2482FDE02E3BED830032F3CA /* SpeechCapturer.swift in Sources */,
 				4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */,
+				4CF60BF92F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift in Sources */,
+				4CF60BFA2F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift in Sources */,
+				4CF60BFE2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift in Sources */,
+				4CF60BFB2F0F2DF4008CE4F0 /* ConciergeButtonVariant.swift in Sources */,
+				4CF60BFC2F0F2DF4008CE4F0 /* FeedbackIconButton.swift in Sources */,
 				2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */,
 				247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */,
 			);

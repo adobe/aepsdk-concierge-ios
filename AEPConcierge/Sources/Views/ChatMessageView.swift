@@ -45,12 +45,12 @@ struct ChatMessageView: View {
                 Text(title)
                     .font(.system(.title2, design: .rounded))
                     .fontWeight(.semibold)
-                    .foregroundColor(Color.TextTitle)
+                    .foregroundColor(theme.colors.primary.text.color)
                     .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
                 Text(body)
                     .font(.system(.body, design: .rounded))
-                    .foregroundColor(Color.TextBody)
+                    .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                     .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
             }
@@ -77,7 +77,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(text)
                             .font(.system(.body))
-                            .foregroundColor(Color.TextTitle)
+                            .foregroundColor(theme.colors.primary.text.color)
                             .multilineTextAlignment(.leading)
                             .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -87,9 +87,11 @@ struct ChatMessageView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .background(resolvedBackground)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(theme.text.cardAriaSelect)
+            .accessibilityHint(text)
 
         case .divider:
             Rectangle()
@@ -146,7 +148,7 @@ struct ChatMessageView: View {
                     }
                         .padding(theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
-                        .frame(maxWidth: theme.layout.messageMaxWidth, alignment: .leading)
+                        .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
                         .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
                         .background(
@@ -208,18 +210,18 @@ struct ChatMessageView: View {
                             Text(title)
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
                         Text(text)
-                            .foregroundColor(Color.TextBody)
+                            .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                             .textSelection(.enabled)
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                 }
                 .background(Color.PrimaryLight)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
                 
                 Spacer()
             }
@@ -237,7 +239,7 @@ struct ChatMessageView: View {
                             Text("\(number)")
                                 .font(.system(.body, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                         }
                     }
                     
@@ -246,12 +248,12 @@ struct ChatMessageView: View {
                             Text(title)
                                 .font(.system(.headline, design: .rounded))
                                 .bold()
-                                .foregroundColor(Color.TextTitle)
+                                .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
                         if let body = body {
                             Text(body)
-                                .foregroundColor(Color.TextBody)
+                                .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                                 .textSelection(.enabled)
                         }
                     }
@@ -259,7 +261,7 @@ struct ChatMessageView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(Color.PrimaryLight)
-                .cornerRadius(10)
+                .cornerRadius(theme.layout.borderRadiusCard)
                 
                 Spacer()
             }
@@ -299,8 +301,13 @@ struct ChatMessageView: View {
                         .padding(12)
                 }
             }
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .cornerRadius(theme.layout.borderRadiusCard)
+            .shadow(
+                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+                x: theme.layout.multimodalCardBoxShadow.offsetX,
+                y: theme.layout.multimodalCardBoxShadow.offsetY
+            )
             .frame(width: 280, height: 200)
             .buttonStyle(PlainButtonStyle())
             
@@ -322,12 +329,12 @@ struct ChatMessageView: View {
                     Text(title)
                         .font(.system(.headline, design: .rounded))
                         .bold()
-                        .foregroundColor(Color.TextTitle)
+                        .foregroundColor(theme.colors.primary.text.color)
                         .textSelection(.enabled)
                     
                     Text(body)
                         .font(.system(.subheadline))
-                        .foregroundColor(Color.TextBody)
+                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                         .textSelection(.enabled)
                     
                     // Buttons section
@@ -336,7 +343,7 @@ struct ChatMessageView: View {
                             if let primaryButton = primaryButton {
                                 ButtonView(
                                     text: primaryButton.text,
-                                    style: .primary,
+                                    variant: .primary,
                                     action: {
                                         if let url = URL(string: primaryButton.url) {
                                             openURL(url)
@@ -348,7 +355,7 @@ struct ChatMessageView: View {
                             if let secondaryButton = secondaryButton {
                                 ButtonView(
                                     text: secondaryButton.text,
-                                    style: .secondary,
+                                    variant: .secondary,
                                     action: {
                                         if let url = URL(string: secondaryButton.url) {
                                             openURL(url)
@@ -366,7 +373,13 @@ struct ChatMessageView: View {
                 .frame(width: 350, alignment: .leading)
             }
             .background(Color.PrimaryLight)
-            .cornerRadius(10)
+            .cornerRadius(theme.layout.borderRadiusCard)
+            .shadow(
+                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+                x: theme.layout.multimodalCardBoxShadow.offsetX,
+                y: theme.layout.multimodalCardBoxShadow.offsetY
+            )
             .frame(width: 350)
             
         case .carouselGroup(let items):
@@ -396,5 +409,15 @@ struct ChatMessageView: View {
                 Spacer()
             }
         }
+    }
+}
+
+private extension ChatMessageView {
+    var resolvedMessageMaxWidth: CGFloat? {
+        // Prefer explicit point widths only; percent-based values decode to 0.0-1.0 and are not meaningful as points.
+        if let behaviorWidth = theme.behavior.chat.messageWidth, behaviorWidth > 1 {
+            return behaviorWidth
+        }
+        return theme.layout.messageMaxWidth
     }
 }
