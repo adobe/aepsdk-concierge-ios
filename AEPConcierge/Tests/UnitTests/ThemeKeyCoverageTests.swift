@@ -83,6 +83,13 @@ private extension ThemeKeyCoverageTests {
         // These tokens exist in the web theme, but iOS sources alignment and width from the typed `behavior.chat` section.
         "message-alignment",
         "message-width",
+
+        // Hover tokens are web-focused interaction states and are intentionally ignored on iOS.
+        "button-primary-hover",
+        "button-secondary-hover",
+        "color-button-secondary-hover-text",
+        "color-button-submit-hover",
+        "feedback-icon-btn-hover-background",
     ]
 
     /// CSSKeyMapper keys are normalized (no leading `--`), but JSON `theme` keys include the `--` prefix.
