@@ -32,6 +32,15 @@ public struct ConciergeConfiguration: Codable {
     var conversationId: String?
     var surfaces: [String] = []
     
+    enum CodingKeys: String, CodingKey {
+        case server
+        case datastream
+        case ecid
+        case sessionId
+        case conversationId
+        case surfaces
+    }
+    
     init(server: String? = nil, datastream: String? = nil, ecid: String? = nil, _sessionId: String? = nil, conversationId: String? = nil, surfaces: [String] = []) {
         self.server = server
         self.datastream = datastream
@@ -40,5 +49,24 @@ public struct ConciergeConfiguration: Codable {
         self.conversationId = conversationId
         self.surfaces = surfaces
     }
-}
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        server = try container.decodeIfPresent(String.self, forKey: .server)
+        datastream = try container.decodeIfPresent(String.self, forKey: .datastream)
+        ecid = try container.decodeIfPresent(String.self, forKey: .ecid)
+        _sessionId = try container.decodeIfPresent(String.self, forKey: .sessionId)
+        conversationId = try container.decodeIfPresent(String.self, forKey: .conversationId)
+        surfaces = try container.decodeIfPresent([String].self, forKey: .surfaces) ?? []
+    }
 
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(server, forKey: .server)
+        try container.encodeIfPresent(datastream, forKey: .datastream)
+        try container.encodeIfPresent(ecid, forKey: .ecid)
+        try container.encodeIfPresent(_sessionId, forKey: .sessionId)
+        try container.encodeIfPresent(conversationId, forKey: .conversationId)
+        try container.encode(surfaces, forKey: .surfaces)
+    }
+}

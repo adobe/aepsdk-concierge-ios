@@ -126,11 +126,19 @@ class ConciergeChatService: NSObject {
             request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-            dataTask = session.dataTask(with: request)
-            
             Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
             
-            dataTask?.resume()
+            session.dataTask(with: request) { _, response, error in
+                if let error = error {
+                    Log.warning(label: self.LOG_TAG, error.localizedDescription)
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
+                }
+            }.resume()
+            
         } catch {
             if let error = error as? ConciergeError {
                 Log.warning(label: LOG_TAG, error.localizedDescription)
