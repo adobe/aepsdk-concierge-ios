@@ -161,11 +161,19 @@ enum ConciergeConstants {
             static let ECID = "ECID"
             static let ID = "id"
         }
+        
+        enum Consent {
+            static let NAME = "com.adobe.edge.consent"
+            static let CONSENTS = "consents"
+            static let COLLECT = "collect"
+            static let VAL = "val"
+        }
     }
     
     // MARK: - Defaults
     
     enum Defaults {
+        static let CONSENT_VALUE = "y"
         static let MESSAGE = "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?"
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
