@@ -100,9 +100,8 @@ public class Concierge: NSObject, Extension {
             return
         }
         
-        let consentSharedState = getConsentSharedState(for: event)
-        let consentValue = consentSharedState != nil ? consentSharedState?.collectValue : ConciergeConstants.Defaults.CONSENT_VALUE
-                
+        let consentValue = getConsentSharedState(for: event)?.collectValue ?? ConciergeConstants.Defaults.CONSENT_VALUE
+                        
         guard let edgeIdentitySharedState = getEdgeIdentitySharedState(for: event) else {
             errorMessage = "Unable to show Brand Concierge UI - EdgeIdentity shared state is not available."
             return
