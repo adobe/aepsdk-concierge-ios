@@ -177,5 +177,17 @@ enum ConciergeConstants {
         static let MESSAGE = "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?"
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
+    
+    // MARK: - Session Management
+    
+    enum Session {
+        static let DATA_STORE_NAME = "AEPConcierge.Session"
+        static let TTL_SECONDS: TimeInterval = 30 * 60 // 30 minutes
+        
+        enum Keys {
+            static let SESSION_ID = "sessionId"
+            static let LAST_ACTIVITY = "lastActivity"
+        }
+    }
 }
 
