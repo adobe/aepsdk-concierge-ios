@@ -20,7 +20,6 @@ public struct ChatView: View {
 
     // MARK: - Environment
     
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergeFeedbackPresenter) private var feedbackEnvPresenter
     @Environment(\.openURL) private var openURL
@@ -48,12 +47,6 @@ public struct ChatView: View {
     // MARK: - UI
     
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
-    private var composerBackgroundColor: Color {
-        colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : Color.white
-    }
-    private var composerBorderColor: Color {
-        Color(UIColor.separator)
-    }
     
     private var globalLineSpacing: CGFloat {
         let multiplier = theme.typography.lineHeight
