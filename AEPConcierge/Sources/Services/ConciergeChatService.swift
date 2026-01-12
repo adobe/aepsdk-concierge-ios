@@ -99,6 +99,10 @@ class ConciergeChatService: NSObject {
 
             dataTask = session.dataTask(with: request)
             Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            
+            // Refresh session activity timestamp when starting a request
+            SessionManager.shared.refreshSessionActivity()
+            
             dataTask?.resume()
         } catch {
             if let error = error as? ConciergeError {
@@ -127,6 +131,9 @@ class ConciergeChatService: NSObject {
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
             Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            
+            // Refresh session activity timestamp when sending feedback
+            SessionManager.shared.refreshSessionActivity()
             
             session.dataTask(with: request) { _, response, error in
                 if let error = error {
