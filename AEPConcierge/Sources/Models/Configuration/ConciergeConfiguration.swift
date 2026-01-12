@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPCore
 import AEPServices
 
 /// Configuration for the Concierge service connection.
@@ -19,13 +20,19 @@ public struct ConciergeConfiguration: Codable {
     var datastream: String?
     var ecid: String?
     var server: String?
+    
+    /// The session ID for this configuration.
+    /// On first access, retrieves an existing valid session from persistence or creates a new one.
+    /// Sessions have a TTL of 30 minutes from the last network activity.
     var sessionId: String? {
-        mutating get {
-            if self._sessionId == nil {
-                self._sessionId = UUID().uuidString
+        get {
+            // If we have a locally set session ID, use it
+            if let localSessionId = _sessionId {
+                return localSessionId
             }
             
-            return self._sessionId
+            // Otherwise, get or create from SessionManager
+            return SessionManager.shared.getOrCreateSessionId()
         }
     }
     private var _sessionId: String?
