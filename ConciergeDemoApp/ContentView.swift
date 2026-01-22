@@ -41,9 +41,8 @@ struct ContentView: View {
     var body: some View {
         TabView {
             
-            // MARK: - Manual call
+            // MARK: - manual call
             
-            // SwiftUI sample
             Concierge.wrap(
                 VStack {
                     VStack {
@@ -95,10 +94,14 @@ struct ContentView: View {
                 },
                 hideButton: true
             )
+            
             // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
             .conciergeTheme(loadedTheme)
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
+            
+            
+            
             // MARK: - floating button
             
             Concierge.wrap(
@@ -108,7 +111,10 @@ struct ContentView: View {
             )
             .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
             
-            // UIKit sample
+            
+            
+            // MARK: - UIKit example
+            
             UIKitDemoScreen()
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
         }

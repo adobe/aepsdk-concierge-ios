@@ -169,11 +169,9 @@ class ConciergeChatService: NSObject {
             throw ConciergeError.invalidEndpoint("Unable to create URL for Concierge Service request. Server unavailable from configuration.")
         }
         
-//        guard let datastream = configuration.datastream else {
-//            throw ConciergeError.invalidDatastream("Unable to create URL for Concierge Service request. Datastream unavailable from configuration.")
-//        }
-        
-        let datastream = "6acf9d12-5018-4f84-8224-aac4900782f0"
+        guard let datastream = configuration.datastream else {
+            throw ConciergeError.invalidDatastream("Unable to create URL for Concierge Service request. Datastream unavailable from configuration.")
+        }
 
         var queryItems = [
             URLQueryItem(name: ConciergeConstants.Request.Keys.CONFIG_ID, value: datastream)

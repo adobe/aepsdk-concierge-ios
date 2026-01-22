@@ -50,6 +50,7 @@
 		243868BF2EB16AF2004BF9C0 /* bctheme.plist in Resources */ = {isa = PBXBuildFile; fileRef = 243868BE2EB16AE3004BF9C0 /* bctheme.plist */; };
 		243868C12EB17592004BF9C0 /* Event+Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243868C02EB1758E004BF9C0 /* Event+Concierge.swift */; };
 		243868C32EB17B18004BF9C0 /* SharedStateResult+Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */; };
+		244E69CE2F16A9C300ADF1AA /* String+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
@@ -225,6 +226,7 @@
 		243868BE2EB16AE3004BF9C0 /* bctheme.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = bctheme.plist; sourceTree = "<group>"; };
 		243868C02EB1758E004BF9C0 /* Event+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Event+Concierge.swift"; sourceTree = "<group>"; };
 		243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SharedStateResult+Concierge.swift"; sourceTree = "<group>"; };
+		244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Formatting.swift"; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogView.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
@@ -500,6 +502,7 @@
 			isa = PBXGroup;
 			children = (
 				4CDB0DD52EC84A64000B85D0 /* theme-default.json */,
+				4CF60BE32EF39D7B008CE4F0 /* SnapshotTests */,
 				4C2923DE2E7E221900D2D2C1 /* TestHelpers */,
 				4C2923DD2E7E21F400D2D2C1 /* UnitTests */,
 				249899732D667FD60005CBD7 /* AEPConciergeTests.swift */,
@@ -524,6 +527,7 @@
 				243868C02EB1758E004BF9C0 /* Event+Concierge.swift */,
 				4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */,
 				243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */,
+				244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */,
 				4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */,
 			);
 			path = Extensions;
@@ -589,7 +593,6 @@
 		4C2923DD2E7E21F400D2D2C1 /* UnitTests */ = {
 			isa = PBXGroup;
 			children = (
-				4CF60BE32EF39D7B008CE4F0 /* SnapshotTests */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
 				4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */,
 				4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */,
@@ -1091,6 +1094,7 @@
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
 				4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */,
+				244E69CE2F16A9C300ADF1AA /* String+Formatting.swift in Sources */,
 				4C3D5F9E2E6A69CC00323738 /* FeedbackOverlayView.swift in Sources */,
 				4C5FE32E2EC42C8D004F9286 /* MarkdownTextCoordinator.swift in Sources */,
 				249899922D67C62A0005CBD7 /* CarouselGroupView.swift in Sources */,
