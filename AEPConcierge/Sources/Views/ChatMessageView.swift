@@ -370,7 +370,7 @@ struct ChatMessageView: View {
                 .padding(14)
                 .frame(width: 350, alignment: .leading)
             }
-            .background(Color.PrimaryLight)
+            .background(theme.colors.message.conciergeBackground.color)
             .cornerRadius(theme.layout.borderRadiusCard)
             .shadow(
                 color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
