@@ -98,7 +98,7 @@ class ConciergeChatService: NSObject {
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
             dataTask = session.dataTask(with: request)
-            Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8)?.prettyPrintedJSON() ?? "unknown body")")
             
             // Refresh session activity timestamp when starting a request
             SessionManager.shared.refreshSessionActivity()
@@ -130,7 +130,7 @@ class ConciergeChatService: NSObject {
             request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-            Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8) ?? "unknown body")")
+            Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url) \n\(String(data: payload, encoding: .utf8)?.prettyPrintedJSON() ?? "unknown body")")
             
             // Refresh session activity timestamp when sending feedback
             SessionManager.shared.refreshSessionActivity()
@@ -195,10 +195,16 @@ class ConciergeChatService: NSObject {
         return url
     }
     
-    private func createChatPayload(query: String) throws -> Data {
+    /// Creates the JSON payload for a chat request.
+    /// - Parameter query: The user's message
+    /// - Returns: JSON data for the request body
+    /// - Note: Internal visibility for testing
+    func createChatPayload(query: String) throws -> Data {
         guard let ecid = configuration.ecid else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
         guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
 
+        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
+        
         let payload = [
             ConciergeConstants.Request.Keys.EVENTS: [
                 [
@@ -216,6 +222,11 @@ class ConciergeChatService: NSObject {
                                     ConciergeConstants.Request.Keys.ID: USE_TEMPS ? TEMP_ecid : ecid
                                 ]
                             ]
+                        ]
+                    ],
+                    ConciergeConstants.Request.Keys.Consent.META: [
+                        ConciergeConstants.Request.Keys.Consent.CONSENT: [
+                            ConciergeConstants.Request.Keys.Consent.STATE: consentState
                         ]
                     ]
                 ]
