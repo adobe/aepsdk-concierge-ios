@@ -72,6 +72,9 @@
 		244E69FF2F22DF8300ADF1AA /* test_sourcesProbe_exaggeratedTheme.1.png in Resources */ = {isa = PBXBuildFile; fileRef = 244E69E22F22DF8300ADF1AA /* test_sourcesProbe_exaggeratedTheme.1.png */; };
 		244E6A002F22DF8300ADF1AA /* test_feedbackDialogProbe_exaggeratedTheme_buttonColorsAndSurfaceBackground.1.png in Resources */ = {isa = PBXBuildFile; fileRef = 244E69D62F22DF8300ADF1AA /* test_feedbackDialogProbe_exaggeratedTheme_buttonColorsAndSurfaceBackground.1.png */; };
 		244E6A012F22DF8300ADF1AA /* test_globalTypographyProbe_defaultTheme.1.png in Resources */ = {isa = PBXBuildFile; fileRef = 244E69D82F22DF8300ADF1AA /* test_globalTypographyProbe_defaultTheme.1.png */; };
+		244E6A032F22EE7C00ADF1AA /* ConsentState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A022F22EE7C00ADF1AA /* ConsentState.swift */; };
+		244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */; };
+		244E6A072F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
@@ -94,7 +97,6 @@
 		249899BB2D67CF0E0005CBD7 /* listening.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899B82D67CF0E0005CBD7 /* listening.json */; };
 		249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */; };
 		249899BF2D67CF0E0005CBD7 /* thinking.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899BA2D67CF0E0005CBD7 /* thinking.json */; };
-		249899C32D67D2C40005CBD7 /* AEPConciergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249899732D667FD60005CBD7 /* AEPConciergeTests.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
 		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
@@ -262,6 +264,9 @@
 		244E69E92F22DF8300ADF1AA /* MessageBubbleSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleSnapshotTests.swift; sourceTree = "<group>"; };
 		244E69EA2F22DF8300ADF1AA /* PermissionDialogSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogSnapshotTests.swift; sourceTree = "<group>"; };
 		244E69EB2F22DF8300ADF1AA /* SourcesProbeSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesProbeSnapshotTests.swift; sourceTree = "<group>"; };
+		244E6A022F22EE7C00ADF1AA /* ConsentState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentState.swift; sourceTree = "<group>"; };
+		244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatServiceTests.swift; sourceTree = "<group>"; };
+		244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentStateTests.swift; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogView.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
@@ -274,7 +279,6 @@
 		249899532D6679790005CBD7 /* UnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		249899702D667FD60005CBD7 /* AEPConcierge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AEPConcierge.h; sourceTree = "<group>"; };
 		249899712D667FD60005CBD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		249899732D667FD60005CBD7 /* AEPConciergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AEPConciergeTests.swift; sourceTree = "<group>"; };
 		249899752D667FD60005CBD7 /* AEPConcierge.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = AEPConcierge.docc; sourceTree = "<group>"; };
 		249899822D67C5F90005CBD7 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		2498998C2D67C62A0005CBD7 /* CarouselGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselGroupView.swift; sourceTree = "<group>"; };
@@ -431,6 +435,7 @@
 			isa = PBXGroup;
 			children = (
 				24037ACB2EF364B000FF4031 /* ConciergeConfiguration.swift */,
+				244E6A022F22EE7C00ADF1AA /* ConsentState.swift */,
 				24037ACC2EF364B000FF4031 /* WelcomePromptSuggestion.swift */,
 			);
 			path = Configuration;
@@ -623,7 +628,6 @@
 			children = (
 				4C2923DE2E7E221900D2D2C1 /* TestHelpers */,
 				4C2923DD2E7E21F400D2D2C1 /* UnitTests */,
-				249899732D667FD60005CBD7 /* AEPConciergeTests.swift */,
 				4CDB0DD52EC84A64000B85D0 /* theme-default.json */,
 			);
 			path = Tests;
@@ -713,7 +717,9 @@
 			isa = PBXGroup;
 			children = (
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
+				244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
+				244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */,
 				4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */,
 				4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */,
 				4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */,
@@ -1255,6 +1261,7 @@
 				247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */,
 				249899842D67C5F90005CBD7 /* Color+Extensions.swift in Sources */,
 				2482FDE02E3BED830032F3CA /* SpeechCapturer.swift in Sources */,
+				244E6A032F22EE7C00ADF1AA /* ConsentState.swift in Sources */,
 				4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */,
 				4CF60BF92F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift in Sources */,
 				4CF60BFA2F0F2DF4008CE4F0 /* ConciergeActionButtonStyle.swift in Sources */,
@@ -1272,7 +1279,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C2923E02E7E223200D2D2C1 /* MockChatService.swift in Sources */,
-				249899C32D67D2C40005CBD7 /* AEPConciergeTests.swift in Sources */,
 				4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */,
 				4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */,
 				4C2923DC2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift in Sources */,
@@ -1289,6 +1295,8 @@
 				4CDB0DCF2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift in Sources */,
 				4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */,
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
+				244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */,
+				244E6A072F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift in Sources */,
 				4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
