@@ -232,4 +232,114 @@ final class ConciergeChatServiceTests: XCTestCase {
             }
         }
     }
+    
+    // MARK: - Feedback Payload Consent Tests
+    
+    private func extractFeedbackPayloadDictionary(from service: ConciergeChatService, data: [String: Any]) throws -> [String: Any] {
+        let payloadData = try service.createFeedbackPayload(data: data)
+        guard let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
+            throw NSError(domain: "TestError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to parse feedback payload as dictionary"])
+        }
+        return payload
+    }
+    
+    private func extractFeedbackConsentState(from payload: [String: Any]) -> String? {
+        guard let meta = payload["meta"] as? [String: Any],
+              let consent = meta["consent"] as? [String: Any],
+              let state = consent["state"] as? String else {
+            return nil
+        }
+        return state
+    }
+    
+    func test_createFeedbackPayload_withConsentY_includesMetaConsentStateIn() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "y")
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = ["eventType": "conversation.feedback"]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        let consentState = extractFeedbackConsentState(from: payload)
+        
+        // Then
+        XCTAssertEqual(consentState, "in")
+    }
+    
+    func test_createFeedbackPayload_withConsentN_includesMetaConsentStateOut() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "n")
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = ["eventType": "conversation.feedback"]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        let consentState = extractFeedbackConsentState(from: payload)
+        
+        // Then
+        XCTAssertEqual(consentState, "out")
+    }
+    
+    func test_createFeedbackPayload_withConsentU_includesMetaConsentStateUnknown() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "u")
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = ["eventType": "conversation.feedback"]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        let consentState = extractFeedbackConsentState(from: payload)
+        
+        // Then
+        XCTAssertEqual(consentState, "unknown")
+    }
+    
+    func test_createFeedbackPayload_withNilConsent_includesMetaConsentStateUnknown() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: nil)
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = ["eventType": "conversation.feedback"]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        let consentState = extractFeedbackConsentState(from: payload)
+        
+        // Then
+        XCTAssertEqual(consentState, "unknown")
+    }
+    
+    func test_createFeedbackPayload_preservesOriginalData() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "y")
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = [
+            "eventType": "conversation.feedback",
+            "feedback": ["rating": "positive"]
+        ]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        
+        // Then
+        XCTAssertEqual(payload["eventType"] as? String, "conversation.feedback")
+        XCTAssertNotNil(payload["feedback"])
+        XCTAssertNotNil(payload["meta"], "Feedback payload should contain 'meta' object")
+    }
+    
+    func test_createFeedbackPayload_containsMetaConsentStructure() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "y")
+        let service = ConciergeChatService(configuration: configuration)
+        let feedbackData: [String: Any] = ["eventType": "conversation.feedback"]
+        
+        // When
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
+        let meta = payload["meta"] as? [String: Any]
+        let consent = meta?["consent"] as? [String: Any]
+        
+        // Then
+        XCTAssertNotNil(meta, "Payload should contain 'meta' object")
+        XCTAssertNotNil(consent, "Meta should contain 'consent' object")
+        XCTAssertNotNil(consent?["state"], "Consent should contain 'state' key")
+    }
 }
