@@ -239,8 +239,21 @@ class ConciergeChatService: NSObject {
         return jsonData
     }
     
-    private func createFeedbackPayload(data: [String: Any]) throws -> Data {
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: data) else {
+    /// Creates the JSON payload for a feedback request.
+    /// - Parameter data: The feedback data dictionary
+    /// - Returns: JSON data for the request body
+    /// - Note: Internal visibility for testing
+    func createFeedbackPayload(data: [String: Any]) throws -> Data {
+        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
+        
+        var payload = data
+        payload[ConciergeConstants.Request.Keys.Consent.META] = [
+            ConciergeConstants.Request.Keys.Consent.CONSENT: [
+                ConciergeConstants.Request.Keys.Consent.STATE: consentState
+            ]
+        ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
             throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge feedback event.")
         }
         
