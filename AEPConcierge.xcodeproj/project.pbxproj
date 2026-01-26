@@ -61,6 +61,7 @@
 		244E6A032F22EE7C00ADF1AA /* ConsentState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A022F22EE7C00ADF1AA /* ConsentState.swift */; };
 		244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */; };
 		244E6A072F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */; };
+		244E6A092F2825DB00ADF1AA /* UnitTests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 244E6A082F2825DB00ADF1AA /* UnitTests.xctestplan */; };
 		247618CD2D6FCF5B00CD61FD /* ConciergeChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */; };
 		247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */; };
 		2482FDDB2E3BE9EF0032F3CA /* TextSpeaking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */; };
@@ -239,6 +240,7 @@
 		244E6A022F22EE7C00ADF1AA /* ConsentState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentState.swift; sourceTree = "<group>"; };
 		244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatServiceTests.swift; sourceTree = "<group>"; };
 		244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentStateTests.swift; sourceTree = "<group>"; };
+		244E6A082F2825DB00ADF1AA /* UnitTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; name = UnitTests.xctestplan; path = UnitTests/UnitTests.xctestplan; sourceTree = "<group>"; };
 		247618CC2D6FCDEE00CD61FD /* ConciergeChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatService.swift; sourceTree = "<group>"; };
 		247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDialogView.swift; sourceTree = "<group>"; };
 		2482FDDA2E3BE9AC0032F3CA /* TextSpeaking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSpeaking.swift; sourceTree = "<group>"; };
@@ -523,6 +525,7 @@
 				4C2923DE2E7E221900D2D2C1 /* TestHelpers */,
 				4C2923DD2E7E21F400D2D2C1 /* UnitTests */,
 				4CDB0DD52EC84A64000B85D0 /* theme-default.json */,
+				244E6A082F2825DB00ADF1AA /* UnitTests.xctestplan */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -927,6 +930,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CDB0DD62EC84A64000B85D0 /* theme-default.json in Resources */,
+				244E6A092F2825DB00ADF1AA /* UnitTests.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

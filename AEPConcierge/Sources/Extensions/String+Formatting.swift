@@ -11,7 +11,6 @@
  */
 
 import Foundation
-import AEPCore
 
 /// Extensions methods for formatting a `String`
 extension String {
