@@ -101,6 +101,7 @@ enum ConciergeConstants {
             
             enum Consent {
                 static let META = "meta"
+                static let CONSENT = "consent"
                 static let STATE = "state"
                 static let ENTRIES = "entries"
                 static let VALUE = "value"

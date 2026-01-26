@@ -362,7 +362,7 @@ final class ChatController: ObservableObject {
                         if state == ConciergeConstants.StreamState.COMPLETED,
                             let data = try? JSONEncoder().encode(response),
                             let json = String(data: data, encoding: .utf8) {
-                            Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json)")
+                            Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json.prettyPrintedJSON())")
                         }
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
