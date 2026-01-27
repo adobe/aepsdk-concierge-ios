@@ -15,7 +15,7 @@ import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
-import AEPConcierge
+import AEPBrandConcierge
 
 struct ContentView: View {
     private enum DemoThemeFile: String, CaseIterable, Identifiable {

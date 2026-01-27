@@ -25,7 +25,7 @@ on:
         default: true
 
       pod-publish-extensions:
-        description: 'Publish AEPConcierge to Cocoapods.'
+        description: 'Publish AEPBrandConcierge to Cocoapods.'
         type: boolean
         required: true
         default: false
@@ -37,7 +37,7 @@ jobs:
     uses: adobe/aepsdk-commons/.github/workflows/ios-release.yml@gha-ios-5.3.2
     with:
       tag: ${{ github.event.inputs.tag }}
-      create-github-release: ${{ github.event.inputs.create-github-release == 'true' && 'AEPConcierge' || '' }}
-      pod-publish-extensions: ${{ github.event.inputs.pod-publish-extensions == 'true' && 'AEPConcierge' || '' }}
-      version-validation-paths: AEPConcierge.xcodeproj/project.pbxproj, AEPConcierge/Sources/Constants.swift,
+      create-github-release: ${{ github.event.inputs.create-github-release == 'true' && 'AEPBrandConcierge' || '' }}
+      pod-publish-extensions: ${{ github.event.inputs.pod-publish-extensions == 'true' && 'AEPBrandConcierge' || '' }}
+      version-validation-paths: AEPBrandConcierge.xcodeproj/project.pbxproj, AEPBrandConcierge/Sources/Constants.swift,
     secrets: inherit

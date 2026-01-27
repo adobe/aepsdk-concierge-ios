@@ -1,4 +1,4 @@
-## Brand Concierge (AEPConcierge) Implementation Guide
+## Brand Concierge (AEPBrandConcierge) Implementation Guide
 
 ### Overview
 
@@ -23,7 +23,7 @@ Your app needs these AEP modules available and registered:
 - **AEPCore** (MobileCore, Configuration shared state comes from `configureWith(appId:)`)
 - **AEPEdge**
 - **AEPEdgeIdentity**
-- **AEPConcierge**
+- **AEPBrandConcierge**
 
 ### iOS version
 - Minimum iOS 15.0+
@@ -47,7 +47,7 @@ The required extensions are:
 - AEPCore
 - AEPEdge
 - AEPEdgeIdentity
-- AEPConcierge
+- AEPBrandConcierge
 
 ### Step 2: Validate the Brand Concierge configuration keys exist
 If you set the Mobile SDK log level to trace (`MobileCore.setLogLevel(.trace)`), you can inspect the app logs to confirm that extension shared states are being set with the expected values.
@@ -126,7 +126,7 @@ Use this when your app is UIKit based and you want to present Concierge from a `
 Call `Concierge.present(on:title:subtitle:)` from the view controller that should host the chat UI:
 
 ```swift
-import AEPConcierge
+import AEPBrandConcierge
 
 final class MyViewController: UIViewController {
     @objc private func openChat() {
