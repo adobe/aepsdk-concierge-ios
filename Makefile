@@ -10,9 +10,9 @@
 # governing permissions and limitations under the License.
 #
 
-export EXTENSION_NAME = AEPConcierge
+export EXTENSION_NAME = AEPBrandConcierge
 PROJECT_NAME = $(EXTENSION_NAME)
-SCHEME_NAME_XCFRAMEWORK = AEPConciergeXCF
+SCHEME_NAME_XCFRAMEWORK = AEPBrandConciergeXCF
 TEST_APP_IOS_SCHEME = ConciergeDemoApp
 
 CURR_DIR := ${CURDIR}

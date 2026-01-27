@@ -19,8 +19,8 @@ use_frameworks!
 # don't warn me
 install! 'cocoapods', :warn_for_unused_master_specs_repo => false
 
-workspace 'AEPConcierge'
-project 'AEPConcierge.xcodeproj'
+workspace 'AEPBrandConcierge'
+project 'AEPBrandConcierge.xcodeproj'
 
 pod 'SwiftLint', '0.52.0'
 
@@ -60,7 +60,7 @@ def test_utils
      pod 'AEPTestUtils', :git => 'https://github.com/adobe/aepsdk-core-ios.git', :tag => 'testutils-5.2.0'
 end
 
-target 'AEPConcierge' do
+target 'AEPBrandConcierge' do
   lib_main
 end
 
