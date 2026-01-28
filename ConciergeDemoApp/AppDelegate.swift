@@ -11,7 +11,7 @@
  */
 
 import AEPCore
-import AEPConcierge
+import AEPBrandConcierge
 import AEPEdge
 import AEPEdgeIdentity
 import AEPEdgeConsent
@@ -44,7 +44,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             MobileCore.configureWith(appId: "staging/1b50a869c4a2/570831bce333/launch-bcc070a55cca-development")
             
             // TODO: - temporary override of datastream until we get that sorted out
-            MobileCore.updateConfigurationWith(configDict: ["concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0"])
+//            MobileCore.updateConfigurationWith(configDict: ["concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0"])
+            
+            // alt config
+            MobileCore.updateConfigurationWith(configDict: [
+                "concierge.server": "edge.adobedc.net",
+                "concierge.configId": "4eb99a22-309c-471c-a1ab-f82560d87a0d",
+                "concierge.surfaces": ["web://d37g5vf7fkpdn6.cloudfront.net/dsg-bc/index.html"]
+            ])
         }
         
         return true
