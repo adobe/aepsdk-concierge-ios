@@ -11,7 +11,7 @@
  */
 
 import UIKit
-import AEPConcierge
+import AEPBrandConcierge
 
 /// Simple UIKit screen showcasing the UIKit-based Concierge presentation API.
 final class ConciergeUIKitDemoViewController: UIViewController {

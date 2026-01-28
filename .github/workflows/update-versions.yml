@@ -45,6 +45,6 @@ jobs:
       version: ${{ github.event.inputs.version }}
       branch: ${{ github.event.inputs.branch }}
       dependencies: AEPCore ${{ github.event.inputs.core-dependency }}, AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
-      paths: AEPConcierge.xcodeproj/project.pbxproj, AEPConcierge/Sources/Constants.swift
+      paths: AEPBrandConcierge.xcodeproj/project.pbxproj, AEPBrandConcierge/Sources/Constants.swift
       update: true
     secrets: inherit
