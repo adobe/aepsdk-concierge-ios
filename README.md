@@ -11,12 +11,9 @@ This AEPBrandConcierge extension is not for use by the general public. Please ge
 
 ## About this project
 
-Adobe Experience Platform (AEP) Messaging Extension is an extension for the [Adobe Experience Platform Swift SDK](https://github.com/adobe/aepsdk-core-ios).
+Adobe Experience Platform (AEP) Brand Concierge Extension is an extension for the [Adobe Experience Platform Swift SDK](https://github.com/adobe/aepsdk-core-ios).
 
-The AEPMessaging extension enables the following workflows:
-
-- Sending push notification tokens and push notification click-through feedback to AEP
-- Displaying in-app messages which were created and configured for this app in Adobe Journey Optimizer (AJO)
+The AEPBrandConcierge extension is used to enable Brand Concierge experiences in your iOS app.
 
 For further information about Adobe SDKs, visit the [developer documentation](https://developer.adobe.com/client-sdks/documentation/).
 
@@ -26,15 +23,15 @@ For further information about Adobe SDKs, visit the [developer documentation](ht
 
 ## Installation
 
-For installation instructions, visit the [Getting started](./Documentation/sources/getting-started.md) guide.
+For installation instructions, visit the [getting started guide](./Documentation/getting-started.md).
+
+## Implementation
+
+For implementation instructions, visit the [implementation guide](./Documentation/Implementation/implementation-guide.md).
 
 ## Documentation
 
 Additional documentation for SDK usage and configuration can be found in the [Documentation](./Documentation/README.md) directory.
-
-## Tutorial
-
-A comprehensive tutorial for getting started with In-app messaging can be found [here](https://opensource.adobe.com/aepsdk-messaging-ios/#/tutorials/README).
 
 ## Related Projects
 

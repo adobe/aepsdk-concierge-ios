@@ -18,6 +18,7 @@ Internally, `Concierge.show(...)` dispatches an event in the Adobe Experience Pl
 ## Pre requisites
 
 ### Required SDK modules
+
 Your app needs these AEP modules available and registered:
 
 - **AEPCore** (MobileCore, Configuration shared state comes from `configureWith(appId:)`)
@@ -26,9 +27,11 @@ Your app needs these AEP modules available and registered:
 - **AEPBrandConcierge**
 
 ### iOS version
+
 - Minimum iOS 15.0+
 
-### Permissions (for speech input)
+### Permissions for speech to text (optional)
+
 Speech to text uses iOS Speech + microphone APIs. Add these to your app `Info.plist`:
 
 - **`NSMicrophoneUsageDescription`**
@@ -50,6 +53,7 @@ The required extensions are:
 - AEPBrandConcierge
 
 ### Step 2: Validate the Brand Concierge configuration keys exist
+
 If you set the Mobile SDK log level to trace (`MobileCore.setLogLevel(.trace)`), you can inspect the app logs to confirm that extension shared states are being set with the expected values.
 
 Brand Concierge expects the following keys to be present in the Configuration shared state:
@@ -67,6 +71,7 @@ Another option for validation is to use Adobe Assurance. Refer to the [Mobile SD
 ## Optional styling
 
 ### Theme injection (recommended)
+
 The UI reads styling from the SwiftUI environment value `conciergeTheme`. You can load a theme JSON and apply it above `Concierge.wrap(...)` so both the floating button and the overlay share it:
 
 ```swift
@@ -82,7 +87,8 @@ var body: some View {
 
 ## Basic usage
 
-### Option A: Manual API call (no floating button)
+### Option A - Manual API call (no floating button)
+
 Use this when you want full control over where the entry point lives.
 
 1) Wrap your root content and hide the built in button:
@@ -103,7 +109,8 @@ Optional:
 - Provide **speech capture** by using the default (it is created internally if you do not pass one).
 - Provide **text to speech** by passing a `TextSpeaking` implementation (text to speech is not enabled by default unless you supply one).
 
-### Option B: Floating button (built in)
+### Option B - Floating button (built in)
+
 Use this when you want a drop in entry point.
 
 ```swift
@@ -113,6 +120,7 @@ Concierge.wrap(AppRootView()) // hideButton defaults to false
 This renders a floating button in the bottom trailing corner; tapping it calls `Concierge.show()`.
 
 ### Closing the UI
+
 From code, you can dismiss the overlay with:
 
 ```swift
@@ -120,9 +128,11 @@ Concierge.hide()
 ```
 
 ### UIKit usage
+
 Use this when your app is UIKit based and you want to present Concierge from a `UIViewController`.
 
 #### Present the chat UI
+
 Call `Concierge.present(on:title:subtitle:)` from the view controller that should host the chat UI:
 
 ```swift
@@ -136,6 +146,7 @@ final class MyViewController: UIViewController {
 ```
 
 #### Dismiss the chat UI
+
 To dismiss the presented UI, call:
 
 ```swift
