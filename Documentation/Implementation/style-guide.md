@@ -6,6 +6,7 @@ This document provides a comprehensive reference for all styling properties supp
 
 - [Overview](#overview)
 - [JSON Structure](#json-structure)
+- [Value Formats](#value-formats)
 - [Metadata](#metadata)
 - [Behavior](#behavior)
 - [Disclaimer](#disclaimer)
@@ -22,17 +23,46 @@ This document provides a comprehensive reference for all styling properties supp
 
 ## Overview
 
-The theme configuration is loaded from a JSON file using `ThemeLoader.load(from:in:)`. The framework supports CSS-like variable names (prefixed with `--`) that are automatically mapped to native Swift properties.
+The theme configuration is loaded from a JSON file using `ConciergeThemeLoader.load(from:in:)`. The framework supports CSS-like variable names (prefixed with `--`) that are automatically mapped to native Swift properties.
 
 ### Loading a Theme
 
 ```swift
 // Load from app bundle
-let theme = ThemeLoader.load(from: "theme-default", in: .main)
+let theme = ConciergeThemeLoader.load(from: "theme-default", in: .main)
 
 // Use default theme
-let defaultTheme = ThemeLoader.default()
+let defaultTheme = ConciergeThemeLoader.default()
 ```
+
+### Applying a Theme
+
+Apply the theme using the `.conciergeTheme()` view modifier on your wrapped content:
+
+```swift
+import SwiftUI
+import AEPBrandConcierge
+
+struct ContentView: View {
+    @State private var theme: ConciergeTheme = ConciergeThemeLoader.default()
+    
+    var body: some View {
+        Concierge.wrap(
+            // Your app content here
+            Text("Hello, World!")
+        )
+        .conciergeTheme(theme)  // Apply theme to the wrapper
+        .onAppear {
+            // Load custom theme from JSON file
+            if let loadedTheme = ConciergeThemeLoader.load(from: "my-theme", in: .main) {
+                theme = loadedTheme
+            }
+        }
+    }
+}
+```
+
+> **Important:** The `.conciergeTheme()` modifier must be applied to the result of `Concierge.wrap()` so the theme is available to both the wrapper and the chat overlay.
 
 ---
 
@@ -49,6 +79,85 @@ The theme JSON file contains these top-level keys:
 | `arrays` | Welcome examples and feedback options |
 | `assets` | Icon and image assets |
 | `theme` | Visual styling tokens (CSS variables) |
+
+---
+
+## Value Formats
+
+Understanding the value formats used throughout this document.
+
+### Colors
+
+Colors are specified as hex strings:
+
+```json
+"--color-primary": "#EB1000"
+"--message-user-background": "#EBEEFF"
+"--input-box-shadow": "0 2px 8px 0 #00000014"
+```
+
+Supported formats:
+- `#RRGGBB` - 6 digit hex
+- `#RRGGBBAA` - 8 digit hex with alpha
+
+### Dimensions
+
+Dimensions use CSS pixel units:
+
+```json
+"--input-height": "52px"
+"--input-border-radius": "12px"
+"--message-max-width": "100%"
+```
+
+### Padding
+
+Padding follows CSS shorthand syntax:
+
+```json
+"--message-padding": "8px 16px"
+```
+
+Formats:
+- `8px` - All sides
+- `8px 16px` - Vertical, horizontal
+- `8px 16px 4px` - Top, horizontal, bottom
+- `8px 16px 4px 2px` - Top, right, bottom, left
+
+### Shadows
+
+Shadows use CSS box-shadow syntax:
+
+```json
+"--input-box-shadow": "0 2px 8px 0 #00000014"
+"--multimodal-card-box-shadow": "none"
+```
+
+Format: `offsetX offsetY blurRadius spreadRadius color`
+
+### Font Weights
+
+Font weights use CSS numeric or named values:
+
+| Value | Name |
+|-------|------|
+| `100` | `ultraLight` |
+| `200` | `thin` |
+| `300` | `light` |
+| `400` / `normal` | `regular` |
+| `500` | `medium` |
+| `600` | `semibold` |
+| `700` / `bold` | `bold` |
+| `800` | `heavy` |
+| `900` | `black` |
+
+### Text Alignment
+
+| Value | SwiftUI Equivalent |
+|-------|-------------------|
+| `left` | `.leading` |
+| `center` | `.center` |
+| `right` | `.trailing` |
 
 ---
 
@@ -86,7 +195,7 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.multimodalCarousel.cardClickAction` | `String` | `"openLink"` | Action when carousel card is tapped |
+| `behavior.multimodalCarousel.cardClickAction` | `String` | `"openLink"` | Action when carousel card is tapped. Currently "openLink" is the only option available. |
 
 ### Input
 
@@ -170,6 +279,10 @@ Legal disclaimer text with embedded links.
 
 Localized UI strings using dot-notation keys.
 
+### ✅ Content Recommendations
+
+While there are no strict requirements for character limits in many of these text fields, it is **_strongly_** recommended that the values be tested on target device(s) prior to deployment, ensuring the UI renders as desired.
+
 ### Welcome Screen
 
 | JSON Key | Default | Description |
@@ -240,6 +353,10 @@ List-based configuration for examples and feedback options.
 
 ### Welcome Examples
 
+> It is recommended to have no more than four items in your provided welcome examples.
+>
+> Always test your values on device to ensure the UI looks as desired.
+
 | JSON Key | Type | Description |
 |----------|------|-------------|
 | `arrays["welcome.examples"]` | `Array` | Welcome screen example cards |
@@ -248,6 +365,10 @@ List-based configuration for examples and feedback options.
 | `arrays["welcome.examples"][].backgroundColor` | `String?` | Card background color (hex) |
 
 ### Feedback Options
+
+> It is recommended to have no more than five options available for feedback. 
+>
+> Always test your values on device to ensure the UI looks as desired.
 
 | JSON Key | Type | Description |
 |----------|------|-------------|
@@ -453,83 +574,6 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--welcome-input-order` | `layout.welcomeInputOrder` | `Int` | `3` | Input field display order |
 | `--welcome-cards-order` | `layout.welcomeCardsOrder` | `Int` | `2` | Example cards display order |
-
----
-
-## Value Formats
-
-### Colors
-
-Colors are specified as hex strings:
-
-```json
-"--color-primary": "#EB1000"
-"--message-user-background": "#EBEEFF"
-"--input-box-shadow": "0 2px 8px 0 #00000014"
-```
-
-Supported formats:
-- `#RRGGBB` - 6 digit hex
-- `#RRGGBBAA` - 8 digit hex with alpha
-
-### Dimensions
-
-Dimensions use CSS pixel units:
-
-```json
-"--input-height": "52px"
-"--input-border-radius": "12px"
-"--message-max-width": "100%"
-```
-
-### Padding
-
-Padding follows CSS shorthand syntax:
-
-```json
-"--message-padding": "8px 16px"
-```
-
-Formats:
-- `8px` - All sides
-- `8px 16px` - Vertical, horizontal
-- `8px 16px 4px` - Top, horizontal, bottom
-- `8px 16px 4px 2px` - Top, right, bottom, left
-
-### Shadows
-
-Shadows use CSS box-shadow syntax:
-
-```json
-"--input-box-shadow": "0 2px 8px 0 #00000014"
-"--multimodal-card-box-shadow": "none"
-```
-
-Format: `offsetX offsetY blurRadius spreadRadius color`
-
-### Font Weights
-
-Font weights use CSS numeric or named values:
-
-| Value | Name |
-|-------|------|
-| `100` | `ultraLight` |
-| `200` | `thin` |
-| `300` | `light` |
-| `400` / `normal` | `regular` |
-| `500` | `medium` |
-| `600` | `semibold` |
-| `700` / `bold` | `bold` |
-| `800` | `heavy` |
-| `900` | `black` |
-
-### Text Alignment
-
-| Value | SwiftUI Equivalent |
-|-------|-------------------|
-| `left` | `.leading` |
-| `center` | `.center` |
-| `right` | `.trailing` |
 
 ---
 
@@ -835,9 +879,3 @@ The following CSS variables appear in web theme configurations but are **not sup
 | `--feedback-icon-btn-hover-background` | Hover states not applicable on iOS |
 | `--message-alignment` | Use `behavior.chat.messageAlignment` instead |
 | `--message-width` | Use `behavior.chat.messageWidth` instead |
-
-### Summary
-
-**Fully Implemented:** 52 properties
-**Defined but Unused:** 18 properties  
-**Not Supported:** 9 CSS variables (web-only)
