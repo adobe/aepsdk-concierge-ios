@@ -11,6 +11,7 @@
  */
 
 import AEPServices
+import Foundation
 
 /// Service handling communication with the Brand Concierge backend.
 class ConciergeChatService: NSObject {
