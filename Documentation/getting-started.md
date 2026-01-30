@@ -70,6 +70,7 @@ import AEPBrandConcierge
 import AEPCore
 import AEPEdge
 import AEPEdgeIdentity
+import UIKit
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
