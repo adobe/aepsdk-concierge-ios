@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 /*
@@ -34,6 +34,7 @@ let package = Package(
                 .product(name: "AEPEdge", package: "aepsdk-edge-ios"),
                 .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios")
             ],
-            path: "AEPBrandConcierge/Sources")
+            path: "AEPBrandConcierge/Sources",
+            exclude: ["Info.plist", "AEPBrandConcierge.h"])
     ]
 )
