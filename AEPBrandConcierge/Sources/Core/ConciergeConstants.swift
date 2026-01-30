@@ -17,7 +17,7 @@ enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
     static let EXTENSION_VERSION = "5.0.0"
-    static let FRIENDLY_NAME = "Concierge"
+    static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
     
     // MARK: - HTTP
