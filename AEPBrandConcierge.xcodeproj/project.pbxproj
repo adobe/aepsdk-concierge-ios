@@ -84,6 +84,13 @@
 		249899BB2D67CF0E0005CBD7 /* listening.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899B82D67CF0E0005CBD7 /* listening.json */; };
 		249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */; };
 		249899BF2D67CF0E0005CBD7 /* thinking.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899BA2D67CF0E0005CBD7 /* thinking.json */; };
+		24CAB3602F2D579B00CEE013 /* SessionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35B2F2D579B00CEE013 /* SessionManagerTests.swift */; };
+		24CAB3612F2D579B00CEE013 /* SourceCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35D2F2D579B00CEE013 /* SourceCodableTests.swift */; };
+		24CAB3622F2D579B00CEE013 /* SpeechControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35E2F2D579B00CEE013 /* SpeechControllerTests.swift */; };
+		24CAB3632F2D579B00CEE013 /* FeedbackSentimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3592F2D579B00CEE013 /* FeedbackSentimentTests.swift */; };
+		24CAB3642F2D579B00CEE013 /* SharedStateResultConciergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35C2F2D579B00CEE013 /* SharedStateResultConciergeTests.swift */; };
+		24CAB3652F2D579B00CEE013 /* StringFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35F2F2D579B00CEE013 /* StringFormattingTests.swift */; };
+		24CAB3662F2D579B00CEE013 /* MarkdownRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35A2F2D579B00CEE013 /* MarkdownRendererTests.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
 		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
@@ -267,6 +274,13 @@
 		249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		249899B82D67CF0E0005CBD7 /* listening.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listening.json; sourceTree = "<group>"; };
 		249899BA2D67CF0E0005CBD7 /* thinking.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = thinking.json; sourceTree = "<group>"; };
+		24CAB3592F2D579B00CEE013 /* FeedbackSentimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSentimentTests.swift; sourceTree = "<group>"; };
+		24CAB35A2F2D579B00CEE013 /* MarkdownRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRendererTests.swift; sourceTree = "<group>"; };
+		24CAB35B2F2D579B00CEE013 /* SessionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManagerTests.swift; sourceTree = "<group>"; };
+		24CAB35C2F2D579B00CEE013 /* SharedStateResultConciergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStateResultConciergeTests.swift; sourceTree = "<group>"; };
+		24CAB35D2F2D579B00CEE013 /* SourceCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCodableTests.swift; sourceTree = "<group>"; };
+		24CAB35E2F2D579B00CEE013 /* SpeechControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechControllerTests.swift; sourceTree = "<group>"; };
+		24CAB35F2F2D579B00CEE013 /* StringFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringFormattingTests.swift; sourceTree = "<group>"; };
 		24CC5AB62F11CF2800484C0B /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		2A8803C559E307362EE94BF3 /* Pods-AEPBrandConciergeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConciergeTests.release.xcconfig"; path = "Target Support Files/Pods-AEPBrandConciergeTests/Pods-AEPBrandConciergeTests.release.xcconfig"; sourceTree = "<group>"; };
 		4C1738102E67C590003E88AF /* SourcesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListView.swift; sourceTree = "<group>"; };
@@ -617,7 +631,14 @@
 				244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
 				244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */,
+				24CAB3592F2D579B00CEE013 /* FeedbackSentimentTests.swift */,
 				4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */,
+				24CAB35A2F2D579B00CEE013 /* MarkdownRendererTests.swift */,
+				24CAB35B2F2D579B00CEE013 /* SessionManagerTests.swift */,
+				24CAB35C2F2D579B00CEE013 /* SharedStateResultConciergeTests.swift */,
+				24CAB35D2F2D579B00CEE013 /* SourceCodableTests.swift */,
+				24CAB35E2F2D579B00CEE013 /* SpeechControllerTests.swift */,
+				24CAB35F2F2D579B00CEE013 /* StringFormattingTests.swift */,
 				4CDB0DCC2EC82CA2000B85D0 /* ThemeCSSConverterTests.swift */,
 				4CDB0DCD2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift */,
 				4CDB0DCB2EC82CA2000B85D0 /* ThemeDecodingTests.swift */,
@@ -1177,6 +1198,13 @@
 				4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */,
 				4C2923E42E7E27CA00D2D2C1 /* MockSpeaker.swift in Sources */,
 				4CDB0DCF2EC82CA2000B85D0 /* ThemeCSSMapperTests.swift in Sources */,
+				24CAB3602F2D579B00CEE013 /* SessionManagerTests.swift in Sources */,
+				24CAB3612F2D579B00CEE013 /* SourceCodableTests.swift in Sources */,
+				24CAB3622F2D579B00CEE013 /* SpeechControllerTests.swift in Sources */,
+				24CAB3632F2D579B00CEE013 /* FeedbackSentimentTests.swift in Sources */,
+				24CAB3642F2D579B00CEE013 /* SharedStateResultConciergeTests.swift in Sources */,
+				24CAB3652F2D579B00CEE013 /* StringFormattingTests.swift in Sources */,
+				24CAB3662F2D579B00CEE013 /* MarkdownRendererTests.swift in Sources */,
 				4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */,
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
 				244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */,
