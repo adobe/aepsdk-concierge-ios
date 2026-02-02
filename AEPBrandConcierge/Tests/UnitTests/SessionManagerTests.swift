@@ -66,7 +66,7 @@ final class SessionManagerTests: XCTestCase {
         let firstSessionId = sessionManager.getOrCreateSessionId()
         
         // When - Wait for session to expire
-        Thread.sleep(forTimeInterval: 0.2) // Wait longer than TTL
+        Thread.sleep(forTimeInterval: 2.0) // Wait longer than TTL
         let secondSessionId = sessionManager.getOrCreateSessionId()
         
         // Then
@@ -77,14 +77,14 @@ final class SessionManagerTests: XCTestCase {
     
     func test_refreshSessionActivity_extendsSessionValidity() {
         // Given - Short TTL
-        let shortTTL: TimeInterval = 0.2
+        let shortTTL: TimeInterval = 5.0
         let sessionManager = SessionManager(dataStore: testDataStore, sessionTTL: shortTTL)
         let initialSessionId = sessionManager.getOrCreateSessionId()
         
         // When - Refresh before expiration
-        Thread.sleep(forTimeInterval: 0.1)
+        Thread.sleep(forTimeInterval: 3.0)
         sessionManager.refreshSessionActivity()
-        Thread.sleep(forTimeInterval: 0.15)
+        Thread.sleep(forTimeInterval: 3.0)
         
         let sessionIdAfterRefresh = sessionManager.getOrCreateSessionId()
         
