@@ -43,7 +43,7 @@ struct ChatTopBar: View {
 
             Button(action: onClose) {
                 BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
-                    .foregroundColor(theme.colors.primary.primary.color)
+                    .foregroundColor(theme.colors.primary.text.color)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Close")

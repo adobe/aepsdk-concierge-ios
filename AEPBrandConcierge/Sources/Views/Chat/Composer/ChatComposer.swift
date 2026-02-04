@@ -41,11 +41,11 @@ struct ChatComposer: View {
                     Button(action: onComplete) {
                         ZStack {
                             Circle()
-                                .fill(theme.colors.primary.primary.color)
+                                .fill(theme.colors.primary.text.color)
                                 .frame(width: 28, height: 28)
                             // Punch the icon out to create negative space
                             BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
-                                .foregroundColor(.black) // color irrelevant for destinationOut
+                                .foregroundColor(theme.colors.primary.primary.color)
                                 .blendMode(.destinationOut)
                         }
                         .compositingGroup()
@@ -92,7 +92,7 @@ struct ChatComposer: View {
                         }
                         // Recording glow border
                         if case .recording = inputState {
-                            RotatingGlowBorder(color: Color.Secondary, cornerRadius: theme.layout.inputBorderRadius)
+                            RotatingGlowBorder(color: theme.colors.primary.text.color, cornerRadius: theme.layout.inputBorderRadius)
                         }
                     }
                 )
