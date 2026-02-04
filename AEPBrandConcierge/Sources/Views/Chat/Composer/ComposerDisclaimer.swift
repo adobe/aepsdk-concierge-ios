@@ -25,22 +25,25 @@ struct ComposerDisclaimer: View {
     private var attributedDisclaimerText: AttributedString {
         let text = theme.disclaimer.text
         let links = theme.disclaimer.links
+        let disclaimerColor = theme.components.disclaimer.textColor.color
 
         var result = AttributedString()
-        result.foregroundColor = theme.components.disclaimer.textColor.color
 
         var remainingText = text[...]
         while let openBraceIndex = remainingText.firstIndex(of: "{"),
               let closeBraceIndex = remainingText[openBraceIndex...].firstIndex(of: "}") {
             // Append prefix text.
             let prefix = String(remainingText[..<openBraceIndex])
-            result.append(AttributedString(prefix))
+            var prefixString = AttributedString(prefix)
+            prefixString.foregroundColor = disclaimerColor
+            result.append(prefixString)
 
             // Extract token inside braces.
             let tokenStart = remainingText.index(after: openBraceIndex)
             let token = String(remainingText[tokenStart..<closeBraceIndex])
 
             var tokenString = AttributedString(token)
+            tokenString.foregroundColor = disclaimerColor
 
             if let link = links.first(where: { $0.text == token }),
                let url = URL(string: link.url) {
@@ -56,7 +59,9 @@ struct ComposerDisclaimer: View {
         }
 
         // Append trailing text.
-        result.append(AttributedString(String(remainingText)))
+        var trailingString = AttributedString(String(remainingText))
+        trailingString.foregroundColor = disclaimerColor
+        result.append(trailingString)
         return result
     }
 }
