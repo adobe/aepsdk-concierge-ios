@@ -47,7 +47,6 @@
 		243013782E67A27700F6673E /* ButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013772E67A27700F6673E /* ButtonView.swift */; };
 		2430137B2E69E6C800F6673E /* AEPBrandConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 249899492D6679790005CBD7 /* AEPBrandConcierge.framework */; };
 		2430137C2E69E6C800F6673E /* AEPBrandConcierge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 249899492D6679790005CBD7 /* AEPBrandConcierge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		243868BF2EB16AF2004BF9C0 /* bctheme.plist in Resources */ = {isa = PBXBuildFile; fileRef = 243868BE2EB16AE3004BF9C0 /* bctheme.plist */; };
 		243868C12EB17592004BF9C0 /* Event+Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243868C02EB1758E004BF9C0 /* Event+Concierge.swift */; };
 		243868C32EB17B18004BF9C0 /* SharedStateResult+Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */; };
 		244E69CE2F16A9C300ADF1AA /* String+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */; };
@@ -81,9 +80,7 @@
 		249899B22D67CCE30005CBD7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249899AF2D67CCE30005CBD7 /* ContentView.swift */; };
 		249899B32D67CCE30005CBD7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 249899AB2D67CCE30005CBD7 /* Preview Assets.xcassets */; };
 		249899B42D67CCE30005CBD7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 249899AD2D67CCE30005CBD7 /* Assets.xcassets */; };
-		249899BB2D67CF0E0005CBD7 /* listening.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899B82D67CF0E0005CBD7 /* listening.json */; };
 		249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */; };
-		249899BF2D67CF0E0005CBD7 /* thinking.json in Resources */ = {isa = PBXBuildFile; fileRef = 249899BA2D67CF0E0005CBD7 /* thinking.json */; };
 		24CAB3602F2D579B00CEE013 /* SessionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35B2F2D579B00CEE013 /* SessionManagerTests.swift */; };
 		24CAB3612F2D579B00CEE013 /* SourceCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35D2F2D579B00CEE013 /* SourceCodableTests.swift */; };
 		24CAB3622F2D579B00CEE013 /* SpeechControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB35E2F2D579B00CEE013 /* SpeechControllerTests.swift */; };
@@ -233,7 +230,6 @@
 		24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeOverlayManager.swift; sourceTree = "<group>"; };
 		24037AE72EF364D800FF4031 /* ConciergeWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeWrapper.swift; sourceTree = "<group>"; };
 		243013772E67A27700F6673E /* ButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonView.swift; sourceTree = "<group>"; };
-		243868BE2EB16AE3004BF9C0 /* bctheme.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = bctheme.plist; sourceTree = "<group>"; };
 		243868C02EB1758E004BF9C0 /* Event+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Event+Concierge.swift"; sourceTree = "<group>"; };
 		243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SharedStateResult+Concierge.swift"; sourceTree = "<group>"; };
 		244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Formatting.swift"; sourceTree = "<group>"; };
@@ -272,8 +268,6 @@
 		249899AE2D67CCE30005CBD7 /* ConciergeDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeDemoApp.swift; sourceTree = "<group>"; };
 		249899AF2D67CCE30005CBD7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		249899B82D67CF0E0005CBD7 /* listening.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listening.json; sourceTree = "<group>"; };
-		249899BA2D67CF0E0005CBD7 /* thinking.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = thinking.json; sourceTree = "<group>"; };
 		24CAB3592F2D579B00CEE013 /* FeedbackSentimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSentimentTests.swift; sourceTree = "<group>"; };
 		24CAB35A2F2D579B00CEE013 /* MarkdownRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRendererTests.swift; sourceTree = "<group>"; };
 		24CAB35B2F2D579B00CEE013 /* SessionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManagerTests.swift; sourceTree = "<group>"; };
@@ -605,10 +599,6 @@
 		249899B02D67CCE30005CBD7 /* ConciergeDemoApp */ = {
 			isa = PBXGroup;
 			children = (
-				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
-				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
-				243868BE2EB16AE3004BF9C0 /* bctheme.plist */,
-				249899AD2D67CCE30005CBD7 /* Assets.xcassets */,
 				249899AC2D67CCE30005CBD7 /* Preview Content */,
 				4C952FBF2E4BE8FD00772695 /* Resources */,
 				2483A3D22D767432004E6CDC /* AppDelegate.swift */,
@@ -616,10 +606,11 @@
 				249899AE2D67CCE30005CBD7 /* ConciergeDemoApp.swift */,
 				249899AF2D67CCE30005CBD7 /* ContentView.swift */,
 				4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */,
+				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
+				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
+				249899AD2D67CCE30005CBD7 /* Assets.xcassets */,
 				2483A3D42D77CE9B004E6CDC /* Info.plist */,
 				249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */,
-				249899B82D67CF0E0005CBD7 /* listening.json */,
-				249899BA2D67CF0E0005CBD7 /* thinking.json */,
 			);
 			path = ConciergeDemoApp;
 			sourceTree = "<group>";
@@ -968,10 +959,7 @@
 				4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */,
 				4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */,
 				4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */,
-				243868BF2EB16AF2004BF9C0 /* bctheme.plist in Resources */,
-				249899BB2D67CF0E0005CBD7 /* listening.json in Resources */,
 				249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */,
-				249899BF2D67CF0E0005CBD7 /* thinking.json in Resources */,
 				249899B42D67CCE30005CBD7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
