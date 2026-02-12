@@ -35,6 +35,8 @@ public struct ChatView: View {
     @State private var feedbackSentiment: FeedbackSentiment = .positive
     @State private var feedbackMessageId: UUID? = nil
     @State private var isInputFocused: Bool = false
+    @State private var showWebViewPopover: Bool = false
+    @State private var webViewURL: URL? = nil
 
     // MARK: - Dependencies and Configuration
     
@@ -209,6 +211,13 @@ public struct ChatView: View {
                 showFeedbackOverlay = true
             }
         })
+        // Provide webview presenter to child views via environment
+        .conciergeWebViewPresenter(ConciergeWebViewPresenter { url in
+            webViewURL = url
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                showWebViewPopover = true
+            }
+        })
         // Overlay after layout to avoid affecting layout metrics
         .overlay(alignment: .center) {
             if showFeedbackOverlay {
@@ -275,6 +284,22 @@ public struct ChatView: View {
                     )
                 }
                 .zIndex(1001)
+            }
+        }
+        // WebView popover overlay - using overlay instead of fullScreenCover to show app behind
+        .overlay {
+            if showWebViewPopover, let url = webViewURL {
+                WebViewPopover(
+                    url: url,
+                    onDismiss: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            showWebViewPopover = false
+                        }
+                    }
+                )
+                .conciergeTheme(theme)
+                .zIndex(1002)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .font(
