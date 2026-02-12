@@ -108,7 +108,7 @@ install-githook:
 	git config core.hooksPath .githooks
 
 lint-autocorrect:
-	./Pods/SwiftLint/swiftlint --fix
+	./Pods/SwiftLint/swiftlint --fix Sources ConciergeDemoApp
 
 lint:
 	./Pods/SwiftLint/swiftlint lint Sources ConciergeDemoApp

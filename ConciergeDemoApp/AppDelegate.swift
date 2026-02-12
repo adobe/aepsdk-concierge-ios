@@ -18,7 +18,7 @@ import AEPEdgeConsent
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        
+
         MobileCore.setLogLevel(.trace)
 
         let extensions = [
@@ -27,14 +27,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             Consent.self,
             Concierge.self
         ]
-        
+
         MobileCore.registerExtensions(extensions) {
             MobileCore.configureWith(appId: "staging/1b50a869c4a2/570831bce333/launch-bcc070a55cca-development")
-            
+
             // TODO: - temporary override of datastream until we get that sorted out
-            MobileCore.updateConfigurationWith(configDict: ["concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0"])            
+            MobileCore.updateConfigurationWith(configDict: ["concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0"])
         }
-        
+
         return true
     }
 }
