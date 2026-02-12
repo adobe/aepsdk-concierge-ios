@@ -58,6 +58,7 @@ enum ConciergeConstants {
     enum EventData {
         enum Key {
             static let CONFIG = "config"
+            static let SURFACES = "surfaces"
         }
     }
     
@@ -87,7 +88,6 @@ enum ConciergeConstants {
             static let EVENTS = "events"
             static let QUERY = "query"
             static let CONVERSATION = "conversation"
-            static let FETCH_CONVERSATIONAL_EXPERIENCE = "fetchConversationalExperience"
             static let SURFACES = "surfaces"
             static let MESSAGE = "message"
             static let XDM = "xdm"
@@ -152,7 +152,6 @@ enum ConciergeConstants {
             enum Concierge {
                 static let SERVER = "concierge.server"
                 static let DATASTREAM = "concierge.configId"
-                static let SURFACES = "concierge.surfaces"
             }
         }
 

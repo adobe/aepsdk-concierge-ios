@@ -42,11 +42,6 @@ extension SharedStateResult {
         value?[ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM] as? String
     }
     
-    /// The Concierge surfaces from configuration.
-    var conciergeSurfaces: [String]? {
-        value?[ConciergeConstants.SharedState.Configuration.Concierge.SURFACES] as? [String]
-    }
-    
     /// Value for collect out of consents shared state
     var collectValue: String {
         guard let consents = value?[ConciergeConstants.SharedState.Consent.CONSENTS] as? [String: Any],

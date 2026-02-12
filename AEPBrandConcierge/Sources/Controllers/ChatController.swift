@@ -253,21 +253,6 @@ final class ChatController: ObservableObject {
             }
             return
         }
-        
-        // Fallback to service defaults until the backend provides welcome content.
-        let welcome = await chatService.fetchWelcome()
-        messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
-        for example in welcome.examples {
-            messages.append(
-                Message(
-                    template: .welcomePromptSuggestion(
-                        imageSource: .remote(example.imageURL),
-                        text: example.text,
-                        background: example.background
-                    )
-                )
-            )
-        }
     }
     
     // MARK: - Feedback

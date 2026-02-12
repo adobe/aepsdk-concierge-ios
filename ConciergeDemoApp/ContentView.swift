@@ -70,6 +70,7 @@ struct ContentView: View {
                         Button(action: {
                             // only call needed to show the concierge ui
                             Concierge.show(
+                                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
                                 title: "Concierge",
                                 subtitle: "Powered by Adobe"
                             )
@@ -107,7 +108,8 @@ struct ContentView: View {
             Concierge.wrap(
                 Label(
                     "hello, world", systemImage: "world"
-                )
+                ),
+                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
             )
             .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
             
