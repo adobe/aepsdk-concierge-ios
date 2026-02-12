@@ -32,6 +32,7 @@ public class Concierge: NSObject, Extension {
     static var textSpeaker: TextSpeaking?
     static var chatTitle: String = "Concierge"
     static var chatSubtitle: String? = "Powered by Adobe"
+    static var surfaces: [String] = []
     static var presentedUIKitController: UIViewController?
     
     // MARK: - Extension Protocol Methods
@@ -122,8 +123,8 @@ public class Concierge: NSObject, Extension {
             return
         }
         
-        guard let surfaces = configSharedState.conciergeSurfaces else {
-            errorMessage = "Unable to show Brand Concierge UI - no surfaces were provided in configuration."
+        guard let surfaces = event.data?[ConciergeConstants.EventData.Key.SURFACES] as? [String], !surfaces.isEmpty else {
+            errorMessage = "Unable to show Brand Concierge UI - no surfaces were provided in the show() call."
             return
         }
         

@@ -45,40 +45,6 @@ class ConciergeChatService: NSObject {
         session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }
 
-    // MARK: - Welcome Content
-    
-    /// Returns welcome header and example tiles.
-    /// TODO: Replace with backend support when available
-    func fetchWelcome() async -> (title: String, body: String, examples: [WelcomePromptSuggestion]) {
-        let title = "Welcome to Adobe concierge!"
-        let body = "I'm your personal guide to help you explore and find exactly what you need. Let's get started!\n\nNot sure where to start? Explore the suggested ideas below."
-
-        let examples: [WelcomePromptSuggestion] = [
-            WelcomePromptSuggestion(
-                text: "I'd like to explore templates to see what I can create.",
-                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_142fd6e4e46332d8f41f5aef982448361c0c8c65e.png"),
-                backgroundHex: "#FFFFFF"
-            ),
-            WelcomePromptSuggestion(
-                text: "I want to touch up and enhance my photos.",
-                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1e188097a1bc580b26c8be07d894205c5c6ca5560.png"),
-                backgroundHex: "#FFFFFF"
-            ),
-            WelcomePromptSuggestion(
-                text: "I'd like to edit PDFs and make them interactive.",
-                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_1f6fed23045bbbd57fc17dadc3aa06bcc362f84cb.png"),
-                backgroundHex: "#FFFFFF"
-            ),
-            WelcomePromptSuggestion(
-                text: "I want to turn my clips into polished videos.",
-                imageURL: URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png"),
-                backgroundHex: "#FFFFFF"
-            )
-        ]
-
-        return (title, body, examples)
-    }
-    
     // MARK: - Streaming Chat / Queries
     
     func streamChat(_ query: String, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
@@ -211,7 +177,6 @@ class ConciergeChatService: NSObject {
                 [
                     ConciergeConstants.Request.Keys.QUERY: [
                         ConciergeConstants.Request.Keys.CONVERSATION: [
-                            ConciergeConstants.Request.Keys.FETCH_CONVERSATIONAL_EXPERIENCE: true,
                             ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
                             ConciergeConstants.Request.Keys.MESSAGE: query
                         ]

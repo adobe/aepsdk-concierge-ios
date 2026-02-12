@@ -200,65 +200,6 @@ final class SharedStateResultConciergeTests: XCTestCase {
         XCTAssertNil(datastream)
     }
     
-    // MARK: - Concierge Surfaces Tests
-    
-    func test_conciergeSurfaces_withValidSurfaces_returnsSurfaces() {
-        // Given
-        let value: [String: Any] = [
-            "concierge.surfaces": ["web://test.com/surface1", "web://test.com/surface2"]
-        ]
-        let result = SharedStateResult(status: .set, value: value)
-        
-        // When
-        let surfaces = result.conciergeSurfaces
-        
-        // Then
-        XCTAssertEqual(surfaces?.count, 2)
-        XCTAssertTrue(surfaces?.contains("web://test.com/surface1") ?? false)
-        XCTAssertTrue(surfaces?.contains("web://test.com/surface2") ?? false)
-    }
-    
-    func test_conciergeSurfaces_withEmptyArray_returnsEmptyArray() {
-        // Given
-        let value: [String: Any] = [
-            "concierge.surfaces": [] as [String]
-        ]
-        let result = SharedStateResult(status: .set, value: value)
-        
-        // When
-        let surfaces = result.conciergeSurfaces
-        
-        // Then
-        XCTAssertNotNil(surfaces)
-        XCTAssertTrue(surfaces?.isEmpty ?? false)
-    }
-    
-    func test_conciergeSurfaces_withMissingKey_returnsNil() {
-        // Given
-        let value: [String: Any] = [:]
-        let result = SharedStateResult(status: .set, value: value)
-        
-        // When
-        let surfaces = result.conciergeSurfaces
-        
-        // Then
-        XCTAssertNil(surfaces)
-    }
-    
-    func test_conciergeSurfaces_withNonArrayValue_returnsNil() {
-        // Given
-        let value: [String: Any] = [
-            "concierge.surfaces": "not-an-array"
-        ]
-        let result = SharedStateResult(status: .set, value: value)
-        
-        // When
-        let surfaces = result.conciergeSurfaces
-        
-        // Then
-        XCTAssertNil(surfaces)
-    }
-    
     // MARK: - Collect Value Tests
     
     func test_collectValue_withValidConsent_returnsValue() {
