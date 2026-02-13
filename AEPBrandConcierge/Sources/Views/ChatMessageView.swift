@@ -22,10 +22,10 @@ struct ChatMessageView: View {
     let messageId: UUID?
     let template: MessageTemplate
     var messageBody: String?
-    var sources: [Source]? = nil
-    var promptSuggestions: [String]? = nil
-    var feedbackSentiment: FeedbackSentiment? = nil
-    var onSuggestionTap: ((String) -> Void)? = nil
+    var sources: [Source]?
+    var promptSuggestions: [String]?
+    var feedbackSentiment: FeedbackSentiment?
+    var onSuggestionTap: ((String) -> Void)?
 
     init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
@@ -36,7 +36,7 @@ struct ChatMessageView: View {
         self.feedbackSentiment = feedbackSentiment
         self.onSuggestionTap = onSuggestionTap
     }
-    
+
     var body: some View {
         switch template {
         case .welcomeHeader(let title, let body):
@@ -96,7 +96,7 @@ struct ChatMessageView: View {
                 .frame(height: 1)
                 .foregroundColor(.gray.opacity(0.3))
                 .padding(.horizontal)
-            
+
         case .basic(let isUserMessage):
             let rawSources = sources ?? []
             // Attempt to decorate the message so citation markers can be injected into the markdown rendering logic.
@@ -109,13 +109,12 @@ struct ChatMessageView: View {
             let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")
             let markers = decoration?.markers ?? []
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
-            
+
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
-            
+
             VStack(alignment: alignment, spacing: 0) {
                 HStack(alignment: .bottom) {
-                    if isUserMessage { Spacer() }
-                    else if theme.behavior.chat.messageAlignment == .center { Spacer() }
+                    if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                     Group {
                         // User text
                         if isUserMessage {
@@ -176,8 +175,7 @@ struct ChatMessageView: View {
                             }
                         }
 
-                    if !isUserMessage { Spacer() }
-                    else if theme.behavior.chat.messageAlignment == .center { Spacer() }
+                    if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                 }
 
                 // Attach sources dropdown for agent messages only
@@ -188,7 +186,7 @@ struct ChatMessageView: View {
                     }
                 }
             }
-            
+
         case .thumbnail(let imageSource, let title, let text):
             HStack {
                 HStack(spacing: 0) {
@@ -202,7 +200,7 @@ struct ChatMessageView: View {
                     case .remote(let url):
                         RemoteImageView(url: url, width: 100, height: 100)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
@@ -220,10 +218,10 @@ struct ChatMessageView: View {
                 }
                 .background(Color.PrimaryLight)
                 .cornerRadius(theme.layout.borderRadiusCard)
-                
+
                 Spacer()
             }
-            
+
         case .numbered(let number, let title, let body):
             HStack {
                 HStack(alignment: .center, spacing: 12) {
@@ -233,14 +231,14 @@ struct ChatMessageView: View {
                                 .fill(Color.PrimaryDark)
                                 .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 3)
                                 .frame(width: 32, height: 32)
-                            
+
                             Text("\(number)")
                                 .font(.system(.body, design: .rounded))
                                 .bold()
                                 .foregroundColor(theme.colors.primary.text.color)
                         }
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
@@ -260,10 +258,10 @@ struct ChatMessageView: View {
                 .padding(.vertical, 10)
                 .background(Color.PrimaryLight)
                 .cornerRadius(theme.layout.borderRadiusCard)
-                
+
                 Spacer()
             }
-            
+
         case .productCarouselCard(let imageSource, let title, let destination):
             Button(action: {
                 if let destination = destination {
@@ -282,7 +280,7 @@ struct ChatMessageView: View {
                     case .remote(let url):
                         RemoteImageView(url: url, width: 280, height: 200)
                     }
-                    
+
                     // Overlay title bubble at bottom left
                     Text(title)
                         .font(.system(.subheadline, design: .rounded))
@@ -308,8 +306,7 @@ struct ChatMessageView: View {
             )
             .frame(width: 280, height: 200)
             .buttonStyle(PlainButtonStyle())
-            
-            
+
         case .productCard(let imageSource, let title, let body, let primaryButton, let secondaryButton):
             VStack(alignment: .leading, spacing: 0) {
                 switch imageSource {
@@ -322,19 +319,19 @@ struct ChatMessageView: View {
                 case .remote(let url):
                     RemoteImageView(url: url, width: 350, height: 200)
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title)
                         .font(.system(.headline, design: .rounded))
                         .bold()
                         .foregroundColor(theme.colors.primary.text.color)
                         .textSelection(.enabled)
-                    
+
                     Text(body)
                         .font(.system(.subheadline))
                         .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                         .textSelection(.enabled)
-                    
+
                     // Buttons section
                     if primaryButton != nil || secondaryButton != nil {
                         HStack(spacing: 12) {
@@ -349,7 +346,7 @@ struct ChatMessageView: View {
                                     }
                                 )
                             }
-                            
+
                             if let secondaryButton = secondaryButton {
                                 ButtonView(
                                     text: secondaryButton.text,
@@ -361,7 +358,7 @@ struct ChatMessageView: View {
                                     }
                                 )
                             }
-                            
+
                             Spacer()
                         }
                         .padding(.top, 8)
@@ -379,7 +376,7 @@ struct ChatMessageView: View {
                 y: theme.layout.multimodalCardBoxShadow.offsetY
             )
             .frame(width: 350)
-            
+
         case .carouselGroup(let items):
             CarouselGroupView(items: items)
 

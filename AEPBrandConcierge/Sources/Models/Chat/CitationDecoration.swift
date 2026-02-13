@@ -27,4 +27,3 @@ struct CitationDecoration {
         self.deduplicatedSources = deduplicatedSources
     }
 }
-

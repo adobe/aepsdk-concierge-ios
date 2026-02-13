@@ -59,5 +59,3 @@ struct CheckboxRow: View {
     }
     return CheckboxRowPreviewHost()
 }
-
-

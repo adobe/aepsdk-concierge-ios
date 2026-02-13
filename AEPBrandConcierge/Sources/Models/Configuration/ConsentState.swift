@@ -19,7 +19,7 @@ enum ConsentState: String {
     case optedIn = "y"
     case optedOut = "n"
     case unknown = "u"
-    
+
     /// The value to send in the request payload
     var payloadValue: String {
         switch self {
@@ -31,7 +31,7 @@ enum ConsentState: String {
             return "unknown"
         }
     }
-    
+
     /// Initialize from a configuration value, defaulting to unknown if invalid
     init(configValue: String?) {
         guard let value = configValue,

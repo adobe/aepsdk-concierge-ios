@@ -47,7 +47,7 @@ public struct SourcesListView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Sources")
     }
-    
+
     private var sourceContent: some View {
         VStack(spacing: 0) {
             header
@@ -57,7 +57,7 @@ public struct SourcesListView: View {
         }
         .background(backgroundShape)
     }
-    
+
     private var expandedContent: some View {
         VStack(spacing: 0) {
             Divider().background(Color.black.opacity(0.08))
@@ -65,7 +65,7 @@ public struct SourcesListView: View {
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
-    
+
     private var sourceRows: some View {
         let entries = uniqueSources
         return VStack(spacing: 0) {
@@ -78,7 +78,7 @@ public struct SourcesListView: View {
             }
         }
     }
-    
+
     private func sourceRow(for source: Source) -> some View {
         SourceRowView(ordinal: "\(source.citationNumber).",
                       title: source.title,
@@ -86,7 +86,7 @@ public struct SourcesListView: View {
                       theme: theme)
             .padding(.vertical, 10)
     }
-    
+
     private var bottomDivider: some View {
         Divider().background(Color.black.opacity(0.06))
     }
@@ -94,7 +94,7 @@ public struct SourcesListView: View {
     private var uniqueSources: [Source] {
         CitationRenderer.deduplicate(sources)
     }
-    
+
     private var backgroundShape: some View {
         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
             .fill(theme.colors.message.conciergeBackground.color)
@@ -116,7 +116,7 @@ public struct SourcesListView: View {
                 // Feedback buttons
                 HStack(spacing: theme.layout.feedbackContainerGap) {
                     let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
-                    
+
                     FeedbackIconButton(
                         iconButtonSize: iconButtonSize,
                         foregroundColor: thumbUpColor,
@@ -131,7 +131,7 @@ public struct SourcesListView: View {
                             thumbUpImage
                         }
                     )
-                    
+
                     FeedbackIconButton(
                         iconButtonSize: iconButtonSize,
                         foregroundColor: thumbDownColor,
@@ -184,14 +184,14 @@ public struct SourcesListView: View {
             Image(systemName: "hand.thumbsdown")
         }
     }
-    
+
     private var thumbUpColor: Color {
         guard let sentiment = feedbackSentiment else {
             return theme.colors.message.conciergeText.color
         }
         return sentiment == .positive ? theme.colors.primary.primary.color : Color.gray.opacity(0.4)
     }
-    
+
     private var thumbDownColor: Color {
         guard let sentiment = feedbackSentiment else {
             return theme.colors.message.conciergeText.color

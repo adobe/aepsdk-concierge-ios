@@ -52,5 +52,3 @@ struct ConciergeActionButtonStyle: SwiftUI.ButtonStyle {
             .opacity(isPressed ? 0.96 : 1.0)
     }
 }
-
-

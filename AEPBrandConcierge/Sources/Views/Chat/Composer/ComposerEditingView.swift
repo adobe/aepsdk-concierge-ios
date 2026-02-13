@@ -28,7 +28,7 @@ struct ComposerEditingView: View {
     let micEnabled: Bool
     let sendEnabled: Bool
     let onSend: () -> Void
-    
+
     var body: some View {
         HStack {
             SelectableTextView(
@@ -89,5 +89,3 @@ private extension ComposerEditingView {
             ?? UIFont.systemFont(ofSize: fontSize, weight: theme.typography.fontWeight.toUIFontWeight())
     }
 }
-
-

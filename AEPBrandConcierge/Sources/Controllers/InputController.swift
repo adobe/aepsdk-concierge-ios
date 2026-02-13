@@ -104,7 +104,7 @@ final class InputController: ObservableObject {
                 state = .editing
             }
 
-        case .transcriptionError(_):
+        case .transcriptionError:
             if case .transcribing = state {
                 // Restore original text and return to editing/empty
                 data.text = data.textAtRecordingStart
@@ -112,7 +112,7 @@ final class InputController: ObservableObject {
                 state = data.text.isEmpty ? .empty : .editing
             }
 
-        case .permissionError(_):
+        case .permissionError:
             if case .recording = state { state = .error(.permissionDenied) }
 
         case .sendMessage:
@@ -127,12 +127,12 @@ final class InputController: ObservableObject {
             state = .empty
         }
     }
-    
+
     /// Applies a text change from the UI, routing to appropriate events.
     func applyTextChange(_ newText: String) {
         let wasEmpty = data.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let isEmptyNew = newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        
+
         // User erased all text. Only apply .deleteContent so state becomes and stays .empty.
         if isEmptyNew && !wasEmpty {
             apply(.deleteContent)
@@ -148,4 +148,3 @@ final class InputController: ObservableObject {
         // Already empty and still empty: no-op to avoid toggling to editing
     }
 }
-
