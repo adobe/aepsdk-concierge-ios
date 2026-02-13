@@ -22,7 +22,7 @@ struct MarkdownBlockView: View {
     var spacing: CGFloat = 8
     var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
-    var onOpenLink: ((URL) -> Void)? = nil
+    var onOpenLink: ((URL) -> Void)?
 
     var body: some View {
         let blocks = MarkdownRenderer.buildBlocks(
@@ -309,5 +309,3 @@ private struct ListBlockView: View {
         }
     }
 }
-
-

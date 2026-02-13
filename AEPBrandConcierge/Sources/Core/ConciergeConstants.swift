@@ -19,71 +19,71 @@ enum ConciergeConstants {
     static let EXTENSION_VERSION = "5.0.0"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
-    
+
     // MARK: - HTTP
-    
+
     enum ContentTypes {
         static let APPLICATION_JSON = "application/json"
     }
-    
+
     enum AcceptTypes {
         static let TEXT_EVENT_STREAM = "text/event-stream"
     }
-    
+
     enum HTTPMethods {
         static let POST = "POST"
     }
-    
+
     enum HeaderFields {
         static let CONTENT_TYPE = "Content-Type"
         static let ACCEPT = "Accept"
     }
-    
+
     // MARK: - SDK Events
-    
+
     enum EventType {
         static let concierge = "com.adobe.eventType.concierge"
     }
-    
+
     enum ConciergeSchemas {
         static let JSON_CONTENT = "https://ns.adobe.com/concierge/json-content"
     }
-    
+
     enum EventName {
         static let SHOW_UI = "Show Brand Concierge UI - Request"
         static let SHOW_UI_RESPONSE = "Show Brand Concierge UI - Response"
         static let FEEDBACK = "Brand Concierge - Chat Feedback"
     }
-    
+
     enum EventData {
         enum Key {
             static let CONFIG = "config"
             static let SURFACES = "surfaces"
         }
     }
-    
+
     // MARK: - Server-Sent Events
-    
+
     enum SSE {
         // Intentionally including the space - used to identify data in SSE responses
         static let DATA_PREFIX = "data: "
     }
-    
+
     enum StreamState {
         static let IN_PROGRESS = "in-progress"
         static let COMPLETED = "completed"
     }
-    
+
     // MARK: - Network Requests
-    
+
     enum Request {
         static let READ_TIMEOUT = 15.0
         static let HTTPS = "https://"
-        
+
         enum EventType {
             static let CONVERSATION_FEEDBACK = "conversation.feedback"
         }
-        
+
         enum Keys {
             static let EVENTS = "events"
             static let QUERY = "query"
@@ -98,7 +98,7 @@ enum ConciergeConstants {
             static let CONFIG_ID = "configId"
             static let SESSION_ID = "sessionId"
             static let CONVERSATION_ID = "conversationId"
-            
+
             enum Consent {
                 static let META = "meta"
                 static let CONSENT = "consent"
@@ -108,7 +108,7 @@ enum ConciergeConstants {
                 static let MAX_AGE = "maxAge"
                 static let KEY = "key"
             }
-            
+
             enum Feedback {
                 static let FEEDBACK = "feedback"
                 static let SOURCE = "source"
@@ -123,28 +123,28 @@ enum ConciergeConstants {
                 static let TURN_ID = "turnID"
             }
         }
-        
+
         enum Values {
             enum Consent {
                 static let MAX_AGE = 15552000 // seconds in 180 days
             }
-            
+
             enum Feedback {
                 static let END_USER = "end-user"
                 static let USER_INPUT = "user input"
             }
         }
     }
-    
+
     // MARK: - Feedback
-    
+
     enum FeedbackSentimentValue {
         static let THUMBS_DOWN = "Thumbs Down"
         static let THUMBS_UP = "Thumbs Up"
     }
-    
+
     // MARK: - Shared State
-    
+
     enum SharedState {
         enum Configuration {
             static let NAME = "com.adobe.module.configuration"
@@ -161,7 +161,7 @@ enum ConciergeConstants {
             static let ECID = "ECID"
             static let ID = "id"
         }
-        
+
         enum Consent {
             static let NAME = "com.adobe.edge.consent"
             static let CONSENTS = "consents"
@@ -169,25 +169,24 @@ enum ConciergeConstants {
             static let VAL = "val"
         }
     }
-    
+
     // MARK: - Defaults
-    
+
     enum Defaults {
         static let CONSENT_VALUE = "y"
         static let MESSAGE = "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?"
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
-    
+
     // MARK: - Session Management
-    
+
     enum Session {
         static let DATA_STORE_NAME = "AEPBrandConcierge.Session"
         static let TTL_SECONDS: TimeInterval = 30 * 60 // 30 minutes
-        
+
         enum Keys {
             static let SESSION_ID = "sessionId"
             static let LAST_ACTIVITY = "lastActivity"
         }
     }
 }
-

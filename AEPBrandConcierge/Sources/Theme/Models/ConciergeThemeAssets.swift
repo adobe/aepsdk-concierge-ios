@@ -15,7 +15,7 @@ import Foundation
 /// Assets configuration (icons, images, etc.)
 public struct ConciergeAssets: Codable {
     public var icons: ConciergeIconAssets
-    
+
     public init(icons: ConciergeIconAssets = ConciergeIconAssets()) {
         self.icons = icons
     }
@@ -24,9 +24,8 @@ public struct ConciergeAssets: Codable {
 /// Icon assets configuration
 public struct ConciergeIconAssets: Codable {
     public var company: String
-    
+
     public init(company: String = "") {
         self.company = company
     }
 }
-

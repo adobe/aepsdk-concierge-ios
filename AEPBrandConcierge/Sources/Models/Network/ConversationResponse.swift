@@ -72,7 +72,7 @@ public struct MultimodalElement: Codable {
     public let thumbnailWidth: Int?
     public let thumbnailHeight: Int?
     public let entityInfo: EntityInfo?
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case type
@@ -82,7 +82,7 @@ public struct MultimodalElement: Codable {
         case thumbnail_height
         case entity_info
     }
-    
+
     public init(id: String? = nil, type: String? = nil, width: Int? = nil, height: Int? = nil, thumbnailWidth: Int? = nil, thumbnailHeight: Int? = nil, entityInfo: EntityInfo? = nil) {
         self.id = id
         self.type = type
@@ -92,7 +92,7 @@ public struct MultimodalElement: Codable {
         self.thumbnailHeight = thumbnailHeight
         self.entityInfo = entityInfo
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 

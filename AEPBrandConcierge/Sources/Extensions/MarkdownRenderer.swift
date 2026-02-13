@@ -145,16 +145,16 @@ struct MarkdownRenderer {
             // Only when container hierarchies are identical, create block breaks for certain types
             if longestCommonIndex == currentStack.count && prevStack.count == currentStack.count {
                 // Create a new paragraph boundary when the split isn't caused by inline styling.
-                if (prevStack.last == .paragraph
+                if prevStack.last == .paragraph
                     && currentStack.last == .paragraph
                     && !hasInlineStyling
-                    && !prevHadInlineStyling) {
+                    && !prevHadInlineStyling {
                     events.append(.close(.paragraph))
                     events.append(.open(.paragraph))
                 }
 
                 // Create a new code block boundary
-                if (prevStack.last == .codeBlock && currentStack.last == .codeBlock) {
+                if prevStack.last == .codeBlock && currentStack.last == .codeBlock {
                     events.append(.close(.codeBlock))
                     events.append(.open(.codeBlock))
                 }
@@ -497,7 +497,7 @@ struct MarkdownRenderer {
                         break
                     }
                 }
-                
+
                 let r = NSRange(location: 0, length: buffer.length)
                 buffer.addAttribute(.font,
                                      value: UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular),

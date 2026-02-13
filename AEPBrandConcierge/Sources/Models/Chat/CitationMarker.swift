@@ -30,4 +30,3 @@ struct CitationMarker: Hashable {
         self.endOffset = endOffset
     }
 }
-

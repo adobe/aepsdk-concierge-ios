@@ -15,10 +15,10 @@ import SwiftUI
 /// Dots indicator for paged content, highlighting the current page.
 struct PageIndicator: View {
     @Environment(\.conciergeTheme) private var theme
-    
+
     let numberOfPages: Int
     @Binding var currentIndex: Int
-    
+
     var body: some View {
         HStack(spacing: 8) {
             ForEach(0..<numberOfPages, id: \.self) { index in
@@ -28,4 +28,4 @@ struct PageIndicator: View {
             }
         }
     }
-} 
+}

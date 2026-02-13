@@ -28,20 +28,20 @@ extension SharedStateResult {
         else {
             return nil
         }
-        
+
         return ecid
     }
-    
+
     /// The Concierge server endpoint from configuration.
     var conciergeServer: String? {
         value?[ConciergeConstants.SharedState.Configuration.Concierge.SERVER] as? String
     }
-    
+
     /// The Concierge datastream ID from configuration.
     var conciergeDatastream: String? {
         value?[ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM] as? String
     }
-    
+
     /// Value for collect out of consents shared state
     var collectValue: String {
         guard let consents = value?[ConciergeConstants.SharedState.Consent.CONSENTS] as? [String: Any],
@@ -49,7 +49,7 @@ extension SharedStateResult {
               let val = collect[ConciergeConstants.SharedState.Consent.VAL] as? String else {
             return ConciergeConstants.Defaults.CONSENT_VALUE
         }
-        
+
         return val
     }
 }

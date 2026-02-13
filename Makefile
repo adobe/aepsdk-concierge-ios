@@ -108,10 +108,10 @@ install-githook:
 	git config core.hooksPath .githooks
 
 lint-autocorrect:
-	./Pods/SwiftLint/swiftlint --fix Sources ConciergeDemoApp
+	./Pods/SwiftLint/swiftlint --fix
 
 lint:
-	./Pods/SwiftLint/swiftlint lint Sources ConciergeDemoApp
+	./Pods/SwiftLint/swiftlint lint
 
 test-SPM-integration:
 	sh ./Script/test-SPM.sh

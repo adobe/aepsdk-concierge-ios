@@ -42,4 +42,3 @@ final class ConciergeOverlayManager: ObservableObject {
         self.chatView = nil
     }
 }
-

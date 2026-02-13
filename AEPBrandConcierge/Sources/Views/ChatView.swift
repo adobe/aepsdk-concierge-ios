@@ -19,13 +19,13 @@ public struct ChatView: View {
     private let LOG_TAG = "ChatView"
 
     // MARK: - Environment
-    
+
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergeFeedbackPresenter) private var feedbackEnvPresenter
     @Environment(\.openURL) private var openURL
-    
+
     // MARK: - State
-    
+
     @StateObject private var controller: ChatController
     @ObservedObject private var inputController: InputController
     @State private var showAgentSend: Bool = false
@@ -33,27 +33,27 @@ public struct ChatView: View {
     @State private var composerHeight: CGFloat = 0
     @State private var showFeedbackOverlay: Bool = false
     @State private var feedbackSentiment: FeedbackSentiment = .positive
-    @State private var feedbackMessageId: UUID? = nil
+    @State private var feedbackMessageId: UUID?
     @State private var isInputFocused: Bool = false
 
     // MARK: - Dependencies and Configuration
-    
+
     private let textSpeaker: TextSpeaking?
     private let onClose: (() -> Void)?
     private let titleText: String
     private let subtitleText: String?
     private var conciergeConfiguration: ConciergeConfiguration
-    
+
     // MARK: - UI
-    
+
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
-    
+
     private var globalLineSpacing: CGFloat {
         let multiplier = theme.typography.lineHeight
         guard multiplier.isFinite, multiplier > 0 else {
             return 0
         }
-        
+
         let fontSize = theme.typography.fontSize
         let baseFont: UIFont = {
             if theme.typography.fontFamily.isEmpty {
@@ -61,14 +61,14 @@ public struct ChatView: View {
             }
             return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
         }()
-        
+
         let targetLineHeight = fontSize * multiplier
         let additionalSpacing = targetLineHeight - baseFont.lineHeight
         return max(0, additionalSpacing)
     }
 
     // MARK: - Initializers
-    
+
     public init(
         speechCapturer: SpeechCapturing? = nil,
         textSpeaker: TextSpeaking? = nil,
@@ -82,7 +82,7 @@ public struct ChatView: View {
         self.subtitleText = subtitle
         self.onClose = onClose
         self.conciergeConfiguration = conciergeConfiguration
-        
+
         let chatController = ChatController(
             configuration: conciergeConfiguration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
@@ -99,15 +99,15 @@ public struct ChatView: View {
         self.subtitleText = "Powered by Adobe"
         self.onClose = nil
         self.conciergeConfiguration = ConciergeConfiguration()
-        
+
         let chatController = ChatController(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         chatController.messages = messages
         _controller = StateObject(wrappedValue: chatController)
         _inputController = ObservedObject(wrappedValue: chatController.inputController)
     }
-    
+
     // MARK: - Body
-    
+
     public var body: some View {
         ZStack(alignment: .bottom) {
             // Full background color ignoring safe area (dynamic for light/dark)
@@ -216,7 +216,7 @@ public struct ChatView: View {
                     sentiment: feedbackSentiment,
                     onCancel: { showFeedbackOverlay = false },
                     onSubmit: { payload in
-                        controller.sendFeedbackFor(messageId: feedbackMessageId, with: payload)                        
+                        controller.sendFeedbackFor(messageId: feedbackMessageId, with: payload)
                         showFeedbackOverlay = false
                     }
                 )
@@ -251,7 +251,7 @@ public struct ChatView: View {
                                 controller.dismissPermissionDialog()
                             }
                         }
-                    
+
                     // Dialog card with scale animation
                     PermissionDialogView(
                         onCancel: {
@@ -263,7 +263,7 @@ public struct ChatView: View {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 controller.requestOpenSettings()
                             }
-                            
+
                             // Open app-specific settings
                             if let url = URL(string: UIApplication.openSettingsURLString) {
                                 Log.debug(label: LOG_TAG, "Opening settings URL: \(url.absoluteString)")
@@ -284,9 +284,9 @@ public struct ChatView: View {
         )
         .lineSpacing(globalLineSpacing)
     }
-    
+
     // MARK: - Actions
-    
+
     private func sendTapped() {
         controller.sendMessage(isUser: !showAgentSend)
         hapticFeedback.impactOccurred(intensity: 0.5)
@@ -333,22 +333,22 @@ public struct ChatView: View {
                 Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    destination: URL(string:"https://adobe.com")!
+                    destination: URL(string: "https://adobe.com")!
                 )),
                 Message(template: .productCarouselCard(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    destination: URL(string:"https://adobe.com")!
+                    destination: URL(string: "https://adobe.com")!
                 ))
             ])),
             Message(template: .divider)
         ]
-        
+
         var body: some View {
             ChatView(messages: messages)
                 .conciergeTheme(ConciergeTheme())
         }
     }
-    
+
     return ChatViewPreview()
 }

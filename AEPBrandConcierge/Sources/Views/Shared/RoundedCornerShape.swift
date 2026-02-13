@@ -36,5 +36,3 @@ public struct RoundedCornerShape: Shape {
         return Path(path.cgPath)
     }
 }
-
-

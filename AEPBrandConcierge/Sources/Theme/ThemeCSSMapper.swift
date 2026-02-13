@@ -19,33 +19,33 @@ import AEPServices
 public enum CSSKeyMapper {
     /// Direct assignment function that converts CSS value and applies it to theme
     public typealias Assignment = (String, inout ConciergeTheme) -> Void
-    
+
     /// Mapping from CSS variable name (without --) to direct assignment function
     private static let cssToAssignmentMap: [String: Assignment] = [
         // Typography
         "font-family": { cssValue, theme in theme.typography.fontFamily = CSSValueConverter.parseFontFamily(cssValue) },
         "line-height-body": { cssValue, theme in theme.typography.lineHeight = CSSValueConverter.parseLineHeight(cssValue) },
-        
+
         // Colors - Primary
         "color-primary": { cssValue, theme in theme.colors.primary.primary = CSSValueConverter.parseColor(cssValue) },
         "color-text": { cssValue, theme in theme.colors.primary.text = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Surface
         "main-container-background": { cssValue, theme in theme.colors.surface.mainContainerBackground = CSSValueConverter.parseColor(cssValue) },
         "main-container-bottom-background": { cssValue, theme in theme.colors.surface.mainContainerBottomBackground = CSSValueConverter.parseColor(cssValue) },
         "message-blocker-background": { cssValue, theme in theme.colors.surface.messageBlockerBackground = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Message
         "message-user-background": { cssValue, theme in theme.colors.message.userBackground = CSSValueConverter.parseColor(cssValue) },
         "message-user-text": { cssValue, theme in theme.colors.message.userText = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-background": { cssValue, theme in theme.colors.message.conciergeBackground = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-text": { cssValue, theme in theme.colors.message.conciergeText = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-link-color": { cssValue, theme in theme.colors.message.conciergeLink = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Citations
         "citations-background-color": { cssValue, theme in theme.colors.citation.background = CSSValueConverter.parseColor(cssValue) },
         "citations-text-color": { cssValue, theme in theme.colors.citation.text = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Button
         "button-primary-background": { cssValue, theme in theme.colors.button.primaryBackground = CSSValueConverter.parseColor(cssValue) },
         "button-primary-text": { cssValue, theme in theme.colors.button.primaryText = CSSValueConverter.parseColor(cssValue) },
@@ -55,7 +55,7 @@ public enum CSSKeyMapper {
         "submit-button-fill-color-disabled": { cssValue, theme in theme.colors.button.submitFillDisabled = CSSValueConverter.parseColor(cssValue) },
         "color-button-submit": { cssValue, theme in theme.colors.button.submitText = CSSValueConverter.parseColor(cssValue) },
         "button-disabled-background": { cssValue, theme in theme.colors.button.disabledBackground = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Input
         "input-background": { cssValue, theme in
             theme.colors.input.background = CSSValueConverter.parseColor(cssValue)
@@ -72,15 +72,15 @@ public enum CSSKeyMapper {
             }
         },
         "input-focus-outline-color": { cssValue, theme in theme.colors.input.outlineFocus = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Feedback
         "feedback-icon-btn-background": { cssValue, theme in theme.colors.feedback.iconButtonBackground = CSSValueConverter.parseColor(cssValue) },
-        
+
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
             theme.colors.disclaimer = CSSValueConverter.parseColor(cssValue)
         },
-        
+
         // Layout - Input
         // Desktop height is intentionally ignored; mobile height drives the experience
         "input-height-mobile": { cssValue, theme in
@@ -99,7 +99,7 @@ public enum CSSKeyMapper {
         "input-button-width": { cssValue, theme in theme.layout.inputButtonWidth = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
         "input-button-border-radius": { cssValue, theme in theme.layout.inputButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
         "input-box-shadow": { cssValue, theme in theme.layout.inputBoxShadow = CSSValueConverter.parseBoxShadow(cssValue) },
-        
+
         // Layout - Message
         "message-border-radius": { cssValue, theme in theme.layout.messageBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
         "message-padding": { cssValue, theme in
@@ -108,14 +108,14 @@ public enum CSSKeyMapper {
         "message-max-width": { cssValue, theme in
             theme.layout.messageMaxWidth = CSSValueConverter.parseWidth(cssValue)
         },
-        
+
         // Layout - Chat
         "chat-interface-max-width": { cssValue, theme in theme.layout.chatInterfaceMaxWidth = CSSValueConverter.parsePxValue(cssValue) ?? 768 },
         "chat-history-padding": { cssValue, theme in theme.layout.chatHistoryPadding = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
         "chat-history-padding-top-expanded": { cssValue, theme in theme.layout.chatHistoryPaddingTopExpanded = CSSValueConverter.parsePxValue(cssValue) ?? 0 },
         "chat-history-bottom-padding": { cssValue, theme in theme.layout.chatHistoryBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 0 },
         "message-blocker-height": { cssValue, theme in theme.layout.messageBlockerHeight = CSSValueConverter.parsePxValue(cssValue) ?? 105 },
-        
+
         // Layout - Card
         "border-radius-card": { cssValue, theme in
             theme.layout.borderRadiusCard = CSSValueConverter.parsePxValue(cssValue) ?? 16
@@ -123,21 +123,21 @@ public enum CSSKeyMapper {
         "multimodal-card-box-shadow": { cssValue, theme in
             theme.layout.multimodalCardBoxShadow = CSSValueConverter.parseBoxShadow(cssValue)
         },
-        
+
         // Layout - Button
         "button-height-s": { cssValue, theme in theme.layout.buttonHeightSmall = CSSValueConverter.parsePxValue(cssValue) ?? 30 },
-        
+
         // Layout - Feedback
         "feedback-container-gap": { cssValue, theme in theme.layout.feedbackContainerGap = CSSValueConverter.parsePxValue(cssValue) ?? 4 },
-        
+
         // Layout - Citations
         "citations-text-font-weight": { cssValue, theme in theme.layout.citationsTextFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "citations-desktop-button-font-size": { cssValue, theme in theme.layout.citationsDesktopButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
-        
+
         // Layout - Disclaimer
         "disclaimer-font-size": { cssValue, theme in theme.layout.disclaimerFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "disclaimer-font-weight": { cssValue, theme in theme.layout.disclaimerFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
-        
+
         // Layout - Welcome Order (also sets components)
         "welcome-input-order": { cssValue, theme in
             theme.layout.welcomeInputOrder = CSSValueConverter.parseOrder(cssValue)
@@ -145,7 +145,7 @@ public enum CSSKeyMapper {
         "welcome-cards-order": { cssValue, theme in
             theme.layout.welcomeCardsOrder = CSSValueConverter.parseOrder(cssValue)
         },
-        
+
         // Layout - Feedback (button hit target size)
         "feedback-icon-btn-size-desktop": { cssValue, theme in theme.layout.feedbackIconButtonSize = CSSValueConverter.parsePxValue(cssValue) ?? 44 },
     ]
@@ -155,12 +155,12 @@ public enum CSSKeyMapper {
     public static var supportedCSSKeys: Set<String> {
         Set(cssToAssignmentMap.keys)
     }
-    
+
     /// Applies CSS value to ConciergeTheme using the mapped assignment function
     public static func apply(cssKey: String, cssValue: String, to theme: inout ConciergeTheme) {
         // Remove -- prefix if present
         let normalizedKey = cssKey.hasPrefix("--") ? String(cssKey.dropFirst(2)) : cssKey
-        
+
         // Find and execute the assignment function
         if let assignment = cssToAssignmentMap[normalizedKey] {
             assignment(cssValue, &theme)
@@ -169,4 +169,3 @@ public enum CSSKeyMapper {
         }
     }
 }
-
