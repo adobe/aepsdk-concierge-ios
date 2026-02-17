@@ -24,4 +24,3 @@ struct WelcomePromptSuggestion {
         self.background = Color.fromHexString(backgroundHex)
     }
 }
-

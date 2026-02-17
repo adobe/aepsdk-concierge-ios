@@ -14,7 +14,7 @@ import SwiftUI
 import AEPServices
 
 struct FeedbackOverlayView: View {
-    
+
     let sentiment: FeedbackSentiment
     let onCancel: () -> Void
     let onSubmit: (_ payload: FeedbackPayload) -> Void
@@ -94,7 +94,7 @@ struct FeedbackOverlayView: View {
                                     )
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .shadow(color: .clear, radius: 0)
-                                
+
                                 if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                     Text(theme.text.feedbackDialogNotesPlaceholder)
                                         .font(.body)

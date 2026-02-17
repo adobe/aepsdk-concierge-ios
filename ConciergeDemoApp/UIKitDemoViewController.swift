@@ -48,9 +48,7 @@ final class ConciergeUIKitDemoViewController: UIViewController {
     }
 
     @objc private func openTapped() {
-        Concierge.present(on: self, title: "Concierge", subtitle: "Powered by Adobe")
+        Concierge.present(on: self, surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"], title: "Concierge", subtitle: "Powered by Adobe")
     }
 
 }
-
-

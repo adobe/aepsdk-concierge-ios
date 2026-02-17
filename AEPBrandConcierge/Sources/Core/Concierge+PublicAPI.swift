@@ -22,17 +22,18 @@ public extension Concierge {
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.
     ///
     /// - Parameters:
+    ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title shown in the chat header.
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    static func show(title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
+    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
         // Dispatch event to request state data necessary for displaying the UI
         let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
                               type: ConciergeConstants.EventType.concierge,
                               source: EventSource.requestContent,
-                              data: nil)
-        
+                              data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
+
         MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
             guard let responseEvent = responseEvent,
                   let eventData = responseEvent.data,
@@ -40,7 +41,7 @@ public extension Concierge {
                 Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
                 return
             }
-                        
+
             if let speechCapturer = speechCapturer {
                 self.speechCapturer = speechCapturer
             }
@@ -79,11 +80,14 @@ public extension Concierge {
     ///
     /// - Parameters:
     ///   - content: The app's SwiftUI content.
+    ///   - surfaces: The surfaces to use for the chat experience when using the floating button.
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
+    ///   - hideButton: Whether to hide the floating button.
     /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
     static func wrap<Content: View>(
         _ content: Content,
+        surfaces: [String] = [],
         title: String? = nil,
         subtitle: String? = nil,
         hideButton: Bool = false
@@ -94,6 +98,7 @@ public extension Concierge {
         if let subtitle = subtitle {
             self.chatSubtitle = subtitle
         }
+        self.surfaces = surfaces
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
@@ -120,16 +125,17 @@ public extension Concierge {
     /// view controller.
     /// - Parameters:
     ///   - presentingViewController: The view controller that will host the chat UI.
+    ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title displayed in the chat header.
     ///   - subtitle: Optional subtitle displayed under the title.
-    static func present(on presentingViewController: UIViewController, title: String? = nil, subtitle: String? = nil) {
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil) {
         if let title = title { self.chatTitle = title }
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
 
         // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
         // as we have in the swiftui version
-        
-        let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(), title: title, subtitle: subtitle)
+
+        let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(surfaces: surfaces), title: title, subtitle: subtitle)
         presentedUIKitController = hosting
 
         Task { @MainActor in
@@ -146,4 +152,3 @@ public extension Concierge {
         }
     }
 }
-

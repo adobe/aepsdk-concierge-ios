@@ -96,7 +96,7 @@ struct ChatComposer: View {
                         }
                     }
                 )
-                
+
             }
 
             ComposerDisclaimer()
@@ -179,5 +179,3 @@ private struct RotatingGlowBorder: View {
         }
     }
 }
-
-

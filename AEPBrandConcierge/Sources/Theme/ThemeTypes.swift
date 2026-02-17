@@ -23,14 +23,14 @@ public struct ConciergePadding: Codable, Equatable {
     public var bottom: CGFloat
     public var leading: CGFloat
     public var trailing: CGFloat
-    
+
     public init(top: CGFloat, bottom: CGFloat, leading: CGFloat, trailing: CGFloat) {
         self.top = top
         self.bottom = bottom
         self.leading = leading
         self.trailing = trailing
     }
-    
+
     /// Convenience initializer for vertical/horizontal padding (common CSS pattern: "8px 16px")
     public init(vertical: CGFloat, horizontal: CGFloat) {
         self.top = vertical
@@ -38,7 +38,7 @@ public struct ConciergePadding: Codable, Equatable {
         self.leading = horizontal
         self.trailing = horizontal
     }
-    
+
     /// Convenience initializer for uniform padding (CSS pattern: "8px")
     public init(all: CGFloat) {
         self.top = all
@@ -46,7 +46,7 @@ public struct ConciergePadding: Codable, Equatable {
         self.leading = all
         self.trailing = all
     }
-    
+
     /// SwiftUI EdgeInsets conversion
     public var edgeInsets: EdgeInsets {
         EdgeInsets(top: top, leading: leading, bottom: bottom, trailing: trailing)
@@ -69,7 +69,7 @@ public struct ConciergeShadow: Codable, Equatable {
     public var spreadRadius: CGFloat
     public var color: CodableColor
     public var isEnabled: Bool
-    
+
     public init(
         offsetX: CGFloat,
         offsetY: CGFloat,
@@ -85,7 +85,7 @@ public struct ConciergeShadow: Codable, Equatable {
         self.color = color
         self.isEnabled = isEnabled
     }
-    
+
     /// Disabled shadow (equivalent to CSS "none")
     public static var none: ConciergeShadow {
         ConciergeShadow(
@@ -114,7 +114,7 @@ public enum ConciergeTextAlignment: String, Codable {
     case leading
     case center
     case trailing
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self).lowercased()
@@ -130,7 +130,7 @@ public enum ConciergeTextAlignment: String, Codable {
             self = .leading
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
@@ -185,17 +185,17 @@ public enum CodableFontWeight: String, Codable {
 /// Colors are stored as hex strings (ex: "#RRGGBB")
 public struct CodableColor: Codable, Equatable {
     public var color: Color
-    
+
     public init(_ color: Color) {
         self.color = color
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let hexString = try container.decode(String.self)
         self.color = Color.fromHexString(hexString)
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         let hexString = color.toHexString()
@@ -206,4 +206,3 @@ public struct CodableColor: Codable, Equatable {
         lhs.color.toHexString() == rhs.color.toHexString()
     }
 }
-

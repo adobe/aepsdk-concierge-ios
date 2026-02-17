@@ -18,7 +18,7 @@ public struct ConciergeBorderStyle: Codable {
     public var width: CGFloat
     public var radius: CGFloat
     public var color: CodableColor
-    
+
     public init(
         width: CGFloat = 1,
         radius: CGFloat = 0,
@@ -36,7 +36,7 @@ public struct ConciergeWelcomeStyle: Codable {
     public var subheadingColor: CodableColor
     public var inputOrder: Int
     public var cardsOrder: Int
-    
+
     public init(
         headingColor: CodableColor = CodableColor(Color.primary),
         subheadingColor: CodableColor = CodableColor(Color.secondary),
@@ -58,7 +58,7 @@ public struct ConciergeInputBarStyle: Codable {
     public var placeholderColor: CodableColor
     public var icon: ConciergeIconConfig?
     public var voiceEnabled: Bool
-    
+
     public init(
         background: CodableColor = CodableColor(Color.white),
         textColor: CodableColor = CodableColor(Color.primary),
@@ -86,7 +86,7 @@ public struct ConciergeChatMessageStyle: Codable {
     public var borderRadius: CGFloat
     public var padding: ConciergePadding
     public var maxWidth: CGFloat? // nil = no max width, value = max width in points
-    
+
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
         userText: CodableColor = CodableColor(Color.primary),
@@ -115,7 +115,7 @@ public struct ConciergeFeedbackStyle: Codable {
     public var containerGap: CGFloat
     public var positiveNotesEnabled: Bool
     public var negativeNotesEnabled: Bool
-    
+
     public init(
         iconButtonBackground: CodableColor = CodableColor(Color.white),
         iconButtonSizeDesktop: CGFloat = 44,
@@ -136,7 +136,7 @@ public struct ConciergeCarouselStyle: Codable {
     public var cardBorderRadius: CGFloat
     public var cardBoxShadow: ConciergeShadow
     public var cardClickAction: String
-    
+
     public init(
         cardBorderRadius: CGFloat = 16,
         cardBoxShadow: ConciergeShadow = .none,
@@ -153,7 +153,7 @@ public struct ConciergeDisclaimerStyle: Codable {
     public var textColor: CodableColor
     public var fontSize: CGFloat
     public var fontWeight: CodableFontWeight
-    
+
     public init(
         textColor: CodableColor = CodableColor(Color(UIColor.systemGray)),
         fontSize: CGFloat = 12,
@@ -173,7 +173,7 @@ public struct ConciergeComponentStyles: Codable {
     public var feedback: ConciergeFeedbackStyle
     public var carousel: ConciergeCarouselStyle
     public var disclaimer: ConciergeDisclaimerStyle
-    
+
     public init(
         welcome: ConciergeWelcomeStyle = ConciergeWelcomeStyle(),
         inputBar: ConciergeInputBarStyle = ConciergeInputBarStyle(),
@@ -190,4 +190,3 @@ public struct ConciergeComponentStyles: Codable {
         self.disclaimer = disclaimer
     }
 }
-

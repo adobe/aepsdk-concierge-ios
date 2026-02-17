@@ -26,12 +26,12 @@ public enum ConciergeThemeLoader {
             print("[ConciergeThemeLoader] Missing resource \(filename).json in bundle \(bundle.bundlePath)")
             return nil
         }
-        
+
         guard let data = try? Data(contentsOf: url) else {
             print("[ConciergeThemeLoader] Failed to read data for \(filename).json at \(url.path)")
             return nil
         }
-        
+
         let decoder = JSONDecoder()
         do {
             return try decoder.decode(ConciergeTheme.self, from: data)
@@ -54,7 +54,7 @@ public enum ConciergeThemeLoader {
             return nil
         }
     }
-    
+
     /// Creates a default ConciergeTheme instance
     /// - Returns: A ConciergeTheme with all default values
     public static func `default`() -> ConciergeTheme {

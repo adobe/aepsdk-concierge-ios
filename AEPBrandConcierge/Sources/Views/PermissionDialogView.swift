@@ -16,14 +16,14 @@ struct PermissionDialogView: View {
     // Uses the environment theme instead of requiring callers to pass one explicitly.
     let onCancel: () -> Void
     let onOpenSettings: () -> Void
-    
+
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.conciergeTheme) private var theme
-    
+
     private var borderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.12)
     }
-    
+
     private var dialogSurfaceBackgroundColor: Color {
         colorScheme == .dark ? theme.colors.surface.dark.color : theme.colors.surface.light.color
     }
@@ -34,14 +34,14 @@ struct PermissionDialogView: View {
                     Text("Microphone and Speech Recognition Required")
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.primary)
-                    
+
                     Text("To use speech to text, please enable microphone access and speech recognition in Settings.")
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(20)
-                
+
                 HStack(spacing: 12) {
                     Button(action: onCancel) {
                         Text("Cancel")
@@ -55,7 +55,7 @@ struct PermissionDialogView: View {
                             variant: .secondary
                         )
                     )
-                    
+
                     Button(action: onOpenSettings) {
                         Text("Open Settings")
                             .font(.body.weight(.semibold))
@@ -114,7 +114,7 @@ extension PermissionDialogView {
                             .background(.ultraThinMaterial)
                             .ignoresSafeArea()
                             .onTapGesture { showDialog = false }
-                        
+
                         PermissionDialogView(
                             onCancel: { showDialog = false },
                             onOpenSettings: { showDialog = false }

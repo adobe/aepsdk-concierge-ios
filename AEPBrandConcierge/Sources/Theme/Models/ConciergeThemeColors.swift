@@ -20,7 +20,7 @@ public struct ConciergeSurfaceColors: Codable {
     public var messageBlockerBackground: CodableColor
     public var light: CodableColor
     public var dark: CodableColor
-    
+
     public init(
         mainContainerBackground: CodableColor = CodableColor(Color(UIColor.systemBackground)),
         mainContainerBottomBackground: CodableColor = CodableColor(Color(UIColor.systemBackground)),
@@ -43,7 +43,7 @@ public struct ConciergeMessageColors: Codable {
     public var conciergeBackground: CodableColor
     public var conciergeText: CodableColor
     public var conciergeLink: CodableColor
-    
+
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
         userText: CodableColor = CodableColor(Color.primary),
@@ -69,7 +69,7 @@ public struct ConciergeButtonColors: Codable {
     public var submitFillDisabled: CodableColor
     public var submitText: CodableColor
     public var disabledBackground: CodableColor
-    
+
     public init(
         primaryBackground: CodableColor = CodableColor(Color.accentColor),
         primaryText: CodableColor = CodableColor(Color.white),
@@ -98,7 +98,7 @@ public struct ConciergeInputColors: Codable {
     public var text: CodableColor
     public var outline: CodableColor? // TODO: are gradients required?
     public var outlineFocus: CodableColor
-    
+
     public init(
         background: CodableColor = CodableColor(Color.white),
         text: CodableColor = CodableColor(Color.primary),
@@ -116,7 +116,7 @@ public struct ConciergeInputColors: Codable {
 public struct ConciergeCitationColors: Codable {
     public var background: CodableColor
     public var text: CodableColor
-    
+
     public init(
         background: CodableColor = CodableColor(Color(UIColor.systemGray3)),
         text: CodableColor = CodableColor(Color.primary)
@@ -129,7 +129,7 @@ public struct ConciergeCitationColors: Codable {
 /// Feedback color tokens
 public struct ConciergeFeedbackColors: Codable {
     public var iconButtonBackground: CodableColor
-    
+
     public init(
         // Default feedback icons render without a background unless explicitly themed.
         iconButtonBackground: CodableColor = CodableColor(Color.clear)
@@ -143,7 +143,7 @@ public struct ConciergePrimaryColors: Codable {
     public var primary: CodableColor
     public var secondary: CodableColor
     public var text: CodableColor
-    
+
     public init(
         primary: CodableColor = CodableColor(Color.accentColor),
         secondary: CodableColor = CodableColor(Color.accentColor),
@@ -165,7 +165,7 @@ public struct ConciergeThemeColors: Codable {
     public var citation: ConciergeCitationColors
     public var feedback: ConciergeFeedbackColors
     public var disclaimer: CodableColor
-    
+
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
         surface: ConciergeSurfaceColors = ConciergeSurfaceColors(),
@@ -186,4 +186,3 @@ public struct ConciergeThemeColors: Codable {
         self.disclaimer = disclaimer
     }
 }
-

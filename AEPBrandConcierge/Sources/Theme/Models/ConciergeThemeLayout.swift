@@ -42,7 +42,7 @@ public struct ConciergeLayout: Codable {
     public var multimodalCardBoxShadow: ConciergeShadow
     public var welcomeInputOrder: Int
     public var welcomeCardsOrder: Int
-    
+
     public init(
         inputHeight: CGFloat = 52,
         inputBorderRadius: CGFloat = 12,
@@ -122,7 +122,7 @@ public struct ConciergeTypography: Codable {
     public var fontSize: CGFloat
     public var lineHeight: CGFloat
     public var fontWeight: CodableFontWeight
-    
+
     public init(
         fontFamily: String = "",
         fontSize: CGFloat = 16,
@@ -137,4 +137,3 @@ public struct ConciergeTypography: Codable {
         self.fontWeight = fontWeight
     }
 }
-

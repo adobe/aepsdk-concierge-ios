@@ -84,5 +84,3 @@ private struct LoadingDotsView: View {
     .padding()
     .conciergeTheme(ConciergeTheme())
 }
-
-
