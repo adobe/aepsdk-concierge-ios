@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+# configurable per repository
+
+The project name is "AEPBrandConcierge". Source and Test files are nested in the "AEPBrandConcierge" directory, which is at the root of the repository.
+
+- all API recommendations must be available in iOS 15.0. 
+  - you can suggest APIs from newer versions of iOS if what we are trying to accomplish isn't available in iOS 15.0, but make sure to include in which version the suggested API is available.
+- never use single character or acronym variable names; use descriptive, concise variable names appropriate for the context
+- When creating entirely new SwiftUI views/components, prefer to create new files for them, placing them in the appropriate directory under AEPBrandConcierge/Sources/Views, or if a new subdirectory should be created suggest one. 
