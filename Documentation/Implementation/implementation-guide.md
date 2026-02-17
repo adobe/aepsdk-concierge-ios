@@ -78,7 +78,7 @@ The UI reads styling from the SwiftUI environment value `conciergeTheme`. You ca
 let theme = ConciergeThemeLoader.load(from: "theme-default", in: .main) ?? ConciergeThemeLoader.default()
 
 var body: some View {
-    Concierge.wrap(AppRootView(), hideButton: true)
+    Concierge.wrap(AppRootView(), surfaces: ["my-surface"], hideButton: true)
         .conciergeTheme(theme)
 }
 ```
@@ -94,14 +94,14 @@ Use this when you want full control over where the entry point lives.
 1) Wrap your root content and hide the built in button:
 
 ```swift
-Concierge.wrap(AppRootView(), hideButton: true)
+Concierge.wrap(AppRootView(), surfaces: ["my-surface"], hideButton: true)
 ```
 
 2) Trigger chat from your own UI:
 
 ```swift
 Button("Chat") {
-    Concierge.show(title: "Concierge", subtitle: "Powered by Adobe")
+    Concierge.show(surfaces: ["my-surface"], title: "Concierge", subtitle: "Powered by Adobe")
 }
 ```
 
@@ -114,10 +114,10 @@ Optional:
 Use this when you want a drop in entry point.
 
 ```swift
-Concierge.wrap(AppRootView()) // hideButton defaults to false
+Concierge.wrap(AppRootView(), surfaces: ["my-surface"]) // hideButton defaults to false
 ```
 
-This renders a floating button in the bottom trailing corner; tapping it calls `Concierge.show()`.
+This renders a floating button in the bottom trailing corner; tapping it calls `Concierge.show(surfaces:)`.
 
 ### Closing the UI
 
@@ -133,14 +133,14 @@ Use this when your app is UIKit based and you want to present Concierge from a `
 
 #### Present the chat UI
 
-Call `Concierge.present(on:title:subtitle:)` from the view controller that should host the chat UI:
+Call `Concierge.present(on:surfaces:title:subtitle:)` from the view controller that should host the chat UI:
 
 ```swift
 import AEPBrandConcierge
 
 final class MyViewController: UIViewController {
     @objc private func openChat() {
-        Concierge.present(on: self, title: "Concierge", subtitle: "Powered by Adobe")
+        Concierge.present(on: self, surfaces: ["my-surface"], title: "Concierge", subtitle: "Powered by Adobe")
     }
 }
 ```

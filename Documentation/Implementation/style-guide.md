@@ -49,7 +49,8 @@ struct ContentView: View {
     var body: some View {
         Concierge.wrap(
             // Your app content here
-            Text("Hello, World!")
+            Text("Hello, World!"),
+            surfaces: ["my-surface"]
         )
         .conciergeTheme(theme)  // Apply theme to the wrapper
         .onAppear {
