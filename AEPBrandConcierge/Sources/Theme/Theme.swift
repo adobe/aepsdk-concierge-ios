@@ -86,3 +86,27 @@ public extension View {
         environment(\.conciergePlaceholderConfig, config)
     }
 }
+
+// MARK: - WebView presentation environment
+
+/// Presenter for opening URLs in an in-app webview popover.
+/// Child views can use this to trigger the webview popover without needing direct access to the parent view's state.
+public struct ConciergeWebViewPresenter {
+    /// Opens the provided URL in the webview popover.
+    public var openURL: (_ url: URL) -> Void
+    
+    public init(openURL: @escaping (_ url: URL) -> Void = { _ in }) {
+        self.openURL = openURL
+    }
+}
+
+private struct ConciergeWebViewPresenterKey: EnvironmentKey {
+    static let defaultValue = ConciergeWebViewPresenter()
+}
+
+public extension EnvironmentValues {
+    var conciergeWebViewPresenter: ConciergeWebViewPresenter {
+        get { self[ConciergeWebViewPresenterKey.self] }
+        set { self[ConciergeWebViewPresenterKey.self] = newValue }
+    }
+}

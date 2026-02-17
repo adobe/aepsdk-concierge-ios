@@ -18,6 +18,7 @@ struct ChatMessageView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
     @Environment(\.openURL) private var openURL
+    @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
 
     let messageId: UUID?
     let template: MessageTemplate
@@ -135,7 +136,7 @@ struct ChatMessageView: View {
                                         )
                                     ),
                                     onOpenLink: { url in
-                                        openURL(url)
+                                        handleLinkTap(url)
                                     }
                                 )
                             } else {
@@ -265,7 +266,7 @@ struct ChatMessageView: View {
         case .productCarouselCard(let imageSource, let title, let destination):
             Button(action: {
                 if let destination = destination {
-                    openURL(destination)
+                    handleLinkTap(destination)
                 }
             }) {
                 ZStack(alignment: .bottomLeading) {
@@ -341,7 +342,7 @@ struct ChatMessageView: View {
                                     variant: .primary,
                                     action: {
                                         if let url = URL(string: primaryButton.url) {
-                                            openURL(url)
+                                            handleLinkTap(url)
                                         }
                                     }
                                 )
@@ -353,7 +354,7 @@ struct ChatMessageView: View {
                                     variant: .secondary,
                                     action: {
                                         if let url = URL(string: secondaryButton.url) {
-                                            openURL(url)
+                                            handleLinkTap(url)
                                         }
                                     }
                                 )
@@ -414,5 +415,13 @@ private extension ChatMessageView {
             return behaviorWidth
         }
         return theme.layout.messageMaxWidth
+    }
+    
+    func handleLinkTap(_ url: URL) {
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { webViewPresenter.openURL($0) },
+            openWithSystem: { openURL($0) }
+        )
     }
 }

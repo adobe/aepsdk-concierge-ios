@@ -13,6 +13,9 @@
 import SwiftUI
 
 struct SourceRowView: View {
+    @Environment(\.openURL) private var openURL
+    @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
+    
     let ordinal: String
     let title: String
     let link: URL?
@@ -26,7 +29,7 @@ struct SourceRowView: View {
                 .frame(minWidth: 18, alignment: .leading)
 
             if let link = link {
-            Link(destination: link) {
+                Button(action: { handleLinkTap(link) }) {
                     Text(title)
                         .font(.footnote)
                         .foregroundStyle(theme.colors.message.conciergeLink.color)
@@ -34,7 +37,8 @@ struct SourceRowView: View {
                         .truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .accessibilityHint("Opens in browser")
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens link")
             } else {
                 Text(title)
                     .font(.footnote)
@@ -45,6 +49,14 @@ struct SourceRowView: View {
             }
         }
         .padding(.horizontal, 12)
+    }
+    
+    private func handleLinkTap(_ url: URL) {
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { webViewPresenter.openURL($0) },
+            openWithSystem: { openURL($0) }
+        )
     }
 }
 
