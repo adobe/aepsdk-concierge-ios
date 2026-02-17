@@ -103,10 +103,8 @@ enum CitationRenderer {
         var seenNumbers: Set<Int> = []
         var result: [Source] = []
 
-        for marker in markers {
-            if seenNumbers.insert(marker.citationNumber).inserted {
-                result.append(marker.source)
-            }
+        for marker in markers where seenNumbers.insert(marker.citationNumber).inserted {
+            result.append(marker.source)
         }
 
         return result
@@ -117,10 +115,8 @@ enum CitationRenderer {
         var seenNumbers: Set<Int> = []
         var result: [Source] = []
 
-        for source in sources {
-            if seenNumbers.insert(source.citationNumber).inserted {
-                result.append(source)
-            }
+        for source in sources where seenNumbers.insert(source.citationNumber).inserted {
+            result.append(source)
         }
 
         return result

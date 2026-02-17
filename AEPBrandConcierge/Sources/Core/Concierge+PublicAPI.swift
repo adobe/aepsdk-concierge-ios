@@ -33,7 +33,7 @@ public extension Concierge {
                               type: ConciergeConstants.EventType.concierge,
                               source: EventSource.requestContent,
                               data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
-        
+
         MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
             guard let responseEvent = responseEvent,
                   let eventData = responseEvent.data,
@@ -41,7 +41,7 @@ public extension Concierge {
                 Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
                 return
             }
-                        
+
             if let speechCapturer = speechCapturer {
                 self.speechCapturer = speechCapturer
             }
@@ -134,7 +134,7 @@ public extension Concierge {
 
         // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
         // as we have in the swiftui version
-        
+
         let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(surfaces: surfaces), title: title, subtitle: subtitle)
         presentedUIKitController = hosting
 
@@ -152,4 +152,3 @@ public extension Concierge {
         }
     }
 }
-

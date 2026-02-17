@@ -24,5 +24,3 @@ struct CitationStyle {
         font: UIFont.systemFont(ofSize: 12, weight: .semibold)
     )
 }
-
-

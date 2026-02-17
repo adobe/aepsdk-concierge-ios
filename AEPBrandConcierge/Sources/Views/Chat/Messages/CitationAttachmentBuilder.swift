@@ -91,7 +91,7 @@ enum CitationAttachmentBuilder {
         if let url = URL(string: marker.source.url) {
             result.addAttribute(.link, value: url, range: NSRange(location: 0, length: result.length))
         }
-        
+
         // Add a space after the badge to separate it from the next character.
         result.append(NSAttributedString(string: " "))
         return result
@@ -135,5 +135,3 @@ enum CitationAttachmentBuilder {
         }
     }
 }
-
-

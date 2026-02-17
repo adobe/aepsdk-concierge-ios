@@ -17,44 +17,44 @@ import AEPServices
 
 class SpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
-    
+
     private let LOG_TAG = "SpeechCapturer"
     private var isCapturing: Bool = false
-    
+
     private let speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var currentTranscription = ""
-    
+
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
     }
-    
+
     func initialize(responseProcessor: ((String) -> Void)?) {
         self.responseProcessor = responseProcessor
     }
-    
+
     // MARK: - internal methods
-    
+
     func isAvailable() -> Bool {
         permissionGrantedForAudio && permissionGrantedForSpeech
     }
-    
+
     func hasPermissionBeenDenied() -> Bool {
         let audioStatus = AVAudioSession.sharedInstance().recordPermission
         let speechStatus = SFSpeechRecognizer.authorizationStatus()
-        
+
         return audioStatus == .denied || speechStatus == .denied || speechStatus == .restricted
     }
-    
+
     func hasNeverBeenAskedForPermission() -> Bool {
         let audioStatus = AVAudioSession.sharedInstance().recordPermission
         let speechStatus = SFSpeechRecognizer.authorizationStatus()
-        
+
         return audioStatus == .undetermined && speechStatus == .notDetermined
     }
-    
+
     func beginCapture() {
         // Prevent double-starts
         if isCapturing {
@@ -66,10 +66,10 @@ class SpeechCapturer: SpeechCapturing {
         // Cancel any existing recognition task
         recognitionTask?.cancel()
         recognitionTask = nil
-        
+
         // Set up audio session
         let audioSession = AVAudioSession.sharedInstance()
-        
+
         do {
             try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
             try audioSession.setMode(.measurement)
@@ -80,7 +80,7 @@ class SpeechCapturer: SpeechCapturing {
             isCapturing = false
             return
         }
-        
+
         // Ensure a clean slate on the input node
         let inputNode = audioEngine.inputNode
         if audioEngine.isRunning {
@@ -92,13 +92,13 @@ class SpeechCapturer: SpeechCapturing {
         if #available(iOS 16, *) {
             recognitionRequest?.addsPunctuation = true
         }
-        
+
         guard let recognitionRequest = recognitionRequest else {
             Log.error(label: self.LOG_TAG, "Unable to create recognition request")
             isCapturing = false
             return
         }
-        
+
         recognitionRequest.shouldReportPartialResults = true
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
             if let result = result {
@@ -106,7 +106,7 @@ class SpeechCapturer: SpeechCapturing {
                 self.currentTranscription = text
                 self.responseProcessor?(text)
             }
-            
+
             if error != nil {
                 self.audioEngine.stop()
                 inputNode.removeTap(onBus: 0)
@@ -115,14 +115,14 @@ class SpeechCapturer: SpeechCapturing {
                 self.isCapturing = false
             }
         }
-        
+
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             recognitionRequest.append(buffer)
         }
-        
+
         audioEngine.prepare()
-        
+
         do {
             try audioEngine.start()
         } catch {
@@ -130,7 +130,7 @@ class SpeechCapturer: SpeechCapturing {
             isCapturing = false
         }
     }
-    
+
     func endCapture(completion: @escaping (String?, (any Error)?) -> Void) {
         if audioEngine.isRunning {
             audioEngine.stop()
@@ -140,12 +140,12 @@ class SpeechCapturer: SpeechCapturing {
         isCapturing = false
         completion(currentTranscription, nil)
     }
-    
+
     // MARK: - private methods
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void) {
         // Use a dispatch group to wait for both permission requests to complete
         let permissionGroup = DispatchGroup()
-        
+
         permissionGroup.enter()
         AVAudioSession.sharedInstance().requestRecordPermission { allowed in
             DispatchQueue.main.async { [weak self] in
@@ -156,7 +156,7 @@ class SpeechCapturer: SpeechCapturing {
                 permissionGroup.leave()
             }
         }
-        
+
         permissionGroup.enter()
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async { [weak self] in
@@ -167,13 +167,13 @@ class SpeechCapturer: SpeechCapturing {
                 permissionGroup.leave()
             }
         }
-        
+
         // Notify when both permissions have been responded to
         permissionGroup.notify(queue: .main) {
             completion()
         }
     }
-    
+
     private var permissionGrantedForAudio: Bool {
         if #unavailable(iOS 17.0) {
             return AVAudioSession.sharedInstance().recordPermission == .granted
@@ -181,7 +181,7 @@ class SpeechCapturer: SpeechCapturing {
             return AVAudioApplication.shared.recordPermission == .granted
         }
     }
-    
+
     private var permissionGrantedForSpeech: Bool {
         SFSpeechRecognizer.authorizationStatus() == .authorized
     }

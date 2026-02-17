@@ -14,7 +14,7 @@ import Foundation
 
 /// Extensions methods for formatting a `String`
 extension String {
-    
+
     /// Formats a JSON string for human readability with proper indentation and line breaks.
     /// - Returns: A beautified JSON string, or the original string if it's not valid JSON.
     func prettyPrintedJSON() -> String {

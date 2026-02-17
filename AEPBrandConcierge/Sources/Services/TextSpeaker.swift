@@ -15,7 +15,7 @@ import AVFoundation
 class TextSpeaker: TextSpeaking {
     private let synthesizer = AVSpeechSynthesizer()
     private let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.enhanced.en-US.Tom")
-    
+
     func utter(text: String) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             let utterance = AVSpeechUtterance(string: text)

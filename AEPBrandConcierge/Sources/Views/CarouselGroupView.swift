@@ -17,7 +17,7 @@ struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
     @State private var currentIndex = 0
-    
+
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
@@ -28,7 +28,7 @@ struct CarouselGroupView: View {
             }
             .frame(idealWidth: 150, idealHeight: 200)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            
+
             HStack(spacing: 16) {
                 Button(action: { currentIndex = max(0, currentIndex - 1) }) {
                     Image(systemName: "chevron.left")

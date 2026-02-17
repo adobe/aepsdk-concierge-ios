@@ -16,17 +16,17 @@ import SwiftUI
 struct ButtonView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.isEnabled) private var isEnabled
-    
+
     let text: String
     let variant: ConciergeButtonVariant
     let action: () -> Void
-    
+
     init(text: String, variant: ConciergeButtonVariant = .primary, action: @escaping () -> Void) {
         self.text = text
         self.variant = variant
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: action) {
             Text(text)
@@ -51,7 +51,7 @@ struct ButtonView: View {
         ButtonView(text: "Primary Button", variant: .primary) {
             print("Primary button tapped")
         }
-        
+
         ButtonView(text: "Secondary Button", variant: .secondary) {
             print("Secondary button tapped")
         }
