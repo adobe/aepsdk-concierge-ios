@@ -18,7 +18,7 @@ import AEPServices
 /// Multimodal carousel behavior configuration
 public struct ConciergeMultimodalCarouselBehavior: Codable {
     public var cardClickAction: String
-    
+
     public init(cardClickAction: String = "openLink") {
         self.cardClickAction = cardClickAction
     }
@@ -29,7 +29,7 @@ public struct ConciergeInputBehavior: Codable {
     public var enableVoiceInput: Bool
     public var disableMultiline: Bool
     public var showAiChatIcon: ConciergeIconConfig?
-    
+
     public init(
         enableVoiceInput: Bool = false,
         disableMultiline: Bool = true,
@@ -44,7 +44,7 @@ public struct ConciergeInputBehavior: Codable {
 /// Icon configuration (SVG string or URL)
 public struct ConciergeIconConfig: Codable {
     public var icon: String
-    
+
     public init(icon: String = "") {
         self.icon = icon
     }
@@ -54,12 +54,12 @@ public struct ConciergeIconConfig: Codable {
 public struct ConciergeChatBehavior: Codable {
     public var messageAlignment: ConciergeTextAlignment
     public var messageWidth: CGFloat? // nil = no max width, value = max width in points
-    
+
     private enum CodingKeys: String, CodingKey {
         case messageAlignment
         case messageWidth
     }
-    
+
     public init(
         messageAlignment: ConciergeTextAlignment = .leading,
         messageWidth: CGFloat? = nil
@@ -67,11 +67,11 @@ public struct ConciergeChatBehavior: Codable {
         self.messageAlignment = messageAlignment
         self.messageWidth = messageWidth
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         messageAlignment = try container.decodeIfPresent(ConciergeTextAlignment.self, forKey: .messageAlignment) ?? .leading
-        
+
         if let widthString = try? container.decode(String.self, forKey: .messageWidth) {
             messageWidth = CSSValueConverter.parseWidth(widthString)
         } else if let widthNumber = try? container.decodeIfPresent(CGFloat.self, forKey: .messageWidth) {
@@ -80,7 +80,7 @@ public struct ConciergeChatBehavior: Codable {
             messageWidth = nil
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(messageAlignment, forKey: .messageAlignment)
@@ -94,7 +94,7 @@ public struct ConciergeChatBehavior: Codable {
 public struct ConciergePrivacyNoticeBehavior: Codable {
     public var title: String
     public var text: String
-    
+
     public init(
         title: String = "Privacy Notice",
         text: String = "Privact notice text."
@@ -110,7 +110,7 @@ public struct ConciergeBehaviorConfig: Codable {
     public var input: ConciergeInputBehavior
     public var chat: ConciergeChatBehavior
     public var privacyNotice: ConciergePrivacyNoticeBehavior
-    
+
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
         input: ConciergeInputBehavior = ConciergeInputBehavior(),
@@ -123,4 +123,3 @@ public struct ConciergeBehaviorConfig: Codable {
         self.privacyNotice = privacyNotice
     }
 }
-

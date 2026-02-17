@@ -20,40 +20,40 @@ import AEPServices
 @MainActor
 final class ChatController: ObservableObject {
     // MARK: - Published State
-    
+
     @Published var messages: [Message] = []
     @Published var chatState: ChatState = .idle
     @Published var userScrollTick: Int = 0
-    @Published var userMessageToScrollId: UUID? = nil
+    @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
-    
+
     // MARK: - Input Controller
-    
+
     let inputController = InputController()
-    
+
     var inputText: String { inputController.data.text }
     var inputState: InputState { inputController.state }
-    
+
     // MARK: - Private Properties
-    
+
     private let LOG_TAG = "ChatController"
     private let chatService: ConciergeChatService
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
-    
+
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
-    private var productCardIndex: Int? = nil
+    private var productCardIndex: Int?
     private var latestPromptSuggestions: [String] = []
-    
+
     // MARK: - Computed Properties
-    
+
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
     var composerEditable: Bool { chatState != .processing }
     var micEnabled: Bool { chatState == .idle }
     var sendEnabled: Bool { chatState == .idle && inputController.data.canSend }
-    
+
     /// Whether at least one user message exists in the transcript.
     var hasUserSentMessage: Bool {
         messages.contains { message in
@@ -63,41 +63,40 @@ final class ChatController: ObservableObject {
             return false
         }
     }
-    
+
     // MARK: - Initialization
-    
+
     init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
-        
+
         configureSpeech()
     }
-    
+
     #if DEBUG
     // Internal for testing only
     init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.configuration = configuration
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
-        
+
         configureSpeech()
     }
     #endif
-    
+
     // MARK: - Input Handling
-    
+
     func applyTextChange(_ newText: String) {
         inputController.applyTextChange(newText)
     }
-    
+
     // MARK: - Mic Control
-    
+
     func toggleMic(currentSelectionLocation: Int) {
-        if isRecording { completeMic() }
-        else { startRecording(currentSelectionLocation: currentSelectionLocation) }
+        if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
     }
-    
+
     func cancelMic() {
         guard isRecording else {
             Log.warning(label: LOG_TAG, "cancelMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
@@ -106,7 +105,7 @@ final class ChatController: ObservableObject {
         inputController.apply(.cancelRecording)
         speechController.endCapture { _, _ in }
     }
-    
+
     func completeMic() {
         guard isRecording else {
             Log.warning(label: LOG_TAG, "completeMic ignored. Expected inputState to be 'recording', but was '\(inputState)'.")
@@ -123,7 +122,7 @@ final class ChatController: ObservableObject {
             }
         }
     }
-    
+
     func startRecording(currentSelectionLocation: Int) {
         guard chatState == .idle else {
             Log.warning(label: LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
@@ -139,7 +138,7 @@ final class ChatController: ObservableObject {
             Log.warning(label: LOG_TAG, "startRecording ignored. Speech capturer instance is nil.")
             return
         }
-        
+
         // Only request permissions if the user has never been asked before
         if speechController.hasNeverBeenAskedForPermission {
             Log.debug(label: LOG_TAG, "Requesting speech and microphone permissions for the first time.")
@@ -159,7 +158,7 @@ final class ChatController: ObservableObject {
             }
             return
         }
-        
+
         // Always check if permissions are available before proceeding
         if !speechController.isAvailable {
             // Permissions were asked but not granted - show custom dialog
@@ -167,24 +166,24 @@ final class ChatController: ObservableObject {
             showPermissionDialog = true
             return
         }
-        
+
         // Permissions granted - proceed with recording
         inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         speechController.beginCapture()
     }
-    
+
     // MARK: - Permission Dialog
-    
+
     func dismissPermissionDialog() {
         showPermissionDialog = false
     }
-    
+
     func requestOpenSettings() {
         showPermissionDialog = false
     }
-    
+
     // MARK: - Message Sending
-    
+
     func sendMessage(isUser: Bool) {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -203,7 +202,7 @@ final class ChatController: ObservableObject {
 
         let newMessage = Message(template: .basic(isUserMessage: isUser), messageBody: text)
         messages.append(newMessage)
-        
+
         if isUser {
             // Store the user message ID first
             userMessageToScrollId = newMessage.id
@@ -220,24 +219,24 @@ final class ChatController: ObservableObject {
             clearState()
         }
     }
-    
+
     // MARK: - Welcome Content
-    
+
     /// Loads initial welcome header and examples if not already loaded.
     func loadWelcomeIfNeeded(theme: ConciergeTheme) async {
         // Prevent loading if already loaded OR if messages is not empty
         guard !welcomeMessagesLoaded && messages.isEmpty else { return }
         welcomeMessagesLoaded = true
-        
+
         // Prefer welcome content provided by the theme when available.
         let title = theme.copy.welcomeHeading
         let body = theme.copy.welcomeSubheading
         let examples = theme.welcomeExamples
-        
+
         if !title.isEmpty || !body.isEmpty {
             messages.append(Message(template: .welcomeHeader(title: title, body: body)))
         }
-        
+
         if !examples.isEmpty {
             for example in examples {
                 let url = example.image.flatMap { URL(string: $0) }
@@ -253,50 +252,35 @@ final class ChatController: ObservableObject {
             }
             return
         }
-        
-        // Fallback to service defaults until the backend provides welcome content.
-        let welcome = await chatService.fetchWelcome()
-        messages.append(Message(template: .welcomeHeader(title: welcome.title, body: welcome.body)))
-        for example in welcome.examples {
-            messages.append(
-                Message(
-                    template: .welcomePromptSuggestion(
-                        imageSource: .remote(example.imageURL),
-                        text: example.text,
-                        background: example.background
-                    )
-                )
-            )
-        }
     }
-    
+
     // MARK: - Feedback
-    
+
     func sendFeedbackFor(messageId: UUID?, with feedbackPayload: FeedbackPayload) {
         guard let messageId = messageId, let index = messages.firstIndex(where: { $0.id == messageId }) else {
             Log.debug(label: LOG_TAG, "Unable to send feedback, the message was not retrievable from the chat.")
             return
         }
-        
+
         guard let configuration = configuration else {
             Log.debug(label: LOG_TAG, "Unable to send feedback, configuration is not available.")
             return
         }
-        
+
         // Get the message information for which feedback was provided
         var currentMessage = messages[index]
-        
+
         guard let messagePayload = currentMessage.payload else {
             Log.debug(label: LOG_TAG, "Unable to send feedback, message payload is not available.")
             return
         }
-        
+
         // Attach sentiment
         currentMessage.feedbackSentiment = feedbackPayload.sentiment
-        
+
         // Write the updated message back to the array so UI updates
         messages[index] = currentMessage
-                
+
         // Generate an edge event to track the feedback
         let feedbackEventData: [String: Any] = [
             ConciergeConstants.Request.Keys.XDM: [
@@ -328,12 +312,12 @@ final class ChatController: ObservableObject {
                 ]
             ]
         ]
-        
+
         chatService.sendFeedback(data: feedbackEventData)
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func configureSpeech() {
         speechController.configureForStreaming { [weak self] text in
             Task { @MainActor in
@@ -341,24 +325,24 @@ final class ChatController: ObservableObject {
             }
         }
     }
-    
+
     private func streamAgentResponse(for query: String) {
         let streamingMessageIndex = messages.count
         messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
-        
+
         var accumulatedContent = ""
         var accumulatedProducts: [MultimodalElement] = []
-        
+
         chatService.streamChat(query,
             onChunk: { [weak self] payload in
                 Task { @MainActor in
                     guard let self = self else { return }
-                    
+
                     let state = payload.state
-                    
+
                     if let response = payload.response {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(response.message.count), sources=\(response.sources?.count ?? 0), suggestions=\(response.promptSuggestions?.count ?? 0)")
-                        
+
                         if state == ConciergeConstants.StreamState.COMPLETED,
                             let data = try? JSONEncoder().encode(response),
                             let json = String(data: data, encoding: .utf8) {
@@ -367,14 +351,14 @@ final class ChatController: ObservableObject {
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
                     }
-                    
+
                     // Handle messages
                     if let message = payload.response?.message {
                         if state == ConciergeConstants.StreamState.IN_PROGRESS {
                             accumulatedContent += message
                             Log.trace(label: self.LOG_TAG, "SSE chunk (len=\(message.count)): \"\(message)\"")
                             Log.trace(label: self.LOG_TAG, "Accumulated (len=\(accumulatedContent.count))")
-                            
+
                             // Update the streaming message with accumulated content (preserve id)
                             if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
@@ -385,31 +369,31 @@ final class ChatController: ObservableObject {
                         } else if state == ConciergeConstants.StreamState.COMPLETED {
                             let fullText = message
                             Log.trace(label: self.LOG_TAG, "Completion received. Full text length=\(fullText.count)")
-                            
+
                             if streamingMessageIndex < self.messages.count {
                                 var current = self.messages[streamingMessageIndex]
                                 current.messageBody = fullText
                                 current.payload = payload
                                 self.messages[streamingMessageIndex] = current
                             }
-                            
+
                             accumulatedContent = fullText
                         }
                     }
-                    
+
                     // Handle cards in multimodalElements
                     if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
                         let newElementIds = Set(elements.map { $0.id })
                         accumulatedProducts.removeAll { existingElement in
                             newElementIds.contains(existingElement.id)
                         }
-                        
+
                         accumulatedProducts.append(contentsOf: elements)
-                        
+
                         if self.productCardIndex == nil {
                             self.productCardIndex = streamingMessageIndex + 1
                         }
-                        
+
                         self.renderProductCards(accumulatedProducts)
                     }
 
@@ -427,11 +411,11 @@ final class ChatController: ObservableObject {
             onComplete: { [weak self] error in
                 Task { @MainActor in
                     guard let self = self else { return }
-                    
+
                     if let error = error {
                         Log.error(label: self.LOG_TAG, "Streaming error: \(error)")
                         self.chatState = .error(.networkFailure)
-                        
+
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
@@ -439,12 +423,11 @@ final class ChatController: ObservableObject {
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
-                        
+
                         self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
-                        
+
                         self.clearState()
-                    }
-                    else {
+                    } else {
                         if streamingMessageIndex < self.messages.count {
                             var current = self.messages[streamingMessageIndex]
                             current.messageBody = accumulatedContent
@@ -455,28 +438,28 @@ final class ChatController: ObservableObject {
                             }
                             self.messages[streamingMessageIndex] = current
                         }
-                        
+
                         // Append prompt suggestions as their own message bubbles at the end
                         if !self.latestPromptSuggestions.isEmpty {
                             for suggestion in self.latestPromptSuggestions {
                                 self.messages.append(Message(template: .promptSuggestion(text: suggestion)))
                             }
                         }
-                        
+
                         self.clearState()
                     }
                 }
             }
         )
     }
-    
+
     private func clearState() {
         chatState = .idle
         productCardIndex = nil
         latestSources = []
         latestPromptSuggestions = []
     }
-    
+
     private func renderProductCards(_ products: [MultimodalElement]) {
         if products.count == 1, let entityInfo = products.first?.entityInfo {
             // Show a single product card
@@ -485,13 +468,13 @@ final class ChatController: ObservableObject {
             let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
             let primaryButton = entityInfo.primary
             let secondaryButton = entityInfo.secondary
-                                            
+
             let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
                                                    title: cardTitle,
                                                    body: cardText,
                                                    primaryButton: primaryButton,
                                                    secondaryButton: secondaryButton))
-            
+
             removeProductCard(atIndex: productCardIndex)
             messages.append(card)
         } else {
@@ -502,19 +485,19 @@ final class ChatController: ObservableObject {
                 let cardTitle = entityInfo.productName ?? "No title"
                 let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
                 let cardClickThroughURL = entityInfo.productPageURL.flatMap { URL(string: $0) }
-                                                
+
                 let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
                                                                   title: cardTitle,
                                                                   destination: cardClickThroughURL))
-                
+
                 carouselElements.append(card)
             }
-            
+
             removeProductCard(atIndex: productCardIndex)
             messages.append(Message(template: .carouselGroup(carouselElements)))
         }
     }
-    
+
     private func removeProductCard(atIndex index: Int?) {
         if let index = index, index < messages.count {
             messages.remove(at: index)
@@ -529,4 +512,3 @@ extension Array {
         return indices.contains(index) ? self[index] : nil
     }
 }
-

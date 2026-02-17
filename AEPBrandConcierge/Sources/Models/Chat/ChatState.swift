@@ -46,4 +46,3 @@ public enum ChatState: Equatable {
     case processing
     case error(ChatError)
 }
-

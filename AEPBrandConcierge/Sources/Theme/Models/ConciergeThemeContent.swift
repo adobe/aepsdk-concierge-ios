@@ -16,7 +16,7 @@ import SwiftUI
 public struct ConciergeDisclaimer: Codable {
     public var text: String
     public var links: [ConciergeDisclaimerLink]
-    
+
     public init(
         text: String = "AI responses may be inaccurate. Check answers and sources. {Terms}",
         links: [ConciergeDisclaimerLink] = []
@@ -30,7 +30,7 @@ public struct ConciergeDisclaimer: Codable {
 public struct ConciergeDisclaimerLink: Codable {
     public var text: String
     public var url: String
-    
+
     public init(text: String = "", url: String = "") {
         self.text = text
         self.url = url
@@ -42,7 +42,7 @@ public struct ConciergeWelcomeExample: Codable {
     public var text: String
     public var image: String?
     public var backgroundColor: CodableColor?
-    
+
     public init(text: String = "", image: String? = nil, backgroundColor: CodableColor? = nil) {
         self.text = text
         self.image = image
@@ -77,7 +77,7 @@ public struct ConciergeCopy: Codable {
     public var feedbackToastSuccess: String
     public var feedbackThumbsUpAria: String
     public var feedbackThumbsDownAria: String
-    
+
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
         case welcomeSubheading = "welcome.subheading"
@@ -104,7 +104,7 @@ public struct ConciergeCopy: Codable {
         case feedbackThumbsUpAria = "feedback.thumbsUp.aria"
         case feedbackThumbsDownAria = "feedback.thumbsDown.aria"
     }
-    
+
     public init(
         welcomeHeading: String = "Explore what you can do with Adobe apps.",
         welcomeSubheading: String = "Choose an option or tell us what interests you and we'll point you in the right direction.",
@@ -163,13 +163,13 @@ public struct ConciergeArrays: Codable {
     public var welcomeExamples: [ConciergeWelcomeExample]
     public var feedbackPositiveOptions: [String]
     public var feedbackNegativeOptions: [String]
-    
+
     private enum DotKeys: String, CodingKey {
         case welcomeExamples = "welcome.examples"
         case feedbackPositiveOptions = "feedback.positive.options"
         case feedbackNegativeOptions = "feedback.negative.options"
     }
-    
+
     public static let defaultPositive: [String] = [
         "Helpful and relevant recommendations",
         "Clear and easy to understand",
@@ -177,7 +177,7 @@ public struct ConciergeArrays: Codable {
         "Visually appealing presentation",
         "Other"
     ]
-    
+
     public static let defaultNegative: [String] = [
         "Didn't understand my request",
         "Unhelpful or irrelevant information",
@@ -185,7 +185,7 @@ public struct ConciergeArrays: Codable {
         "Errors or poor quality response",
         "Other"
     ]
-    
+
     public init(
         welcomeExamples: [ConciergeWelcomeExample] = [],
         feedbackPositiveOptions: [String] = ConciergeArrays.defaultPositive,
@@ -195,14 +195,14 @@ public struct ConciergeArrays: Codable {
         self.feedbackPositiveOptions = feedbackPositiveOptions
         self.feedbackNegativeOptions = feedbackNegativeOptions
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: DotKeys.self)
         welcomeExamples = try container.decodeIfPresent([ConciergeWelcomeExample].self, forKey: .welcomeExamples) ?? []
         feedbackPositiveOptions = try container.decodeIfPresent([String].self, forKey: .feedbackPositiveOptions) ?? ConciergeArrays.defaultPositive
         feedbackNegativeOptions = try container.decodeIfPresent([String].self, forKey: .feedbackNegativeOptions) ?? ConciergeArrays.defaultNegative
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: DotKeys.self)
         try container.encode(welcomeExamples, forKey: .welcomeExamples)
@@ -210,4 +210,3 @@ public struct ConciergeArrays: Codable {
         try container.encode(feedbackNegativeOptions, forKey: .feedbackNegativeOptions)
     }
 }
-

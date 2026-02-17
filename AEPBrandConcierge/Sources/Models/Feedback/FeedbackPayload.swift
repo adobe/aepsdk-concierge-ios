@@ -18,4 +18,3 @@ struct FeedbackPayload {
     let selectedOptions: [String]
     let notes: String
 }
-

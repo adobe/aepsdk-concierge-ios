@@ -21,7 +21,7 @@ struct MessageListView: View {
     var userMessageToScrollId: UUID?
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
-    var onSuggestionTap: ((String) -> Void)? = nil
+    var onSuggestionTap: ((String) -> Void)?
 
     var body: some View {
         GeometryReader { geometry in
@@ -45,7 +45,7 @@ struct MessageListView: View {
                                     }
                                 }
                         }
-                        
+
                         // Add spacer to ensure scroll view has enough height to position user message at top
                         Spacer()
                             .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))

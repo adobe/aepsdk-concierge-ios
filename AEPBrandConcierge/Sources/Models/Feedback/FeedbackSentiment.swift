@@ -16,7 +16,7 @@ import Foundation
 public enum FeedbackSentiment {
     case positive
     case negative
-    
+
     func thumbsValue() -> String {
         switch self {
         case .negative:
@@ -26,4 +26,3 @@ public enum FeedbackSentiment {
         }
     }
 }
-

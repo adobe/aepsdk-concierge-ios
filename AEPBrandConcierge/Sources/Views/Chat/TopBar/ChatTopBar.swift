@@ -23,7 +23,7 @@ struct ChatTopBar: View {
 
     let onToggleMode: (Bool) -> Void
     let onClose: () -> Void
-    
+
     @State private var showSourcesToggle: Bool = true
 
     var body: some View {
@@ -53,5 +53,3 @@ struct ChatTopBar: View {
         .background(theme.colors.surface.mainContainerBackground.color)
     }
 }
-
-

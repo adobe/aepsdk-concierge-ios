@@ -40,9 +40,9 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            
+
             // MARK: - manual call
-            
+
             Concierge.wrap(
                 VStack {
                     VStack {
@@ -60,7 +60,7 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 20)
                             .padding(.top, 8)
-                        
+
                         Text(themeLoadStatusText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -70,6 +70,7 @@ struct ContentView: View {
                         Button(action: {
                             // only call needed to show the concierge ui
                             Concierge.show(
+                                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
                                 title: "Concierge",
                                 subtitle: "Powered by Adobe"
                             )
@@ -94,27 +95,24 @@ struct ContentView: View {
                 },
                 hideButton: true
             )
-            
+
             // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
             .conciergeTheme(loadedTheme)
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
-            
-            
-            
             // MARK: - floating button
-            
+
             Concierge.wrap(
                 Label(
                     "hello, world", systemImage: "world"
-                )
+                ),
+                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
             )
+            .conciergeTheme(loadedTheme)
             .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
-            
-            
-            
+
             // MARK: - UIKit example
-            
+
             UIKitDemoScreen()
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
         }
@@ -128,13 +126,13 @@ struct ContentView: View {
 
     private func loadTheme() {
         let filename = selectedThemeFile.rawValue
-        
+
         if let url = Bundle.main.url(forResource: filename, withExtension: "json") {
             themeLoadStatusText = "Theme file: \(url.lastPathComponent)"
         } else {
             themeLoadStatusText = "Theme file missing in main bundle: \(filename).json"
         }
-        
+
         loadedTheme = ConciergeThemeLoader.load(from: filename, in: .main) ?? ConciergeThemeLoader.default()
     }
 }

@@ -17,7 +17,7 @@ public struct ConciergeThemeTokens: Codable {
     public var typography: ConciergeTypography
     public var colors: ConciergeThemeColors
     public var layout: ConciergeLayout
-    
+
     public init(
         typography: ConciergeTypography = ConciergeTypography(),
         colors: ConciergeThemeColors = ConciergeThemeColors(),
@@ -28,4 +28,3 @@ public struct ConciergeThemeTokens: Codable {
         self.layout = layout
     }
 }
-

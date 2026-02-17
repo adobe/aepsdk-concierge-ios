@@ -19,15 +19,15 @@ public struct Source: Codable, Hashable {
     public let startIndex: Int
     public let endIndex: Int
     public let citationNumber: Int
-    
+
     enum CodingKeys: String, CodingKey {
         case url
         case title
         case start_index
         case end_index
-        case citation_number        
+        case citation_number
     }
-    
+
     public init(url: String, title: String, startIndex: Int, endIndex: Int, citationNumber: Int) {
         self.url = url
         self.title = title
@@ -35,7 +35,7 @@ public struct Source: Codable, Hashable {
         self.endIndex = endIndex
         self.citationNumber = citationNumber
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
@@ -56,4 +56,3 @@ public struct Source: Codable, Hashable {
         try container.encode(citationNumber, forKey: .citation_number)
     }
 }
-

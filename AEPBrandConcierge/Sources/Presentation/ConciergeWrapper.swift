@@ -27,7 +27,7 @@ struct ConciergeWrapper<Content: View>: View {
     var body: some View {
         ZStack {
             content
-            
+
             // View overlay for chat UI (respects safe area by default)
             if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
@@ -35,7 +35,7 @@ struct ConciergeWrapper<Content: View>: View {
                     .transition(.opacity)
                     .zIndex(1)
             }
-            
+
             // Floating Concierge button
             if !hideButton {
                 VStack {
@@ -60,9 +60,8 @@ struct ConciergeWrapper<Content: View>: View {
             }
         }
     }
-    
+
     private func showConcierge() {
-        Concierge.show()
+        Concierge.show(surfaces: Concierge.surfaces)
     }
 }
-

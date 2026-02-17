@@ -35,5 +35,3 @@ struct ComposerSendButtonStyle: SwiftUI.ButtonStyle {
             .opacity(configuration.isPressed ? 0.92 : 1.0)
     }
 }
-
-

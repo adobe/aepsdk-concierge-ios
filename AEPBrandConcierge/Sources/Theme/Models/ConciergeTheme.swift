@@ -20,12 +20,12 @@ import AEPServices
 private struct DynamicCodingKey: CodingKey {
     var stringValue: String
     var intValue: Int?
-    
+
     init?(stringValue: String) {
         self.stringValue = stringValue
         self.intValue = nil
     }
-    
+
     init?(intValue: Int) {
         self.stringValue = String(intValue)
         self.intValue = intValue
@@ -53,47 +53,47 @@ public struct ConciergeTheme: Codable {
     public var text: ConciergeCopy
     public var arrays: ConciergeArrays
     public var theme: ConciergeThemeTokens
-    
+
     public var typography: ConciergeTypography {
         get { theme.typography }
         set { theme.typography = newValue }
     }
-    
+
     public var colors: ConciergeThemeColors {
         get { theme.colors }
         set { theme.colors = newValue }
     }
-    
+
     public var layout: ConciergeLayout {
         get { theme.layout }
         set { theme.layout = newValue }
     }
-    
+
     public var components: ConciergeComponentStyles {
         // Derived convenience property.
         derivedComponents
     }
-    
+
     public var copy: ConciergeCopy {
         get { text }
         set { text = newValue }
     }
-    
+
     public var welcomeExamples: [ConciergeWelcomeExample] {
         get { arrays.welcomeExamples }
         set { arrays.welcomeExamples = newValue }
     }
-    
+
     public var feedbackPositiveOptions: [String] {
         get { arrays.feedbackPositiveOptions }
         set { arrays.feedbackPositiveOptions = newValue }
     }
-    
+
     public var feedbackNegativeOptions: [String] {
         get { arrays.feedbackNegativeOptions }
         set { arrays.feedbackNegativeOptions = newValue }
     }
-    
+
     enum CodingKeys: String, CodingKey {
         case metadata
         case behavior
@@ -103,7 +103,7 @@ public struct ConciergeTheme: Codable {
         case arrays
         case theme
     }
-    
+
     public init(
         metadata: ConciergeThemeMetadata = ConciergeThemeMetadata(),
         behavior: ConciergeBehaviorConfig = ConciergeBehaviorConfig(),
@@ -121,16 +121,16 @@ public struct ConciergeTheme: Codable {
         self.arrays = arrays
         self.theme = theme
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         // Decode top-level groups
         metadata = try container.decodeIfPresent(ConciergeThemeMetadata.self, forKey: .metadata) ?? ConciergeThemeMetadata()
         behavior = try container.decodeIfPresent(ConciergeBehaviorConfig.self, forKey: .behavior) ?? ConciergeBehaviorConfig()
         disclaimer = try container.decodeIfPresent(ConciergeDisclaimer.self, forKey: .disclaimer) ?? ConciergeDisclaimer()
         assets = try container.decodeIfPresent(ConciergeAssets.self, forKey: .assets) ?? ConciergeAssets()
-        
+
         // Decode text/copy (maps from "text" key)
         do {
             text = try container.decodeIfPresent(ConciergeCopy.self, forKey: .text) ?? ConciergeCopy()
@@ -139,7 +139,7 @@ public struct ConciergeTheme: Codable {
             print("Failed to decode theme copy: \(error)")
             text = ConciergeCopy()
         }
-        
+
         // Decode arrays (maps from "arrays" key)
         do {
             arrays = try container.decodeIfPresent(ConciergeArrays.self, forKey: .arrays) ?? ConciergeArrays()
@@ -148,7 +148,7 @@ public struct ConciergeTheme: Codable {
             print("Failed to decode theme arrays: \(error)")
             arrays = ConciergeArrays()
         }
-        
+
         // Decode theme tokens or process CSS variables
         if let typedTheme = try? container.decode(ConciergeThemeTokens.self, forKey: .theme) {
             theme = typedTheme
@@ -164,10 +164,10 @@ public struct ConciergeTheme: Codable {
             }
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         try container.encode(metadata, forKey: .metadata)
         try container.encode(behavior, forKey: .behavior)
         try container.encode(disclaimer, forKey: .disclaimer)
