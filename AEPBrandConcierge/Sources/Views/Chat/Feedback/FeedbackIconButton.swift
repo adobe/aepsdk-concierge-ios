@@ -56,5 +56,3 @@ private struct FeedbackIconButtonStyle: SwiftUI.ButtonStyle {
             )
     }
 }
-
-

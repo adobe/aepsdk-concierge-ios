@@ -14,12 +14,12 @@ import Foundation
 
 public protocol SpeechCapturing: AnyObject {
     var responseProcessor: ((String) -> Void)? { get set }
-    
+
     func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
     func hasPermissionBeenDenied() -> Bool
     func hasNeverBeenAskedForPermission() -> Bool
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void)
     func beginCapture()
-    func endCapture(completion: @escaping (String?, Error?) -> Void)    
+    func endCapture(completion: @escaping (String?, Error?) -> Void)
 }

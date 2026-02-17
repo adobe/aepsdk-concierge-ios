@@ -16,48 +16,47 @@ import Foundation
 final class SpeechController {
     private let capturer: SpeechCapturing?
     private let speaker: TextSpeaking?
-    
+
     init(capturer: SpeechCapturing?, speaker: TextSpeaking?) {
         self.capturer = capturer
         self.speaker = speaker
     }
-    
+
     // MARK: - Capture State
-    
+
     var isCapturerAvailable: Bool {
         capturer != nil
     }
-    
+
     var isAvailable: Bool {
         capturer?.isAvailable() ?? false
     }
-    
+
     var hasNeverBeenAskedForPermission: Bool {
         capturer?.hasNeverBeenAskedForPermission() ?? true
     }
-    
+
     // MARK: - Capture Operations
-    
+
     func configureForStreaming(responseProcessor: @escaping (String) -> Void) {
         capturer?.initialize(responseProcessor: responseProcessor)
     }
-    
+
     func requestPermissions(completion: @escaping () -> Void) {
         capturer?.requestSpeechAndMicrophonePermissions(completion: completion)
     }
-    
+
     func beginCapture() {
         capturer?.beginCapture()
     }
-    
+
     func endCapture(completion: @escaping (String?, Error?) -> Void) {
         capturer?.endCapture(completion: completion)
     }
-    
+
     // MARK: - Speech Output
-    
+
     func speak(_ text: String) {
         speaker?.utter(text: text)
     }
 }
-

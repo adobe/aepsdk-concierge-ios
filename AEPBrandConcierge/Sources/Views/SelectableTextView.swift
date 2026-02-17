@@ -21,10 +21,10 @@ struct SelectableTextView: UIViewRepresentable {
     @Binding var isFocused: Bool
     var isEditable: Bool
     var placeholder: String
-    var accessibilityLabel: String? = nil
-    var font: UIFont? = nil
-    var textColor: UIColor? = nil
-    var placeholderTextColor: UIColor? = nil
+    var accessibilityLabel: String?
+    var font: UIFont?
+    var textColor: UIColor?
+    var placeholderTextColor: UIColor?
     var minLines: Int = 1
     var maxLines: Int = 4
     var onEditingChanged: ((Bool) -> Void)?
@@ -105,7 +105,7 @@ struct SelectableTextView: UIViewRepresentable {
                 uiView.isEditable = isEditable
             }
         }
-        
+
         // Handle focus state changes.
         //
         // Note: During snapshot/unit testing we intentionally avoid changing first responder status to keep
@@ -119,7 +119,7 @@ struct SelectableTextView: UIViewRepresentable {
                 }
             }
         }
-        
+
         context.coordinator.placeholderLabel?.isHidden = !text.isEmpty
         context.coordinator.recalculateHeight(uiView)
         // Avoid forcing immediate layout; allow the system to coalesce updates
@@ -152,7 +152,7 @@ struct SelectableTextView: UIViewRepresentable {
         var parent: SelectableTextView
         var isSettingSelectionProgrammatically: Bool = false
         weak var placeholderLabel: UILabel?
-        var lastIsEditable: Bool? = nil
+        var lastIsEditable: Bool?
 
         init(_ parent: SelectableTextView) {
             self.parent = parent

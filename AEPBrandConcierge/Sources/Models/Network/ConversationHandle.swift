@@ -21,4 +21,3 @@ struct ConversationHandle: Codable {
 struct HandleItem: Codable {
     let payload: [ConversationPayload]
 }
-

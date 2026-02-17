@@ -20,10 +20,9 @@ public struct ConversationPayload: Codable {
     public let request: [String: AnyCodable]?
     public let response: ConversationResponse?
     public let state: String?
-    
+
     // state:store
     public let key: String?
     public let value: String?
     public let maxAge: Int?
 }
-

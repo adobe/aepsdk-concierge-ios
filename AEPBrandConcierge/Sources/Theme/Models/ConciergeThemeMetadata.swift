@@ -18,14 +18,14 @@ public struct ConciergeThemeMetadata: Codable {
     public var version: String
     public var language: String
     public var namespace: String
-    
+
     private enum CodingKeys: String, CodingKey {
         case brandName
         case version
         case language
         case namespace
     }
-    
+
     public init(
         brandName: String = "",
         version: String = "0.0.0",
@@ -37,7 +37,7 @@ public struct ConciergeThemeMetadata: Codable {
         self.language = language
         self.namespace = namespace
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         brandName = try container.decodeIfPresent(String.self, forKey: .brandName) ?? ""
@@ -45,7 +45,7 @@ public struct ConciergeThemeMetadata: Codable {
         language = try container.decodeIfPresent(String.self, forKey: .language) ?? "en-US"
         namespace = try container.decodeIfPresent(String.self, forKey: .namespace) ?? "brand-concierge"
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(brandName, forKey: .brandName)
@@ -54,4 +54,3 @@ public struct ConciergeThemeMetadata: Codable {
         try container.encode(namespace, forKey: .namespace)
     }
 }
-

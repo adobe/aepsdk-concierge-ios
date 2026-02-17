@@ -20,7 +20,7 @@ public struct ConciergeConfiguration: Codable {
     var datastream: String?
     var ecid: String?
     var server: String?
-    
+
     /// The session ID for this configuration.
     /// On first access, retrieves an existing valid session from persistence or creates a new one.
     /// Sessions have a TTL of 30 minutes from the last network activity.
@@ -30,14 +30,14 @@ public struct ConciergeConfiguration: Codable {
             if let localSessionId = _sessionId {
                 return localSessionId
             }
-            
+
             // Otherwise, get or create from SessionManager
             return SessionManager.shared.getOrCreateSessionId()
         }
     }
     private var _sessionId: String?
     var surfaces: [String] = []
-    
+
     enum CodingKeys: String, CodingKey {
         case consentCollectValue
         case conversationId
@@ -47,7 +47,7 @@ public struct ConciergeConfiguration: Codable {
         case sessionId
         case surfaces
     }
-        
+
     init(consentCollectValue: String? = nil,
          conversationId: String? = nil,
          datastream: String? = nil,
@@ -63,10 +63,10 @@ public struct ConciergeConfiguration: Codable {
         self._sessionId = sessionId
         self.surfaces = surfaces
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         consentCollectValue = try container.decodeIfPresent(String.self, forKey: .consentCollectValue)
         conversationId = try container.decodeIfPresent(String.self, forKey: .conversationId)
         datastream = try container.decodeIfPresent(String.self, forKey: .datastream)
@@ -78,13 +78,13 @@ public struct ConciergeConfiguration: Codable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         try container.encodeIfPresent(consentCollectValue, forKey: .consentCollectValue)
         try container.encodeIfPresent(conversationId, forKey: .conversationId)
         try container.encodeIfPresent(datastream, forKey: .datastream)
         try container.encodeIfPresent(ecid, forKey: .ecid)
         try container.encodeIfPresent(server, forKey: .server)
-        try container.encodeIfPresent(_sessionId, forKey: .sessionId)        
+        try container.encodeIfPresent(_sessionId, forKey: .sessionId)
         try container.encode(surfaces, forKey: .surfaces)
     }
 }
