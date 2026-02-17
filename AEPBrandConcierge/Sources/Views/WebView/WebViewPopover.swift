@@ -24,7 +24,7 @@ struct WebViewPopover: View {
     
     @State private var currentURLString: String = ""
     @State private var isLoading: Bool = true
-    @State private var pageTitle: String = ""
+//    @State private var pageTitle: String = ""
     @State private var dragOffset: CGFloat = 0
     @State private var showCopiedFeedback: Bool = false
     
@@ -53,7 +53,7 @@ struct WebViewPopover: View {
                     url: url,
                     currentURLString: $currentURLString,
                     isLoading: $isLoading,
-                    pageTitle: $pageTitle,
+//                    pageTitle: $pageTitle,
                     onOpenDeepLink: { deepLinkURL in
                         openURL(deepLinkURL)
                     }
@@ -198,7 +198,7 @@ struct ConciergeWebView: UIViewRepresentable {
     let url: URL
     @Binding var currentURLString: String
     @Binding var isLoading: Bool
-    @Binding var pageTitle: String
+//    @Binding var pageTitle: String
     var onOpenDeepLink: ((URL) -> Void)?
     
     func makeUIView(context: Context) -> WKWebView {
@@ -248,9 +248,9 @@ struct ConciergeWebView: UIViewRepresentable {
             if let currentURL = webView.url?.absoluteString {
                 parent.currentURLString = currentURL
             }
-            if let title = webView.title, !title.isEmpty {
-                parent.pageTitle = title
-            }
+//            if let title = webView.title, !title.isEmpty {
+//                parent.pageTitle = title
+//            }
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

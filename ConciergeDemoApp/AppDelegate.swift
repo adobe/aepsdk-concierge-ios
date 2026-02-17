@@ -31,8 +31,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         MobileCore.registerExtensions(extensions) {
             MobileCore.configureWith(appId: "staging/1b50a869c4a2/570831bce333/launch-bcc070a55cca-development")
 
-            // TODO: - temporary override of datastream until we get that sorted out
-            MobileCore.updateConfigurationWith(configDict: ["concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0"])
+            // TODO: - temporary override of datastream and server until we get that sorted out
+            MobileCore.updateConfigurationWith(configDict: [
+                "concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0",
+                "concierge.server": "edge-int.adobedc.net"
+            ])
         }
 
         return true

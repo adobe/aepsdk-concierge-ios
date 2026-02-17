@@ -110,9 +110,3 @@ public extension EnvironmentValues {
         set { self[ConciergeWebViewPresenterKey.self] = newValue }
     }
 }
-
-public extension View {
-    func conciergeWebViewPresenter(_ presenter: ConciergeWebViewPresenter) -> some View {
-        environment(\.conciergeWebViewPresenter, presenter)
-    }
-}
