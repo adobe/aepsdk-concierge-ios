@@ -18,12 +18,12 @@ final class ConciergeLinkHandlerTests: XCTestCase {
     // MARK: - isDeepLink Tests
     
     func testIsDeepLink_withHttpScheme_returnsFalse() {
-        let url = URL(string: "https://www.adobe.com")!
+        let url = URL(string: "http://www.adobe.com")!
         XCTAssertFalse(ConciergeLinkHandler.isDeepLink(url))
     }
     
     func testIsDeepLink_withHttpsScheme_returnsFalse() {
-        let url = URL(string: "http://www.adobe.com")!
+        let url = URL(string: "https://www.adobe.com")!
         XCTAssertFalse(ConciergeLinkHandler.isDeepLink(url))
     }
     
@@ -83,5 +83,93 @@ final class ConciergeLinkHandlerTests: XCTestCase {
     func testShouldOpenInWebView_withMailto_returnsFalse() {
         let url = URL(string: "mailto:test@example.com")!
         XCTAssertFalse(ConciergeLinkHandler.shouldOpenInWebView(url))
+    }
+    
+    // MARK: - handleURL Tests
+
+    func testHandleURL_withHttpsUrl_callsOpenInWebView() {
+        let url = URL(string: "https://www.adobe.com")!
+        var openInWebViewCalled = false
+        var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in openInWebViewCalled = true },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+        
+        XCTAssertTrue(openInWebViewCalled)
+        XCTAssertFalse(openWithSystemCalled)
+    }
+
+    func testHandleURL_withHttpUrl_callsOpenInWebView() {
+        let url = URL(string: "http://www.adobe.com")!
+        var openInWebViewCalled = false
+        var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in openInWebViewCalled = true },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+        
+        XCTAssertTrue(openInWebViewCalled)
+        XCTAssertFalse(openWithSystemCalled)
+    }
+
+    func testHandleURL_withCustomScheme_callsOpenWithSystem() {
+        let url = URL(string: "myapp://some/path")!
+        var openInWebViewCalled = false
+        var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in openInWebViewCalled = true },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+        
+        XCTAssertFalse(openInWebViewCalled)
+        XCTAssertTrue(openWithSystemCalled)
+    }
+
+    func testHandleURL_withMailto_callsOpenWithSystem() {
+        let url = URL(string: "mailto:test@example.com")!
+        var openInWebViewCalled = false
+        var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in openInWebViewCalled = true },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+        
+        XCTAssertFalse(openInWebViewCalled)
+        XCTAssertTrue(openWithSystemCalled)
+    }
+
+    func testHandleURL_passesCorrectURLToWebViewClosure() {
+        let url = URL(string: "https://www.adobe.com/products")!
+        var receivedURL: URL?
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { receivedURL = $0 },
+            openWithSystem: { _ in }
+        )
+        
+        XCTAssertEqual(receivedURL, url)
+    }
+
+    func testHandleURL_passesCorrectURLToSystemClosure() {
+        let url = URL(string: "tel:+1234567890")!
+        var receivedURL: URL?
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in },
+            openWithSystem: { receivedURL = $0 }
+        )
+        
+        XCTAssertEqual(receivedURL, url)
     }
 }

@@ -11,7 +11,6 @@
  */
 
 import Foundation
-import UIKit
 
 /// Handles URL routing decisions for the concierge chat interface.
 /// Determines whether URLs should be opened in an in-app webview or handled by the system (for deep links).
