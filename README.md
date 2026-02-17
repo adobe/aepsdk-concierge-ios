@@ -5,9 +5,9 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/adobe/aepsdk-concierge-ios/main.svg?logo=circleci&label=Build)](https://circleci.com/gh/adobe/workflows/aepsdk-concierge-ios)
 [![Code Coverage](https://img.shields.io/codecov/c/github/adobe/aepsdk-concierge-ios/main.svg?logo=codecov&label=Coverage)](https://codecov.io/gh/adobe/aepsdk-concierge-ios/branch/main) -->
 
-## LIMITED AVAILABILITY
+Adobe Brand Concierge. Guide customer journeys with personalized, conversational discovery.
 
-This AEPBrandConcierge extension is not for use by the general public. Please get in touch with your Adobe account representative if you would like more information.
+For more information, see [official documentation](https://business.adobe.com/products/brand-concierge.html)
 
 ## About this project
 
