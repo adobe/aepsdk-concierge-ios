@@ -49,6 +49,6 @@ jobs:
         AEPBrandConcierge.xcodeproj/project.pbxproj, 
         AEPBrandConcierge/Sources/Core/ConciergeConstants.swift,
         AEPBrandConcierge.podspec,
-        Package.swift
+        Package.swift:swift_spm
       update: true
     secrets: inherit
