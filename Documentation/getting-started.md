@@ -1,9 +1,5 @@
 #  Getting started with AEPBrandConcierge SDK
 
-> ⚠️ Important - 
->
-> Until the `AEPBrandConcierge` extension is generally available, it needs to be installed from the dev branch.
-
 ### [CocoaPods](https://guides.cocoapods.org/using/using-cocoapods.html)
 
 ```ruby
@@ -16,7 +12,7 @@ target 'YOUR_TARGET_NAME' do
     pod 'AEPEdgeIdentity'
     pod 'AEPCore'
     pod 'AEPServices'
-    pod 'AEPBrandConcierge', :git => 'https://github.com/adobe/aepsdk-concierge-ios.git', :branch => 'dev'
+    pod 'AEPBrandConcierge'
 end
 ```
 
@@ -42,7 +38,7 @@ Alternatively, if your project has a `Package.swift` file, you can add AEPBrandC
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/adobe/aepsdk-concierge-ios.git", .branch: "dev")
+    .package(url: "https://github.com/adobe/aepsdk-concierge-ios.git", .upToNextMajor(from: "5.0.0"))
 ],
 targets: [
     .target(name: "YourTarget",
@@ -91,28 +87,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         return true
     }
-}
-```
-
-### ⚠️ Important
-
-Until the Brand Concierge extension in Adobe Data Collection is generally available, its SDK configuration must be performed manually.
-
-```swift
-func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    ...
-
-    MobileCore.registerExtensions(extensions) {
-        MobileCore.configureWith(appId: "MY_APP_ID")
-
-        // manually configure Brand Concierge settings
-        MobileCore.updateConfigurationWith(configDict: [
-            "concierge.server": "MY_CONCIERGE_SERVER",
-            "concierge.configId": "MY_DATASTREAM_ID",
-            "concierge.surfaces": [ "MY_BRAND_CONCIERGE_SURFACE", ... ]
-        ])
-    }
-
-    return true
 }
 ```
