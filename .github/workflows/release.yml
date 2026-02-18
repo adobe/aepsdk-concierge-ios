@@ -39,5 +39,8 @@ jobs:
       tag: ${{ github.event.inputs.tag }}
       create-github-release: ${{ github.event.inputs.create-github-release == 'true' && 'AEPBrandConcierge' || '' }}
       pod-publish-extensions: ${{ github.event.inputs.pod-publish-extensions == 'true' && 'AEPBrandConcierge' || '' }}
-      version-validation-paths: AEPBrandConcierge.xcodeproj/project.pbxproj, AEPBrandConcierge/Sources/Constants.swift,
+      version-validation-paths: >
+        AEPBrandConcierge.xcodeproj/project.pbxproj, 
+        AEPBrandConcierge/Sources/Core/ConciergeConstants.swift,
+        AEPBrandConcierge.podspec
     secrets: inherit
