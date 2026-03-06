@@ -106,6 +106,7 @@ private extension ProductDetailCardView {
 
             if let badge = data.badge, !badge.isEmpty {
                 badgeView(text: badge)
+                    .frame(maxWidth: cardWidth, alignment: .leading)
                     .offset(y: 12)
             }
         }
@@ -132,13 +133,22 @@ private extension ProductDetailCardView {
             }
 
             if let price = data.price, !price.isEmpty {
-                Text(price)
-                    .font(.system(size: theme.layout.productCardPriceFontSize))
-                    .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
-                    .foregroundColor(theme.colors.productCard.priceColor.color)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(price)
+                        .font(.system(size: theme.layout.productCardPriceFontSize))
+                        .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
+                        .foregroundColor(theme.colors.productCard.priceColor.color)
+
+                    if let wasPrice = data.wasPrice, !wasPrice.isEmpty {
+                        Text("\(theme.layout.productCardWasPriceTextPrefix)\(wasPrice)")
+                            .font(.system(size: theme.layout.productCardWasPriceFontSize))
+                            .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                            .foregroundColor(theme.colors.productCard.wasPriceColor.color)
+                    }
+                }
             }
         }
-        .padding(.top, data.badge != nil ? 20 : 12)
+        .padding(.top, 20)
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
         .frame(width: cardWidth, alignment: .leading)
@@ -149,6 +159,8 @@ private extension ProductDetailCardView {
             .font(.system(size: theme.layout.productCardBadgeFontSize))
             .fontWeight(theme.layout.productCardBadgeFontWeight.toSwiftUIFontWeight())
             .foregroundColor(theme.colors.productCard.badgeTextColor.color)
+            .lineLimit(1)
+            .truncationMode(.tail)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(theme.colors.productCard.badgeBackgroundColor.color)

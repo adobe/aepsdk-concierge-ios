@@ -18,6 +18,7 @@ public struct ProductCardData {
     public let title: String
     public let subtitle: String?
     public let price: String?
+    public let wasPrice: String?
     public let badge: String?
     public let destinationURL: URL?
     public let primaryButton: ActionButton?
@@ -34,6 +35,7 @@ public struct ProductCardData {
         self.title = entityInfo.productName ?? "No title"
         self.subtitle = entityInfo.productDescription
         self.price = entityInfo.productPrice
+        self.wasPrice = entityInfo.productWasPrice
         self.badge = entityInfo.productBadge
         self.destinationURL = pageUrl
         self.primaryButton = entityInfo.primary
@@ -47,6 +49,7 @@ public struct ProductCardData {
         title: String,
         subtitle: String?,
         price: String?,
+        wasPrice: String? = nil,
         badge: String?,
         destinationURL: URL?,
         primaryButton: ActionButton?,
@@ -58,6 +61,7 @@ public struct ProductCardData {
         self.title = title
         self.subtitle = subtitle
         self.price = price
+        self.wasPrice = wasPrice
         self.badge = badge
         self.destinationURL = destinationURL
         self.primaryButton = primaryButton

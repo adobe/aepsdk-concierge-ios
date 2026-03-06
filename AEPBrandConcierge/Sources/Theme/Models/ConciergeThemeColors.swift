@@ -161,6 +161,7 @@ public struct ConciergeProductCardColors: Codable {
     public var titleColor: CodableColor
     public var subtitleColor: CodableColor
     public var priceColor: CodableColor
+    public var wasPriceColor: CodableColor
     public var badgeTextColor: CodableColor
     public var badgeBackgroundColor: CodableColor
     public var outlineColor: CodableColor
@@ -170,6 +171,7 @@ public struct ConciergeProductCardColors: Codable {
         titleColor: CodableColor = CodableColor(Color.primary),
         subtitleColor: CodableColor = CodableColor(Color.primary),
         priceColor: CodableColor = CodableColor(Color.primary),
+        wasPriceColor: CodableColor = CodableColor(Color.secondary),
         badgeTextColor: CodableColor = CodableColor(Color.white),
         badgeBackgroundColor: CodableColor = CodableColor(Color.primary),
         outlineColor: CodableColor = CodableColor(Color.clear)
@@ -178,6 +180,7 @@ public struct ConciergeProductCardColors: Codable {
         self.titleColor = titleColor
         self.subtitleColor = subtitleColor
         self.priceColor = priceColor
+        self.wasPriceColor = wasPriceColor
         self.badgeTextColor = badgeTextColor
         self.badgeBackgroundColor = badgeBackgroundColor
         self.outlineColor = outlineColor
