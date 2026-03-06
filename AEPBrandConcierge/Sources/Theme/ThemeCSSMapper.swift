@@ -156,6 +156,7 @@ public enum CSSKeyMapper {
         "product-card-price-color": { cssValue, theme in theme.colors.productCard.priceColor = CSSValueConverter.parseColor(cssValue) },
         "product-card-badge-text-color": { cssValue, theme in theme.colors.productCard.badgeTextColor = CSSValueConverter.parseColor(cssValue) },
         "product-card-badge-background-color": { cssValue, theme in theme.colors.productCard.badgeBackgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-outline-color": { cssValue, theme in theme.colors.productCard.outlineColor = CSSValueConverter.parseColor(cssValue) },
 
         // Layout - Product Card
         "product-card-title-font-size": { cssValue, theme in theme.layout.productCardTitleFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
@@ -165,6 +166,8 @@ public enum CSSKeyMapper {
         "product-card-price-font-size": { cssValue, theme in theme.layout.productCardPriceFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "product-card-price-font-weight": { cssValue, theme in theme.layout.productCardPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "product-card-badge-font-size": { cssValue, theme in theme.layout.productCardBadgeFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 200 },
+        "product-card-height": { cssValue, theme in theme.layout.productCardHeight = CSSValueConverter.parsePxValue(cssValue) ?? 300 },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

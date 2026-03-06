@@ -12,7 +12,11 @@
 
 import SwiftUI
 
-/// Horizontally paged carousel of message cards with a page indicator.
+/// Horizontally scrollable carousel of message cards.
+///
+/// Supports two modes controlled by `behavior.multimodalCarousel.carouselStyle`:
+/// - paged: `TabView` that snaps to the current item with prev/next buttons and page indicator dots
+/// - scroll: continuous horizontal `ScrollView` with freely scrollable cards
 struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
@@ -21,13 +25,22 @@ struct CarouselGroupView: View {
     private var carouselIdealHeight: CGFloat {
         switch theme.behavior.productCard.cardStyle {
         case .productDetail:
-            return 340
+            return theme.layout.productCardHeight
         case .actionButton:
             return 200
         }
     }
 
     var body: some View {
+        switch theme.behavior.multimodalCarousel.carouselStyle {
+        case .paged:
+            pagedCarousel
+        case .scroll:
+            scrollingCarousel
+        }
+    }
+
+    private var pagedCarousel: some View {
         VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, message in
@@ -35,7 +48,7 @@ struct CarouselGroupView: View {
                         .tag(index)
                 }
             }
-            .frame(idealWidth: 150, idealHeight: carouselIdealHeight)
+            .frame(idealHeight: carouselIdealHeight)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             HStack(spacing: 16) {
@@ -60,5 +73,17 @@ struct CarouselGroupView: View {
             .padding(.top, 16)
         }
         .padding(.vertical, 8)
+    }
+
+    private var scrollingCarousel: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(items, id: \.id) { message in
+                    message.chatMessageView
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 12)
+        }
     }
 }

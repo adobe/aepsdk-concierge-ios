@@ -24,24 +24,34 @@ struct ProductDetailCardView: View {
 
     let data: ProductCardData
     let cardWidth: CGFloat
+    var cardHeight: CGFloat?
     var fillAvailableHeight: Bool = false
     var bottomAlignContent: Bool = false
+
+    private var hasFixedHeight: Bool {
+        cardHeight != nil || fillAvailableHeight
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             imageSection
-            if fillAvailableHeight && bottomAlignContent {
+            if hasFixedHeight && bottomAlignContent {
                 Spacer(minLength: 0)
             }
             textSection
-            if fillAvailableHeight && !bottomAlignContent {
+            if hasFixedHeight && !bottomAlignContent {
                 Spacer(minLength: 0)
             }
         }
-        .frame(width: cardWidth)
+        .frame(width: cardWidth, height: cardHeight)
         .frame(maxHeight: fillAvailableHeight ? .infinity : nil)
+        .clipped()
         .background(theme.colors.productCard.backgroundColor.color)
         .cornerRadius(theme.layout.borderRadiusCard)
+        .overlay(
+            RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard)
+                .stroke(theme.colors.productCard.outlineColor.color, lineWidth: 1)
+        )
         .shadow(
             color: shadowColor,
             radius: theme.layout.multimodalCardBoxShadow.blurRadius,
@@ -194,13 +204,15 @@ extension ProductDetailCardView {
 }
 
 private struct MeasuredCardView: View {
-    /// When `true`, cards in a carousel are the same height.
-    /// They expand to fill the tallest sibling in the row.
-    static let equalizeCardHeights = true
+    /// When `true`, all cards share the same fixed height (default 285pt).
+    /// When `false`, card height is content-driven.
+    static let equalizeCardHeights = false
 
     /// When `true` (and `equalizeCardHeights` is also `true`), pushes
-    /// the text section to the bottom of the card instead of the top
-    static let bottomAlignContent = true
+    /// the text section to the bottom of the card instead of the top.
+    static let bottomAlignContent = false
+
+    static let defaultCardHeight: CGFloat = 300
 
     let data: ProductCardData
     let cardWidth: CGFloat
@@ -209,7 +221,7 @@ private struct MeasuredCardView: View {
         ProductDetailCardView(
             data: data,
             cardWidth: cardWidth,
-            fillAvailableHeight: Self.equalizeCardHeights,
+            cardHeight: Self.equalizeCardHeights ? Self.defaultCardHeight : nil,
             bottomAlignContent: Self.bottomAlignContent
         )
             .overlay(alignment: .topTrailing) {

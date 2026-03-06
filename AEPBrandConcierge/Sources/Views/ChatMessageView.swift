@@ -28,6 +28,24 @@ struct ChatMessageView: View {
     var feedbackSentiment: FeedbackSentiment?
     var onSuggestionTap: ((String) -> Void)?
 
+    /// Extra line spacing derived from the theme's body line-height multiplier.
+    /// Scoped to `.basic` message bubbles so it doesn't bleed into other components like cards, badges, etc.
+    private var messageLineSpacing: CGFloat {
+        let multiplier = theme.typography.lineHeight
+        guard multiplier.isFinite, multiplier > 0 else { return 0 }
+
+        let fontSize = theme.typography.fontSize
+        let baseFont: UIFont = {
+            if theme.typography.fontFamily.isEmpty {
+                return UIFont.systemFont(ofSize: fontSize)
+            }
+            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        }()
+
+        let targetLineHeight = fontSize * multiplier
+        return max(0, targetLineHeight - baseFont.lineHeight)
+    }
+
     init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
@@ -144,6 +162,7 @@ struct ChatMessageView: View {
                             }
                         }
                     }
+                        .lineSpacing(messageLineSpacing)
                         .padding(theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
                         .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
@@ -266,7 +285,11 @@ struct ChatMessageView: View {
         case .productCarouselCard(let cardData):
             switch theme.behavior.productCard.cardStyle {
             case .productDetail:
-                ProductDetailCardView(data: cardData, cardWidth: 222)
+                ProductDetailCardView(
+                    data: cardData,
+                    cardWidth: theme.layout.productCardWidth,
+                    cardHeight: theme.layout.productCardHeight
+                )
             case .actionButton:
                 actionButtonCarouselCard(data: cardData)
             }
@@ -274,7 +297,11 @@ struct ChatMessageView: View {
         case .productCard(let cardData):
             switch theme.behavior.productCard.cardStyle {
             case .productDetail:
-                ProductDetailCardView(data: cardData, cardWidth: 222)
+                ProductDetailCardView(
+                    data: cardData,
+                    cardWidth: theme.layout.productCardWidth,
+                    cardHeight: theme.layout.productCardHeight
+                )
             case .actionButton:
                 actionButtonProductCard(data: cardData)
             }

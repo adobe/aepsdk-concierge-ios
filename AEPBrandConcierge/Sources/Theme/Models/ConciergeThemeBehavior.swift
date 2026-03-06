@@ -18,9 +18,14 @@ import AEPServices
 /// Multimodal carousel behavior configuration
 public struct ConciergeMultimodalCarouselBehavior: Codable {
     public var cardClickAction: String
+    public var carouselStyle: CarouselStyle
 
-    public init(cardClickAction: String = "openLink") {
+    public init(
+        cardClickAction: String = "openLink",
+        carouselStyle: CarouselStyle = .paged
+    ) {
         self.cardClickAction = cardClickAction
+        self.carouselStyle = carouselStyle
     }
 }
 
@@ -96,6 +101,14 @@ public enum ProductCardStyle: String, Codable {
     case actionButton
     /// Image, optional badge, title, subtitle, price; entire card is tappable
     case productDetail
+}
+
+/// Scroll behavior for product card carousels
+public enum CarouselStyle: String, Codable {
+    /// Paged items with prev/next buttons and page indicator dots
+    case paged
+    /// Continuous horizontal scroll with freely scrollable cards
+    case scroll
 }
 
 /// Product card behavior configuration

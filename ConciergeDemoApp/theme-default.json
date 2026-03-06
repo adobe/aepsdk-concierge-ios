@@ -7,7 +7,8 @@
   },
   "behavior": {
     "multimodalCarousel": {
-      "cardClickAction": "openLink"
+      "cardClickAction": "openLink",
+      "carouselStyle": "paged"
     },
     "input": {
       "enableVoiceInput": true,
@@ -177,9 +178,12 @@
     "--product-card-badge-font-size": "12px",
     "--product-card-badge-text-color": "#FFFFFF",
     "--product-card-badge-background-color": "#000000",
+    "--product-card-outline-color": "#00000000",
     "--product-card-background-color": "#FFFFFF",
     "--product-card-title-color": "#292929",
     "--product-card-subtitle-color": "#292929",
-    "--product-card-price-color": "#292929"
+    "--product-card-price-color": "#292929",
+    "--product-card-width": "200px",
+    "--product-card-height": "300px"
   }
 }

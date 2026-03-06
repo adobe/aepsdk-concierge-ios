@@ -50,25 +50,6 @@ public struct ChatView: View {
 
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
 
-    private var globalLineSpacing: CGFloat {
-        let multiplier = theme.typography.lineHeight
-        guard multiplier.isFinite, multiplier > 0 else {
-            return 0
-        }
-
-        let fontSize = theme.typography.fontSize
-        let baseFont: UIFont = {
-            if theme.typography.fontFamily.isEmpty {
-                return UIFont.systemFont(ofSize: fontSize)
-            }
-            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-        }()
-
-        let targetLineHeight = fontSize * multiplier
-        let additionalSpacing = targetLineHeight - baseFont.lineHeight
-        return max(0, additionalSpacing)
-    }
-
     // MARK: - Initializers
 
     public init(
@@ -307,7 +288,6 @@ public struct ChatView: View {
                 ? .system(size: theme.typography.fontSize)
                 : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
         )
-        .lineSpacing(globalLineSpacing)
     }
 
     // MARK: - Actions
