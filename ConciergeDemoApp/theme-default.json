@@ -21,6 +21,9 @@
     "privacyNotice": {
       "title": "Privacy Notice",
       "text": "Privacy notice text."
+    },
+    "productCard": {
+      "cardStyle": "productDetail"
     }
   },
   "disclaimer": {
@@ -164,6 +167,19 @@
     "--color-button-secondary-hover-text": "#FFFFFF",
     "--message-concierge-link-color": "#274DEA",
     "--message-alignment": "left",
-    "--message-width": "100%"
+    "--message-width": "100%",
+    "--product-card-title-font-weight": "700",
+    "--product-card-title-font-size": "14px",
+    "--product-card-subtitle-font-weight": "400",
+    "--product-card-subtitle-font-size": "12px",
+    "--product-card-price-font-weight": "300",
+    "--product-card-price-font-size": "16px",
+    "--product-card-badge-font-size": "12px",
+    "--product-card-badge-text-color": "#FFFFFF",
+    "--product-card-badge-background-color": "#000000",
+    "--product-card-background-color": "#FFFFFF",
+    "--product-card-title-color": "#292929",
+    "--product-card-subtitle-color": "#292929",
+    "--product-card-price-color": "#292929"
   }
 }

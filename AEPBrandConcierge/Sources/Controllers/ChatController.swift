@@ -461,35 +461,18 @@ final class ChatController: ObservableObject {
     }
 
     private func renderProductCards(_ products: [MultimodalElement]) {
-        if products.count == 1, let entityInfo = products.first?.entityInfo {
-            // Show a single product card
-            let cardTitle = entityInfo.productName ?? "No title"
-            let cardText = entityInfo.productDescription ?? "No description"
-            let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-            let primaryButton = entityInfo.primary
-            let secondaryButton = entityInfo.secondary
-
-            let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
-                                                   title: cardTitle,
-                                                   body: cardText,
-                                                   primaryButton: primaryButton,
-                                                   secondaryButton: secondaryButton))
+        if products.count == 1, let product = products.first, let entityInfo = product.entityInfo {
+            let cardData = ProductCardData(entityInfo: entityInfo, element: product)
+            let card = Message(template: .productCard(cardData))
 
             removeProductCard(atIndex: productCardIndex)
             messages.append(card)
         } else {
-            // Show a carousel of cards
             var carouselElements: [Message] = []
             for product in products {
                 guard let entityInfo = product.entityInfo else { continue }
-                let cardTitle = entityInfo.productName ?? "No title"
-                let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-                let cardClickThroughURL = entityInfo.productPageURL.flatMap { URL(string: $0) }
-
-                let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
-                                                                  title: cardTitle,
-                                                                  destination: cardClickThroughURL))
-
+                let cardData = ProductCardData(entityInfo: entityInfo, element: product)
+                let card = Message(template: .productCarouselCard(cardData))
                 carouselElements.append(card)
             }
 

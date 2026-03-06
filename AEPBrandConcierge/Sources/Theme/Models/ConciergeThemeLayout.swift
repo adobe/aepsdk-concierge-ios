@@ -42,6 +42,13 @@ public struct ConciergeLayout: Codable {
     public var multimodalCardBoxShadow: ConciergeShadow
     public var welcomeInputOrder: Int
     public var welcomeCardsOrder: Int
+    public var productCardTitleFontSize: CGFloat
+    public var productCardTitleFontWeight: CodableFontWeight
+    public var productCardSubtitleFontSize: CGFloat
+    public var productCardSubtitleFontWeight: CodableFontWeight
+    public var productCardPriceFontSize: CGFloat
+    public var productCardPriceFontWeight: CodableFontWeight
+    public var productCardBadgeFontSize: CGFloat
 
     public init(
         inputHeight: CGFloat = 52,
@@ -75,13 +82,20 @@ public struct ConciergeLayout: Codable {
         // Default matches the current product carousel card drop shadow.
         multimodalCardBoxShadow: ConciergeShadow = ConciergeShadow(
             offsetX: 0,
-            offsetY: 2,
-            blurRadius: 8,
+            offsetY: 1,
+            blurRadius: 3,
             spreadRadius: 0,
-            color: CodableColor(Color.black.opacity(0.08))
+            color: CodableColor(Color.black.opacity(0.2))
         ),
         welcomeInputOrder: Int = 3,
-        welcomeCardsOrder: Int = 2
+        welcomeCardsOrder: Int = 2,
+        productCardTitleFontSize: CGFloat = 14,
+        productCardTitleFontWeight: CodableFontWeight = .bold,
+        productCardSubtitleFontSize: CGFloat = 12,
+        productCardSubtitleFontWeight: CodableFontWeight = .regular,
+        productCardPriceFontSize: CGFloat = 14,
+        productCardPriceFontWeight: CodableFontWeight = .light,
+        productCardBadgeFontSize: CGFloat = 12
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -111,6 +125,13 @@ public struct ConciergeLayout: Codable {
         self.multimodalCardBoxShadow = multimodalCardBoxShadow
         self.welcomeInputOrder = welcomeInputOrder
         self.welcomeCardsOrder = welcomeCardsOrder
+        self.productCardTitleFontSize = productCardTitleFontSize
+        self.productCardTitleFontWeight = productCardTitleFontWeight
+        self.productCardSubtitleFontSize = productCardSubtitleFontSize
+        self.productCardSubtitleFontWeight = productCardSubtitleFontWeight
+        self.productCardPriceFontSize = productCardPriceFontSize
+        self.productCardPriceFontWeight = productCardPriceFontWeight
+        self.productCardBadgeFontSize = productCardBadgeFontSize
     }
 }
 

@@ -355,16 +355,30 @@ public struct ChatView: View {
         var messages = [
             Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .productCarouselCard(
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    destination: URL(string: "https://adobe.com")!
-                )),
-                Message(template: .productCarouselCard(
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                ))),
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    destination: URL(string: "https://adobe.com")!
-                ))
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                )))
             ])),
             Message(template: .divider)
         ]

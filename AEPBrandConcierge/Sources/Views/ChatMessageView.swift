@@ -263,120 +263,21 @@ struct ChatMessageView: View {
                 Spacer()
             }
 
-        case .productCarouselCard(let imageSource, let title, let destination):
-            Button(action: {
-                if let destination = destination {
-                    handleLinkTap(destination)
-                }
-            }) {
-                ZStack(alignment: .bottomLeading) {
-                    // Full card image
-                    switch imageSource {
-                    case .local(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 280, height: 200)
-                            .clipped()
-                    case .remote(let url):
-                        RemoteImageView(url: url, width: 280, height: 200)
-                    }
-
-                    // Overlay title bubble at bottom left
-                    Text(title)
-                        .font(.system(.subheadline, design: .rounded))
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(.black.opacity(0.7))
-                        )
-                        .padding(12)
-                }
+        case .productCarouselCard(let cardData):
+            switch theme.behavior.productCard.cardStyle {
+            case .productDetail:
+                ProductDetailCardView(data: cardData, cardWidth: 222)
+            case .actionButton:
+                actionButtonCarouselCard(data: cardData)
             }
-            .cornerRadius(theme.layout.borderRadiusCard)
-            .shadow(
-                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
-                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
-                x: theme.layout.multimodalCardBoxShadow.offsetX,
-                y: theme.layout.multimodalCardBoxShadow.offsetY
-            )
-            .frame(width: 280, height: 200)
-            .buttonStyle(PlainButtonStyle())
 
-        case .productCard(let imageSource, let title, let body, let primaryButton, let secondaryButton):
-            VStack(alignment: .leading, spacing: 0) {
-                switch imageSource {
-                case .local(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 350, height: 200)
-                        .clipped()
-                case .remote(let url):
-                    RemoteImageView(url: url, width: 350, height: 200)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(title)
-                        .font(.system(.headline, design: .rounded))
-                        .bold()
-                        .foregroundColor(theme.colors.primary.text.color)
-                        .textSelection(.enabled)
-
-                    Text(body)
-                        .font(.system(.subheadline))
-                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
-                        .textSelection(.enabled)
-
-                    // Buttons section
-                    if primaryButton != nil || secondaryButton != nil {
-                        HStack(spacing: 12) {
-                            if let primaryButton = primaryButton {
-                                ButtonView(
-                                    text: primaryButton.text,
-                                    variant: .primary,
-                                    action: {
-                                        if let url = URL(string: primaryButton.url) {
-                                            handleLinkTap(url)
-                                        }
-                                    }
-                                )
-                            }
-
-                            if let secondaryButton = secondaryButton {
-                                ButtonView(
-                                    text: secondaryButton.text,
-                                    variant: .secondary,
-                                    action: {
-                                        if let url = URL(string: secondaryButton.url) {
-                                            handleLinkTap(url)
-                                        }
-                                    }
-                                )
-                            }
-
-                            Spacer()
-                        }
-                        .padding(.top, 8)
-                    }
-                }
-                .padding(14)
-                .frame(width: 350, alignment: .leading)
+        case .productCard(let cardData):
+            switch theme.behavior.productCard.cardStyle {
+            case .productDetail:
+                ProductDetailCardView(data: cardData, cardWidth: 222)
+            case .actionButton:
+                actionButtonProductCard(data: cardData)
             }
-            .background(theme.colors.message.conciergeBackground.color)
-            .cornerRadius(theme.layout.borderRadiusCard)
-            .shadow(
-                color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
-                radius: theme.layout.multimodalCardBoxShadow.blurRadius,
-                x: theme.layout.multimodalCardBoxShadow.offsetX,
-                y: theme.layout.multimodalCardBoxShadow.offsetY
-            )
-            .frame(width: 350)
 
         case .carouselGroup(let items):
             CarouselGroupView(items: items)
@@ -408,15 +309,136 @@ struct ChatMessageView: View {
     }
 }
 
+// MARK: - Action Button Card Style (existing)
+
+private extension ChatMessageView {
+    func actionButtonCarouselCard(data: ProductCardData) -> some View {
+        Button(action: {
+            if let destination = data.destinationURL {
+                handleLinkTap(destination)
+            }
+        }) {
+            ZStack(alignment: .bottomLeading) {
+                switch data.imageSource {
+                case .local(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 280, height: 200)
+                        .clipped()
+                case .remote(let url):
+                    RemoteImageView(url: url, width: 280, height: 200)
+                }
+
+                Text(data.title)
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.black.opacity(0.7))
+                    )
+                    .padding(12)
+            }
+        }
+        .cornerRadius(theme.layout.borderRadiusCard)
+        .shadow(
+            color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+            radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+            x: theme.layout.multimodalCardBoxShadow.offsetX,
+            y: theme.layout.multimodalCardBoxShadow.offsetY
+        )
+        .frame(width: 280, height: 200)
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    func actionButtonProductCard(data: ProductCardData) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            switch data.imageSource {
+            case .local(let image):
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 350, height: 200)
+                    .clipped()
+            case .remote(let url):
+                RemoteImageView(url: url, width: 350, height: 200)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(data.title)
+                    .font(.system(.headline, design: .rounded))
+                    .bold()
+                    .foregroundColor(theme.colors.primary.text.color)
+                    .textSelection(.enabled)
+
+                if let subtitle = data.subtitle {
+                    Text(subtitle)
+                        .font(.system(.subheadline))
+                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+                        .textSelection(.enabled)
+                }
+
+                if data.primaryButton != nil || data.secondaryButton != nil {
+                    HStack(spacing: 12) {
+                        if let primaryButton = data.primaryButton {
+                            ButtonView(
+                                text: primaryButton.text,
+                                variant: .primary,
+                                action: {
+                                    if let url = URL(string: primaryButton.url) {
+                                        handleLinkTap(url)
+                                    }
+                                }
+                            )
+                        }
+
+                        if let secondaryButton = data.secondaryButton {
+                            ButtonView(
+                                text: secondaryButton.text,
+                                variant: .secondary,
+                                action: {
+                                    if let url = URL(string: secondaryButton.url) {
+                                        handleLinkTap(url)
+                                    }
+                                }
+                            )
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.top, 8)
+                }
+            }
+            .padding(14)
+            .frame(width: 350, alignment: .leading)
+        }
+        .background(theme.colors.message.conciergeBackground.color)
+        .cornerRadius(theme.layout.borderRadiusCard)
+        .shadow(
+            color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
+            radius: theme.layout.multimodalCardBoxShadow.blurRadius,
+            x: theme.layout.multimodalCardBoxShadow.offsetX,
+            y: theme.layout.multimodalCardBoxShadow.offsetY
+        )
+        .frame(width: 350)
+    }
+}
+
+// MARK: - Helpers
+
 private extension ChatMessageView {
     var resolvedMessageMaxWidth: CGFloat? {
-        // Prefer explicit point widths only; percent-based values decode to 0.0-1.0 and are not meaningful as points.
         if let behaviorWidth = theme.behavior.chat.messageWidth, behaviorWidth > 1 {
             return behaviorWidth
         }
         return theme.layout.messageMaxWidth
     }
-    
+
     func handleLinkTap(_ url: URL) {
         ConciergeLinkHandler.handleURL(
             url,

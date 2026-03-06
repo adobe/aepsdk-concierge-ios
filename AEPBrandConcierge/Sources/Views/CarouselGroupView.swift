@@ -18,6 +18,15 @@ struct CarouselGroupView: View {
     let items: [Message]
     @State private var currentIndex = 0
 
+    private var carouselIdealHeight: CGFloat {
+        switch theme.behavior.productCard.cardStyle {
+        case .productDetail:
+            return 340
+        case .actionButton:
+            return 200
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
@@ -26,7 +35,7 @@ struct CarouselGroupView: View {
                         .tag(index)
                 }
             }
-            .frame(idealWidth: 150, idealHeight: 200)
+            .frame(idealWidth: 150, idealHeight: carouselIdealHeight)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             HStack(spacing: 16) {

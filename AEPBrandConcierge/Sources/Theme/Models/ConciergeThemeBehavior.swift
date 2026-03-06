@@ -90,6 +90,23 @@ public struct ConciergeChatBehavior: Codable {
     }
 }
 
+/// Rendering style for product cards
+public enum ProductCardStyle: String, Codable {
+    /// Image, description text, and primary/secondary action buttons
+    case actionButton
+    /// Image, optional badge, title, subtitle, price; entire card is tappable
+    case productDetail
+}
+
+/// Product card behavior configuration
+public struct ConciergeProductCardBehavior: Codable {
+    public var cardStyle: ProductCardStyle
+
+    public init(cardStyle: ProductCardStyle = .actionButton) {
+        self.cardStyle = cardStyle
+    }
+}
+
 /// Privacy notice configuration
 public struct ConciergePrivacyNoticeBehavior: Codable {
     public var title: String
@@ -110,16 +127,19 @@ public struct ConciergeBehaviorConfig: Codable {
     public var input: ConciergeInputBehavior
     public var chat: ConciergeChatBehavior
     public var privacyNotice: ConciergePrivacyNoticeBehavior
+    public var productCard: ConciergeProductCardBehavior
 
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
         input: ConciergeInputBehavior = ConciergeInputBehavior(),
         chat: ConciergeChatBehavior = ConciergeChatBehavior(),
-        privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior()
+        privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior(),
+        productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior()
     ) {
         self.multimodalCarousel = multimodalCarousel
         self.input = input
         self.chat = chat
         self.privacyNotice = privacyNotice
+        self.productCard = productCard
     }
 }
