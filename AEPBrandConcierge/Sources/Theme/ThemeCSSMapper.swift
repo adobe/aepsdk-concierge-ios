@@ -166,6 +166,7 @@ public enum CSSKeyMapper {
         "product-card-price-font-size": { cssValue, theme in theme.layout.productCardPriceFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "product-card-price-font-weight": { cssValue, theme in theme.layout.productCardPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "product-card-badge-font-size": { cssValue, theme in theme.layout.productCardBadgeFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-badge-font-weight": { cssValue, theme in theme.layout.productCardBadgeFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 200 },
         "product-card-height": { cssValue, theme in theme.layout.productCardHeight = CSSValueConverter.parsePxValue(cssValue) ?? 300 },
     ]

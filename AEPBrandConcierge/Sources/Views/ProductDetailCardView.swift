@@ -146,7 +146,8 @@ private extension ProductDetailCardView {
 
     func badgeView(text: String) -> some View {
         Text(text)
-            .font(.system(size: theme.layout.productCardBadgeFontSize, weight: .semibold))
+            .font(.system(size: theme.layout.productCardBadgeFontSize))
+            .fontWeight(theme.layout.productCardBadgeFontWeight.toSwiftUIFontWeight())
             .foregroundColor(theme.colors.productCard.badgeTextColor.color)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)

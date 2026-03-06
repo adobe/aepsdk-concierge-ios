@@ -49,6 +49,7 @@ public struct ConciergeLayout: Codable {
     public var productCardPriceFontSize: CGFloat
     public var productCardPriceFontWeight: CodableFontWeight
     public var productCardBadgeFontSize: CGFloat
+    public var productCardBadgeFontWeight: CodableFontWeight
     public var productCardWidth: CGFloat
     public var productCardHeight: CGFloat
 
@@ -98,6 +99,7 @@ public struct ConciergeLayout: Codable {
         productCardPriceFontSize: CGFloat = 14,
         productCardPriceFontWeight: CodableFontWeight = .light,
         productCardBadgeFontSize: CGFloat = 12,
+        productCardBadgeFontWeight: CodableFontWeight = .semibold,
         productCardWidth: CGFloat = 250,
         productCardHeight: CGFloat = 300
     ) {
@@ -136,6 +138,7 @@ public struct ConciergeLayout: Codable {
         self.productCardPriceFontSize = productCardPriceFontSize
         self.productCardPriceFontWeight = productCardPriceFontWeight
         self.productCardBadgeFontSize = productCardBadgeFontSize
+        self.productCardBadgeFontWeight = productCardBadgeFontWeight
         self.productCardWidth = productCardWidth
         self.productCardHeight = productCardHeight
     }

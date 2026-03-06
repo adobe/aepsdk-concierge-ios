@@ -176,6 +176,7 @@
     "--product-card-price-font-weight": "300",
     "--product-card-price-font-size": "16px",
     "--product-card-badge-font-size": "12px",
+    "--product-card-badge-font-weight": "600",
     "--product-card-badge-text-color": "#FFFFFF",
     "--product-card-badge-background-color": "#000000",
     "--product-card-outline-color": "#00000000",
