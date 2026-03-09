@@ -155,6 +155,38 @@ public struct ConciergePrimaryColors: Codable {
     }
 }
 
+/// Product card color tokens (used by the productDetail card style)
+public struct ConciergeProductCardColors: Codable {
+    public var backgroundColor: CodableColor
+    public var titleColor: CodableColor
+    public var subtitleColor: CodableColor
+    public var priceColor: CodableColor
+    public var wasPriceColor: CodableColor
+    public var badgeTextColor: CodableColor
+    public var badgeBackgroundColor: CodableColor
+    public var outlineColor: CodableColor
+
+    public init(
+        backgroundColor: CodableColor = CodableColor(Color.white),
+        titleColor: CodableColor = CodableColor(Color.primary),
+        subtitleColor: CodableColor = CodableColor(Color.primary),
+        priceColor: CodableColor = CodableColor(Color.primary),
+        wasPriceColor: CodableColor = CodableColor(Color.secondary),
+        badgeTextColor: CodableColor = CodableColor(Color.white),
+        badgeBackgroundColor: CodableColor = CodableColor(Color.primary),
+        outlineColor: CodableColor = CodableColor(Color.clear)
+    ) {
+        self.backgroundColor = backgroundColor
+        self.titleColor = titleColor
+        self.subtitleColor = subtitleColor
+        self.priceColor = priceColor
+        self.wasPriceColor = wasPriceColor
+        self.badgeTextColor = badgeTextColor
+        self.badgeBackgroundColor = badgeBackgroundColor
+        self.outlineColor = outlineColor
+    }
+}
+
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
     public var primary: ConciergePrimaryColors
@@ -165,6 +197,7 @@ public struct ConciergeThemeColors: Codable {
     public var citation: ConciergeCitationColors
     public var feedback: ConciergeFeedbackColors
     public var disclaimer: CodableColor
+    public var productCard: ConciergeProductCardColors
 
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
@@ -174,7 +207,8 @@ public struct ConciergeThemeColors: Codable {
         input: ConciergeInputColors = ConciergeInputColors(),
         citation: ConciergeCitationColors = ConciergeCitationColors(),
         feedback: ConciergeFeedbackColors = ConciergeFeedbackColors(),
-        disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray))
+        disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray)),
+        productCard: ConciergeProductCardColors = ConciergeProductCardColors()
     ) {
         self.primary = primary
         self.surface = surface
@@ -184,5 +218,6 @@ public struct ConciergeThemeColors: Codable {
         self.citation = citation
         self.feedback = feedback
         self.disclaimer = disclaimer
+        self.productCard = productCard
     }
 }

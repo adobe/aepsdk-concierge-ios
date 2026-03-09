@@ -54,9 +54,7 @@ public extension Concierge {
                 self.chatTitle = title
             }
 
-            if let subtitle = subtitle {
-                self.chatSubtitle = subtitle
-            }
+            self.chatSubtitle = subtitle
 
             // Construct and present the chat view immediately via the SwiftUI overlay.
             let view = ChatView(
@@ -95,9 +93,7 @@ public extension Concierge {
         if let title = title {
             self.chatTitle = title
         }
-        if let subtitle = subtitle {
-            self.chatSubtitle = subtitle
-        }
+        self.chatSubtitle = subtitle
         self.surfaces = surfaces
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
@@ -130,7 +126,7 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle displayed under the title.
     static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil) {
         if let title = title { self.chatTitle = title }
-        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        self.chatSubtitle = subtitle
 
         // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
         // as we have in the swiftui version

@@ -127,6 +127,8 @@
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
 		4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531502E4C1B7D00772695 /* Color+Brand.swift */; };
 		4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */; };
+		4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */; };
+		4CC11B1E2F5A676D00EEF226 /* ProductCardData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */; };
 		4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB42EC6E887000B85D0 /* theme-default.json */; };
 		4CDB0DBD2EC82C6B000B85D0 /* ThemeCSSConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */; };
 		4CDB0DBE2EC82C6B000B85D0 /* ThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */; };
@@ -319,6 +321,8 @@
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
 		4C9531502E4C1B7D00772695 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImageView.swift; sourceTree = "<group>"; };
+		4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardView.swift; sourceTree = "<group>"; };
+		4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardData.swift; sourceTree = "<group>"; };
 		4CDB0DB42EC6E887000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DB62EC82C6B000B85D0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverter.swift; sourceTree = "<group>"; };
@@ -417,6 +421,7 @@
 				24037AC72EF364B000FF4031 /* CitationMarker.swift */,
 				24037AC82EF364B000FF4031 /* Message.swift */,
 				24037AC92EF364B000FF4031 /* MessageTemplate.swift */,
+				4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -593,6 +598,7 @@
 				2498998E2D67C62A0005CBD7 /* ChatView.swift */,
 				249899902D67C62A0005CBD7 /* PageIndicator.swift */,
 				247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */,
+				4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */,
 				4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */,
 			);
 			path = Views;
@@ -1122,6 +1128,7 @@
 				4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */,
 				4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */,
 				24037AC32EF3648600FF4031 /* Concierge.swift in Sources */,
+				4CC11B1E2F5A676D00EEF226 /* ProductCardData.swift in Sources */,
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
 				4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */,
@@ -1135,6 +1142,7 @@
 				24037AD82EF364B000FF4031 /* FeedbackPayload.swift in Sources */,
 				24037AD92EF364B000FF4031 /* FeedbackSentiment.swift in Sources */,
 				24037ADA2EF364B000FF4031 /* ConversationPayload.swift in Sources */,
+				4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */,
 				24037ADB2EF364B000FF4031 /* ConversationHandle.swift in Sources */,
 				24037ADC2EF364B000FF4031 /* ChatState.swift in Sources */,
 				24037ADD2EF364B000FF4031 /* ConciergeConfiguration.swift in Sources */,
