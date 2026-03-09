@@ -271,16 +271,16 @@ final class ChatControllerTests: XCTestCase {
             thumbnailWidth: 150,
             thumbnailHeight: 150,
             entityInfo: EntityInfo(
-                productName: "Lightroom",
-                productDescription: "Photo editor",
+                productName: "Widget Pro",
+                productDescription: "A versatile tool",
                 description: nil,
-                productPageURL: "https://adobe.com/lightroom",
+                productPageURL: "https://example.com/products/widget-pro",
                 details: nil,
                 learningResource: nil,
-                productImageURL: "https://cdn.example.com/lr.png",
+                productImageURL: "https://example.com/images/widget-pro.png",
                 backgroundColor: nil,
                 logo: nil,
-                primary: ActionButton(text: "Buy", url: "https://adobe.com/buy"),
+                primary: ActionButton(text: "Buy", url: "https://example.com/buy"),
                 secondary: nil,
                 productPrice: "$9.99",
                 productWasPrice: nil,
@@ -324,13 +324,13 @@ final class ChatControllerTests: XCTestCase {
             thumbnailWidth: 150,
             thumbnailHeight: 150,
             entityInfo: EntityInfo(
-                productName: "Photoshop",
+                productName: "Widget Pro",
                 productDescription: nil,
                 description: nil,
-                productPageURL: "https://adobe.com/photoshop",
+                productPageURL: "https://example.com/products/widget-pro",
                 details: nil,
                 learningResource: nil,
-                productImageURL: "https://cdn.example.com/ps.png",
+                productImageURL: "https://example.com/images/widget-pro.png",
                 backgroundColor: nil,
                 logo: nil,
                 primary: nil,
@@ -346,13 +346,13 @@ final class ChatControllerTests: XCTestCase {
             thumbnailWidth: 150,
             thumbnailHeight: 150,
             entityInfo: EntityInfo(
-                productName: "Illustrator",
+                productName: "Gadget Basic",
                 productDescription: nil,
                 description: nil,
-                productPageURL: "https://adobe.com/illustrator",
+                productPageURL: "https://example.com/products/gadget-basic",
                 details: nil,
                 learningResource: nil,
-                productImageURL: "https://cdn.example.com/ai.png",
+                productImageURL: "https://example.com/images/gadget-basic.png",
                 backgroundColor: nil,
                 logo: nil,
                 primary: nil,
@@ -390,12 +390,12 @@ final class ChatControllerTests: XCTestCase {
         if case .carouselGroup(let items) = carouselMessage?.template {
             XCTAssertEqual(items.count, 2)
             if case .productCarouselCard(let cardData) = items[0].template {
-                XCTAssertEqual(cardData.title, "Photoshop")
+                XCTAssertEqual(cardData.title, "Widget Pro")
             } else {
                 XCTFail("Expected first carousel item to be .productCarouselCard")
             }
             if case .productCarouselCard(let cardData) = items[1].template {
-                XCTAssertEqual(cardData.title, "Illustrator")
+                XCTAssertEqual(cardData.title, "Gadget Basic")
             } else {
                 XCTFail("Expected second carousel item to be .productCarouselCard")
             }
