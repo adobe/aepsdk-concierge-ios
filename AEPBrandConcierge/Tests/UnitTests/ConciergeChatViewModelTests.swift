@@ -260,6 +260,150 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertFalse(controller.isRecording)
     }
     
+    // MARK: - Product Card Rendering Tests
+
+    func test_streaming_singleProduct_appendsProductCardMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Lightroom",
+                productDescription: "Photo editor",
+                description: nil,
+                productPageURL: "https://adobe.com/lightroom",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://cdn.example.com/lr.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: ActionButton(text: "Buy", url: "https://adobe.com/buy"),
+                secondary: nil,
+                productPrice: "$9.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here's a product:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.IN_PROGRESS,
+                elements: [element]
+            ),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Here's a product:")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me a product")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Messages: [user, agent text, product card]
+        XCTAssertGreaterThanOrEqual(controller.messages.count, 3)
+
+        let productMessage = controller.messages.last { message in
+            if case .productCard = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(productMessage, "Expected a .productCard message in the message list")
+    }
+
+    func test_streaming_multipleProducts_appendsCarouselGroupMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element1 = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Photoshop",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://adobe.com/photoshop",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://cdn.example.com/ps.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+        let element2 = MultimodalElement(
+            id: "prod-2",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Illustrator",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://adobe.com/illustrator",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://cdn.example.com/ai.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here are some products:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.IN_PROGRESS,
+                elements: [element1, element2]
+            ),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Here are some products:")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me products")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Expect a carouselGroup message containing the product carousel cards
+        let carouselMessage = controller.messages.last { message in
+            if case .carouselGroup = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(carouselMessage, "Expected a .carouselGroup message in the message list")
+
+        if case .carouselGroup(let items) = carouselMessage?.template {
+            XCTAssertEqual(items.count, 2)
+            if case .productCarouselCard(let cardData) = items[0].template {
+                XCTAssertEqual(cardData.title, "Photoshop")
+            } else {
+                XCTFail("Expected first carousel item to be .productCarouselCard")
+            }
+            if case .productCarouselCard(let cardData) = items[1].template {
+                XCTAssertEqual(cardData.title, "Illustrator")
+            } else {
+                XCTFail("Expected second carousel item to be .productCarouselCard")
+            }
+        } else {
+            XCTFail("Expected .carouselGroup template")
+        }
+    }
+
     // MARK: - Helpers
     private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil) -> ChatController {
         ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
@@ -270,6 +414,27 @@ final class ChatControllerTests: XCTestCase {
             ? ConversationResponse(message: message ?? "", promptSuggestions: nil, multimodalElements: nil, sources: sources, state: nil)
             : nil
 
+        return ConversationPayload(
+            conversationId: nil,
+            interactionId: nil,
+            request: nil,
+            response: response,
+            state: state,
+            key: nil,
+            value: nil,
+            maxAge: nil
+        )
+    }
+
+    private func makePayloadWithProducts(state: String, elements: [MultimodalElement], message: String? = nil) -> ConversationPayload {
+        let multimodal = MultimodalElements(type: "products", elements: elements)
+        let response = ConversationResponse(
+            message: message ?? "",
+            promptSuggestions: nil,
+            multimodalElements: multimodal,
+            sources: nil,
+            state: nil
+        )
         return ConversationPayload(
             conversationId: nil,
             interactionId: nil,

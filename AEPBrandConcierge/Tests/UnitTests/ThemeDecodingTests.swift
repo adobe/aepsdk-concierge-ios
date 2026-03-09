@@ -58,6 +58,18 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Then
         XCTAssertEqual(theme.behavior.multimodalCarousel.cardClickAction, "openLink")
+        XCTAssertEqual(theme.behavior.multimodalCarousel.carouselStyle, .paged)
+    }
+    
+    func test_behavior_productCard_decodesCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+        
+        // Then
+        XCTAssertEqual(theme.behavior.productCard.cardStyle, .productDetail)
     }
     
     func test_behavior_input_decodesCorrectly() {
@@ -340,6 +352,63 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Then - "--input-outline-color": null -> nil
         XCTAssertNil(theme.colors.input.outline)
+    }
+    
+    // MARK: - Product Card CSS Variable Tests
+    
+    func test_productCardLayout_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+        
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleFontSize, 14)
+        XCTAssertEqual(theme.layout.productCardTitleFontWeight, .bold)
+        XCTAssertEqual(theme.layout.productCardSubtitleFontSize, 12)
+        XCTAssertEqual(theme.layout.productCardSubtitleFontWeight, .regular)
+        XCTAssertEqual(theme.layout.productCardPriceFontSize, 16)
+        XCTAssertEqual(theme.layout.productCardPriceFontWeight, .light)
+        XCTAssertEqual(theme.layout.productCardBadgeFontSize, 12)
+        XCTAssertEqual(theme.layout.productCardBadgeFontWeight, .semibold)
+        XCTAssertEqual(theme.layout.productCardWasPriceTextPrefix, "was ")
+        XCTAssertEqual(theme.layout.productCardWasPriceFontSize, 12)
+        XCTAssertEqual(theme.layout.productCardWasPriceFontWeight, .regular)
+        XCTAssertEqual(theme.layout.productCardWidth, 200)
+        XCTAssertEqual(theme.layout.productCardHeight, 300)
+    }
+    
+    func test_productCardColors_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+        
+        // Then
+        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
+        XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#292929")
+        XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#292929")
+        XCTAssertEqual(theme.colors.productCard.wasPriceColor.color.toHexString(), "#6E6E6E")
+        XCTAssertEqual(theme.colors.productCard.badgeTextColor.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.productCard.badgeBackgroundColor.color.toHexString(), "#000000")
+    }
+    
+    func test_missingProductCardBehavior_usesDefaults() {
+        // Given — minimal JSON with no productCard behavior
+        let minimalJSON = """
+        { "metadata": { "brandName": "Test" } }
+        """.data(using: .utf8)!
+        
+        // When
+        let decodedTheme = try? JSONDecoder().decode(ConciergeTheme.self, from: minimalJSON)
+        
+        // Then — defaults to actionButton card style and paged carousel
+        XCTAssertNotNil(decodedTheme)
+        XCTAssertEqual(decodedTheme?.behavior.productCard.cardStyle, .actionButton)
+        XCTAssertEqual(decodedTheme?.behavior.multimodalCarousel.carouselStyle, .paged)
     }
     
     // MARK: - Missing Sections Tests
