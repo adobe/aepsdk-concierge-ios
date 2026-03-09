@@ -10,10 +10,18 @@
  governing permissions and limitations under the License.
  */
 
+import UIKit
 import XCTest
 @testable import AEPBrandConcierge
 
 final class ConciergeLinkHandlerTests: XCTestCase {
+    
+    override func tearDown() {
+        super.tearDown()
+        ConciergeLinkHandler.urlOpener = { url, options, completion in
+            UIApplication.shared.open(url, options: options, completionHandler: completion)
+        }
+    }
     
     // MARK: - isDeepLink Tests
     
@@ -86,26 +94,63 @@ final class ConciergeLinkHandlerTests: XCTestCase {
     }
     
     // MARK: - handleURL Tests
-
-    func testHandleURL_withHttpsUrl_callsOpenInWebView() {
+    
+    func testHandleURL_withHttpsUrl_whenNotUniversalLink_callsOpenInWebView() {
         let url = URL(string: "https://www.adobe.com")!
+        let expectation = expectation(description: "openInWebView called")
         var openInWebViewCalled = false
         var openWithSystemCalled = false
         
+        ConciergeLinkHandler.urlOpener = { _, _, completion in
+            completion?(false)
+        }
+        
         ConciergeLinkHandler.handleURL(
             url,
-            openInWebView: { _ in openInWebViewCalled = true },
+            openInWebView: { _ in
+                openInWebViewCalled = true
+                expectation.fulfill()
+            },
             openWithSystem: { _ in openWithSystemCalled = true }
         )
         
+        waitForExpectations(timeout: 1)
         XCTAssertTrue(openInWebViewCalled)
         XCTAssertFalse(openWithSystemCalled)
     }
-
-    func testHandleURL_withHttpUrl_callsOpenInWebView() {
+    
+    func testHandleURL_withHttpUrl_whenNotUniversalLink_callsOpenInWebView() {
         let url = URL(string: "http://www.adobe.com")!
+        let expectation = expectation(description: "openInWebView called")
         var openInWebViewCalled = false
         var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.urlOpener = { _, _, completion in
+            completion?(false)
+        }
+        
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in
+                openInWebViewCalled = true
+                expectation.fulfill()
+            },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+        
+        waitForExpectations(timeout: 1)
+        XCTAssertTrue(openInWebViewCalled)
+        XCTAssertFalse(openWithSystemCalled)
+    }
+    
+    func testHandleURL_withHttpsUrl_whenUniversalLinkSucceeds_doesNotCallWebView() {
+        let url = URL(string: "https://www.dickssportinggoods.com/p/some-product")!
+        var openInWebViewCalled = false
+        var openWithSystemCalled = false
+        
+        ConciergeLinkHandler.urlOpener = { _, _, completion in
+            completion?(true)
+        }
         
         ConciergeLinkHandler.handleURL(
             url,
@@ -113,8 +158,32 @@ final class ConciergeLinkHandlerTests: XCTestCase {
             openWithSystem: { _ in openWithSystemCalled = true }
         )
         
-        XCTAssertTrue(openInWebViewCalled)
+        let expectation = expectation(description: "main queue drain")
+        DispatchQueue.main.async { expectation.fulfill() }
+        waitForExpectations(timeout: 1)
+        
+        XCTAssertFalse(openInWebViewCalled)
         XCTAssertFalse(openWithSystemCalled)
+    }
+    
+    func testHandleURL_withHttpsUrl_universalLinkProbeUsesCorrectOptions() {
+        let url = URL(string: "https://www.adobe.com/products")!
+        var receivedOptions: [UIApplication.OpenExternalURLOptionsKey: Any]?
+        
+        ConciergeLinkHandler.urlOpener = { _, options, completion in
+            receivedOptions = options
+            completion?(false)
+        }
+        
+        let expectation = expectation(description: "webview fallback")
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in expectation.fulfill() },
+            openWithSystem: { _ in }
+        )
+        
+        waitForExpectations(timeout: 1)
+        XCTAssertEqual(receivedOptions?[.universalLinksOnly] as? Bool, true)
     }
 
     func testHandleURL_withCustomScheme_callsOpenWithSystem() {
@@ -147,16 +216,22 @@ final class ConciergeLinkHandlerTests: XCTestCase {
         XCTAssertTrue(openWithSystemCalled)
     }
 
-    func testHandleURL_passesCorrectURLToWebViewClosure() {
+    func testHandleURL_whenNotUniversalLink_passesCorrectURLToWebViewClosure() {
         let url = URL(string: "https://www.adobe.com/products")!
+        let expectation = expectation(description: "webview called with URL")
         var receivedURL: URL?
+        
+        ConciergeLinkHandler.urlOpener = { _, _, completion in
+            completion?(false)
+        }
         
         ConciergeLinkHandler.handleURL(
             url,
-            openInWebView: { receivedURL = $0 },
+            openInWebView: { receivedURL = $0; expectation.fulfill() },
             openWithSystem: { _ in }
         )
         
+        waitForExpectations(timeout: 1)
         XCTAssertEqual(receivedURL, url)
     }
 
