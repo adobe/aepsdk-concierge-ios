@@ -47,18 +47,6 @@ public enum ConciergeLinkHandler {
         return !webSchemes.contains(scheme)
     }
     
-    /// Determines if the given URL should be opened in an in-app webview.
-    /// Only standard HTTP and HTTPS URLs are suitable for webview display.
-    ///
-    /// - Parameter url: The URL to evaluate.
-    /// - Returns: `true` if the URL should be opened in the in-app webview, `false` otherwise.
-    public static func shouldOpenInWebView(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased() else {
-            return false
-        }
-        return webSchemes.contains(scheme)
-    }
-    
     /// Opens the URL using the appropriate handler.
     ///
     /// For custom scheme URLs (deep links), the system handler is called immediately.

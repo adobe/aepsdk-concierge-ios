@@ -71,28 +71,6 @@ final class ConciergeLinkHandlerTests: XCTestCase {
         XCTAssertTrue(ConciergeLinkHandler.isDeepLink(url))
     }
     
-    // MARK: - shouldOpenInWebView Tests
-    
-    func testShouldOpenInWebView_withHttpsUrl_returnsTrue() {
-        let url = URL(string: "https://www.adobe.com")!
-        XCTAssertTrue(ConciergeLinkHandler.shouldOpenInWebView(url))
-    }
-    
-    func testShouldOpenInWebView_withHttpUrl_returnsTrue() {
-        let url = URL(string: "http://www.adobe.com")!
-        XCTAssertTrue(ConciergeLinkHandler.shouldOpenInWebView(url))
-    }
-    
-    func testShouldOpenInWebView_withCustomScheme_returnsFalse() {
-        let url = URL(string: "myapp://some/path")!
-        XCTAssertFalse(ConciergeLinkHandler.shouldOpenInWebView(url))
-    }
-    
-    func testShouldOpenInWebView_withMailto_returnsFalse() {
-        let url = URL(string: "mailto:test@example.com")!
-        XCTAssertFalse(ConciergeLinkHandler.shouldOpenInWebView(url))
-    }
-    
     // MARK: - handleURL Tests
     
     func testHandleURL_withHttpsUrl_whenNotUniversalLink_callsOpenInWebView() {
