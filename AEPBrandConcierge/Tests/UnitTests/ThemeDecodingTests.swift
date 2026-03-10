@@ -69,7 +69,7 @@ final class ThemeDecodingTests: XCTestCase {
         }
         
         // Then
-        XCTAssertEqual(theme.behavior.productCard.cardStyle, .productDetail)
+        XCTAssertEqual(theme.behavior.productCard?.cardStyle, .productDetail)
     }
     
     func test_behavior_input_decodesCorrectly() {
@@ -407,7 +407,7 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Then — defaults to actionButton card style and paged carousel
         XCTAssertNotNil(decodedTheme)
-        XCTAssertEqual(decodedTheme?.behavior.productCard.cardStyle, .actionButton)
+        XCTAssertEqual(decodedTheme?.behavior.productCard?.cardStyle, .actionButton)
         XCTAssertEqual(decodedTheme?.behavior.multimodalCarousel.carouselStyle, .paged)
     }
     

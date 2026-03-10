@@ -23,7 +23,7 @@ struct CarouselGroupView: View {
     @State private var currentIndex = 0
 
     private var carouselIdealHeight: CGFloat {
-        switch theme.behavior.productCard.cardStyle {
+        switch theme.behavior.productCard?.cardStyle ?? .actionButton {
         case .productDetail:
             return theme.layout.productCardHeight
         case .actionButton:
@@ -32,7 +32,7 @@ struct CarouselGroupView: View {
     }
 
     var body: some View {
-        switch theme.behavior.multimodalCarousel.carouselStyle {
+        switch theme.behavior.multimodalCarousel.carouselStyle ?? .paged {
         case .paged:
             pagedCarousel
         case .scroll:
