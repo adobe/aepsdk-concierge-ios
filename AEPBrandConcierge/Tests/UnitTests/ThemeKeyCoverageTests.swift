@@ -216,7 +216,30 @@ private extension ThemeKeyCoverageTests {
         // Layout - Feedback
         "feedback-icon-btn-size-desktop": "layout.feedbackIconButtonSize",
 
-        // Components - Top Bar
+        // Colors - Product Card
+        "product-card-background-color": "colors.productCard.backgroundColor",
+        "product-card-title-color": "colors.productCard.titleColor",
+        "product-card-subtitle-color": "colors.productCard.subtitleColor",
+        "product-card-price-color": "colors.productCard.priceColor",
+        "product-card-was-price-color": "colors.productCard.wasPriceColor",
+        "product-card-badge-text-color": "colors.productCard.badgeTextColor",
+        "product-card-badge-background-color": "colors.productCard.badgeBackgroundColor",
+        "product-card-outline-color": "colors.productCard.outlineColor",
+
+        // Layout - Product Card
+        "product-card-title-font-size": "layout.productCardTitleFontSize",
+        "product-card-title-font-weight": "layout.productCardTitleFontWeight",
+        "product-card-subtitle-font-size": "layout.productCardSubtitleFontSize",
+        "product-card-subtitle-font-weight": "layout.productCardSubtitleFontWeight",
+        "product-card-price-font-size": "layout.productCardPriceFontSize",
+        "product-card-price-font-weight": "layout.productCardPriceFontWeight",
+        "product-card-badge-font-size": "layout.productCardBadgeFontSize",
+        "product-card-badge-font-weight": "layout.productCardBadgeFontWeight",
+        "product-card-was-price-text-prefix": "layout.productCardWasPriceTextPrefix",
+        "product-card-was-price-font-size": "layout.productCardWasPriceFontSize",
+        "product-card-was-price-font-weight": "layout.productCardWasPriceFontWeight",
+        "product-card-width": "layout.productCardWidth",
+        "product-card-height": "layout.productCardHeight",
     ]
 
     // MARK: - Theme token model reflection

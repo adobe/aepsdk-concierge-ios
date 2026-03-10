@@ -362,5 +362,240 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertNotNil(theme.colors.input.outline)
         XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4A74FF")
     }
+
+    // MARK: - Product Card Color Mapping Tests
+
+    func test_productCardBackgroundColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-background-color", cssValue: "#F5F5F5", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#F5F5F5")
+    }
+
+    func test_productCardTitleColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-color", cssValue: "#292929", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
+    }
+
+    func test_productCardSubtitleColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-color", cssValue: "#6E6E6E", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#6E6E6E")
+    }
+
+    func test_productCardPriceColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-color", cssValue: "#000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#000000")
+    }
+
+    func test_productCardWasPriceColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-color", cssValue: "#6E6E6E", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.wasPriceColor.color.toHexString(), "#6E6E6E")
+    }
+
+    func test_productCardBadgeTextColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-text-color", cssValue: "#FFFFFF", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.badgeTextColor.color.toHexString(), "#FFFFFF")
+    }
+
+    func test_productCardBadgeBackgroundColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-background-color", cssValue: "#000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.badgeBackgroundColor.color.toHexString(), "#000000")
+    }
+
+    func test_productCardOutlineColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-outline-color", cssValue: "#00000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#000000")
+    }
+
+    // MARK: - Product Card Layout Mapping Tests
+
+    func test_productCardTitleFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-font-size", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleFontSize, 16)
+    }
+
+    func test_productCardTitleFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-font-weight", cssValue: "700", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleFontWeight, .bold)
+    }
+
+    func test_productCardSubtitleFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-font-size", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardSubtitleFontSize, 14)
+    }
+
+    func test_productCardSubtitleFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardSubtitleFontWeight, .regular)
+    }
+
+    func test_productCardPriceFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-font-size", cssValue: "18px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardPriceFontSize, 18)
+    }
+
+    func test_productCardPriceFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-font-weight", cssValue: "300", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardPriceFontWeight, .light)
+    }
+
+    func test_productCardBadgeFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-font-size", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardBadgeFontSize, 10)
+    }
+
+    func test_productCardBadgeFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-font-weight", cssValue: "600", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardBadgeFontWeight, .semibold)
+    }
+
+    func test_productCardWasPriceTextPrefix_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-text-prefix", cssValue: "Previously ", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceTextPrefix, "Previously ")
+    }
+
+    func test_productCardWasPriceFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-font-size", cssValue: "11px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceFontSize, 11)
+    }
+
+    func test_productCardWasPriceFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceFontWeight, .regular)
+    }
+
+    func test_productCardWidth_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-width", cssValue: "220px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWidth, 220)
+    }
+
+    func test_productCardHeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-height", cssValue: "350px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardHeight, 350)
+    }
 }
 
