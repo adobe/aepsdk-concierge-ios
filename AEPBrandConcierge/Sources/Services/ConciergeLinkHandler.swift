@@ -10,14 +10,29 @@
  governing permissions and limitations under the License.
  */
 
-import Foundation
+import UIKit
 
 /// Handles URL routing decisions for the concierge chat interface.
-/// Determines whether URLs should be opened in an in-app webview or handled by the system (for deep links).
+/// Determines whether URLs should be opened in an in-app webview, handled as universal links
+/// by the host app, or delegated to the system (for deep links and custom schemes).
 public enum ConciergeLinkHandler {
     
     /// URL schemes that indicate web content suitable for in-app webview display.
     private static let webSchemes: Set<String> = ["http", "https"]
+    
+    /// Injectable URL opener for testing. Defaults to `UIApplication.shared.open`.
+    /// Uses KVC to access the shared application to remain safe for App Extensions.
+    static var urlOpener: (
+        _ url: URL,
+        _ options: [UIApplication.OpenExternalURLOptionsKey: Any],
+        _ completion: ((Bool) -> Void)?
+    ) -> Void = { url, options, completion in
+        guard let application = UIApplication.value(forKeyPath: "sharedApplication") as? UIApplication else {
+            completion?(false)
+            return
+        }
+        application.open(url, options: options, completionHandler: completion)
+    }
     
     /// Determines if the given URL is a deep link that should be handled by the system.
     /// Deep links include custom URL schemes (e.g., `myapp://`), mailto, tel, sms, and other
@@ -29,24 +44,15 @@ public enum ConciergeLinkHandler {
         guard let scheme = url.scheme?.lowercased() else {
             return false
         }
-        // If it's not a standard web scheme, treat it as a deep link
         return !webSchemes.contains(scheme)
     }
     
-    /// Determines if the given URL should be opened in an in-app webview.
-    /// Only standard HTTP and HTTPS URLs are suitable for webview display.
-    ///
-    /// - Parameter url: The URL to evaluate.
-    /// - Returns: `true` if the URL should be opened in the in-app webview, `false` otherwise.
-    public static func shouldOpenInWebView(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased() else {
-            return false
-        }
-        return webSchemes.contains(scheme)
-    }
-    
     /// Opens the URL using the appropriate handler.
-    /// Deep links are passed to the system to handle, while web URLs trigger the provided webview handler.
+    ///
+    /// For custom scheme URLs (deep links), the system handler is called immediately.
+    /// For http/https URLs, the system is first asked to open the URL as a universal link.
+    /// If the host app has registered the URL's domain and path via Associated Domains,
+    /// the app handles the navigation natively. Otherwise, the URL falls back to the in-app webview.
     ///
     /// - Parameters:
     ///   - url: The URL to open.
@@ -54,13 +60,19 @@ public enum ConciergeLinkHandler {
     ///   - openWithSystem: Closure called when the URL should be handled by the system (deep links).
     public static func handleURL(
         _ url: URL,
-        openInWebView: (URL) -> Void,
-        openWithSystem: (URL) -> Void
+        openInWebView: @escaping (URL) -> Void,
+        openWithSystem: @escaping (URL) -> Void
     ) {
-        if shouldOpenInWebView(url) {
-            openInWebView(url)
-        } else {
+        if isDeepLink(url) {
             openWithSystem(url)
+        } else {
+            urlOpener(url, [.universalLinksOnly: true]) { success in
+                DispatchQueue.main.async {
+                    if !success {
+                        openInWebView(url)
+                    }
+                }
+            }
         }
     }
 }
