@@ -111,6 +111,7 @@
 		4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */; };
 		4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */; };
 		4C3A65D52E55446600EEEF3B /* UIKitDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */; };
+		0C6769012E1CB20117C400A5 /* LinkTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6769012E1CB20017C400A5 /* LinkTestView.swift */; };
 		4C3A65DF2E5E913200EEEF3B /* MarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */; };
 		4C3A65E12E5E989E00EEEF3B /* MarkdownBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */; };
 		4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */; };
@@ -308,6 +309,7 @@
 		4C3A65C72E55272300EEEF3B /* ChatTopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTopBar.swift; sourceTree = "<group>"; };
 		4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcon.swift; sourceTree = "<group>"; };
 		4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIKitDemoViewController.swift; sourceTree = "<group>"; };
+		0C6769012E1CB20017C400A5 /* LinkTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkTestView.swift; sourceTree = "<group>"; };
 		4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownText.swift; sourceTree = "<group>"; };
 		4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownBlockView.swift; sourceTree = "<group>"; };
 		4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
@@ -628,6 +630,7 @@
 				249899AE2D67CCE30005CBD7 /* ConciergeDemoApp.swift */,
 				249899AF2D67CCE30005CBD7 /* ContentView.swift */,
 				4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */,
+				0C6769012E1CB20017C400A5 /* LinkTestView.swift */,
 				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
 				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
 				4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */,
@@ -1238,6 +1241,7 @@
 				249899B12D67CCE30005CBD7 /* ConciergeDemoApp.swift in Sources */,
 				249899B22D67CCE30005CBD7 /* ContentView.swift in Sources */,
 				4C3A65D52E55446600EEEF3B /* UIKitDemoViewController.swift in Sources */,
+				0C6769012E1CB20117C400A5 /* LinkTestView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

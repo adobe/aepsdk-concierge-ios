@@ -37,12 +37,19 @@ struct ContentView: View {
         }
     }
 
+    @ObservedObject var deepLinkState: DeepLinkState
+
     @State private var selectedThemeFile: DemoThemeFile = .defaultTheme
     @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
     @State private var themeLoadStatusText: String = ""
+    @State private var selectedTab: DemoTab = .swiftUI
+
+    enum DemoTab: Hashable {
+        case swiftUI, magic, uiKit, links
+    }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
 
             // MARK: - manual call
 
@@ -101,6 +108,7 @@ struct ContentView: View {
 
             // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
             .conciergeTheme(loadedTheme)
+            .tag(DemoTab.swiftUI)
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
             // MARK: - floating button
@@ -112,18 +120,32 @@ struct ContentView: View {
                 surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
             )
             .conciergeTheme(loadedTheme)
+            .tag(DemoTab.magic)
             .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
 
             // MARK: - UIKit example
 
             UIKitDemoScreen()
+                .tag(DemoTab.uiKit)
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
+
+            // MARK: - Link handler testing
+
+            LinkTestView(deepLinkURL: $deepLinkState.receivedURL)
+                .tag(DemoTab.links)
+                .tabItem { Label("Links", systemImage: "link") }
         }
         .onAppear {
             loadTheme()
         }
         .onChange(of: selectedThemeFile) { _ in
             loadTheme()
+        }
+        .onChange(of: deepLinkState.targetTab) { tab in
+            if let tab {
+                selectedTab = tab
+                deepLinkState.targetTab = nil
+            }
         }
     }
 
@@ -151,5 +173,5 @@ private struct UIKitDemoScreen: UIViewControllerRepresentable {
 }
 
 #Preview {
-    ContentView()
+    ContentView(deepLinkState: DeepLinkState())
 }
