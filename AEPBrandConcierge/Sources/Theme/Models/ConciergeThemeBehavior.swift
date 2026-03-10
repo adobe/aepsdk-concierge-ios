@@ -18,7 +18,7 @@ import AEPServices
 /// Multimodal carousel behavior configuration
 public struct ConciergeMultimodalCarouselBehavior: Codable {
     public var cardClickAction: String
-    public var carouselStyle: CarouselStyle
+    public var carouselStyle: CarouselStyle?
 
     public init(
         cardClickAction: String = "openLink",
@@ -140,7 +140,7 @@ public struct ConciergeBehaviorConfig: Codable {
     public var input: ConciergeInputBehavior
     public var chat: ConciergeChatBehavior
     public var privacyNotice: ConciergePrivacyNoticeBehavior
-    public var productCard: ConciergeProductCardBehavior
+    public var productCard: ConciergeProductCardBehavior?
 
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),

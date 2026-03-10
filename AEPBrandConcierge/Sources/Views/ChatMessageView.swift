@@ -283,7 +283,7 @@ struct ChatMessageView: View {
             }
 
         case .productCarouselCard(let cardData):
-            switch theme.behavior.productCard.cardStyle {
+            switch theme.behavior.productCard?.cardStyle ?? .actionButton {
             case .productDetail:
                 ProductDetailCardView(
                     data: cardData,
@@ -295,7 +295,7 @@ struct ChatMessageView: View {
             }
 
         case .productCard(let cardData):
-            switch theme.behavior.productCard.cardStyle {
+            switch theme.behavior.productCard?.cardStyle ?? .actionButton {
             case .productDetail:
                 ProductDetailCardView(
                     data: cardData,
