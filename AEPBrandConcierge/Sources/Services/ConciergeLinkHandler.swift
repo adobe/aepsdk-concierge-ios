@@ -21,12 +21,17 @@ public enum ConciergeLinkHandler {
     private static let webSchemes: Set<String> = ["http", "https"]
     
     /// Injectable URL opener for testing. Defaults to `UIApplication.shared.open`.
+    /// Uses KVC to access the shared application to remain safe for App Extensions.
     static var urlOpener: (
         _ url: URL,
         _ options: [UIApplication.OpenExternalURLOptionsKey: Any],
         _ completion: ((Bool) -> Void)?
     ) -> Void = { url, options, completion in
-        UIApplication.shared.open(url, options: options, completionHandler: completion)
+        guard let application = UIApplication.value(forKeyPath: "sharedApplication") as? UIApplication else {
+            completion?(false)
+            return
+        }
+        application.open(url, options: options, completionHandler: completion)
     }
     
     /// Determines if the given URL is a deep link that should be handled by the system.
