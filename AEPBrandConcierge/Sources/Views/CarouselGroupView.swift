@@ -77,7 +77,7 @@ struct CarouselGroupView: View {
 
     private var scrollingCarousel: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: theme.layout.productCardCarouselSpacing) {
                 ForEach(items, id: \.id) { message in
                     message.chatMessageView
                 }

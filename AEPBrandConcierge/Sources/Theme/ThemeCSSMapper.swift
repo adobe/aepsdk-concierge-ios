@@ -173,6 +173,10 @@ public enum CSSKeyMapper {
         "product-card-was-price-font-weight": { cssValue, theme in theme.layout.productCardWasPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 200 },
         "product-card-height": { cssValue, theme in theme.layout.productCardHeight = CSSValueConverter.parsePxValue(cssValue) ?? 300 },
+        "product-card-text-spacing": { cssValue, theme in theme.layout.productCardTextSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
+        "product-card-text-top-padding": { cssValue, theme in theme.layout.productCardTextTopPadding = CSSValueConverter.parsePxValue(cssValue) ?? 20 },
+        "product-card-text-bottom-padding": { cssValue, theme in theme.layout.productCardTextBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-carousel-spacing": { cssValue, theme in theme.layout.productCardCarouselSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

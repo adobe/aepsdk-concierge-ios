@@ -55,6 +55,10 @@ public struct ConciergeLayout: Codable {
     public var productCardWasPriceFontWeight: CodableFontWeight
     public var productCardWidth: CGFloat
     public var productCardHeight: CGFloat
+    public var productCardTextSpacing: CGFloat
+    public var productCardTextTopPadding: CGFloat
+    public var productCardTextBottomPadding: CGFloat
+    public var productCardCarouselSpacing: CGFloat
 
     public init(
         inputHeight: CGFloat = 52,
@@ -107,7 +111,11 @@ public struct ConciergeLayout: Codable {
         productCardWasPriceFontSize: CGFloat = 12,
         productCardWasPriceFontWeight: CodableFontWeight = .regular,
         productCardWidth: CGFloat = 250,
-        productCardHeight: CGFloat = 300
+        productCardHeight: CGFloat = 300,
+        productCardTextSpacing: CGFloat = 8,
+        productCardTextTopPadding: CGFloat = 20,
+        productCardTextBottomPadding: CGFloat = 12,
+        productCardCarouselSpacing: CGFloat = 12
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -150,6 +158,10 @@ public struct ConciergeLayout: Codable {
         self.productCardWasPriceFontWeight = productCardWasPriceFontWeight
         self.productCardWidth = productCardWidth
         self.productCardHeight = productCardHeight
+        self.productCardTextSpacing = productCardTextSpacing
+        self.productCardTextTopPadding = productCardTextTopPadding
+        self.productCardTextBottomPadding = productCardTextBottomPadding
+        self.productCardCarouselSpacing = productCardCarouselSpacing
     }
 }
 

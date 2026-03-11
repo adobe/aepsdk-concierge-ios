@@ -25,26 +25,13 @@ struct ProductDetailCardView: View {
     let data: ProductCardData
     let cardWidth: CGFloat
     var cardHeight: CGFloat?
-    var fillAvailableHeight: Bool = false
-    var bottomAlignContent: Bool = false
-
-    private var hasFixedHeight: Bool {
-        cardHeight != nil || fillAvailableHeight
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             imageSection
-            if hasFixedHeight && bottomAlignContent {
-                Spacer(minLength: 0)
-            }
             textSection
-            if hasFixedHeight && !bottomAlignContent {
-                Spacer(minLength: 0)
-            }
         }
         .frame(width: cardWidth, height: cardHeight)
-        .frame(maxHeight: fillAvailableHeight ? .infinity : nil)
         .clipped()
         .background(theme.colors.productCard.backgroundColor.color)
         .cornerRadius(theme.layout.borderRadiusCard)
@@ -113,7 +100,7 @@ private extension ProductDetailCardView {
     }
 
     var textSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: theme.layout.productCardTextSpacing) {
             Text(data.title)
                 .font(.system(size: theme.layout.productCardTitleFontSize))
                 .fontWeight(theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight())
@@ -148,9 +135,9 @@ private extension ProductDetailCardView {
                 }
             }
         }
-        .padding(.top, 20)
+        .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, 12)
-        .padding(.bottom, 12)
+        .padding(.bottom, theme.layout.productCardTextBottomPadding)
         .frame(width: cardWidth, alignment: .leading)
     }
 
@@ -213,29 +200,17 @@ private extension ProductDetailCardView {
 extension ProductDetailCardView {
     /// When `true`, draws a red border around the product image and shows a
     /// width×height label in the top left corner of each card.
-    static var showDebugOverlay = false
+    static var showDebugOverlay = true
 }
 
 private struct MeasuredCardView: View {
-    /// When `true`, all cards share the same fixed height (default 285pt).
-    /// When `false`, card height is content-driven.
-    static let equalizeCardHeights = false
-
-    /// When `true` (and `equalizeCardHeights` is also `true`), pushes
-    /// the text section to the bottom of the card instead of the top.
-    static let bottomAlignContent = false
-
-    static let defaultCardHeight: CGFloat = 300
-
     let data: ProductCardData
     let cardWidth: CGFloat
 
     var body: some View {
         ProductDetailCardView(
             data: data,
-            cardWidth: cardWidth,
-            cardHeight: Self.equalizeCardHeights ? Self.defaultCardHeight : nil,
-            bottomAlignContent: Self.bottomAlignContent
+            cardWidth: cardWidth
         )
             .overlay(alignment: .topTrailing) {
                 if ProductDetailCardView.showDebugOverlay {
