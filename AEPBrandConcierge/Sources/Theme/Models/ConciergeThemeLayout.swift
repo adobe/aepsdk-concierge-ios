@@ -59,6 +59,9 @@ public struct ConciergeLayout: Codable {
     public var productCardTextTopPadding: CGFloat
     public var productCardTextBottomPadding: CGFloat
     public var productCardCarouselSpacing: CGFloat
+    /// Horizontal padding applied to the carousel container within the chat history.
+    /// When `nil`, falls back to `chatHistoryPadding`.
+    public var productCardCarouselHorizontalPadding: CGFloat?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -115,7 +118,8 @@ public struct ConciergeLayout: Codable {
         productCardTextSpacing: CGFloat = 8,
         productCardTextTopPadding: CGFloat = 20,
         productCardTextBottomPadding: CGFloat = 12,
-        productCardCarouselSpacing: CGFloat = 12
+        productCardCarouselSpacing: CGFloat = 12,
+        productCardCarouselHorizontalPadding: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -162,6 +166,7 @@ public struct ConciergeLayout: Codable {
         self.productCardTextTopPadding = productCardTextTopPadding
         self.productCardTextBottomPadding = productCardTextBottomPadding
         self.productCardCarouselSpacing = productCardCarouselSpacing
+        self.productCardCarouselHorizontalPadding = productCardCarouselHorizontalPadding
     }
 }
 
