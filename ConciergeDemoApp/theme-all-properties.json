@@ -193,6 +193,7 @@
       "--product-card-text-spacing": "8px",
       "--product-card-text-top-padding": "20px",
       "--product-card-text-bottom-padding": "12px",
+      "--product-card-text-horizontal-padding": "12px",
       "--product-card-carousel-spacing": "12px",
       "--product-card-carousel-horizontal-padding": "4px"
     }

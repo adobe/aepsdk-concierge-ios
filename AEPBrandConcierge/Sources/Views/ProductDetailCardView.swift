@@ -137,7 +137,7 @@ private extension ProductDetailCardView {
             }
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
         .frame(width: cardWidth, height: textSectionHeight, alignment: .topLeading)
     }

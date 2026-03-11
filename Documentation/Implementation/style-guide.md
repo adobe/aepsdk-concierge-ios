@@ -613,6 +613,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-text-spacing` | `layout.productCardTextSpacing` | `CGFloat` | `8` | Vertical spacing between text elements (title, subtitle, price) |
 | `--product-card-text-top-padding` | `layout.productCardTextTopPadding` | `CGFloat` | `20` | Top padding above the text section |
 | `--product-card-text-bottom-padding` | `layout.productCardTextBottomPadding` | `CGFloat` | `12` | Bottom padding below the text section |
+| `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
 | `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
 | `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When `nil`, falls back to `chatHistoryPadding`. |
 
@@ -779,6 +780,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-text-spacing": "8px",
     "--product-card-text-top-padding": "20px",
     "--product-card-text-bottom-padding": "12px",
+    "--product-card-text-horizontal-padding": "12px",
     "--product-card-carousel-spacing": "12px",
     "--product-card-carousel-horizontal-padding": "4px"
   }
@@ -972,6 +974,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-text-spacing` | ✅ | Used in ProductDetailCardView |
 | `--product-card-text-top-padding` | ✅ | Used in ProductDetailCardView |
 | `--product-card-text-bottom-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-horizontal-padding` | ✅ | Used in ProductDetailCardView |
 | `--product-card-carousel-spacing` | ✅ | Used in CarouselGroupView for spacing between cards |
 | `--product-card-carousel-horizontal-padding` | ✅ | Used in MessageListView; falls back to `chatHistoryPadding` when not set |
 

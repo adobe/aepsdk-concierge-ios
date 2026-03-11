@@ -176,6 +176,7 @@ public enum CSSKeyMapper {
         "product-card-text-spacing": { cssValue, theme in theme.layout.productCardTextSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
         "product-card-text-top-padding": { cssValue, theme in theme.layout.productCardTextTopPadding = CSSValueConverter.parsePxValue(cssValue) ?? 20 },
         "product-card-text-bottom-padding": { cssValue, theme in theme.layout.productCardTextBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-text-horizontal-padding": { cssValue, theme in theme.layout.productCardTextHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-carousel-spacing": { cssValue, theme in theme.layout.productCardCarouselSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-carousel-horizontal-padding": { cssValue, theme in theme.layout.productCardCarouselHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) },
     ]
