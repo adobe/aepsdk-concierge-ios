@@ -240,6 +240,12 @@ private extension ThemeKeyCoverageTests {
         "product-card-was-price-font-weight": "layout.productCardWasPriceFontWeight",
         "product-card-width": "layout.productCardWidth",
         "product-card-height": "layout.productCardHeight",
+        "product-card-text-spacing": "layout.productCardTextSpacing",
+        "product-card-text-top-padding": "layout.productCardTextTopPadding",
+        "product-card-text-bottom-padding": "layout.productCardTextBottomPadding",
+        "product-card-text-horizontal-padding": "layout.productCardTextHorizontalPadding",
+        "product-card-carousel-spacing": "layout.productCardCarouselSpacing",
+        "product-card-carousel-horizontal-padding": "layout.productCardCarouselHorizontalPadding",
     ]
 
     // MARK: - Theme token model reflection
