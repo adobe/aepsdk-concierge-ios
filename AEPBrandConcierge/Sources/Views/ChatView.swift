@@ -121,7 +121,6 @@ public struct ChatView: View {
                 controller.applyTextChange(suggestion)
                 selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
             }
-                .padding(.horizontal, theme.layout.chatHistoryPadding)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)

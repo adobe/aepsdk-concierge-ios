@@ -554,7 +554,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--chat-interface-max-width` | `layout.chatInterfaceMaxWidth` | `CGFloat` | `768` | Max chat interface width |
-| `--chat-history-padding` | `layout.chatHistoryPadding` | `CGFloat` | `16` | Chat history horizontal padding |
+| `--chat-history-padding` | `layout.chatHistoryPadding` | `CGFloat` | `16` | Chat history horizontal padding. Applied per-message; also serves as the default fallback for `--product-card-carousel-horizontal-padding` when that property is not set. |
 | `--chat-history-padding-top-expanded` | `layout.chatHistoryPaddingTopExpanded` | `CGFloat` | `8` | Top padding when expanded |
 | `--chat-history-bottom-padding` | `layout.chatHistoryBottomPadding` | `CGFloat` | `12` | Bottom padding |
 | `--message-blocker-height` | `layout.messageBlockerHeight` | `CGFloat` | `105` | Message blocker overlay height |
@@ -610,6 +610,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-was-price-text-prefix` | `layout.productCardWasPriceTextPrefix` | `String` | `"was "` | Text prefix before the strikethrough "was" price |
 | `--product-card-was-price-font-size` | `layout.productCardWasPriceFontSize` | `CGFloat` | `12` | "Was" price font size |
 | `--product-card-was-price-font-weight` | `layout.productCardWasPriceFontWeight` | `FontWeight` | `regular` | "Was" price font weight |
+| `--product-card-text-spacing` | `layout.productCardTextSpacing` | `CGFloat` | `8` | Vertical spacing between text elements (title, subtitle, price) |
+| `--product-card-text-top-padding` | `layout.productCardTextTopPadding` | `CGFloat` | `20` | Top padding above the text section |
+| `--product-card-text-bottom-padding` | `layout.productCardTextBottomPadding` | `CGFloat` | `12` | Bottom padding below the text section |
+| `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
+| `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
+| `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When `nil`, falls back to `chatHistoryPadding`. |
 
 ### Layout - Welcome Screen Order
 
@@ -770,7 +776,13 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-badge-font-weight": "600",
     "--product-card-outline-color": "#00000000",
     "--product-card-width": "200px",
-    "--product-card-height": "300px"
+    "--product-card-height": "300px",
+    "--product-card-text-spacing": "8px",
+    "--product-card-text-top-padding": "20px",
+    "--product-card-text-bottom-padding": "12px",
+    "--product-card-text-horizontal-padding": "12px",
+    "--product-card-carousel-spacing": "12px",
+    "--product-card-carousel-horizontal-padding": "4px"
   }
 }
 ```
@@ -931,7 +943,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-padding` | ✅ | Used in ChatMessageView |
 | `--message-max-width` | ✅ | Used in ChatMessageView |
 | `--chat-interface-max-width` | ✅ | Used in ChatView |
-| `--chat-history-padding` | ✅ | Used in ChatView |
+| `--chat-history-padding` | ✅ | Applied per-message in MessageListView; also used as fallback for carousel horizontal padding |
 | `--chat-history-padding-top-expanded` | ✅ | Used in MessageListView |
 | `--chat-history-bottom-padding` | ✅ | Used in MessageListView |
 | `--message-blocker-height` | ✅ | Used in MessageListView |
@@ -959,6 +971,12 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-was-price-text-prefix` | ✅ | Used in ProductDetailCardView |
 | `--product-card-was-price-font-size` | ✅ | Used in ProductDetailCardView |
 | `--product-card-was-price-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-spacing` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-top-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-bottom-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-horizontal-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-carousel-spacing` | ✅ | Used in CarouselGroupView for spacing between cards |
+| `--product-card-carousel-horizontal-padding` | ✅ | Used in MessageListView; falls back to `chatHistoryPadding` when not set |
 
 ### Unsupported CSS Variables
 

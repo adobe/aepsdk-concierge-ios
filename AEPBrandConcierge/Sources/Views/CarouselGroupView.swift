@@ -75,14 +75,27 @@ struct CarouselGroupView: View {
         .padding(.vertical, 8)
     }
 
+    /// Leading inset so the first card aligns with the left edge of non-carousel message content.
+    ///
+    /// Non-carousel messages are inset by `chatHistoryPadding + MessageListView.scrollContentBasePadding`.
+    /// The carousel itself is inset by `productCardCarouselHorizontalPadding ?? chatHistoryPadding`.
+    /// The difference is applied here as the scroll content's leading padding.
+    private var scrollContentLeadingInset: CGFloat {
+        let messageInset = theme.layout.chatHistoryPadding + 16
+        let carouselInset = theme.layout.productCardCarouselHorizontalPadding
+            ?? theme.layout.chatHistoryPadding
+        return max(0, messageInset - carouselInset)
+    }
+
     private var scrollingCarousel: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: theme.layout.productCardCarouselSpacing) {
                 ForEach(items, id: \.id) { message in
                     message.chatMessageView
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.leading, scrollContentLeadingInset)
+            .padding(.trailing, theme.layout.productCardCarouselSpacing)
             .padding(.vertical, 12)
         }
     }

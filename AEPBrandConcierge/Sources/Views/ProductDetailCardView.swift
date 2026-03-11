@@ -25,26 +25,13 @@ struct ProductDetailCardView: View {
     let data: ProductCardData
     let cardWidth: CGFloat
     var cardHeight: CGFloat?
-    var fillAvailableHeight: Bool = false
-    var bottomAlignContent: Bool = false
-
-    private var hasFixedHeight: Bool {
-        cardHeight != nil || fillAvailableHeight
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             imageSection
-            if hasFixedHeight && bottomAlignContent {
-                Spacer(minLength: 0)
-            }
             textSection
-            if hasFixedHeight && !bottomAlignContent {
-                Spacer(minLength: 0)
-            }
         }
         .frame(width: cardWidth, height: cardHeight)
-        .frame(maxHeight: fillAvailableHeight ? .infinity : nil)
         .clipped()
         .background(theme.colors.productCard.backgroundColor.color)
         .cornerRadius(theme.layout.borderRadiusCard)
@@ -113,7 +100,7 @@ private extension ProductDetailCardView {
     }
 
     var textSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: theme.layout.productCardTextSpacing) {
             Text(data.title)
                 .font(.system(size: theme.layout.productCardTitleFontSize))
                 .fontWeight(theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight())
@@ -132,6 +119,8 @@ private extension ProductDetailCardView {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            Spacer(minLength: 0)
+
             if let price = data.price, !price.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(price)
@@ -139,19 +128,18 @@ private extension ProductDetailCardView {
                         .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
                         .foregroundColor(theme.colors.productCard.priceColor.color)
 
-                    if let wasPrice = data.wasPrice, !wasPrice.isEmpty {
-                        Text("\(theme.layout.productCardWasPriceTextPrefix)\(wasPrice)")
-                            .font(.system(size: theme.layout.productCardWasPriceFontSize))
-                            .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
-                            .foregroundColor(theme.colors.productCard.wasPriceColor.color)
-                    }
+                    Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
+                        .font(.system(size: theme.layout.productCardWasPriceFontSize))
+                        .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                        .foregroundColor(theme.colors.productCard.wasPriceColor.color)
+                        .opacity(data.wasPrice.map { !$0.isEmpty } ?? false ? 1 : 0)
                 }
             }
         }
-        .padding(.top, 20)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-        .frame(width: cardWidth, alignment: .leading)
+        .padding(.top, theme.layout.productCardTextTopPadding)
+        .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
+        .padding(.bottom, theme.layout.productCardTextBottomPadding)
+        .frame(width: cardWidth, height: textSectionHeight, alignment: .topLeading)
     }
 
     func badgeView(text: String) -> some View {
@@ -180,6 +168,11 @@ private extension ProductDetailCardView {
 
     var imageContainerHeight: CGFloat {
         thumbnailDisplayHeight
+    }
+
+    var textSectionHeight: CGFloat? {
+        guard let cardHeight = cardHeight else { return nil }
+        return cardHeight - imageContainerHeight
     }
 
     @ViewBuilder
@@ -217,25 +210,13 @@ extension ProductDetailCardView {
 }
 
 private struct MeasuredCardView: View {
-    /// When `true`, all cards share the same fixed height (default 285pt).
-    /// When `false`, card height is content-driven.
-    static let equalizeCardHeights = false
-
-    /// When `true` (and `equalizeCardHeights` is also `true`), pushes
-    /// the text section to the bottom of the card instead of the top.
-    static let bottomAlignContent = false
-
-    static let defaultCardHeight: CGFloat = 300
-
     let data: ProductCardData
     let cardWidth: CGFloat
 
     var body: some View {
         ProductDetailCardView(
             data: data,
-            cardWidth: cardWidth,
-            cardHeight: Self.equalizeCardHeights ? Self.defaultCardHeight : nil,
-            bottomAlignContent: Self.bottomAlignContent
+            cardWidth: cardWidth
         )
             .overlay(alignment: .topTrailing) {
                 if ProductDetailCardView.showDebugOverlay {
