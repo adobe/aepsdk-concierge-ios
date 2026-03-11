@@ -119,6 +119,8 @@ private extension ProductDetailCardView {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            Spacer(minLength: 0)
+
             if let price = data.price, !price.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(price)
@@ -126,19 +128,18 @@ private extension ProductDetailCardView {
                         .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
                         .foregroundColor(theme.colors.productCard.priceColor.color)
 
-                    if let wasPrice = data.wasPrice, !wasPrice.isEmpty {
-                        Text("\(theme.layout.productCardWasPriceTextPrefix)\(wasPrice)")
-                            .font(.system(size: theme.layout.productCardWasPriceFontSize))
-                            .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
-                            .foregroundColor(theme.colors.productCard.wasPriceColor.color)
-                    }
+                    Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
+                        .font(.system(size: theme.layout.productCardWasPriceFontSize))
+                        .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                        .foregroundColor(theme.colors.productCard.wasPriceColor.color)
+                        .opacity(data.wasPrice.map { !$0.isEmpty } ?? false ? 1 : 0)
                 }
             }
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, 12)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
-        .frame(width: cardWidth, alignment: .leading)
+        .frame(width: cardWidth, height: textSectionHeight, alignment: .topLeading)
     }
 
     func badgeView(text: String) -> some View {
@@ -167,6 +168,11 @@ private extension ProductDetailCardView {
 
     var imageContainerHeight: CGFloat {
         thumbnailDisplayHeight
+    }
+
+    var textSectionHeight: CGFloat? {
+        guard let cardHeight = cardHeight else { return nil }
+        return cardHeight - imageContainerHeight
     }
 
     @ViewBuilder
