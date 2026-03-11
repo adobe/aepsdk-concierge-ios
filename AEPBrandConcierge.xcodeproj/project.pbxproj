@@ -143,6 +143,7 @@
 		4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */; };
 		4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */; };
 		4CDB0DD62EC84A64000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD52EC84A64000B85D0 /* theme-default.json */; };
+		4CDB0DEA2F234567000B85D0 /* theme-all-properties.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */; };
 		4CF60BD92EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */; };
 		4CF60BDA2EF37A1E008CE4F0 /* ConciergeThemeContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */; };
 		4CF60BDB2EF37A1E008CE4F0 /* ConciergeThemeStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */; };
@@ -153,7 +154,6 @@
 		4CF60BE02EF37A1E008CE4F0 /* ConciergeThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD72EF37A1E008CE4F0 /* ConciergeThemeTokens.swift */; };
 		4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */; };
 		4CF60BE22EF37E81008CE4F0 /* themeDemo.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DE72F123456000B85D0 /* themeDemo.json */; };
-		4CDB0DEA2F234567000B85D0 /* theme-all-properties.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */; };
 		4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */; };
 		4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF32EF3AC03008CE4F0 /* TestEnvironment.swift */; };
 		4CF60BF92F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BF72F0F2DF4008CE4F0 /* ConciergePressableButtonStyle.swift */; };
