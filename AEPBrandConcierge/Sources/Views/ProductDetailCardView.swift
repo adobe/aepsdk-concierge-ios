@@ -206,7 +206,7 @@ private extension ProductDetailCardView {
 extension ProductDetailCardView {
     /// When `true`, draws a red border around the product image and shows a
     /// width×height label in the top left corner of each card.
-    static var showDebugOverlay = true
+    static var showDebugOverlay = false
 }
 
 private struct MeasuredCardView: View {
