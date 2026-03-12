@@ -16,6 +16,10 @@ import SwiftUI
 struct MessageListView: View {
     @Environment(\.conciergeTheme) private var theme
 
+    /// Base scroll content padding. Combined with `chatHistoryPadding` to preserve the 
+    // original total inset for non carousel messages.
+    private static let scrollContentBasePadding: CGFloat = 16
+
     let messages: [Message]
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
@@ -39,6 +43,7 @@ struct MessageListView: View {
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
+                                .padding(.horizontal, horizontalPadding(for: message.template))
                                 .onAppear {
                                     if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
                                         onSpeak(messageBody)
@@ -50,7 +55,6 @@ struct MessageListView: View {
                         Spacer()
                             .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
                     }
-                    .padding(.horizontal)
                     .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
                     .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
@@ -70,5 +74,19 @@ struct MessageListView: View {
                 }
             }
         }
+    }
+
+    /// Returns the horizontal padding for a given message template.
+    ///
+    /// Carousel messages use `productCardCarouselHorizontalPadding` when set,
+    /// falling back to `chatHistoryPadding` when not configured.
+    /// All other messages use `chatHistoryPadding` plus the base scroll content padding
+    /// to preserve the original combined inset.
+    private func horizontalPadding(for template: MessageTemplate) -> CGFloat {
+        if case .carouselGroup = template {
+            return theme.layout.productCardCarouselHorizontalPadding
+                ?? theme.layout.chatHistoryPadding
+        }
+        return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
     }
 }

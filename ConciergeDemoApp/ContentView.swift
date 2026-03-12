@@ -20,6 +20,7 @@ import AEPBrandConcierge
 struct ContentView: View {
     private enum DemoThemeFile: String, CaseIterable, Identifiable {
         case defaultTheme = "theme-default"
+        case allProperties = "theme-all-properties"
         case demoTheme = "themeDemo"
 
         var id: String { rawValue }
@@ -28,6 +29,8 @@ struct ContentView: View {
             switch self {
             case .defaultTheme:
                 return "Default"
+            case .allProperties:
+                return "All Props"
             case .demoTheme:
                 return "Demo"
             }
