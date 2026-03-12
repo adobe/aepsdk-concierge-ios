@@ -179,6 +179,12 @@
     "--product-card-was-price-font-weight": "400",
     "--product-card-was-price-color": "#6E6E6E",
     "--product-card-width": "200px",
-    "--product-card-height": "300px"
+    "--product-card-height": "300px",
+    "--product-card-text-spacing": "10px",
+    "--product-card-text-top-padding": "24px",
+    "--product-card-text-bottom-padding": "14px",
+    "--product-card-text-horizontal-padding": "16px",
+    "--product-card-carousel-spacing": "16px",
+    "--product-card-carousel-horizontal-padding": "8px"
   }
 }

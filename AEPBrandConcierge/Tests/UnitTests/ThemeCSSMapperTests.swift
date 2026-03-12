@@ -597,5 +597,71 @@ final class ThemeCSSMapperTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.layout.productCardHeight, 350)
     }
+
+    func test_productCardTextSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-spacing", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextSpacing, 10)
+    }
+
+    func test_productCardTextTopPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-top-padding", cssValue: "24px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextTopPadding, 24)
+    }
+
+    func test_productCardTextBottomPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-bottom-padding", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextBottomPadding, 14)
+    }
+
+    func test_productCardTextHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-horizontal-padding", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextHorizontalPadding, 16)
+    }
+
+    func test_productCardCarouselSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-carousel-spacing", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCarouselSpacing, 16)
+    }
+
+    func test_productCardCarouselHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-carousel-horizontal-padding", cssValue: "8px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
+    }
 }
 

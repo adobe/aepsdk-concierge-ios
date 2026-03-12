@@ -377,6 +377,12 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardWasPriceFontWeight, .regular)
         XCTAssertEqual(theme.layout.productCardWidth, 200)
         XCTAssertEqual(theme.layout.productCardHeight, 300)
+        XCTAssertEqual(theme.layout.productCardTextSpacing, 10)
+        XCTAssertEqual(theme.layout.productCardTextTopPadding, 24)
+        XCTAssertEqual(theme.layout.productCardTextBottomPadding, 14)
+        XCTAssertEqual(theme.layout.productCardTextHorizontalPadding, 16)
+        XCTAssertEqual(theme.layout.productCardCarouselSpacing, 16)
+        XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
     }
     
     func test_productCardColors_convertsCorrectly() {
