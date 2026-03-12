@@ -12,13 +12,35 @@
 
 import SwiftUI
 
-/// Horizontally paged carousel of message cards with a page indicator.
+/// Horizontally scrollable carousel of message cards.
+///
+/// Supports two modes controlled by `behavior.multimodalCarousel.carouselStyle`:
+/// - paged: `TabView` that snaps to the current item with prev/next buttons and page indicator dots
+/// - scroll: continuous horizontal `ScrollView` with freely scrollable cards
 struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
     @State private var currentIndex = 0
 
+    private var carouselIdealHeight: CGFloat {
+        switch theme.behavior.productCard?.cardStyle ?? .actionButton {
+        case .productDetail:
+            return theme.layout.productCardHeight
+        case .actionButton:
+            return 200
+        }
+    }
+
     var body: some View {
+        switch theme.behavior.multimodalCarousel.carouselStyle ?? .paged {
+        case .paged:
+            pagedCarousel
+        case .scroll:
+            scrollingCarousel
+        }
+    }
+
+    private var pagedCarousel: some View {
         VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, message in
@@ -26,7 +48,7 @@ struct CarouselGroupView: View {
                         .tag(index)
                 }
             }
-            .frame(idealWidth: 150, idealHeight: 200)
+            .frame(idealHeight: carouselIdealHeight)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             HStack(spacing: 16) {
@@ -51,5 +73,30 @@ struct CarouselGroupView: View {
             .padding(.top, 16)
         }
         .padding(.vertical, 8)
+    }
+
+    /// Leading inset so the first card aligns with the left edge of non-carousel message content.
+    ///
+    /// Non-carousel messages are inset by `chatHistoryPadding + MessageListView.scrollContentBasePadding`.
+    /// The carousel itself is inset by `productCardCarouselHorizontalPadding ?? chatHistoryPadding`.
+    /// The difference is applied here as the scroll content's leading padding.
+    private var scrollContentLeadingInset: CGFloat {
+        let messageInset = theme.layout.chatHistoryPadding + 16
+        let carouselInset = theme.layout.productCardCarouselHorizontalPadding
+            ?? theme.layout.chatHistoryPadding
+        return max(0, messageInset - carouselInset)
+    }
+
+    private var scrollingCarousel: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: theme.layout.productCardCarouselSpacing) {
+                ForEach(items, id: \.id) { message in
+                    message.chatMessageView
+                }
+            }
+            .padding(.leading, scrollContentLeadingInset)
+            .padding(.trailing, theme.layout.productCardCarouselSpacing)
+            .padding(.vertical, 12)
+        }
     }
 }

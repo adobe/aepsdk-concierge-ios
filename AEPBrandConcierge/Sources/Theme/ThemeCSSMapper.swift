@@ -148,6 +148,37 @@ public enum CSSKeyMapper {
 
         // Layout - Feedback (button hit target size)
         "feedback-icon-btn-size-desktop": { cssValue, theme in theme.layout.feedbackIconButtonSize = CSSValueConverter.parsePxValue(cssValue) ?? 44 },
+
+        // Colors - Product Card
+        "product-card-background-color": { cssValue, theme in theme.colors.productCard.backgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-title-color": { cssValue, theme in theme.colors.productCard.titleColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-subtitle-color": { cssValue, theme in theme.colors.productCard.subtitleColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-price-color": { cssValue, theme in theme.colors.productCard.priceColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-was-price-color": { cssValue, theme in theme.colors.productCard.wasPriceColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-badge-text-color": { cssValue, theme in theme.colors.productCard.badgeTextColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-badge-background-color": { cssValue, theme in theme.colors.productCard.badgeBackgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-outline-color": { cssValue, theme in theme.colors.productCard.outlineColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - Product Card
+        "product-card-title-font-size": { cssValue, theme in theme.layout.productCardTitleFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
+        "product-card-title-font-weight": { cssValue, theme in theme.layout.productCardTitleFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-subtitle-font-size": { cssValue, theme in theme.layout.productCardSubtitleFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-subtitle-font-weight": { cssValue, theme in theme.layout.productCardSubtitleFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-price-font-size": { cssValue, theme in theme.layout.productCardPriceFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
+        "product-card-price-font-weight": { cssValue, theme in theme.layout.productCardPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-badge-font-size": { cssValue, theme in theme.layout.productCardBadgeFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-badge-font-weight": { cssValue, theme in theme.layout.productCardBadgeFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-was-price-text-prefix": { cssValue, theme in theme.layout.productCardWasPriceTextPrefix = cssValue },
+        "product-card-was-price-font-size": { cssValue, theme in theme.layout.productCardWasPriceFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-was-price-font-weight": { cssValue, theme in theme.layout.productCardWasPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 200 },
+        "product-card-height": { cssValue, theme in theme.layout.productCardHeight = CSSValueConverter.parsePxValue(cssValue) ?? 300 },
+        "product-card-text-spacing": { cssValue, theme in theme.layout.productCardTextSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
+        "product-card-text-top-padding": { cssValue, theme in theme.layout.productCardTextTopPadding = CSSValueConverter.parsePxValue(cssValue) ?? 20 },
+        "product-card-text-bottom-padding": { cssValue, theme in theme.layout.productCardTextBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-text-horizontal-padding": { cssValue, theme in theme.layout.productCardTextHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-carousel-spacing": { cssValue, theme in theme.layout.productCardCarouselSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-carousel-horizontal-padding": { cssValue, theme in theme.layout.productCardCarouselHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

@@ -131,6 +131,9 @@ public struct EntityInfo: Codable {
     public let logo: String?
     public let primary: ActionButton?
     public let secondary: ActionButton?
+    public let productPrice: String?
+    public let productWasPrice: String?
+    public let productBadge: String?
 }
 
 /// Button action configuration.
