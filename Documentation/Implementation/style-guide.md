@@ -197,6 +197,7 @@ Feature toggles and interaction configuration.
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
 | `behavior.multimodalCarousel.cardClickAction` | `String` | `"openLink"` | Action when carousel card is tapped. Currently "openLink" is the only option available. |
+| `behavior.multimodalCarousel.carouselStyle` | `String` | `"paged"` | Carousel scroll style. `"paged"` snaps to one item at a time with prev/next buttons and page indicator dots. `"scroll"` provides continuous horizontal scrolling. |
 
 ### Input
 
@@ -213,6 +214,12 @@ Feature toggles and interaction configuration.
 | `behavior.chat.messageAlignment` | `String` | `"left"` | Message alignment (`"left"`, `"center"`, `"right"`) |
 | `behavior.chat.messageWidth` | `String` | `"100%"` | Max message width (e.g., `"100%"`, `"768px"`) |
 
+### Product Card
+
+| JSON Key | Type | Default | Description |
+|----------|------|---------|-------------|
+| `behavior.productCard.cardStyle` | `String` | `"actionButton"` | Rendering style for product cards. `"actionButton"` shows an image, description text, and primary/secondary action buttons. `"productDetail"` shows an image, optional badge, title, subtitle, and price — the entire card is tappable. |
+
 ### Privacy Notice
 
 | JSON Key | Type | Default | Description |
@@ -226,7 +233,8 @@ Feature toggles and interaction configuration.
 {
   "behavior": {
     "multimodalCarousel": {
-      "cardClickAction": "openLink"
+      "cardClickAction": "openLink",
+      "carouselStyle": "paged"
     },
     "input": {
       "enableVoiceInput": true,
@@ -236,6 +244,9 @@ Feature toggles and interaction configuration.
     "chat": {
       "messageAlignment": "left",
       "messageWidth": "100%"
+    },
+    "productCard": {
+      "cardStyle": "productDetail"
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -497,6 +508,19 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--feedback-icon-btn-background` | `colors.feedback.iconButtonBackground` | `Color` | `clear` | Feedback button background |
 
+### Colors - Product Card
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--product-card-background-color` | `colors.productCard.backgroundColor` | `Color` | `white` | Product card background |
+| `--product-card-title-color` | `colors.productCard.titleColor` | `Color` | `primary` | Product title text color |
+| `--product-card-subtitle-color` | `colors.productCard.subtitleColor` | `Color` | `primary` | Product subtitle text color |
+| `--product-card-price-color` | `colors.productCard.priceColor` | `Color` | `primary` | Product price text color |
+| `--product-card-was-price-color` | `colors.productCard.wasPriceColor` | `Color` | `secondary` | Strikethrough "was" price text color |
+| `--product-card-badge-text-color` | `colors.productCard.badgeTextColor` | `Color` | `white` | Badge label text color |
+| `--product-card-badge-background-color` | `colors.productCard.badgeBackgroundColor` | `Color` | `primary` | Badge background color |
+| `--product-card-outline-color` | `colors.productCard.outlineColor` | `Color` | `clear` | Card border/outline color |
+
 ### Colors - Disclaimer
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -530,7 +554,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--chat-interface-max-width` | `layout.chatInterfaceMaxWidth` | `CGFloat` | `768` | Max chat interface width |
-| `--chat-history-padding` | `layout.chatHistoryPadding` | `CGFloat` | `16` | Chat history horizontal padding |
+| `--chat-history-padding` | `layout.chatHistoryPadding` | `CGFloat` | `16` | Chat history horizontal padding. Applied per-message; also serves as the default fallback for `--product-card-carousel-horizontal-padding` when that property is not set. |
 | `--chat-history-padding-top-expanded` | `layout.chatHistoryPaddingTopExpanded` | `CGFloat` | `8` | Top padding when expanded |
 | `--chat-history-bottom-padding` | `layout.chatHistoryBottomPadding` | `CGFloat` | `12` | Bottom padding |
 | `--message-blocker-height` | `layout.messageBlockerHeight` | `CGFloat` | `105` | Message blocker overlay height |
@@ -540,7 +564,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--border-radius-card` | `layout.borderRadiusCard` | `CGFloat` | `16` | Card corner radius |
-| `--multimodal-card-box-shadow` | `layout.multimodalCardBoxShadow` | `Shadow` | `0 2px 8px...` | Card shadow |
+| `--multimodal-card-box-shadow` | `layout.multimodalCardBoxShadow` | `Shadow` | `0 1px 3px 0 #00000033` | Card shadow |
 
 ### Layout - Buttons
 
@@ -569,6 +593,30 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--disclaimer-font-size` | `layout.disclaimerFontSize` | `CGFloat` | `12` | Disclaimer font size |
 | `--disclaimer-font-weight` | `layout.disclaimerFontWeight` | `FontWeight` | `regular` | Disclaimer font weight |
 
+### Layout - Product Card
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--product-card-width` | `layout.productCardWidth` | `CGFloat` | `250` | Card width in points |
+| `--product-card-height` | `layout.productCardHeight` | `CGFloat` | `300` | Card height in points |
+| `--product-card-title-font-size` | `layout.productCardTitleFontSize` | `CGFloat` | `14` | Title font size |
+| `--product-card-title-font-weight` | `layout.productCardTitleFontWeight` | `FontWeight` | `bold` | Title font weight |
+| `--product-card-subtitle-font-size` | `layout.productCardSubtitleFontSize` | `CGFloat` | `12` | Subtitle font size |
+| `--product-card-subtitle-font-weight` | `layout.productCardSubtitleFontWeight` | `FontWeight` | `regular` | Subtitle font weight |
+| `--product-card-price-font-size` | `layout.productCardPriceFontSize` | `CGFloat` | `14` | Price font size |
+| `--product-card-price-font-weight` | `layout.productCardPriceFontWeight` | `FontWeight` | `light` | Price font weight |
+| `--product-card-badge-font-size` | `layout.productCardBadgeFontSize` | `CGFloat` | `12` | Badge font size |
+| `--product-card-badge-font-weight` | `layout.productCardBadgeFontWeight` | `FontWeight` | `semibold` | Badge font weight |
+| `--product-card-was-price-text-prefix` | `layout.productCardWasPriceTextPrefix` | `String` | `"was "` | Text prefix before the strikethrough "was" price |
+| `--product-card-was-price-font-size` | `layout.productCardWasPriceFontSize` | `CGFloat` | `12` | "Was" price font size |
+| `--product-card-was-price-font-weight` | `layout.productCardWasPriceFontWeight` | `FontWeight` | `regular` | "Was" price font weight |
+| `--product-card-text-spacing` | `layout.productCardTextSpacing` | `CGFloat` | `8` | Vertical spacing between text elements (title, subtitle, price) |
+| `--product-card-text-top-padding` | `layout.productCardTextTopPadding` | `CGFloat` | `20` | Top padding above the text section |
+| `--product-card-text-bottom-padding` | `layout.productCardTextBottomPadding` | `CGFloat` | `12` | Bottom padding below the text section |
+| `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
+| `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
+| `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When `nil`, falls back to `chatHistoryPadding`. |
+
 ### Layout - Welcome Screen Order
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -590,7 +638,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
   },
   "behavior": {
     "multimodalCarousel": {
-      "cardClickAction": "openLink"
+      "cardClickAction": "openLink",
+      "carouselStyle": "paged"
     },
     "input": {
       "enableVoiceInput": true,
@@ -600,6 +649,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "chat": {
       "messageAlignment": "left",
       "messageWidth": "100%"
+    },
+    "productCard": {
+      "cardStyle": "productDetail"
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -703,7 +755,34 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-icon-btn-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--citations-text-font-weight": "700",
-    "--citations-desktop-button-font-size": "12px"
+    "--citations-desktop-button-font-size": "12px",
+    "--product-card-background-color": "#FFFFFF",
+    "--product-card-title-color": "#292929",
+    "--product-card-title-font-size": "14px",
+    "--product-card-title-font-weight": "700",
+    "--product-card-subtitle-color": "#292929",
+    "--product-card-subtitle-font-size": "12px",
+    "--product-card-subtitle-font-weight": "400",
+    "--product-card-price-color": "#292929",
+    "--product-card-price-font-size": "16px",
+    "--product-card-price-font-weight": "300",
+    "--product-card-was-price-color": "#6E6E6E",
+    "--product-card-was-price-text-prefix": "was ",
+    "--product-card-was-price-font-size": "12px",
+    "--product-card-was-price-font-weight": "400",
+    "--product-card-badge-text-color": "#FFFFFF",
+    "--product-card-badge-background-color": "#000000",
+    "--product-card-badge-font-size": "12px",
+    "--product-card-badge-font-weight": "600",
+    "--product-card-outline-color": "#00000000",
+    "--product-card-width": "200px",
+    "--product-card-height": "300px",
+    "--product-card-text-spacing": "8px",
+    "--product-card-text-top-padding": "20px",
+    "--product-card-text-bottom-padding": "12px",
+    "--product-card-text-horizontal-padding": "12px",
+    "--product-card-carousel-spacing": "12px",
+    "--product-card-carousel-horizontal-padding": "4px"
   }
 }
 ```
@@ -736,6 +815,8 @@ This section documents which properties are fully implemented, partially impleme
 | Property | Status | Notes |
 |----------|--------|-------|
 | `behavior.multimodalCarousel.cardClickAction` | ⚠️ | Parsed but not implemented in carousel views |
+| `behavior.multimodalCarousel.carouselStyle` | ✅ | Controls carousel scroll style (paged vs scroll) in CarouselGroupView |
+| `behavior.productCard.cardStyle` | ✅ | Selects product card rendering (actionButton vs productDetail) in ChatMessageView |
 | `behavior.input.enableVoiceInput` | ✅ | Controls mic button visibility |
 | `behavior.input.disableMultiline` | ✅ | Controls input line limit |
 | `behavior.input.showAiChatIcon` | ⚠️ | Parsed and mapped to component but not rendered |
@@ -799,7 +880,7 @@ This section documents which properties are fully implemented, partially impleme
 | CSS Variable | Status | Notes |
 |--------------|--------|-------|
 | `--font-family` | ✅ | Used in ChatView, ComposerEditingView |
-| `--line-height-body` | ✅ | Used in ChatView for global line spacing |
+| `--line-height-body` | ✅ | Used in ChatMessageView for basic message bubble line spacing |
 
 ### Theme Tokens - Colors
 
@@ -832,6 +913,19 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
 | `--disclaimer-color` | ⚠️ | Mapped but disclaimer uses primary.text |
 
+### Theme Tokens - Colors (Product Card)
+
+| CSS Variable | Status | Notes |
+|--------------|--------|-------|
+| `--product-card-background-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-title-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-subtitle-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-price-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-was-price-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-badge-text-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-badge-background-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-outline-color` | ✅ | Used in ProductDetailCardView |
+
 ### Theme Tokens - Layout
 
 | CSS Variable | Status | Notes |
@@ -849,7 +943,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-padding` | ✅ | Used in ChatMessageView |
 | `--message-max-width` | ✅ | Used in ChatMessageView |
 | `--chat-interface-max-width` | ✅ | Used in ChatView |
-| `--chat-history-padding` | ✅ | Used in ChatView |
+| `--chat-history-padding` | ✅ | Applied per-message in MessageListView; also used as fallback for carousel horizontal padding |
 | `--chat-history-padding-top-expanded` | ✅ | Used in MessageListView |
 | `--chat-history-bottom-padding` | ✅ | Used in MessageListView |
 | `--message-blocker-height` | ✅ | Used in MessageListView |
@@ -864,6 +958,25 @@ This section documents which properties are fully implemented, partially impleme
 | `--disclaimer-font-weight` | ⚠️ | Mapped but not used in views |
 | `--welcome-input-order` | ⚠️ | Mapped but welcome layout not customizable |
 | `--welcome-cards-order` | ⚠️ | Mapped but welcome layout not customizable |
+| `--product-card-width` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
+| `--product-card-height` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
+| `--product-card-title-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-title-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-subtitle-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-subtitle-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-price-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-price-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-badge-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-badge-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-was-price-text-prefix` | ✅ | Used in ProductDetailCardView |
+| `--product-card-was-price-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-was-price-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-spacing` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-top-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-bottom-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-text-horizontal-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-carousel-spacing` | ✅ | Used in CarouselGroupView for spacing between cards |
+| `--product-card-carousel-horizontal-padding` | ✅ | Used in MessageListView; falls back to `chatHistoryPadding` when not set |
 
 ### Unsupported CSS Variables
 

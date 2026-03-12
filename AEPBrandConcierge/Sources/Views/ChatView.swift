@@ -50,25 +50,6 @@ public struct ChatView: View {
 
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
 
-    private var globalLineSpacing: CGFloat {
-        let multiplier = theme.typography.lineHeight
-        guard multiplier.isFinite, multiplier > 0 else {
-            return 0
-        }
-
-        let fontSize = theme.typography.fontSize
-        let baseFont: UIFont = {
-            if theme.typography.fontFamily.isEmpty {
-                return UIFont.systemFont(ofSize: fontSize)
-            }
-            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-        }()
-
-        let targetLineHeight = fontSize * multiplier
-        let additionalSpacing = targetLineHeight - baseFont.lineHeight
-        return max(0, additionalSpacing)
-    }
-
     // MARK: - Initializers
 
     public init(
@@ -140,7 +121,6 @@ public struct ChatView: View {
                 controller.applyTextChange(suggestion)
                 selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
             }
-                .padding(.horizontal, theme.layout.chatHistoryPadding)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)
@@ -307,7 +287,6 @@ public struct ChatView: View {
                 ? .system(size: theme.typography.fontSize)
                 : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
         )
-        .lineSpacing(globalLineSpacing)
     }
 
     // MARK: - Actions
@@ -355,16 +334,30 @@ public struct ChatView: View {
         var messages = [
             Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .productCarouselCard(
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    destination: URL(string: "https://adobe.com")!
-                )),
-                Message(template: .productCarouselCard(
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                ))),
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    destination: URL(string: "https://adobe.com")!
-                ))
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                )))
             ])),
             Message(template: .divider)
         ]

@@ -42,6 +42,27 @@ public struct ConciergeLayout: Codable {
     public var multimodalCardBoxShadow: ConciergeShadow
     public var welcomeInputOrder: Int
     public var welcomeCardsOrder: Int
+    public var productCardTitleFontSize: CGFloat
+    public var productCardTitleFontWeight: CodableFontWeight
+    public var productCardSubtitleFontSize: CGFloat
+    public var productCardSubtitleFontWeight: CodableFontWeight
+    public var productCardPriceFontSize: CGFloat
+    public var productCardPriceFontWeight: CodableFontWeight
+    public var productCardBadgeFontSize: CGFloat
+    public var productCardBadgeFontWeight: CodableFontWeight
+    public var productCardWasPriceTextPrefix: String
+    public var productCardWasPriceFontSize: CGFloat
+    public var productCardWasPriceFontWeight: CodableFontWeight
+    public var productCardWidth: CGFloat
+    public var productCardHeight: CGFloat
+    public var productCardTextSpacing: CGFloat
+    public var productCardTextTopPadding: CGFloat
+    public var productCardTextBottomPadding: CGFloat
+    public var productCardTextHorizontalPadding: CGFloat
+    public var productCardCarouselSpacing: CGFloat
+    /// Horizontal padding applied to the carousel container within the chat history.
+    /// When `nil`, falls back to `chatHistoryPadding`.
+    public var productCardCarouselHorizontalPadding: CGFloat?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -75,13 +96,32 @@ public struct ConciergeLayout: Codable {
         // Default matches the current product carousel card drop shadow.
         multimodalCardBoxShadow: ConciergeShadow = ConciergeShadow(
             offsetX: 0,
-            offsetY: 2,
-            blurRadius: 8,
+            offsetY: 1,
+            blurRadius: 3,
             spreadRadius: 0,
-            color: CodableColor(Color.black.opacity(0.08))
+            color: CodableColor(Color.black.opacity(0.2))
         ),
         welcomeInputOrder: Int = 3,
-        welcomeCardsOrder: Int = 2
+        welcomeCardsOrder: Int = 2,
+        productCardTitleFontSize: CGFloat = 14,
+        productCardTitleFontWeight: CodableFontWeight = .bold,
+        productCardSubtitleFontSize: CGFloat = 12,
+        productCardSubtitleFontWeight: CodableFontWeight = .regular,
+        productCardPriceFontSize: CGFloat = 14,
+        productCardPriceFontWeight: CodableFontWeight = .light,
+        productCardBadgeFontSize: CGFloat = 12,
+        productCardBadgeFontWeight: CodableFontWeight = .semibold,
+        productCardWasPriceTextPrefix: String = "was ",
+        productCardWasPriceFontSize: CGFloat = 12,
+        productCardWasPriceFontWeight: CodableFontWeight = .regular,
+        productCardWidth: CGFloat = 250,
+        productCardHeight: CGFloat = 300,
+        productCardTextSpacing: CGFloat = 8,
+        productCardTextTopPadding: CGFloat = 20,
+        productCardTextBottomPadding: CGFloat = 12,
+        productCardTextHorizontalPadding: CGFloat = 12,
+        productCardCarouselSpacing: CGFloat = 12,
+        productCardCarouselHorizontalPadding: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -111,6 +151,25 @@ public struct ConciergeLayout: Codable {
         self.multimodalCardBoxShadow = multimodalCardBoxShadow
         self.welcomeInputOrder = welcomeInputOrder
         self.welcomeCardsOrder = welcomeCardsOrder
+        self.productCardTitleFontSize = productCardTitleFontSize
+        self.productCardTitleFontWeight = productCardTitleFontWeight
+        self.productCardSubtitleFontSize = productCardSubtitleFontSize
+        self.productCardSubtitleFontWeight = productCardSubtitleFontWeight
+        self.productCardPriceFontSize = productCardPriceFontSize
+        self.productCardPriceFontWeight = productCardPriceFontWeight
+        self.productCardBadgeFontSize = productCardBadgeFontSize
+        self.productCardBadgeFontWeight = productCardBadgeFontWeight
+        self.productCardWasPriceTextPrefix = productCardWasPriceTextPrefix
+        self.productCardWasPriceFontSize = productCardWasPriceFontSize
+        self.productCardWasPriceFontWeight = productCardWasPriceFontWeight
+        self.productCardWidth = productCardWidth
+        self.productCardHeight = productCardHeight
+        self.productCardTextSpacing = productCardTextSpacing
+        self.productCardTextTopPadding = productCardTextTopPadding
+        self.productCardTextBottomPadding = productCardTextBottomPadding
+        self.productCardTextHorizontalPadding = productCardTextHorizontalPadding
+        self.productCardCarouselSpacing = productCardCarouselSpacing
+        self.productCardCarouselHorizontalPadding = productCardCarouselHorizontalPadding
     }
 }
 

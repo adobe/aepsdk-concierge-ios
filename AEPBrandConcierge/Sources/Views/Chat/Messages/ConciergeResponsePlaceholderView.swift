@@ -34,13 +34,9 @@ struct ConciergeResponsePlaceholderView: View {
                 .foregroundColor(theme.colors.message.conciergeText.color)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
 
             LoadingDotsView(dotColors: [placeholderConfig.primaryDotColor, lighterDotColor1, lighterDotColor2])
-                // Keep the dots in a stable trailing area, separate from the text wrapping.
-                .frame(width: 46, alignment: .trailing)
-                .layoutPriority(0)
+                .fixedSize()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

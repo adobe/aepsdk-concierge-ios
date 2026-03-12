@@ -127,6 +127,10 @@
 		4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */; };
 		4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9531502E4C1B7D00772695 /* Color+Brand.swift */; };
 		4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */; };
+		4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */; };
+		4CC11B1E2F5A676D00EEF226 /* ProductCardData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */; };
+		4CC11B232F5F900100EEF226 /* ProductCardDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B222F5F900100EEF226 /* ProductCardDataTests.swift */; };
+		4CC11B242F5F900100EEF226 /* ConversationResponseDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B212F5F900100EEF226 /* ConversationResponseDecodingTests.swift */; };
 		4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB42EC6E887000B85D0 /* theme-default.json */; };
 		4CDB0DBD2EC82C6B000B85D0 /* ThemeCSSConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */; };
 		4CDB0DBE2EC82C6B000B85D0 /* ThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */; };
@@ -139,6 +143,7 @@
 		4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */; };
 		4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */; };
 		4CDB0DD62EC84A64000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DD52EC84A64000B85D0 /* theme-default.json */; };
+		4CDB0DEA2F234567000B85D0 /* theme-all-properties.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */; };
 		4CF60BD92EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */; };
 		4CF60BDA2EF37A1E008CE4F0 /* ConciergeThemeContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */; };
 		4CF60BDB2EF37A1E008CE4F0 /* ConciergeThemeStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */; };
@@ -319,6 +324,10 @@
 		4C952E792E4BE8FD00772695 /* S2_Icon_Close_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Close_20_N.svg; sourceTree = "<group>"; };
 		4C9531502E4C1B7D00772695 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImageView.swift; sourceTree = "<group>"; };
+		4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardView.swift; sourceTree = "<group>"; };
+		4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardData.swift; sourceTree = "<group>"; };
+		4CC11B212F5F900100EEF226 /* ConversationResponseDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationResponseDecodingTests.swift; sourceTree = "<group>"; };
+		4CC11B222F5F900100EEF226 /* ProductCardDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardDataTests.swift; sourceTree = "<group>"; };
 		4CDB0DB42EC6E887000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DB62EC82C6B000B85D0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverter.swift; sourceTree = "<group>"; };
@@ -332,6 +341,7 @@
 		4CDB0DD32EC82CB2000B85D0 /* ThemeTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTestHelpers.swift; sourceTree = "<group>"; };
 		4CDB0DD52EC84A64000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DE72F123456000B85D0 /* themeDemo.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = themeDemo.json; sourceTree = "<group>"; };
+		4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-all-properties.json"; sourceTree = "<group>"; };
 		4CF60BCF2EF37A1E008CE4F0 /* ConciergeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeTheme.swift; sourceTree = "<group>"; };
 		4CF60BD02EF37A1E008CE4F0 /* ConciergeThemeAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeAssets.swift; sourceTree = "<group>"; };
 		4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeThemeBehavior.swift; sourceTree = "<group>"; };
@@ -417,6 +427,7 @@
 				24037AC72EF364B000FF4031 /* CitationMarker.swift */,
 				24037AC82EF364B000FF4031 /* Message.swift */,
 				24037AC92EF364B000FF4031 /* MessageTemplate.swift */,
+				4CC11B1D2F5A676D00EEF226 /* ProductCardData.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -593,6 +604,7 @@
 				2498998E2D67C62A0005CBD7 /* ChatView.swift */,
 				249899902D67C62A0005CBD7 /* PageIndicator.swift */,
 				247BA8292EBD311700EFE7C6 /* PermissionDialogView.swift */,
+				4CC11B1B2F592F3B00EEF226 /* ProductDetailCardView.swift */,
 				4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */,
 			);
 			path = Views;
@@ -618,6 +630,7 @@
 				4C3A65D42E55446600EEEF3B /* UIKitDemoViewController.swift */,
 				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
 				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
+				4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */,
 				249899AD2D67CCE30005CBD7 /* Assets.xcassets */,
 				2483A3D42D77CE9B004E6CDC /* Info.plist */,
 				249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */,
@@ -637,6 +650,8 @@
 		4C2923DD2E7E21F400D2D2C1 /* UnitTests */ = {
 			isa = PBXGroup;
 			children = (
+				4CC11B212F5F900100EEF226 /* ConversationResponseDecodingTests.swift */,
+				4CC11B222F5F900100EEF226 /* ProductCardDataTests.swift */,
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
 				244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
@@ -963,6 +978,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CF60BE22EF37E81008CE4F0 /* themeDemo.json in Resources */,
+				4CDB0DEA2F234567000B85D0 /* theme-all-properties.json in Resources */,
 				249899B32D67CCE30005CBD7 /* Preview Assets.xcassets in Resources */,
 				4C952FFB2E4BE8FD00772695 /* S2_Icon_AudioWave_20_N.svg in Resources */,
 				4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */,
@@ -1009,13 +1025,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1052,13 +1064,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-UnitTests/Pods-UnitTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1122,6 +1130,7 @@
 				4CF60BF42EF3AC03008CE4F0 /* TestEnvironment.swift in Sources */,
 				4CF60BE12EF37A1E008CE4F0 /* ConciergeTheme.swift in Sources */,
 				24037AC32EF3648600FF4031 /* Concierge.swift in Sources */,
+				4CC11B1E2F5A676D00EEF226 /* ProductCardData.swift in Sources */,
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
 				4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */,
@@ -1135,6 +1144,7 @@
 				24037AD82EF364B000FF4031 /* FeedbackPayload.swift in Sources */,
 				24037AD92EF364B000FF4031 /* FeedbackSentiment.swift in Sources */,
 				24037ADA2EF364B000FF4031 /* ConversationPayload.swift in Sources */,
+				4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */,
 				24037ADB2EF364B000FF4031 /* ConversationHandle.swift in Sources */,
 				24037ADC2EF364B000FF4031 /* ChatState.swift in Sources */,
 				24037ADD2EF364B000FF4031 /* ConciergeConfiguration.swift in Sources */,
@@ -1193,6 +1203,8 @@
 				4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */,
 				244E69ED2F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift in Sources */,
 				244E69EE2F22DF8300ADF1AA /* FeedbackOverlaySnapshotTests.swift in Sources */,
+				4CC11B232F5F900100EEF226 /* ProductCardDataTests.swift in Sources */,
+				4CC11B242F5F900100EEF226 /* ConversationResponseDecodingTests.swift in Sources */,
 				244E69EF2F22DF8300ADF1AA /* SourcesProbeSnapshotTests.swift in Sources */,
 				244E69F02F22DF8300ADF1AA /* CitationsSnapshotTests.swift in Sources */,
 				244E69F12F22DF8300ADF1AA /* PermissionDialogSnapshotTests.swift in Sources */,
@@ -1311,7 +1323,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.0.0;
+				MARKETING_VERSION = 5.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -1352,7 +1364,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.0.0;
+				MARKETING_VERSION = 5.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
