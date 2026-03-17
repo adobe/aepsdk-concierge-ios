@@ -138,7 +138,16 @@ struct ContentView: View {
             LinkHandlingTestView(
                 customLinkHandlingEnabled: $customLinkHandlingEnabled,
                 deepLinkURL: $deepLinkState.receivedURL,
-                handleLink: handleLink
+                handleLink: handleLink,
+                onOpenChat: {
+                    selectedTab = .swiftUI
+                    Concierge.show(
+                        surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
+                        title: "Concierge",
+                        subtitle: "Powered by Adobe",
+                        handleLink: handleLink
+                    )
+                }
             )
             .tag(DemoTab.testing)
             .tabItem { Label("Testing", systemImage: "flask") }
@@ -171,7 +180,7 @@ struct ContentView: View {
 
     private func handleLink(_ url: URL) -> Bool {
         guard customLinkHandlingEnabled else { return false }
-        if url.scheme == "demoapp" {
+        if url.scheme == "demoapp" || url.host == "adobe.com" || url.host == "www.adobe.com" {
             Concierge.hide()
             interceptedLinkURL = url
             return true

@@ -24,6 +24,7 @@ struct LinkHandlingTestView: View {
     @Binding var customLinkHandlingEnabled: Bool
     @Binding var deepLinkURL: URL?
     var handleLink: (URL) -> Bool
+    var onOpenChat: () -> Void
 
     @State private var selectedMode: TestMode = .interceptor
     @State private var simulatedResults: [URL: Bool] = [:]
@@ -66,7 +67,7 @@ struct LinkHandlingTestView: View {
     private var interceptorContent: some View {
         List {
             Section {
-                Text("Tests the handleLink callback — when enabled, demoapp:// links are claimed by the app and the chat is dismissed.")
+                Text("Tests the handleLink callback — when enabled, demoapp:// and adobe.com links are claimed by the app and the chat is dismissed.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -74,7 +75,7 @@ struct LinkHandlingTestView: View {
             Section {
                 Toggle("Custom Link Handling", isOn: $customLinkHandlingEnabled)
                 if customLinkHandlingEnabled {
-                    Label("Intercepting **demoapp://** links", systemImage: "link.badge.plus")
+                    Label("Intercepting **demoapp://** and **adobe.com** links", systemImage: "link.badge.plus")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
@@ -130,19 +131,14 @@ struct LinkHandlingTestView: View {
 
             Section {
                 Button {
-                    Concierge.show(
-                        surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                        title: "Concierge",
-                        subtitle: "Powered by Adobe",
-                        handleLink: handleLink
-                    )
+                    onOpenChat()
                 } label: {
                     Label("Open Chat", systemImage: "bubble.left.and.bubble.right")
                 }
             } header: {
-                Text("Live Chat")
+                Text("Chat view")
             } footer: {
-                Text("Opens the chat with the current link handling setting applied. Links in chat responses will use the interceptor.")
+                Text("Switches to the SwiftUI tab and opens the chat with the current link handling setting applied.")
             }
         }
     }
