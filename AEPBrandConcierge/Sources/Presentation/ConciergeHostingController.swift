@@ -15,7 +15,7 @@ import UIKit
 
 /// A UIKit wrapper that presents the SwiftUI `ChatView` from a
 /// UIKit context (ex: pushing or presenting modally).
-final class ConciergeHostingController: UIHostingController<ChatView> {
+final class ConciergeHostingController: UIHostingController<AnyView> {
     /// Creates a hosting controller for `ChatView`.
     /// - Parameters:
     ///   - title: Title shown in the chat header. If `nil`, uses the SDK default.
@@ -33,7 +33,9 @@ final class ConciergeHostingController: UIHostingController<ChatView> {
                 }
             }
         )
-        super.init(rootView: view)
+        .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
+
+        super.init(rootView: AnyView(view))
         modalPresentationStyle = .fullScreen
     }
 

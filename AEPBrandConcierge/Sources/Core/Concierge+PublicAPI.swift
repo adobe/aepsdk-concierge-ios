@@ -27,7 +27,9 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
+    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
         // Dispatch event to request state data necessary for displaying the UI
         let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
                               type: ConciergeConstants.EventType.concierge,
@@ -42,21 +44,12 @@ public extension Concierge {
                 return
             }
 
-            if let speechCapturer = speechCapturer {
-                self.speechCapturer = speechCapturer
-            }
-
-            if let textSpeaker = textSpeaker {
-                self.textSpeaker = textSpeaker
-            }
-
-            if let title = title {
-                self.chatTitle = title
-            }
-
+            self.speechCapturer = speechCapturer
+            self.textSpeaker = textSpeaker
+            self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
             self.chatSubtitle = subtitle
+            self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
-            // Construct and present the chat view immediately via the SwiftUI overlay.
             let view = ChatView(
                 speechCapturer: self.speechCapturer,
                 textSpeaker: self.textSpeaker,
@@ -82,19 +75,26 @@ public extension Concierge {
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
     ///   - hideButton: Whether to hide the floating button.
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
     static func wrap<Content: View>(
         _ content: Content,
         surfaces: [String] = [],
         title: String? = nil,
         subtitle: String? = nil,
-        hideButton: Bool = false
+        hideButton: Bool = false,
+        handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
-        if let title = title {
-            self.chatTitle = title
+        // wrap() is called inside a SwiftUI body and re-evaluates on every state change.
+        // Only overwrite values that are explicitly provided to avoid resetting state
+        // set by a prior show() call (e.g. the link interceptor for an active chat session).
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        if !surfaces.isEmpty { self.surfaces = surfaces }
+        if let handleLink = handleLink {
+            self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
         }
-        self.chatSubtitle = subtitle
-        self.surfaces = surfaces
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
@@ -124,9 +124,12 @@ public extension Concierge {
     ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title displayed in the chat header.
     ///   - subtitle: Optional subtitle displayed under the title.
-    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil) {
-        if let title = title { self.chatTitle = title }
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, handleLink: ((URL) -> Bool)? = nil) {
+        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
         self.chatSubtitle = subtitle
+        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
         // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
         // as we have in the swiftui version
