@@ -132,6 +132,7 @@
 		4CC11B232F5F900100EEF226 /* ProductCardDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B222F5F900100EEF226 /* ProductCardDataTests.swift */; };
 		4CC11B242F5F900100EEF226 /* ConversationResponseDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B212F5F900100EEF226 /* ConversationResponseDecodingTests.swift */; };
 		4CC11B2A2F68E31500EEF226 /* ConciergeLinkInterceptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B292F68E31500EEF226 /* ConciergeLinkInterceptorTests.swift */; };
+		4CC11B2C2F68FAD300EEF226 /* LinkHandlingTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B2B2F68FAD300EEF226 /* LinkHandlingTestView.swift */; };
 		4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB42EC6E887000B85D0 /* theme-default.json */; };
 		4CDB0DBD2EC82C6B000B85D0 /* ThemeCSSConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */; };
 		4CDB0DBE2EC82C6B000B85D0 /* ThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */; };
@@ -330,6 +331,7 @@
 		4CC11B212F5F900100EEF226 /* ConversationResponseDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationResponseDecodingTests.swift; sourceTree = "<group>"; };
 		4CC11B222F5F900100EEF226 /* ProductCardDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardDataTests.swift; sourceTree = "<group>"; };
 		4CC11B292F68E31500EEF226 /* ConciergeLinkInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeLinkInterceptorTests.swift; sourceTree = "<group>"; };
+		4CC11B2B2F68FAD300EEF226 /* LinkHandlingTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkHandlingTestView.swift; sourceTree = "<group>"; };
 		4CDB0DB42EC6E887000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DB62EC82C6B000B85D0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverter.swift; sourceTree = "<group>"; };
@@ -623,6 +625,7 @@
 		249899B02D67CCE30005CBD7 /* ConciergeDemoApp */ = {
 			isa = PBXGroup;
 			children = (
+				4CC11B2B2F68FAD300EEF226 /* LinkHandlingTestView.swift */,
 				249899AC2D67CCE30005CBD7 /* Preview Content */,
 				4C952FBF2E4BE8FD00772695 /* Resources */,
 				2483A3D22D767432004E6CDC /* AppDelegate.swift */,
@@ -1238,6 +1241,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2483A3D32D767436004E6CDC /* AppDelegate.swift in Sources */,
+				4CC11B2C2F68FAD300EEF226 /* LinkHandlingTestView.swift in Sources */,
 				4C9531512E4C1B7D00772695 /* Color+Brand.swift in Sources */,
 				249899B12D67CCE30005CBD7 /* ConciergeDemoApp.swift in Sources */,
 				249899B22D67CCE30005CBD7 /* ContentView.swift in Sources */,

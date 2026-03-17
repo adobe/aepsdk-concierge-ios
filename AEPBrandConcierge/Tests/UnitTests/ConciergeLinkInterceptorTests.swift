@@ -58,12 +58,12 @@ final class ConciergeLinkInterceptorTests: XCTestCase {
 
     func testCustomInterceptor_canDifferentiateBetweenSchemes() {
         let interceptor = ConciergeLinkInterceptor { url in
-            url.scheme == "myapp" || url.host == "special.adobe.com"
+            url.scheme == "myapp" || url.host == "example.com"
         }
 
         XCTAssertTrue(interceptor.handleLink(URL(string: "myapp://home")!))
-        XCTAssertTrue(interceptor.handleLink(URL(string: "https://special.adobe.com/page")!))
-        XCTAssertFalse(interceptor.handleLink(URL(string: "https://www.adobe.com/page")!))
+        XCTAssertTrue(interceptor.handleLink(URL(string: "https://example.com/page")!))
+        XCTAssertFalse(interceptor.handleLink(URL(string: "https://www.adobe.com/")!))
         XCTAssertFalse(interceptor.handleLink(URL(string: "tel:+1234567890")!))
     }
 }
