@@ -44,25 +44,12 @@ public extension Concierge {
                 return
             }
 
-            if let speechCapturer = speechCapturer {
-                self.speechCapturer = speechCapturer
-            }
-
-            if let textSpeaker = textSpeaker {
-                self.textSpeaker = textSpeaker
-            }
-
-            if let title = title {
-                self.chatTitle = title
-            }
-
+            self.speechCapturer = speechCapturer
+            self.textSpeaker = textSpeaker
+            self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
             self.chatSubtitle = subtitle
+            self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
-            if let handleLink = handleLink {
-                self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
-            }
-
-            // Construct and present the chat view immediately via the SwiftUI overlay.
             let view = ChatView(
                 speechCapturer: self.speechCapturer,
                 textSpeaker: self.textSpeaker,
@@ -99,14 +86,10 @@ public extension Concierge {
         hideButton: Bool = false,
         handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
-        if let title = title {
-            self.chatTitle = title
-        }
+        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
         self.chatSubtitle = subtitle
         self.surfaces = surfaces
-        if let handleLink = handleLink {
-            self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
-        }
+        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
@@ -139,11 +122,9 @@ public extension Concierge {
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, handleLink: ((URL) -> Bool)? = nil) {
-        if let title = title { self.chatTitle = title }
+        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
         self.chatSubtitle = subtitle
-        if let handleLink = handleLink {
-            self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
-        }
+        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
         // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
         // as we have in the swiftui version
