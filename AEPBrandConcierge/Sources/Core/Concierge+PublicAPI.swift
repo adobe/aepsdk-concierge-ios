@@ -86,10 +86,15 @@ public extension Concierge {
         hideButton: Bool = false,
         handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
-        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
-        self.chatSubtitle = subtitle
-        self.surfaces = surfaces
-        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+        // wrap() is called inside a SwiftUI body and re-evaluates on every state change.
+        // Only overwrite values that are explicitly provided to avoid resetting state
+        // set by a prior show() call (e.g. the link interceptor for an active chat session).
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        if !surfaces.isEmpty { self.surfaces = surfaces }
+        if let handleLink = handleLink {
+            self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
+        }
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
