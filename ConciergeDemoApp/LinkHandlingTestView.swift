@@ -14,9 +14,18 @@ import SwiftUI
 import AEPBrandConcierge
 
 struct LinkHandlingTestView: View {
+    enum TestMode: String, CaseIterable, Identifiable {
+        case interceptor = "Interceptor"
+        case linkTypes = "Link Types"
+
+        var id: String { rawValue }
+    }
+
     @Binding var customLinkHandlingEnabled: Bool
+    @Binding var deepLinkURL: URL?
     var handleLink: (URL) -> Bool
 
+    @State private var selectedMode: TestMode = .interceptor
     @State private var simulatedResults: [URL: Bool] = [:]
 
     private let testURLs: [(label: String, url: URL)] = [
@@ -30,85 +39,111 @@ struct LinkHandlingTestView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                // MARK: - Toggle
-                Section {
-                    Toggle("Custom Link Handling", isOn: $customLinkHandlingEnabled)
-                    if customLinkHandlingEnabled {
-                        Label("Intercepting **demoapp://** links", systemImage: "link.badge.plus")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Label("All links fall through to SDK", systemImage: "link")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                Picker("Test Mode", selection: $selectedMode) {
+                    ForEach(TestMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
-                } header: {
-                    Text("Link Interceptor")
-                } footer: {
-                    Text("This toggle affects all tabs — SwiftUI, Magic, and the simulated links below.")
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
 
-                // MARK: - Simulated Links
-                Section {
-                    ForEach(testURLs, id: \.url) { item in
-                        Button {
-                            let result = handleLink(item.url)
-                            simulatedResults[item.url] = result
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.label)
-                                        .font(.system(.body, design: .monospaced))
-                                        .foregroundStyle(.primary)
-                                    if let result = simulatedResults[item.url] {
-                                        Text(result ? "Handled by app" : "Fell through to SDK")
-                                            .font(.caption)
-                                            .foregroundStyle(result ? .green : .orange)
-                                    }
-                                }
-                                Spacer()
-                                if let result = simulatedResults[item.url] {
-                                    Image(systemName: result ? "checkmark.circle.fill" : "arrow.right.circle")
-                                        .foregroundStyle(result ? .green : .orange)
-                                } else {
-                                    Image(systemName: "hand.tap")
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    if !simulatedResults.isEmpty {
-                        Button("Clear Results", role: .destructive) {
-                            simulatedResults.removeAll()
-                        }
-                    }
-                } header: {
-                    Text("Simulated Link Taps")
-                } footer: {
-                    Text("Tapping calls handleLink() directly, simulating what happens when a link is tapped in the chat.")
-                }
-
-                // MARK: - Open Chat
-                Section {
-                    Button {
-                        Concierge.show(
-                            surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                            title: "Concierge",
-                            subtitle: "Powered by Adobe",
-                            handleLink: handleLink
-                        )
-                    } label: {
-                        Label("Open Chat", systemImage: "bubble.left.and.bubble.right")
-                    }
-                } header: {
-                    Text("Live Chat")
-                } footer: {
-                    Text("Opens the chat with the current link handling setting applied. Links in chat responses will use the interceptor.")
+                switch selectedMode {
+                case .interceptor:
+                    interceptorContent
+                case .linkTypes:
+                    LinkTestView(deepLinkURL: $deepLinkURL)
                 }
             }
             .navigationTitle("Testing")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    // MARK: - Interceptor content
+
+    private var interceptorContent: some View {
+        List {
+            Section {
+                Text("Tests the handleLink callback — when enabled, demoapp:// links are claimed by the app and the chat is dismissed.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Custom Link Handling", isOn: $customLinkHandlingEnabled)
+                if customLinkHandlingEnabled {
+                    Label("Intercepting **demoapp://** links", systemImage: "link.badge.plus")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Label("All links fall through to SDK", systemImage: "link")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Link Interceptor")
+            } footer: {
+                Text("This toggle affects all tabs — SwiftUI, Magic, and the simulated links below.")
+            }
+
+            Section {
+                ForEach(testURLs, id: \.url) { item in
+                    Button {
+                        let result = handleLink(item.url)
+                        simulatedResults[item.url] = result
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.label)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(.primary)
+                                if let result = simulatedResults[item.url] {
+                                    Text(result ? "Handled by app" : "Fell through to SDK")
+                                        .font(.caption)
+                                        .foregroundStyle(result ? .green : .orange)
+                                }
+                            }
+                            Spacer()
+                            if let result = simulatedResults[item.url] {
+                                Image(systemName: result ? "checkmark.circle.fill" : "arrow.right.circle")
+                                    .foregroundStyle(result ? .green : .orange)
+                            } else {
+                                Image(systemName: "hand.tap")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                if !simulatedResults.isEmpty {
+                    Button("Clear Results", role: .destructive) {
+                        simulatedResults.removeAll()
+                    }
+                }
+            } header: {
+                Text("Simulated Link Taps")
+            } footer: {
+                Text("Tapping calls handleLink() directly, simulating what happens when a link is tapped in the chat.")
+            }
+
+            Section {
+                Button {
+                    Concierge.show(
+                        surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
+                        title: "Concierge",
+                        subtitle: "Powered by Adobe",
+                        handleLink: handleLink
+                    )
+                } label: {
+                    Label("Open Chat", systemImage: "bubble.left.and.bubble.right")
+                }
+            } header: {
+                Text("Live Chat")
+            } footer: {
+                Text("Opens the chat with the current link handling setting applied. Links in chat responses will use the interceptor.")
+            }
         }
     }
 }
