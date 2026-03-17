@@ -152,3 +152,82 @@ To dismiss the presented UI, call:
 ```swift
 Concierge.hide()
 ```
+
+---
+
+## Link Handling
+
+### Default behavior
+
+When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHandler` using the following flow:
+
+1. **Custom scheme URLs** (e.g. `myapp://`, `mailto:`, `tel:`) — opened immediately via the system (deep link).
+2. **http/https URLs** — the system is first asked to open the URL as a universal link. If the host app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), the app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay.
+
+**Default link handling flow:** host `handleLink` callback (if provided) → deep link / universal link check → WebView overlay.
+
+### Custom link handling
+
+All three public APIs accept an optional `handleLink` closure that is called before the SDK's default routing. Return `true` to claim the URL (the SDK takes no further action). Return `false` to let the SDK handle it normally.
+
+#### SwiftUI — `Concierge.wrap()`
+
+```swift
+Concierge.wrap(
+    AppRootView(),
+    surfaces: ["my-surface"],
+    hideButton: true,
+    handleLink: { url in
+        if url.scheme == "myapp" {
+            Concierge.hide()
+            // Navigate to in-app destination
+            return true
+        }
+        return false
+    }
+)
+```
+
+#### SwiftUI — `Concierge.show()`
+
+```swift
+Concierge.show(
+    surfaces: ["my-surface"],
+    title: "Concierge",
+    subtitle: "Powered by Adobe",
+    handleLink: { url in
+        if url.host == "myapp.example.com" {
+            Concierge.hide()
+            return true
+        }
+        return false
+    }
+)
+```
+
+#### UIKit — `Concierge.present(on:)`
+
+```swift
+Concierge.present(
+    on: self,
+    surfaces: ["my-surface"],
+    title: "Concierge",
+    subtitle: "Powered by Adobe",
+    handleLink: { url in
+        if url.scheme == "myapp" {
+            Concierge.hide()
+            // Navigate using UIKit navigation
+            return true
+        }
+        return false
+    }
+)
+```
+
+When `handleLink` returns `true`, the SDK does not open the WebView overlay or perform any further link routing. When it returns `false` or is not provided, the SDK uses the default flow (deep link check → universal link check → WebView overlay).
+
+### Universal links
+
+To have the SDK open http/https URLs natively in your app instead of the in-app WebView, configure [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains) for your app and host an `apple-app-site-association` file on your domain. When the domain is verified, tapping a link for that domain in the chat will navigate within your app instead of the WebView.
+
+Alternatively, use the `handleLink` callback to intercept specific domains and handle them with custom navigation logic without requiring domain verification.

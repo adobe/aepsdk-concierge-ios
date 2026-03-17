@@ -37,12 +37,22 @@ struct ContentView: View {
         }
     }
 
+    enum DemoTab: Hashable {
+        case swiftUI, magic, uiKit, testing
+    }
+
+    @ObservedObject var deepLinkState: DeepLinkState
+
     @State private var selectedThemeFile: DemoThemeFile = .defaultTheme
     @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
     @State private var themeLoadStatusText: String = ""
+    @State private var interceptedLinkURL: URL?
+    @State private var customLinkHandlingEnabled: Bool = true
+    @State private var closeChatOnIntercept: Bool = false
+    @State private var selectedTab: DemoTab = .swiftUI
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
 
             // MARK: - manual call
 
@@ -71,7 +81,6 @@ struct ContentView: View {
                             .padding(.top, 2)
 
                         Button(action: {
-                            // only call needed to show the concierge ui
                             Concierge.show(
                                 surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
                                 title: "Concierge",
@@ -101,6 +110,7 @@ struct ContentView: View {
 
             // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
             .conciergeTheme(loadedTheme)
+            .tag(DemoTab.swiftUI)
             .tabItem { Label("SwiftUI", systemImage: "swift") }
 
             // MARK: - floating button
@@ -112,12 +122,34 @@ struct ContentView: View {
                 surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
             )
             .conciergeTheme(loadedTheme)
+            .tag(DemoTab.magic)
             .tabItem { Label("Magic", systemImage: "sparkles.square.filled.on.square") }
 
             // MARK: - UIKit example
 
             UIKitDemoScreen()
+                .tag(DemoTab.uiKit)
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
+
+            // MARK: - Testing
+
+            LinkHandlingTestView(
+                customLinkHandlingEnabled: $customLinkHandlingEnabled,
+                closeChatOnIntercept: $closeChatOnIntercept,
+                deepLinkURL: $deepLinkState.receivedURL,
+                handleLink: handleLink,
+                onOpenChat: {
+                    selectedTab = .swiftUI
+                    Concierge.show(
+                        surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
+                        title: "Concierge",
+                        subtitle: "Powered by Adobe",
+                        handleLink: handleLink
+                    )
+                }
+            )
+            .tag(DemoTab.testing)
+            .tabItem { Label("Testing", systemImage: "flask") }
         }
         .onAppear {
             loadTheme()
@@ -125,6 +157,40 @@ struct ContentView: View {
         .onChange(of: selectedThemeFile) { _ in
             loadTheme()
         }
+        .onChange(of: deepLinkState.targetTab) { tab in
+            if let tab {
+                selectedTab = tab
+                deepLinkState.targetTab = nil
+            }
+        }
+        .alert("Link Intercepted", isPresented: showInterceptedAlert, presenting: interceptedLinkURL) { _ in
+            Button("OK") { interceptedLinkURL = nil }
+        } message: { url in
+            if closeChatOnIntercept {
+                Text("The app intercepted this link and closed the chat:\n\(url.absoluteString)")
+            } else {
+                Text("The app intercepted this link:\n\(url.absoluteString)")
+            }
+        }
+    }
+
+    private var showInterceptedAlert: Binding<Bool> {
+        Binding(
+            get: { interceptedLinkURL != nil },
+            set: { if !$0 { interceptedLinkURL = nil } }
+        )
+    }
+
+    private func handleLink(_ url: URL) -> Bool {
+        guard customLinkHandlingEnabled else { return false }
+        if url.scheme == "demoapp" || url.host == "adobe.com" || url.host == "www.adobe.com" {
+            if closeChatOnIntercept {
+                Concierge.hide()
+            }
+            interceptedLinkURL = url
+            return true
+        }
+        return false
     }
 
     private func loadTheme() {
@@ -151,5 +217,5 @@ private struct UIKitDemoScreen: UIViewControllerRepresentable {
 }
 
 #Preview {
-    ContentView()
+    ContentView(deepLinkState: DeepLinkState())
 }

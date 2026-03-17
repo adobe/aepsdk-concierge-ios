@@ -17,8 +17,9 @@ import UIKit
 /// by the host app, or delegated to the system (for deep links and custom schemes).
 public enum ConciergeLinkHandler {
     
-    /// URL schemes that indicate web content suitable for in-app webview display.
-    private static let webSchemes: Set<String> = ["http", "https"]
+    /// URL schemes intended to load within a WKWebView: standard web protocols and WebKit
+    /// internal schemes (about:blank, about:srcdoc).
+    private static let webSchemes: Set<String> = ["http", "https", "about"]
     
     /// Injectable URL opener for testing. Defaults to `UIApplication.shared.open`.
     /// Uses KVC to access the shared application to remain safe for App Extensions.
@@ -34,17 +35,16 @@ public enum ConciergeLinkHandler {
         application.open(url, options: options, completionHandler: completion)
     }
     
-    /// Determines if the given URL is a deep link that should be handled by the system.
-    /// Deep links include custom URL schemes (e.g., `myapp://`), mailto, tel, sms, and other
-    /// system-handled schemes that should not be loaded in a webview.
+    /// Determines if the given URL is a web link that should be loaded in a WebView.
+    /// Uses the set of schemes defined in `webSchemes`.
     ///
     /// - Parameter url: The URL to evaluate.
-    /// - Returns: `true` if the URL is a deep link that should be handled by the system, `false` otherwise.
-    public static func isDeepLink(_ url: URL) -> Bool {
+    /// - Returns: `true` if the URL should be loaded in the WebView, `false` otherwise.
+    public static func isWebLink(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else {
             return false
         }
-        return !webSchemes.contains(scheme)
+        return webSchemes.contains(scheme)
     }
     
     /// Opens the URL using the appropriate handler.
@@ -63,9 +63,7 @@ public enum ConciergeLinkHandler {
         openInWebView: @escaping (URL) -> Void,
         openWithSystem: @escaping (URL) -> Void
     ) {
-        if isDeepLink(url) {
-            openWithSystem(url)
-        } else {
+        if isWebLink(url) {
             urlOpener(url, [.universalLinksOnly: true]) { success in
                 DispatchQueue.main.async {
                     if !success {
@@ -73,6 +71,8 @@ public enum ConciergeLinkHandler {
                     }
                 }
             }
+        } else {
+            openWithSystem(url)
         }
     }
 }

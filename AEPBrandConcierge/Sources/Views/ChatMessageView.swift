@@ -19,6 +19,7 @@ struct ChatMessageView: View {
     @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
+    @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
 
     let messageId: UUID?
     let template: MessageTemplate
@@ -467,6 +468,7 @@ private extension ChatMessageView {
     }
 
     func handleLinkTap(_ url: URL) {
+        if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { webViewPresenter.openURL($0) },

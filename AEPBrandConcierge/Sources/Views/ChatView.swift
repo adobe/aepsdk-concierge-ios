@@ -78,7 +78,7 @@ public struct ChatView: View {
     // Internal use only for previews
     init(messages: [Message]) {
         self.textSpeaker = nil
-        self.titleText = "Concierge"
+        self.titleText = ConciergeConstants.Defaults.TITLE
         self.subtitleText = "Powered by Adobe"
         self.onClose = nil
         self.conciergeConfiguration = ConciergeConfiguration()
