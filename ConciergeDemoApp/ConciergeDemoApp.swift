@@ -15,11 +15,27 @@ import SwiftUI
 @main
 struct ConciergeDemoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var deepLinkState = DeepLinkState()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(deepLinkState: deepLinkState)
                 .tint(Color.Brand.red)
+                .onOpenURL { url in
+                    deepLinkState.receivedURL = url
+                    let path = url.host ?? ""
+                    switch path {
+                    case "magic":
+                        deepLinkState.targetTab = .magic
+                    default:
+                        deepLinkState.targetTab = .testing
+                    }
+                }
         }
     }
+}
+
+class DeepLinkState: ObservableObject {
+    @Published var receivedURL: URL?
+    @Published var targetTab: ContentView.DemoTab?
 }
