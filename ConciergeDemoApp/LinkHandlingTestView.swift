@@ -22,6 +22,7 @@ struct LinkHandlingTestView: View {
     }
 
     @Binding var customLinkHandlingEnabled: Bool
+    @Binding var closeChatOnIntercept: Bool
     @Binding var deepLinkURL: URL?
     var handleLink: (URL) -> Bool
     var onOpenChat: () -> Void
@@ -67,7 +68,7 @@ struct LinkHandlingTestView: View {
     private var interceptorContent: some View {
         List {
             Section {
-                Text("Tests the handleLink callback — when enabled, demoapp:// and adobe.com links are claimed by the app and the chat is dismissed.")
+                Text("Tests the handleLink callback — when enabled, demoapp:// and adobe.com links are intercepted by the app. Optionally closes the chat on intercept.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -75,6 +76,7 @@ struct LinkHandlingTestView: View {
             Section {
                 Toggle("Custom Link Handling", isOn: $customLinkHandlingEnabled)
                 if customLinkHandlingEnabled {
+                    Toggle("Close Chat on Intercept", isOn: $closeChatOnIntercept)
                     Label("Intercepting **demoapp://** and **adobe.com** links", systemImage: "link.badge.plus")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -86,7 +88,7 @@ struct LinkHandlingTestView: View {
             } header: {
                 Text("Link Interceptor")
             } footer: {
-                Text("This toggle affects all tabs — SwiftUI, Magic, and the simulated links below.")
+                Text("This toggle only affects the chat when opened using the Open Chat button below. Chat opened from the SwiftUI and Magic tabs use default SDK link handling.")
             }
 
             Section {

@@ -48,6 +48,7 @@ struct ContentView: View {
     @State private var themeLoadStatusText: String = ""
     @State private var interceptedLinkURL: URL?
     @State private var customLinkHandlingEnabled: Bool = true
+    @State private var closeChatOnIntercept: Bool = false
     @State private var selectedTab: DemoTab = .swiftUI
 
     var body: some View {
@@ -83,8 +84,7 @@ struct ContentView: View {
                             Concierge.show(
                                 surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
                                 title: "Concierge",
-                                subtitle: "Powered by Adobe",
-                                handleLink: handleLink
+                                subtitle: "Powered by Adobe"
                             )
                         }) {
                             Text("Open chat (SwiftUI)")
@@ -105,8 +105,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(.systemBackground))
                 },
-                hideButton: true,
-                handleLink: handleLink
+                hideButton: true
             )
 
             // Apply theme above ConciergeWrapper so the overlay (and chat view) can read it
@@ -120,8 +119,7 @@ struct ContentView: View {
                 Label(
                     "hello, world", systemImage: "world"
                 ),
-                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                handleLink: handleLink
+                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
             )
             .conciergeTheme(loadedTheme)
             .tag(DemoTab.magic)
@@ -137,6 +135,7 @@ struct ContentView: View {
 
             LinkHandlingTestView(
                 customLinkHandlingEnabled: $customLinkHandlingEnabled,
+                closeChatOnIntercept: $closeChatOnIntercept,
                 deepLinkURL: $deepLinkState.receivedURL,
                 handleLink: handleLink,
                 onOpenChat: {
@@ -167,7 +166,11 @@ struct ContentView: View {
         .alert("Link Intercepted", isPresented: showInterceptedAlert, presenting: interceptedLinkURL) { _ in
             Button("OK") { interceptedLinkURL = nil }
         } message: { url in
-            Text("The app intercepted this link and closed the chat:\n\(url.absoluteString)")
+            if closeChatOnIntercept {
+                Text("The app intercepted this link and closed the chat:\n\(url.absoluteString)")
+            } else {
+                Text("The app intercepted this link:\n\(url.absoluteString)")
+            }
         }
     }
 
@@ -181,7 +184,9 @@ struct ContentView: View {
     private func handleLink(_ url: URL) -> Bool {
         guard customLinkHandlingEnabled else { return false }
         if url.scheme == "demoapp" || url.host == "adobe.com" || url.host == "www.adobe.com" {
-            Concierge.hide()
+            if closeChatOnIntercept {
+                Concierge.hide()
+            }
             interceptedLinkURL = url
             return true
         }
