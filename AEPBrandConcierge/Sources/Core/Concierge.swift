@@ -30,9 +30,10 @@ public class Concierge: NSObject, Extension {
 
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
-    static var chatTitle: String = "Concierge"
+    static var chatTitle: String = ConciergeConstants.Defaults.TITLE
     static var chatSubtitle: String? = "Powered by Adobe"
     static var surfaces: [String] = []
+    static var linkInterceptor: ConciergeLinkInterceptor = ConciergeLinkInterceptor()
     static var presentedUIKitController: UIViewController?
 
     // MARK: - Extension Protocol Methods

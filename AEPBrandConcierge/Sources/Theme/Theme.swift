@@ -110,3 +110,29 @@ public extension EnvironmentValues {
         set { self[ConciergeWebViewPresenterKey.self] = newValue }
     }
 }
+
+// MARK: - Link intercept environment
+
+/// Interceptor that gives the host app first opportunity to handle link taps.
+/// Return `true` from `handleLink` to claim the URL (the SDK takes no further action).
+/// Return `false` to let the SDK proceed with its default link routing.
+public struct ConciergeLinkInterceptor {
+    /// Called before the SDK handles a tapped URL.
+    /// Return `true` if the app handled the link, `false` to fall through to SDK behavior.
+    public var handleLink: (_ url: URL) -> Bool
+
+    public init(handleLink: @escaping (_ url: URL) -> Bool = { _ in false }) {
+        self.handleLink = handleLink
+    }
+}
+
+private struct ConciergeLinkInterceptorKey: EnvironmentKey {
+    static let defaultValue = ConciergeLinkInterceptor()
+}
+
+public extension EnvironmentValues {
+    var conciergeLinkInterceptor: ConciergeLinkInterceptor {
+        get { self[ConciergeLinkInterceptorKey.self] }
+        set { self[ConciergeLinkInterceptorKey.self] = newValue }
+    }
+}

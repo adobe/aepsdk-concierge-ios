@@ -32,6 +32,7 @@ struct ConciergeWrapper<Content: View>: View {
             if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
                     .conciergeTheme(theme)
+                    .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
                     .transition(.opacity)
                     .zIndex(1)
             }
