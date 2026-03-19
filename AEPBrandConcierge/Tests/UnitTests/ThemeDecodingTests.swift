@@ -249,7 +249,7 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Colors
         XCTAssertEqual(theme.colors.primary.primary.color.toHexString(), "#007BFF")
-        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#121212")
+        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#131313")
         XCTAssertEqual(theme.colors.surface.mainContainerBackground.color.toHexString(), "#FFFFFF")
         
         // Layout
@@ -430,7 +430,7 @@ final class ThemeDecodingTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
         XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
-        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161212")
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
     }
 
     func test_missingProductCardBehavior_usesDefaults() {

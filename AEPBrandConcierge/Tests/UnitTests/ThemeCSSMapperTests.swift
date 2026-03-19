@@ -96,7 +96,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#121212")
+        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#131313")
     }
     
     func test_mainContainerBackground_mapsToSurface() {
@@ -696,7 +696,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: "cta-button-icon-color", cssValue: "#161313", to: &theme)
 
         // Then
-        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161212")
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
     }
 
     // MARK: - CTA Button Layout Mapping Tests
