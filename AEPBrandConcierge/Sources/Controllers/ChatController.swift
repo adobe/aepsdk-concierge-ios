@@ -480,7 +480,10 @@ final class ChatController: ObservableObject {
 
         for element in elements {
             if element.elementType == .ctaButton {
-                guard let action = element.entityInfo?.primary else { continue }
+                guard let action = element.entityInfo?.primary else {
+                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
+                    continue
+                }
                 messages.append(Message(template: .ctaButton(action)))
             // If a card element is encountered in the original element ordering, 
             // append the card message (single or carousel) if it exists and set the flag to true
