@@ -67,10 +67,11 @@ extension Color {
 
         // Handle different color spaces by converting to RGB
         if uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+            // round() compensates for floating point drift so values like 24.9999 snaps to 25, not truncated to 24
             return String(format: "#%02X%02X%02X",
-                         Int(red * 255),
-                         Int(green * 255),
-                         Int(blue * 255))
+                         Int(round(red * 255)),
+                         Int(round(green * 255)),
+                         Int(round(blue * 255)))
         } else {
             // Fallback for colors that can't be converted to RGB
             return "#000000"
