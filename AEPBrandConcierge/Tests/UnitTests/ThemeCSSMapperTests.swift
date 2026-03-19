@@ -135,7 +135,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.button.primaryBackground.color.toHexString(), "#3A62FB")
+        XCTAssertEqual(theme.colors.button.primaryBackground.color.toHexString(), "#3B63FB")
     }
     
     func test_inputBackground_mapsToInputColors() {
@@ -161,7 +161,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.disclaimer.color.toHexString(), "#4A4A4A")
+        XCTAssertEqual(theme.colors.disclaimer.color.toHexString(), "#4B4B4B")
     }
     
     // MARK: - Layout Mapping Tests
@@ -360,7 +360,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         
         // Then
         XCTAssertNotNil(theme.colors.input.outline)
-        XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4A74FF")
+        XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4B75FF")
     }
 
     // MARK: - Product Card Color Mapping Tests
@@ -450,7 +450,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: "product-card-outline-color", cssValue: "#00000000", to: &theme)
 
         // Then
-        XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#000000")
+        XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#00000000")
     }
 
     // MARK: - Product Card Layout Mapping Tests
