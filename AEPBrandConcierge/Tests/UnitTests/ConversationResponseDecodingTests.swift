@@ -241,6 +241,35 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertTrue(multimodal.elements.isEmpty)
     }
 
+    func test_multimodalElement_ctaButton_decodesTypeAndPrimary() throws {
+        // Given
+        let json = """
+        {
+            "type": "ctaButton",
+            "id": "service-intent-live-chat",
+            "entity_info": {
+                "primary": {
+                    "text": "Chat now",
+                    "url": "https://www.example.com/live-chat"
+                }
+            }
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let element = try JSONDecoder().decode(MultimodalElement.self, from: json)
+
+        // Then
+        XCTAssertEqual(element.type, "ctaButton")
+        XCTAssertEqual(element.id, "service-intent-live-chat")
+        XCTAssertEqual(element.entityInfo?.primary?.text, "Chat now")
+        XCTAssertEqual(element.entityInfo?.primary?.url, "https://www.example.com/live-chat")
+        XCTAssertNil(element.width)
+        XCTAssertNil(element.height)
+        XCTAssertNil(element.thumbnailWidth)
+        XCTAssertNil(element.thumbnailHeight)
+    }
+
     func test_multimodalElements_encodeDecodeRoundtrip() throws {
         // Given
         let original = MultimodalElements(type: "cards", elements: [
