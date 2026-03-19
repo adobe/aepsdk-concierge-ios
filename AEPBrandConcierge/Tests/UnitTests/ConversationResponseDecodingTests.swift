@@ -286,4 +286,38 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertEqual(decoded.elements[0].id, "x1")
         XCTAssertEqual(decoded.elements[0].thumbnailWidth, 100)
     }
+
+    // MARK: - MultimodalElementType resolution
+
+    func test_elementType_ctaButton_resolvesToCtaButton() {
+        let element = MultimodalElement(id: "cta-1", type: "ctaButton")
+        XCTAssertEqual(element.elementType, .ctaButton)
+    }
+
+    func test_elementType_nilType_resolvesToUnknownNil() {
+        let element = MultimodalElement(id: "prod-1", type: nil)
+        XCTAssertEqual(element.elementType, .unknown(nil))
+    }
+
+    func test_elementType_productString_resolvesToUnknownProduct() {
+        let element = MultimodalElement(id: "prod-1", type: "product")
+        XCTAssertEqual(element.elementType, .unknown("product"))
+    }
+
+    func test_elementType_unrecognizedString_resolvesToUnknownWithValue() {
+        let element = MultimodalElement(id: "x-1", type: "someFutureType")
+        XCTAssertEqual(element.elementType, .unknown("someFutureType"))
+    }
+
+    func test_elementType_init_rawType_ctaButton() {
+        XCTAssertEqual(MultimodalElementType(rawType: "ctaButton"), .ctaButton)
+    }
+
+    func test_elementType_init_rawType_nil() {
+        XCTAssertEqual(MultimodalElementType(rawType: nil), .unknown(nil))
+    }
+
+    func test_elementType_init_rawType_unrecognized() {
+        XCTAssertEqual(MultimodalElementType(rawType: "video"), .unknown("video"))
+    }
 }
