@@ -246,6 +246,19 @@ private extension ThemeKeyCoverageTests {
         "product-card-text-horizontal-padding": "layout.productCardTextHorizontalPadding",
         "product-card-carousel-spacing": "layout.productCardCarouselSpacing",
         "product-card-carousel-horizontal-padding": "layout.productCardCarouselHorizontalPadding",
+
+        // Colors - CTA Button
+        "cta-button-background-color": "colors.ctaButton.background",
+        "cta-button-text-color": "colors.ctaButton.text",
+        "cta-button-icon-color": "colors.ctaButton.iconColor",
+
+        // Layout - CTA Button
+        "cta-button-border-radius": "layout.ctaButtonBorderRadius",
+        "cta-button-horizontal-padding": "layout.ctaButtonHorizontalPadding",
+        "cta-button-vertical-padding": "layout.ctaButtonVerticalPadding",
+        "cta-button-font-size": "layout.ctaButtonFontSize",
+        "cta-button-font-weight": "layout.ctaButtonFontWeight",
+        "cta-button-icon-size": "layout.ctaButtonIconSize",
     ]
 
     // MARK: - Theme token model reflection

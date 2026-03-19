@@ -663,5 +663,108 @@ final class ThemeCSSMapperTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
     }
+
+    // MARK: - CTA Button Color Mapping Tests
+
+    func test_ctaButtonBackgroundColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-background-color", cssValue: "#EDEDED", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
+    }
+
+    func test_ctaButtonTextColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-text-color", cssValue: "#191F1C", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
+    }
+
+    func test_ctaButtonIconColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-icon-color", cssValue: "#161313", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161212")
+    }
+
+    // MARK: - CTA Button Layout Mapping Tests
+
+    func test_ctaButtonBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-border-radius", cssValue: "99px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonBorderRadius, 99)
+    }
+
+    func test_ctaButtonHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-horizontal-padding", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonHorizontalPadding, 16)
+    }
+
+    func test_ctaButtonVerticalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-vertical-padding", cssValue: "12px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonVerticalPadding, 12)
+    }
+
+    func test_ctaButtonFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-font-size", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonFontSize, 14)
+    }
+
+    func test_ctaButtonFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonFontWeight, .regular)
+    }
+
+    func test_ctaButtonIconSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-icon-size", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
+    }
 }
 
