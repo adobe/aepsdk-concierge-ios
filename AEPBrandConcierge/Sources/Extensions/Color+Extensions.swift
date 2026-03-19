@@ -56,25 +56,26 @@ extension Color {
         return defaultColor
     }
 
-    /// Converts a SwiftUI Color to a hex string in the form "#RRGGBB".
+    /// Converts a SwiftUI Color to a hex string: "#RRGGBB" when fully opaque, "#RRGGBBAA" otherwise.
     /// If conversion fails (e.g., non-RGB color space), returns "#000000".
     func toHexString() -> String {
-        let uiColor = UIColor(self)
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-
-        // Handle different color spaces by converting to RGB
-        if uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
-            // round() compensates for floating point drift so values like 24.9999 snaps to 25, not truncated to 24
-            return String(format: "#%02X%02X%02X",
-                         Int(round(red * 255)),
-                         Int(round(green * 255)),
-                         Int(round(blue * 255)))
-        } else {
-            // Fallback for colors that can't be converted to RGB
+        // Convert through CGColor in sRGB to avoid color space drift
+        // (UIColor may use a different color space on devices, shifting component values)
+        guard let srgbColorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let srgbColor = UIColor(self).cgColor.converted(to: srgbColorSpace, intent: .defaultIntent, options: nil),
+              let components = srgbColor.components,
+              components.count >= 3 else {
             return "#000000"
         }
+
+        let red = Int(round(components[0] * 255))
+        let green = Int(round(components[1] * 255))
+        let blue = Int(round(components[2] * 255))
+        let alpha = components.count >= 4 ? Int(round(components[3] * 255)) : 255
+
+        if alpha < 255 {
+            return String(format: "#%02X%02X%02X%02X", red, green, blue, alpha)
+        }
+        return String(format: "#%02X%02X%02X", red, green, blue)
     }
 }

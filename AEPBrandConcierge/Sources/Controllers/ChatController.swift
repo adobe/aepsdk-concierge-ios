@@ -43,7 +43,6 @@ final class ChatController: ObservableObject {
 
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
-    private var productCardIndex: Int?
     private var latestPromptSuggestions: [String] = []
 
     // MARK: - Computed Properties
