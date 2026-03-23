@@ -22,6 +22,7 @@ struct ProductDetailCardView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeCardTapHandler) private var cardTapHandler
 
     let data: ProductCardData
     let cardWidth: CGFloat
@@ -193,6 +194,7 @@ private extension ProductDetailCardView {
     }
 
     func handleCardTap() {
+        cardTapHandler.cardTapped(data)
         guard let destination = data.destinationURL else { return }
         if linkInterceptor.handleLink(destination) { return }
         ConciergeLinkHandler.handleURL(

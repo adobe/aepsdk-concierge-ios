@@ -20,6 +20,7 @@ struct ChatMessageView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeCardTapHandler) private var cardTapHandler
 
     let messageId: UUID?
     let template: MessageTemplate
@@ -345,6 +346,7 @@ struct ChatMessageView: View {
 private extension ChatMessageView {
     func actionButtonCarouselCard(data: ProductCardData) -> some View {
         Button(action: {
+            cardTapHandler.cardTapped(data)
             if let destination = data.destinationURL {
                 handleLinkTap(destination)
             }

@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPCore
 import SwiftUI
 import UIKit
 
@@ -31,7 +32,8 @@ final class ConciergeHostingController: UIHostingController<AnyView> {
                 Task { @MainActor in
                     Concierge.hide()
                 }
-            }
+            },
+            dispatch: { event in MobileCore.dispatch(event: event) }
         )
         .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
 
