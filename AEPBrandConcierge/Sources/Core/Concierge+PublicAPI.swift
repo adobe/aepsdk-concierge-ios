@@ -56,7 +56,8 @@ public extension Concierge {
                 title: self.chatTitle,
                 subtitle: self.chatSubtitle,
                 conciergeConfiguration: config,
-                onClose: { Concierge.hide() }
+                onClose: { Concierge.hide() },
+                dispatch: { event in MobileCore.dispatch(event: event) }
             )
             Task { @MainActor in
                 ConciergeOverlayManager.shared.showChat(view)
