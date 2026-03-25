@@ -77,6 +77,10 @@ public struct ConciergeCopy: Codable {
     public var feedbackToastSuccess: String
     public var feedbackThumbsUpAria: String
     public var feedbackThumbsDownAria: String
+    public var headerTitle: String
+    public var headerSubtitle: String
+    public var sourcesLabel: String
+    public var feedbackHelpfulLabel: String
 
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
@@ -103,6 +107,10 @@ public struct ConciergeCopy: Codable {
         case feedbackToastSuccess = "feedback.toast.success"
         case feedbackThumbsUpAria = "feedback.thumbsUp.aria"
         case feedbackThumbsDownAria = "feedback.thumbsDown.aria"
+        case headerTitle = "header.title"
+        case headerSubtitle = "header.subtitle"
+        case sourcesLabel = "sourcesLabel"
+        case feedbackHelpfulLabel = "feedbackHelpfulLabel"
     }
 
     public init(
@@ -129,7 +137,11 @@ public struct ConciergeCopy: Codable {
         feedbackDialogNotesPlaceholder: String = "Additional notes (optional)",
         feedbackToastSuccess: String = "Thank you for the feedback.",
         feedbackThumbsUpAria: String = "Thumbs up",
-        feedbackThumbsDownAria: String = "Thumbs down"
+        feedbackThumbsDownAria: String = "Thumbs down",
+        headerTitle: String = "",
+        headerSubtitle: String = "",
+        sourcesLabel: String = "Sources",
+        feedbackHelpfulLabel: String = "Was this helpful?"
     ) {
         self.welcomeHeading = welcomeHeading
         self.welcomeSubheading = welcomeSubheading
@@ -155,6 +167,42 @@ public struct ConciergeCopy: Codable {
         self.feedbackToastSuccess = feedbackToastSuccess
         self.feedbackThumbsUpAria = feedbackThumbsUpAria
         self.feedbackThumbsDownAria = feedbackThumbsDownAria
+        self.headerTitle = headerTitle
+        self.headerSubtitle = headerSubtitle
+        self.sourcesLabel = sourcesLabel
+        self.feedbackHelpfulLabel = feedbackHelpfulLabel
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        welcomeHeading = try container.decodeIfPresent(String.self, forKey: .welcomeHeading) ?? "Explore what you can do with Adobe apps."
+        welcomeSubheading = try container.decodeIfPresent(String.self, forKey: .welcomeSubheading) ?? "Choose an option or tell us what interests you and we'll point you in the right direction."
+        inputPlaceholder = try container.decodeIfPresent(String.self, forKey: .inputPlaceholder) ?? "Tell us what you'd like to do or create"
+        inputMessageInputAria = try container.decodeIfPresent(String.self, forKey: .inputMessageInputAria) ?? "Message input"
+        inputSendAria = try container.decodeIfPresent(String.self, forKey: .inputSendAria) ?? "Send message"
+        inputAiChatIconTooltip = try container.decodeIfPresent(String.self, forKey: .inputAiChatIconTooltip) ?? "Ask AI"
+        inputMicAria = try container.decodeIfPresent(String.self, forKey: .inputMicAria) ?? "Voice input"
+        cardAriaSelect = try container.decodeIfPresent(String.self, forKey: .cardAriaSelect) ?? "Select example message"
+        carouselPrevAria = try container.decodeIfPresent(String.self, forKey: .carouselPrevAria) ?? "Previous cards"
+        carouselNextAria = try container.decodeIfPresent(String.self, forKey: .carouselNextAria) ?? "Next cards"
+        scrollBottomAria = try container.decodeIfPresent(String.self, forKey: .scrollBottomAria) ?? "Scroll to bottom"
+        errorNetwork = try container.decodeIfPresent(String.self, forKey: .errorNetwork) ?? "I'm sorry, I'm having trouble connecting to our services right now."
+        loadingMessage = try container.decodeIfPresent(String.self, forKey: .loadingMessage) ?? "Generating response from our knowledge base"
+        feedbackDialogTitlePositive = try container.decodeIfPresent(String.self, forKey: .feedbackDialogTitlePositive) ?? "Your feedback is appreciated"
+        feedbackDialogTitleNegative = try container.decodeIfPresent(String.self, forKey: .feedbackDialogTitleNegative) ?? "Your feedback is appreciated"
+        feedbackDialogQuestionPositive = try container.decodeIfPresent(String.self, forKey: .feedbackDialogQuestionPositive) ?? "What went well? Select all that apply."
+        feedbackDialogQuestionNegative = try container.decodeIfPresent(String.self, forKey: .feedbackDialogQuestionNegative) ?? "What went wrong? Select all that apply."
+        feedbackDialogNotes = try container.decodeIfPresent(String.self, forKey: .feedbackDialogNotes) ?? "Notes"
+        feedbackDialogSubmit = try container.decodeIfPresent(String.self, forKey: .feedbackDialogSubmit) ?? "Submit"
+        feedbackDialogCancel = try container.decodeIfPresent(String.self, forKey: .feedbackDialogCancel) ?? "Cancel"
+        feedbackDialogNotesPlaceholder = try container.decodeIfPresent(String.self, forKey: .feedbackDialogNotesPlaceholder) ?? "Additional notes (optional)"
+        feedbackToastSuccess = try container.decodeIfPresent(String.self, forKey: .feedbackToastSuccess) ?? "Thank you for the feedback."
+        feedbackThumbsUpAria = try container.decodeIfPresent(String.self, forKey: .feedbackThumbsUpAria) ?? "Thumbs up"
+        feedbackThumbsDownAria = try container.decodeIfPresent(String.self, forKey: .feedbackThumbsDownAria) ?? "Thumbs down"
+        headerTitle = try container.decodeIfPresent(String.self, forKey: .headerTitle) ?? ""
+        headerSubtitle = try container.decodeIfPresent(String.self, forKey: .headerSubtitle) ?? ""
+        sourcesLabel = try container.decodeIfPresent(String.self, forKey: .sourcesLabel) ?? "Sources"
+        feedbackHelpfulLabel = try container.decodeIfPresent(String.self, forKey: .feedbackHelpfulLabel) ?? "Was this helpful?"
     }
 }
 

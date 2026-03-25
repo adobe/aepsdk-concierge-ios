@@ -34,15 +34,69 @@ public struct ConciergeInputBehavior: Codable {
     public var enableVoiceInput: Bool
     public var disableMultiline: Bool
     public var showAiChatIcon: ConciergeIconConfig?
+    public var sendButtonStyle: String
 
     public init(
         enableVoiceInput: Bool = false,
         disableMultiline: Bool = true,
-        showAiChatIcon: ConciergeIconConfig? = nil
+        showAiChatIcon: ConciergeIconConfig? = nil,
+        sendButtonStyle: String = "default"
     ) {
         self.enableVoiceInput = enableVoiceInput
         self.disableMultiline = disableMultiline
         self.showAiChatIcon = showAiChatIcon
+        self.sendButtonStyle = sendButtonStyle
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        enableVoiceInput = try container.decodeIfPresent(Bool.self, forKey: .enableVoiceInput) ?? false
+        disableMultiline = try container.decodeIfPresent(Bool.self, forKey: .disableMultiline) ?? true
+        showAiChatIcon = try container.decodeIfPresent(ConciergeIconConfig.self, forKey: .showAiChatIcon)
+        sendButtonStyle = try container.decodeIfPresent(String.self, forKey: .sendButtonStyle) ?? "default"
+    }
+}
+
+/// Welcome card behavior configuration
+public struct ConciergeWelcomeCardBehavior: Codable {
+    public var closeButtonAlignment: String
+    public var promptFullWidth: Bool
+    public var promptMaxLines: Int
+    public var contentAlignment: String
+
+    public init(
+        closeButtonAlignment: String = "end",
+        promptFullWidth: Bool = true,
+        promptMaxLines: Int = 3,
+        contentAlignment: String = "top"
+    ) {
+        self.closeButtonAlignment = closeButtonAlignment
+        self.promptFullWidth = promptFullWidth
+        self.promptMaxLines = promptMaxLines
+        self.contentAlignment = contentAlignment
+    }
+}
+
+/// Feedback behavior configuration
+public struct ConciergeFeedbackBehavior: Codable {
+    public var displayMode: String
+    public var thumbsPlacement: String
+
+    public init(
+        displayMode: String = "card",
+        thumbsPlacement: String = "inline"
+    ) {
+        self.displayMode = displayMode
+        self.thumbsPlacement = thumbsPlacement
+    }
+}
+
+/// Citations behavior configuration
+public struct ConciergeCitationsBehavior: Codable {
+    public var showLinkIcon: Bool
+
+    public init(showLinkIcon: Bool = false) {
+        self.showLinkIcon = showLinkIcon
     }
 }
 
@@ -141,18 +195,27 @@ public struct ConciergeBehaviorConfig: Codable {
     public var chat: ConciergeChatBehavior
     public var privacyNotice: ConciergePrivacyNoticeBehavior
     public var productCard: ConciergeProductCardBehavior?
+    public var welcomeCard: ConciergeWelcomeCardBehavior?
+    public var feedback: ConciergeFeedbackBehavior?
+    public var citations: ConciergeCitationsBehavior?
 
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
         input: ConciergeInputBehavior = ConciergeInputBehavior(),
         chat: ConciergeChatBehavior = ConciergeChatBehavior(),
         privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior(),
-        productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior()
+        productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior(),
+        welcomeCard: ConciergeWelcomeCardBehavior? = nil,
+        feedback: ConciergeFeedbackBehavior? = nil,
+        citations: ConciergeCitationsBehavior? = nil
     ) {
         self.multimodalCarousel = multimodalCarousel
         self.input = input
         self.chat = chat
         self.privacyNotice = privacyNotice
         self.productCard = productCard
+        self.welcomeCard = welcomeCard
+        self.feedback = feedback
+        self.citations = citations
     }
 }
