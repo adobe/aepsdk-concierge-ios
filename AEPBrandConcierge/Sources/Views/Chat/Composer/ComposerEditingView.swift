@@ -23,11 +23,17 @@ struct ComposerEditingView: View {
     @Binding var isFocused: Bool
     let isEditable: Bool
     let showMic: Bool
+    let inputState: InputState
     let onEditingChanged: (Bool) -> Void
     let onMicTap: () -> Void
+    let onStopRecording: () -> Void
     let micEnabled: Bool
     let sendEnabled: Bool
     let onSend: () -> Void
+
+    private var hasText: Bool {
+        !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         HStack {
@@ -48,10 +54,38 @@ struct ComposerEditingView: View {
             .frame(height: max(40, measuredHeight))
             .animation(.easeInOut(duration: 0.15), value: measuredHeight)
 
-            if showMic {
+            if hasText {
+                Button(action: {
+                    inputText = ""
+                }) {
+                    BrandIcon(assetName: "S2_Icon_CrossCircle_20_N", systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color.secondary.opacity(0.6))
+                        .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Clear text")
+            }
+
+            if case .recording = inputState {
+                Button(action: onStopRecording) {
+                    ZStack {
+                        Circle()
+                            .fill(theme.colors.primary.primary.color)
+                            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                        BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(theme.colors.input.micRecordingIconColor?.color ?? .white)
+                    }
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Stop recording")
+            } else if showMic && !hasText {
                 Button(action: onMicTap) {
                     BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
-                        .foregroundColor(micEnabled ? theme.colors.primary.primary.color : Color.secondary.opacity(0.5))
+                        .foregroundColor(micEnabled ? (theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color) : Color.secondary.opacity(0.5))
                         .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
@@ -60,19 +94,42 @@ struct ComposerEditingView: View {
                 .disabled(!micEnabled)
             }
 
-            Button(action: onSend) {
-                BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 22, weight: .semibold))
-            }
-            .buttonStyle(
-                ComposerSendButtonStyle(
-                    theme: theme,
-                    isEnabled: sendEnabled
+            if theme.behavior.input.sendButtonStyle == "arrow" {
+                // Arrow style: filled circle with upward arrow
+                Button(action: onSend) {
+                    ZStack {
+                        Circle()
+                            .fill(sendEnabled
+                                  ? (theme.colors.input.sendArrowBackgroundColor?.color ?? theme.colors.primary.primary.color)
+                                  : theme.colors.button.submitFillDisabled.color)
+                            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(sendEnabled
+                                             ? (theme.colors.input.sendArrowIconColor?.color ?? .white)
+                                             : Color.secondary.opacity(0.5))
+                    }
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel(theme.text.inputSendAria)
+                .disabled(!sendEnabled)
+            } else {
+                // Default style: paper airplane icon
+                Button(action: onSend) {
+                    BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                }
+                .buttonStyle(
+                    ComposerSendButtonStyle(
+                        theme: theme,
+                        isEnabled: sendEnabled
+                    )
                 )
-            )
-            .contentShape(Rectangle())
-            .accessibilityLabel(theme.text.inputSendAria)
-            .disabled(!sendEnabled)
+                .contentShape(Rectangle())
+                .accessibilityLabel(theme.text.inputSendAria)
+                .disabled(!sendEnabled)
+            }
         }
     }
 }

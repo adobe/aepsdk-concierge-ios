@@ -95,8 +95,8 @@ public enum CSSKeyMapper {
         "input-outline-width": { cssValue, theme in theme.layout.inputOutlineWidth = CSSValueConverter.parsePxValue(cssValue) ?? 2 },
         "input-focus-outline-width": { cssValue, theme in theme.layout.inputFocusOutlineWidth = CSSValueConverter.parsePxValue(cssValue) ?? 2 },
         "input-font-size": { cssValue, theme in theme.layout.inputFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
-        "input-button-height": { cssValue, theme in theme.layout.inputButtonHeight = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
-        "input-button-width": { cssValue, theme in theme.layout.inputButtonWidth = CSSValueConverter.parsePxValue(cssValue) ?? 32 },
+        "input-button-height": { cssValue, theme in theme.layout.inputButtonHeight = CSSValueConverter.parsePxValue(cssValue) ?? 30 },
+        "input-button-width": { cssValue, theme in theme.layout.inputButtonWidth = CSSValueConverter.parsePxValue(cssValue) ?? 30 },
         "input-button-border-radius": { cssValue, theme in theme.layout.inputButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
         "input-box-shadow": { cssValue, theme in theme.layout.inputBoxShadow = CSSValueConverter.parseBoxShadow(cssValue) },
 
@@ -112,8 +112,8 @@ public enum CSSKeyMapper {
         // Layout - Chat
         "chat-interface-max-width": { cssValue, theme in theme.layout.chatInterfaceMaxWidth = CSSValueConverter.parsePxValue(cssValue) ?? 768 },
         "chat-history-padding": { cssValue, theme in theme.layout.chatHistoryPadding = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
-        "chat-history-padding-top-expanded": { cssValue, theme in theme.layout.chatHistoryPaddingTopExpanded = CSSValueConverter.parsePxValue(cssValue) ?? 0 },
-        "chat-history-bottom-padding": { cssValue, theme in theme.layout.chatHistoryBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 0 },
+        "chat-history-padding-top-expanded": { cssValue, theme in theme.layout.chatHistoryPaddingTopExpanded = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
+        "chat-history-bottom-padding": { cssValue, theme in theme.layout.chatHistoryBottomPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "message-blocker-height": { cssValue, theme in theme.layout.messageBlockerHeight = CSSValueConverter.parsePxValue(cssValue) ?? 105 },
 
         // Layout - Card
@@ -171,7 +171,7 @@ public enum CSSKeyMapper {
         "product-card-was-price-text-prefix": { cssValue, theme in theme.layout.productCardWasPriceTextPrefix = cssValue },
         "product-card-was-price-font-size": { cssValue, theme in theme.layout.productCardWasPriceFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-was-price-font-weight": { cssValue, theme in theme.layout.productCardWasPriceFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
-        "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 200 },
+        "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 250 },
         "product-card-height": { cssValue, theme in theme.layout.productCardHeight = CSSValueConverter.parsePxValue(cssValue) ?? 300 },
         "product-card-text-spacing": { cssValue, theme in theme.layout.productCardTextSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
         "product-card-text-top-padding": { cssValue, theme in theme.layout.productCardTextTopPadding = CSSValueConverter.parsePxValue(cssValue) ?? 20 },
@@ -192,6 +192,28 @@ public enum CSSKeyMapper {
         "cta-button-font-size": { cssValue, theme in theme.layout.ctaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "cta-button-font-weight": { cssValue, theme in theme.layout.ctaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "cta-button-icon-size": { cssValue, theme in theme.layout.ctaButtonIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+        // Colors - Input Icons
+        "input-send-icon-color": { cssValue, theme in theme.colors.input.sendIconColor = CSSValueConverter.parseColor(cssValue) },
+        "input-send-arrow-icon-color": { cssValue, theme in theme.colors.input.sendArrowIconColor = CSSValueConverter.parseColor(cssValue) },
+        "input-send-arrow-background-color": { cssValue, theme in theme.colors.input.sendArrowBackgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "input-mic-icon-color": { cssValue, theme in theme.colors.input.micIconColor = CSSValueConverter.parseColor(cssValue) },
+        "input-mic-recording-icon-color": { cssValue, theme in theme.colors.input.micRecordingIconColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Colors - Welcome Prompts
+        "welcome-prompt-background-color": { cssValue, theme in theme.colors.welcomePrompt.backgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "welcome-prompt-text-color": { cssValue, theme in theme.colors.welcomePrompt.textColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - Welcome Screen
+        "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-title-font-size": { cssValue, theme in theme.layout.welcomeTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-text-align": { cssValue, theme in theme.layout.welcomeTextAlign = cssValue },
+        "welcome-content-padding": { cssValue, theme in theme.layout.welcomeContentPadding = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-prompt-image-size": { cssValue, theme in theme.layout.welcomePromptImageSize = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-prompt-spacing": { cssValue, theme in theme.layout.welcomePromptSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-title-bottom-spacing": { cssValue, theme in theme.layout.welcomeTitleBottomSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-prompts-top-spacing": { cssValue, theme in theme.layout.welcomePromptsTopSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-prompt-padding": { cssValue, theme in theme.layout.welcomePromptPadding = CSSValueConverter.parsePxValue(cssValue) },
+        "welcome-prompt-corner-radius": { cssValue, theme in theme.layout.welcomePromptCornerRadius = CSSValueConverter.parsePxValue(cssValue) },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

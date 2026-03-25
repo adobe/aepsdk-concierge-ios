@@ -36,23 +36,6 @@ struct ChatComposer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                // Stop button outside the input when recording
-                if case .recording = inputState {
-                    Button(action: onComplete) {
-                        ZStack {
-                            Circle()
-                                .fill(theme.colors.primary.text.color)
-                                .frame(width: 28, height: 28)
-                            // Punch the icon out to create negative space
-                            BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
-                                .foregroundColor(theme.colors.primary.primary.color)
-                                .blendMode(.destinationOut)
-                        }
-                        .compositingGroup()
-                    }
-                    .buttonStyle(.plain)
-                }
-
                 HStack(spacing: 8) {
                     ComposerEditingView(
                         inputText: $inputText,
@@ -60,9 +43,11 @@ struct ChatComposer: View {
                         measuredHeight: $measuredHeight,
                         isFocused: $isFocused,
                         isEditable: composerEditable,
-                        showMic: theme.behavior.input.enableVoiceInput && !(inputState == .recording),
+                        showMic: theme.behavior.input.enableVoiceInput,
+                        inputState: inputState,
                         onEditingChanged: onEditingChanged,
                         onMicTap: onMicTap,
+                        onStopRecording: onComplete,
                         micEnabled: micEnabled,
                         sendEnabled: sendEnabled,
                         onSend: onSend

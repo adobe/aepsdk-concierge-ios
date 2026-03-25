@@ -206,6 +206,7 @@ Feature toggles and interaction configuration.
 | `behavior.input.enableVoiceInput` | `Bool` | `false` | Enable voice input button |
 | `behavior.input.disableMultiline` | `Bool` | `true` | Disable multiline text input |
 | `behavior.input.showAiChatIcon` | `Object?` | `null` | AI chat icon configuration |
+| `behavior.input.sendButtonStyle` | `String` | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
 
 ### Chat
 
@@ -219,6 +220,28 @@ Feature toggles and interaction configuration.
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
 | `behavior.productCard.cardStyle` | `String` | `"actionButton"` | Rendering style for product cards. `"actionButton"` shows an image, description text, and primary/secondary action buttons. `"productDetail"` shows an image, optional badge, title, subtitle, and price — the entire card is tappable. |
+
+### Welcome Card
+
+| JSON Key | Type | Default | Description |
+|----------|------|---------|-------------|
+| `behavior.welcomeCard.closeButtonAlignment` | `String` | `"end"` | Close button placement on header. `"start"` places it before the title, `"end"` places it after (trailing). |
+| `behavior.welcomeCard.promptFullWidth` | `Bool` | `true` | When `true`, prompt suggestions render as full-width cards with image thumbnails. When `false`, they render as compact chips. |
+| `behavior.welcomeCard.promptMaxLines` | `Int` | `3` | Maximum number of text lines shown in prompt suggestion cards. |
+| `behavior.welcomeCard.contentAlignment` | `String` | `"top"` | Vertical alignment of welcome content. `"center"` centers content vertically, `"top"` aligns to top. |
+
+### Feedback
+
+| JSON Key | Type | Default | Description |
+|----------|------|---------|-------------|
+| `behavior.feedback.displayMode` | `String` | `"card"` | Feedback dialog presentation style. `"card"` shows a centered overlay with blurred backdrop. `"modal"` shows a bottom sheet with drag handle. |
+| `behavior.feedback.thumbsPlacement` | `String` | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
+
+### Citations
+
+| JSON Key | Type | Default | Description |
+|----------|------|---------|-------------|
+| `behavior.citations.showLinkIcon` | `Bool` | `false` | When `true`, shows an external link icon next to citation URLs in the sources list. |
 
 ### Privacy Notice
 
@@ -239,7 +262,8 @@ Feature toggles and interaction configuration.
     "input": {
       "enableVoiceInput": true,
       "disableMultiline": false,
-      "showAiChatIcon": null
+      "showAiChatIcon": null,
+      "sendButtonStyle": "default"
     },
     "chat": {
       "messageAlignment": "left",
@@ -247,6 +271,19 @@ Feature toggles and interaction configuration.
     },
     "productCard": {
       "cardStyle": "productDetail"
+    },
+    "welcomeCard": {
+      "closeButtonAlignment": "end",
+      "promptFullWidth": true,
+      "promptMaxLines": 3,
+      "contentAlignment": "top"
+    },
+    "feedback": {
+      "displayMode": "card",
+      "thumbsPlacement": "inline"
+    },
+    "citations": {
+      "showLinkIcon": false
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -294,6 +331,13 @@ Localized UI strings using dot-notation keys.
 ### ✅ Content Recommendations
 
 While there are no strict requirements for character limits in many of these text fields, it is **_strongly_** recommended that the values be tested on target device(s) prior to deployment, ensuring the UI renders as desired.
+
+### Header
+
+| JSON Key | Default | Description |
+|----------|---------|-------------|
+| `text["header.title"]` | `""` | Header title text. When non-empty, overrides the programmatic `title` parameter passed to `ChatView`. |
+| `text["header.subtitle"]` | `""` | Header subtitle text. When non-empty, overrides the programmatic `subtitle` parameter passed to `ChatView`. |
 
 ### Welcome Screen
 
@@ -343,6 +387,13 @@ While there are no strict requirements for character limits in many of these tex
 | `text["feedback.toast.success"]` | `"Thank you for the feedback."` | Success toast message |
 | `text["feedback.thumbsUp.aria"]` | `"Thumbs up"` | Thumbs up accessibility |
 | `text["feedback.thumbsDown.aria"]` | `"Thumbs down"` | Thumbs down accessibility |
+
+### Sources & Feedback
+
+| JSON Key | Default | Description |
+|----------|---------|-------------|
+| `text["sourcesLabel"]` | `"Sources"` | Label text for the sources accordion header |
+| `text["feedbackHelpfulLabel"]` | `"Was this helpful?"` | Label shown above feedback thumbs when `behavior.feedback.thumbsPlacement` is `"below"` |
 
 ### Example
 
@@ -495,6 +546,23 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-outline-color` | `colors.input.outline` | `Color?` | `nil` | Input border color |
 | `--input-focus-outline-color` | `colors.input.outlineFocus` | `Color` | `accentColor` | Focused input border color |
 
+### Colors - Input Icons
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--input-send-icon-color` | `colors.input.sendIconColor` | `Color?` | `nil` | Default send button icon tint |
+| `--input-send-arrow-icon-color` | `colors.input.sendArrowIconColor` | `Color?` | `nil` | Arrow-style send button arrow color |
+| `--input-send-arrow-background-color` | `colors.input.sendArrowBackgroundColor` | `Color?` | `nil` | Arrow-style send button circle background |
+| `--input-mic-icon-color` | `colors.input.micIconColor` | `Color?` | `nil` | Mic button icon tint. Falls back to `--color-primary`. |
+| `--input-mic-recording-icon-color` | `colors.input.micRecordingIconColor` | `Color?` | `nil` | Stop/recording button icon color. Falls back to white. |
+
+### Colors - Welcome Prompts
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--welcome-prompt-background-color` | `colors.welcomePrompt.backgroundColor` | `Color?` | `nil` | Welcome prompt card background. Falls back to card's `backgroundColor` from `arrays["welcome.examples"]`. |
+| `--welcome-prompt-text-color` | `colors.welcomePrompt.textColor` | `Color?` | `nil` | Welcome prompt text color. Falls back to `--color-text`. |
+
 ### Colors - Citations
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -637,11 +705,27 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--cta-button-icon-size` | `layout.ctaButtonIconSize` | `CGFloat` | `16` | External link icon width/height |
 
 ### Layout - Welcome Screen Order
+### Layout - Header
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--header-title-font-size` | `layout.headerTitleFontSize` | `CGFloat?` | `nil` | Header title font size. When `nil`, uses the default system `.title3` size. |
+
+### Layout - Welcome Screen
 
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--welcome-input-order` | `layout.welcomeInputOrder` | `Int` | `3` | Input field display order |
 | `--welcome-cards-order` | `layout.welcomeCardsOrder` | `Int` | `2` | Example cards display order |
+| `--welcome-title-font-size` | `layout.welcomeTitleFontSize` | `CGFloat?` | `nil` | Welcome heading font size. When `nil`, defaults to `22`. |
+| `--welcome-text-align` | `layout.welcomeTextAlign` | `String?` | `nil` | Welcome heading/body text alignment (`"left"`, `"center"`). When `nil`, defaults to left. |
+| `--welcome-content-padding` | `layout.welcomeContentPadding` | `CGFloat?` | `nil` | Horizontal padding around welcome header content. |
+| `--welcome-prompt-image-size` | `layout.welcomePromptImageSize` | `CGFloat?` | `nil` | Width and height of prompt suggestion thumbnail images. Defaults to `90`. |
+| `--welcome-prompt-spacing` | `layout.welcomePromptSpacing` | `CGFloat?` | `nil` | Vertical spacing between prompt suggestion cards. |
+| `--welcome-title-bottom-spacing` | `layout.welcomeTitleBottomSpacing` | `CGFloat?` | `nil` | Spacing below the welcome heading. Defaults to `10`. |
+| `--welcome-prompts-top-spacing` | `layout.welcomePromptsTopSpacing` | `CGFloat?` | `nil` | Spacing above the prompt suggestions section. |
+| `--welcome-prompt-padding` | `layout.welcomePromptPadding` | `CGFloat?` | `nil` | Padding around each prompt suggestion card. |
+| `--welcome-prompt-corner-radius` | `layout.welcomePromptCornerRadius` | `CGFloat?` | `nil` | Corner radius of prompt suggestion cards. Falls back to `--border-radius-card`. |
 
 ---
 
@@ -663,7 +747,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "input": {
       "enableVoiceInput": true,
       "disableMultiline": false,
-      "showAiChatIcon": null
+      "showAiChatIcon": null,
+      "sendButtonStyle": "default"
     },
     "chat": {
       "messageAlignment": "left",
@@ -671,6 +756,19 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     },
     "productCard": {
       "cardStyle": "productDetail"
+    },
+    "welcomeCard": {
+      "closeButtonAlignment": "end",
+      "promptFullWidth": true,
+      "promptMaxLines": 3,
+      "contentAlignment": "top"
+    },
+    "feedback": {
+      "displayMode": "card",
+      "thumbsPlacement": "inline"
+    },
+    "citations": {
+      "showLinkIcon": false
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -694,7 +792,11 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "input.send.aria": "Send message",
     "feedback.dialog.title.positive": "Your feedback is appreciated",
     "feedback.dialog.submit": "Submit",
-    "feedback.dialog.cancel": "Cancel"
+    "feedback.dialog.cancel": "Cancel",
+    "header.title": "",
+    "header.subtitle": "",
+    "sourcesLabel": "Sources",
+    "feedbackHelpfulLabel": "Was this helpful?"
   },
   "arrays": {
     "welcome.examples": [
@@ -810,7 +912,24 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--cta-button-vertical-padding": "12px",
     "--cta-button-font-size": "14px",
     "--cta-button-font-weight": "400",
-    "--cta-button-icon-size": "16px"
+    "--cta-button-icon-size": "16px",
+    "--header-title-font-size": "18px",
+    "--input-send-icon-color": "",
+    "--input-send-arrow-icon-color": "",
+    "--input-send-arrow-background-color": "",
+    "--input-mic-icon-color": "",
+    "--input-mic-recording-icon-color": "",
+    "--welcome-prompt-background-color": "",
+    "--welcome-prompt-text-color": "",
+    "--welcome-title-font-size": "22px",
+    "--welcome-text-align": "left",
+    "--welcome-content-padding": "0px",
+    "--welcome-prompt-image-size": "90px",
+    "--welcome-prompt-spacing": "8px",
+    "--welcome-title-bottom-spacing": "10px",
+    "--welcome-prompts-top-spacing": "8px",
+    "--welcome-prompt-padding": "0px",
+    "--welcome-prompt-corner-radius": "16px"
   }
 }
 ```
@@ -848,6 +967,14 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.input.enableVoiceInput` | ✅ | Controls mic button visibility |
 | `behavior.input.disableMultiline` | ✅ | Controls input line limit |
 | `behavior.input.showAiChatIcon` | ⚠️ | Parsed and mapped to component but not rendered |
+| `behavior.input.sendButtonStyle` | ✅ | Controls send button style (default vs arrow) in ComposerEditingView |
+| `behavior.welcomeCard.closeButtonAlignment` | ✅ | Controls close button placement in ChatTopBar |
+| `behavior.welcomeCard.promptFullWidth` | ✅ | Controls prompt card layout (full-width vs compact chip) in ChatMessageView |
+| `behavior.welcomeCard.promptMaxLines` | ✅ | Controls max text lines in prompt cards |
+| `behavior.welcomeCard.contentAlignment` | ✅ | Controls welcome content vertical alignment |
+| `behavior.feedback.displayMode` | ✅ | Controls feedback dialog presentation (card vs bottom sheet) in FeedbackOverlayView |
+| `behavior.feedback.thumbsPlacement` | ✅ | Controls thumbs placement (inline vs below) in SourcesListView |
+| `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
 | `behavior.privacyNotice.title` | ⚠️ | Parsed but no privacy dialog implemented |
@@ -888,6 +1015,10 @@ This section documents which properties are fully implemented, partially impleme
 | `text["feedback.toast.success"]` | ⚠️ | Parsed but toast not implemented |
 | `text["feedback.thumbsUp.aria"]` | ✅ | Used in SourcesListView |
 | `text["feedback.thumbsDown.aria"]` | ✅ | Used in SourcesListView |
+| `text["header.title"]` | ✅ | Used in ChatTopBar, overrides programmatic title when non-empty |
+| `text["header.subtitle"]` | ✅ | Used in ChatTopBar, overrides programmatic subtitle when non-empty |
+| `text["sourcesLabel"]` | ✅ | Used in SourcesListView for accordion header label |
+| `text["feedbackHelpfulLabel"]` | ✅ | Used in SourcesListView when thumbsPlacement is "below" |
 
 ### Arrays
 
@@ -933,13 +1064,20 @@ This section documents which properties are fully implemented, partially impleme
 | `--color-button-submit` | ✅ | Used in ComposerSendButtonStyle |
 | `--button-disabled-background` | ✅ | Used in ConciergePressableButtonStyle |
 | `--input-background` | ✅ | Used in ChatComposer (via components) |
-| `--input-text-color` | ⚠️ | Mapped but text uses system colors |
-| `--input-outline-color` | ⚠️ | Mapped but not rendered (only focus outline used) |
+| `--input-text-color` | ✅ | Used in ComposerEditingView via components.inputBar.textColor |
+| `--input-outline-color` | ✅ | Used in ChatComposer via components.inputBar.border.color |
 | `--input-focus-outline-color` | ✅ | Used in ChatComposer |
 | `--citations-background-color` | ✅ | Used in MarkdownBlockView |
 | `--citations-text-color` | ✅ | Used in MarkdownBlockView |
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
-| `--disclaimer-color` | ⚠️ | Mapped but disclaimer uses primary.text |
+| `--disclaimer-color` | ✅ | Used in ComposerDisclaimer via components.disclaimer.textColor |
+| `--input-send-icon-color` | ✅ | Used in ComposerSendButtonStyle |
+| `--input-send-arrow-icon-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
+| `--input-send-arrow-background-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
+| `--input-mic-icon-color` | ✅ | Used in ComposerEditingView |
+| `--input-mic-recording-icon-color` | ✅ | Used in ComposerEditingView for stop recording button |
+| `--welcome-prompt-background-color` | ✅ | Used in ChatMessageView for prompt suggestion cards |
+| `--welcome-prompt-text-color` | ✅ | Used in ChatMessageView for prompt suggestion text |
 
 ### Theme Tokens - Colors (CTA Button)
 
@@ -968,7 +1106,7 @@ This section documents which properties are fully implemented, partially impleme
 |--------------|--------|-------|
 | `--input-height-mobile` | ✅ | Used in ChatComposer |
 | `--input-border-radius-mobile` | ✅ | Used in ChatComposer |
-| `--input-outline-width` | ⚠️ | Mapped but not rendered |
+| `--input-outline-width` | ✅ | Used in ChatComposer via components.inputBar.border.width |
 | `--input-focus-outline-width` | ✅ | Used in ChatComposer |
 | `--input-font-size` | ✅ | Used in ComposerEditingView |
 | `--input-button-height` | ✅ | Used in ComposerSendButtonStyle |
@@ -990,10 +1128,20 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-icon-btn-size-desktop` | ✅ | Used in SourcesListView |
 | `--citations-text-font-weight` | ✅ | Used in ChatMessageView |
 | `--citations-desktop-button-font-size` | ✅ | Used in ChatMessageView |
-| `--disclaimer-font-size` | ⚠️ | Mapped but not used in views |
-| `--disclaimer-font-weight` | ⚠️ | Mapped but not used in views |
+| `--disclaimer-font-size` | ✅ | Used in ComposerDisclaimer via components.disclaimer.fontSize |
+| `--disclaimer-font-weight` | ✅ | Used in ComposerDisclaimer via components.disclaimer.fontWeight |
 | `--welcome-input-order` | ⚠️ | Mapped but welcome layout not customizable |
 | `--welcome-cards-order` | ⚠️ | Mapped but welcome layout not customizable |
+| `--header-title-font-size` | ✅ | Used in ChatTopBar for header title font size |
+| `--welcome-title-font-size` | ✅ | Used in ChatMessageView for welcome heading size |
+| `--welcome-text-align` | ✅ | Used in ChatMessageView for welcome text alignment |
+| `--welcome-content-padding` | ✅ | Used in ChatMessageView for welcome header padding |
+| `--welcome-prompt-image-size` | ✅ | Used in ChatMessageView for prompt thumbnail dimensions |
+| `--welcome-prompt-spacing` | ✅ | Used in MessageListView for spacing between prompt cards |
+| `--welcome-title-bottom-spacing` | ✅ | Used in ChatMessageView for spacing below welcome heading |
+| `--welcome-prompts-top-spacing` | ✅ | Used in MessageListView for spacing above prompts section |
+| `--welcome-prompt-padding` | ✅ | Used in ChatMessageView for prompt card padding |
+| `--welcome-prompt-corner-radius` | ✅ | Used in ChatMessageView for prompt card corner radius |
 | `--product-card-width` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
 | `--product-card-height` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
 | `--product-card-title-font-size` | ✅ | Used in ProductDetailCardView |

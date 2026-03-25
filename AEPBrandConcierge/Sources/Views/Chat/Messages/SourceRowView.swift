@@ -31,12 +31,20 @@ struct SourceRowView: View {
 
             if let link = link {
                 Button(action: { handleLinkTap(link) }) {
-                    Text(title)
-                        .font(.footnote)
-                        .foregroundStyle(theme.colors.message.conciergeLink.color)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 4) {
+                        Text(title)
+                            .font(.footnote)
+                            .underline()
+                            .foregroundStyle(theme.colors.message.conciergeLink.color)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        if theme.behavior.citations?.showLinkIcon ?? false {
+                            BrandIcon(assetName: "S2_Icon_LinkOut_20_N", systemName: "arrow.up.right")
+                                .font(.system(size: 10))
+                                .foregroundStyle(theme.colors.message.conciergeLink.color)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Opens link")
