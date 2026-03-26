@@ -44,18 +44,24 @@ struct SelectableTextView: UIViewRepresentable {
         textView.accessibilityTraits.insert(.allowsDirectInteraction)
         textView.accessibilityLabel = accessibilityLabel ?? placeholder
 
-        // Placeholder label
+        // Placeholder label — positioned to match where text renders
         let placeholderLabel = UILabel()
         placeholderLabel.text = placeholder
+        placeholderLabel.font = textView.font
         placeholderLabel.textColor = placeholderTextColor ?? .secondaryLabel
         placeholderLabel.numberOfLines = 1
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
         textView.addSubview(placeholderLabel)
         // Store weak reference for later visibility control
         context.coordinator.placeholderLabel = placeholderLabel
+        let placeholderTop = placeholderLabel.topAnchor.constraint(
+            equalTo: textView.topAnchor,
+            constant: textView.textContainerInset.top
+        )
+        context.coordinator.placeholderTopConstraint = placeholderTop
         NSLayoutConstraint.activate([
             placeholderLabel.leadingAnchor.constraint(equalTo: textView.leadingAnchor, constant: 12),
-            placeholderLabel.topAnchor.constraint(equalTo: textView.topAnchor, constant: 10)
+            placeholderTop
         ])
         return textView
     }
@@ -152,6 +158,7 @@ struct SelectableTextView: UIViewRepresentable {
         var parent: SelectableTextView
         var isSettingSelectionProgrammatically: Bool = false
         weak var placeholderLabel: UILabel?
+        weak var placeholderTopConstraint: NSLayoutConstraint?
         var lastIsEditable: Bool?
 
         init(_ parent: SelectableTextView) {
@@ -221,14 +228,22 @@ struct SelectableTextView: UIViewRepresentable {
             textView.scrollRangeToVisible(end)
         }
 
+        private let baseInset: CGFloat = 6
+
         func recalculateHeight(_ textView: UITextView) {
+            // Temporarily reset to base insets for stable measurement
+            let currentTopInset = textView.textContainerInset.top
+            if currentTopInset != baseInset {
+                textView.textContainerInset = UIEdgeInsets(top: baseInset, left: 6, bottom: baseInset, right: 6)
+            }
             textView.layoutIfNeeded()
+
             // Fallback to 17pt, the typical line height of the default .body font
             let rawLineHeight = textView.font?.lineHeight ?? 17
             let lineHeight: CGFloat = (rawLineHeight.isFinite && rawLineHeight > 0) ? rawLineHeight : 17
-            let insets = textView.textContainerInset.top + textView.textContainerInset.bottom
-            let minHeight = CGFloat(parent.minLines) * lineHeight + insets
-            let maxHeight = CGFloat(parent.maxLines) * lineHeight + insets
+            let baseVerticalInsets = baseInset * 2
+            let minHeight = CGFloat(parent.minLines) * lineHeight + baseVerticalInsets
+            let maxHeight = CGFloat(parent.maxLines) * lineHeight + baseVerticalInsets
             var width = textView.bounds.width
             if !width.isFinite || width <= 0 {
                 width = textView.frame.size.width
@@ -243,10 +258,27 @@ struct SelectableTextView: UIViewRepresentable {
             }
             let target = min(max(measured, minHeight), maxHeight)
             textView.isScrollEnabled = measured.isFinite && measured > maxHeight + 1
+
             if target.isFinite && abs(parent.measuredHeight - target) > 0.5 {
                 DispatchQueue.main.async { [weak self] in
                     self?.parent.measuredHeight = target
                 }
+            }
+
+            // Vertically center single-line text by adjusting textContainerInset.top.
+            // The SwiftUI frame is max(40, measuredHeight). When measured content is
+            // shorter than the frame, pad the top so text + cursor sit at center.
+            let frameHeight = max(40, target)
+            let contentHeight = measured
+            let topPadding: CGFloat
+            if contentHeight < frameHeight {
+                topPadding = max(baseInset, (frameHeight - contentHeight) / 2 + baseInset)
+            } else {
+                topPadding = baseInset
+            }
+            if abs(textView.textContainerInset.top - topPadding) > 0.5 {
+                textView.textContainerInset = UIEdgeInsets(top: topPadding, left: 6, bottom: baseInset, right: 6)
+                placeholderTopConstraint?.constant = topPadding
             }
         }
     }

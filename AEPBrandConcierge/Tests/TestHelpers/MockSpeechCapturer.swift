@@ -15,6 +15,8 @@ import Foundation
 
 final class MockSpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
+    var audioLevelHandler: ((Float) -> Void)?
+    var silenceHandler: (() -> Void)?
     var available: Bool = true
     var denied: Bool = false
     var neverAsked: Bool = false

@@ -29,6 +29,7 @@ struct ComposerEditingView: View {
     let onStopRecording: () -> Void
     let micEnabled: Bool
     let sendEnabled: Bool
+    let audioLevel: Float
     let onSend: () -> Void
 
     private var hasText: Bool {
@@ -36,7 +37,7 @@ struct ComposerEditingView: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom) {
             SelectableTextView(
                 text: $inputText,
                 selectedRange: $selectedRange,
@@ -48,7 +49,7 @@ struct ComposerEditingView: View {
                 font: resolvedInputFont,
                 textColor: UIColor(theme.components.inputBar.textColor.color),
                 placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
-                maxLines: theme.behavior.input.disableMultiline ? 1 : 4,
+                maxLines: theme.behavior.input.disableMultiline ? 1 : 15,
                 onEditingChanged: onEditingChanged
             )
             .frame(height: max(40, measuredHeight))
@@ -69,20 +70,45 @@ struct ComposerEditingView: View {
             }
 
             if case .recording = inputState {
-                Button(action: onStopRecording) {
-                    ZStack {
-                        Circle()
-                            .fill(theme.colors.primary.primary.color)
-                            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
-                        BrandIcon(assetName: "S2_Icon_Stop_20_N", systemName: "stop.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(theme.colors.input.micRecordingIconColor?.color ?? .white)
+                // Waveform replaces the send/mic slot during recording
+                AudioWaveformView(
+                    audioLevel: audioLevel,
+                    barColor: theme.colors.primary.primary.color
+                )
+                .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                .accessibilityLabel("Recording audio")
+            } else if hasText {
+                // Send button appears in the same slot once text is present
+                if theme.behavior.input.sendButtonStyle == "arrow" {
+                    Button(action: onSend) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
+                            .foregroundColor(sendEnabled
+                                             ? (theme.colors.input.sendArrowIconColor?.color ?? theme.colors.primary.primary.color)
+                                             : theme.colors.button.submitFillDisabled.color)
+                            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                     }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(theme.text.inputSendAria)
+                    .disabled(!sendEnabled)
+                } else {
+                    Button(action: onSend) {
+                        BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
+                            .font(.system(size: 22, weight: .semibold))
+                    }
+                    .buttonStyle(
+                        ComposerSendButtonStyle(
+                            theme: theme,
+                            isEnabled: sendEnabled
+                        )
+                    )
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(theme.text.inputSendAria)
+                    .disabled(!sendEnabled)
                 }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-                .accessibilityLabel("Stop recording")
-            } else if showMic && !hasText {
+            } else if showMic {
+                // Mic button when idle with no text
                 Button(action: onMicTap) {
                     BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
                         .foregroundColor(micEnabled ? (theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color) : Color.secondary.opacity(0.5))
@@ -92,43 +118,6 @@ struct ComposerEditingView: View {
                 .contentShape(Rectangle())
                 .accessibilityLabel(theme.text.inputMicAria)
                 .disabled(!micEnabled)
-            }
-
-            if theme.behavior.input.sendButtonStyle == "arrow" {
-                // Arrow style: filled circle with upward arrow
-                Button(action: onSend) {
-                    ZStack {
-                        Circle()
-                            .fill(sendEnabled
-                                  ? (theme.colors.input.sendArrowBackgroundColor?.color ?? theme.colors.primary.primary.color)
-                                  : theme.colors.button.submitFillDisabled.color)
-                            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(sendEnabled
-                                             ? (theme.colors.input.sendArrowIconColor?.color ?? .white)
-                                             : Color.secondary.opacity(0.5))
-                    }
-                }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-                .accessibilityLabel(theme.text.inputSendAria)
-                .disabled(!sendEnabled)
-            } else {
-                // Default style: paper airplane icon
-                Button(action: onSend) {
-                    BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
-                        .font(.system(size: 22, weight: .semibold))
-                }
-                .buttonStyle(
-                    ComposerSendButtonStyle(
-                        theme: theme,
-                        isEnabled: sendEnabled
-                    )
-                )
-                .contentShape(Rectangle())
-                .accessibilityLabel(theme.text.inputSendAria)
-                .disabled(!sendEnabled)
             }
         }
     }
