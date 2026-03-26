@@ -71,7 +71,7 @@ public struct SourcesListView: View {
                     feedbackButtons
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 38)
+                .padding(.leading, 44)
                 .padding(.trailing, 12)
                 .padding(.vertical, 10)
             }

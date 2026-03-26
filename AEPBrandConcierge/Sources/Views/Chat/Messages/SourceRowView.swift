@@ -57,7 +57,8 @@ struct SourceRowView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.leading, 44)
+        .padding(.trailing, 12)
     }
     
     private func handleLinkTap(_ url: URL) {
