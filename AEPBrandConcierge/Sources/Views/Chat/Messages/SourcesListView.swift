@@ -62,6 +62,19 @@ public struct SourcesListView: View {
         VStack(spacing: 0) {
             Divider().background(Color.black.opacity(0.08))
             sourceRows
+            if !thumbsInline {
+                Divider().background(Color.black.opacity(0.08))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(theme.text.feedbackHelpfulLabel)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    feedbackButtons
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 38)
+                .padding(.trailing, 12)
+                .padding(.vertical, 10)
+            }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
@@ -128,16 +141,6 @@ public struct SourcesListView: View {
             }
             .buttonStyle(.plain)
 
-            if !thumbsInline {
-                HStack(spacing: theme.layout.feedbackContainerGap) {
-                    Text(theme.text.feedbackHelpfulLabel)
-                        .font(.caption)
-                        .foregroundStyle(theme.colors.message.conciergeText.color.opacity(0.6))
-                    feedbackButtons
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-            }
         }
         .accessibilityIdentifier("AgentSourcesListView.Header")
     }
