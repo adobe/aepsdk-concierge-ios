@@ -39,7 +39,7 @@ struct SourceRowView: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                         if theme.behavior.citations?.showLinkIcon ?? false {
-                            BrandIcon(assetName: "S2_Icon_LinkOut_20_N", systemName: "arrow.up.right")
+                            BrandIcon(assetName: "S2_Icon_LinkOut_20_N", systemName: "arrow.up.forward.app")
                                 .font(.system(size: 10))
                                 .foregroundStyle(theme.colors.message.conciergeLink.color)
                         }
