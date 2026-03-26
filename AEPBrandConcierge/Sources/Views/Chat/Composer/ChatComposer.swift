@@ -27,6 +27,7 @@ struct ChatComposer: View {
     let composerEditable: Bool
     let micEnabled: Bool
     let sendEnabled: Bool
+    let audioLevel: Float
     let onEditingChanged: (Bool) -> Void
     let onMicTap: () -> Void
     let onCancel: () -> Void
@@ -50,6 +51,7 @@ struct ChatComposer: View {
                         onStopRecording: onComplete,
                         micEnabled: micEnabled,
                         sendEnabled: sendEnabled,
+                        audioLevel: audioLevel,
                         onSend: onSend
                     )
                 }

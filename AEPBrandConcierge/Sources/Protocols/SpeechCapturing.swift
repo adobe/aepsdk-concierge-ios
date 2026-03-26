@@ -14,6 +14,8 @@ import Foundation
 
 public protocol SpeechCapturing: AnyObject {
     var responseProcessor: ((String) -> Void)? { get set }
+    var audioLevelHandler: ((Float) -> Void)? { get set }
+    var silenceHandler: (() -> Void)? { get set }
 
     func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
