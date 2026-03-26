@@ -13,7 +13,8 @@
     "input": {
       "enableVoiceInput": true,
       "disableMultiline": false,
-      "showAiChatIcon": null
+      "showAiChatIcon": null,
+      "sendButtonStyle": "arrow"
     },
     "chat": {
       "messageAlignment": "left",

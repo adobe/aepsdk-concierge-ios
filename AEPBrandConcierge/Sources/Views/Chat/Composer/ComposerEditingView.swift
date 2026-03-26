@@ -117,7 +117,7 @@ struct ComposerEditingView: View {
             } else {
                 // Default style: paper airplane icon
                 Button(action: onSend) {
-                    BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "arrow.up.circle.fill")
+                    BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
                         .font(.system(size: 22, weight: .semibold))
                 }
                 .buttonStyle(
