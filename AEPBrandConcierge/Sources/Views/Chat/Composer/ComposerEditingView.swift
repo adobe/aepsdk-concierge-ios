@@ -84,7 +84,7 @@ struct ComposerEditingView: View {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
                             .foregroundColor(sendEnabled
-                                             ? (theme.colors.input.sendArrowIconColor?.color ?? theme.colors.primary.primary.color)
+                                             ? (theme.colors.input.sendArrowBackgroundColor?.color ?? theme.colors.primary.primary.color)
                                              : theme.colors.button.submitFillDisabled.color)
                             .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                     }
