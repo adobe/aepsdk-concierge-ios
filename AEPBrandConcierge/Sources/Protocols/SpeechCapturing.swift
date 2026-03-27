@@ -14,6 +14,8 @@ import Foundation
 
 public protocol SpeechCapturing: AnyObject {
     var responseProcessor: ((String) -> Void)? { get set }
+    var audioLevelHandler: ((Float) -> Void)? { get set }
+    var silenceHandler: (() -> Void)? { get set }
 
     func initialize(responseProcessor: ((String) -> Void)?)
     func isAvailable() -> Bool
@@ -22,4 +24,7 @@ public protocol SpeechCapturing: AnyObject {
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void)
     func beginCapture()
     func endCapture(completion: @escaping (String?, Error?) -> Void)
+
+    /// Updates silence auto-stop parameters before `beginCapture()`.
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval)
 }
