@@ -136,6 +136,20 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.behavior.privacyNotice.title, "Privacy Notice")
         XCTAssertEqual(theme.behavior.privacyNotice.text, "Privacy notice text.")
     }
+
+    func test_behavior_feedback_displayMode_modalAndAction_decode() throws {
+        let jsonModal = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "feedback": { "displayMode": "modal" } } }
+        """.data(using: .utf8)!
+        let modalTheme = try JSONDecoder().decode(ConciergeTheme.self, from: jsonModal)
+        XCTAssertEqual(modalTheme.behavior.feedback?.displayMode, "modal")
+
+        let jsonAction = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "feedback": { "displayMode": "action" } } }
+        """.data(using: .utf8)!
+        let actionTheme = try JSONDecoder().decode(ConciergeTheme.self, from: jsonAction)
+        XCTAssertEqual(actionTheme.behavior.feedback?.displayMode, "action")
+    }
     
     // MARK: - Disclaimer Decoding Tests
     

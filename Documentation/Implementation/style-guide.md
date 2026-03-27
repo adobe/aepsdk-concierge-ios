@@ -236,7 +236,7 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.feedback.displayMode` | `String` | `"card"` | Feedback dialog presentation style. `"card"` shows a centered overlay with blurred backdrop. `"modal"` shows a bottom sheet with drag handle. |
+| `behavior.feedback.displayMode` | `String` | `"modal"` | Feedback dialog display mode. `"modal"` renders inline as a Modal overlay; `"action"` renders as an ActionSheet. |
 | `behavior.feedback.thumbsPlacement` | `String` | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
 
 ### Citations
@@ -283,7 +283,7 @@ Feature toggles and interaction configuration.
       "contentAlignment": "top"
     },
     "feedback": {
-      "displayMode": "card",
+      "displayMode": "modal",
       "thumbsPlacement": "inline"
     },
     "citations": {
@@ -770,7 +770,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
       "contentAlignment": "top"
     },
     "feedback": {
-      "displayMode": "card",
+      "displayMode": "modal",
       "thumbsPlacement": "inline"
     },
     "citations": {
@@ -980,7 +980,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.welcomeCard.promptFullWidth` | ✅ | Controls prompt card layout (full-width vs compact chip) in ChatMessageView |
 | `behavior.welcomeCard.promptMaxLines` | ✅ | Controls max text lines in prompt cards |
 | `behavior.welcomeCard.contentAlignment` | ✅ | Controls welcome content vertical alignment |
-| `behavior.feedback.displayMode` | ✅ | Controls feedback dialog presentation (card vs bottom sheet) in FeedbackOverlayView |
+| `behavior.feedback.displayMode` | ✅ | Controls feedback presentation: `"modal"` (centered) vs `"action"` (action sheet) in FeedbackOverlayView |
 | `behavior.feedback.thumbsPlacement` | ✅ | Controls thumbs placement (inline vs below) in SourcesListView |
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |

@@ -112,15 +112,35 @@ public struct ConciergeWelcomeCardBehavior: Codable {
 
 /// Feedback behavior configuration
 public struct ConciergeFeedbackBehavior: Codable {
+    /// Presentation for the feedback flow. Matches concierge extension theme JSON:
+    /// - `"modal"` — centered dialog with blurred backdrop (`FeedbackOverlayView` modal layout).
+    /// - `"action"` — action sheet-style layout with drag affordance.
     public var displayMode: String
     public var thumbsPlacement: String
 
+    private enum CodingKeys: String, CodingKey {
+        case displayMode
+        case thumbsPlacement
+    }
+
     public init(
-        displayMode: String = "card",
+        displayMode: String = "modal",
         thumbsPlacement: String = "inline"
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode) ?? "modal"
+        thumbsPlacement = try container.decodeIfPresent(String.self, forKey: .thumbsPlacement) ?? "inline"
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(displayMode, forKey: .displayMode)
+        try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
     }
 }
 
