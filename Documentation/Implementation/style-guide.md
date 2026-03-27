@@ -207,6 +207,8 @@ Feature toggles and interaction configuration.
 | `behavior.input.disableMultiline` | `Bool` | `true` | Disable multiline text input |
 | `behavior.input.showAiChatIcon` | `Object?` | `null` | AI chat icon configuration |
 | `behavior.input.sendButtonStyle` | `String` | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
+| `behavior.input.silenceThreshold` | `Number` | `0.02` | Voice capture: RMS level (raw, before UI normalization) above which input counts as speech. Lower values detect quieter speech but may increase false “speech” detection. |
+| `behavior.input.silenceDuration` | `Number` | `2` | Voice capture: seconds of silence after speech is detected before recording stops automatically. |
 
 ### Chat
 
@@ -263,7 +265,9 @@ Feature toggles and interaction configuration.
       "enableVoiceInput": true,
       "disableMultiline": false,
       "showAiChatIcon": null,
-      "sendButtonStyle": "default"
+      "sendButtonStyle": "default",
+      "silenceThreshold": 0.02,
+      "silenceDuration": 2
     },
     "chat": {
       "messageAlignment": "left",
@@ -748,7 +752,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
       "enableVoiceInput": true,
       "disableMultiline": false,
       "showAiChatIcon": null,
-      "sendButtonStyle": "default"
+      "sendButtonStyle": "default",
+      "silenceThreshold": 0.02,
+      "silenceDuration": 2
     },
     "chat": {
       "messageAlignment": "left",
@@ -968,6 +974,8 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.input.disableMultiline` | ✅ | Controls input line limit |
 | `behavior.input.showAiChatIcon` | ⚠️ | Parsed and mapped to component but not rendered |
 | `behavior.input.sendButtonStyle` | ✅ | Controls send button style (default vs arrow) in ComposerEditingView |
+| `behavior.input.silenceThreshold` | ✅ | Voice capture: RMS threshold for speech vs silence in SpeechCapturer |
+| `behavior.input.silenceDuration` | ✅ | Voice capture: auto-stop delay after silence in SpeechCapturer |
 | `behavior.welcomeCard.closeButtonAlignment` | ✅ | Controls close button placement in ChatTopBar |
 | `behavior.welcomeCard.promptFullWidth` | ✅ | Controls prompt card layout (full-width vs compact chip) in ChatMessageView |
 | `behavior.welcomeCard.promptMaxLines` | ✅ | Controls max text lines in prompt cards |

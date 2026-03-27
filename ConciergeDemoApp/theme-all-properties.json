@@ -27,7 +27,9 @@
       "enableVoiceInput": true,
       "disableMultiline": false,
       "showAiChatIcon": null,
-      "sendButtonStyle": "arrow"
+      "sendButtonStyle": "arrow",
+      "silenceDuration": 4,
+      "silenceThreshold": 0.02
     },
     "chat": {
       "messageAlignment": "left",

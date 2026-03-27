@@ -35,17 +35,34 @@ public struct ConciergeInputBehavior: Codable {
     public var disableMultiline: Bool
     public var showAiChatIcon: ConciergeIconConfig?
     public var sendButtonStyle: String
+    /// RMS level above which audio is treated as speech (not silence). Typical range roughly `0.01`–`0.05`.
+    public var silenceThreshold: Float
+    /// Seconds of continuous silence after speech before auto-stopping capture.
+    public var silenceDuration: TimeInterval
+
+    private enum CodingKeys: String, CodingKey {
+        case enableVoiceInput
+        case disableMultiline
+        case showAiChatIcon
+        case sendButtonStyle
+        case silenceThreshold
+        case silenceDuration
+    }
 
     public init(
         enableVoiceInput: Bool = false,
         disableMultiline: Bool = true,
         showAiChatIcon: ConciergeIconConfig? = nil,
-        sendButtonStyle: String = "default"
+        sendButtonStyle: String = "default",
+        silenceThreshold: Float = 0.02,
+        silenceDuration: TimeInterval = 2.0
     ) {
         self.enableVoiceInput = enableVoiceInput
         self.disableMultiline = disableMultiline
         self.showAiChatIcon = showAiChatIcon
         self.sendButtonStyle = sendButtonStyle
+        self.silenceThreshold = silenceThreshold
+        self.silenceDuration = silenceDuration
     }
 
     public init(from decoder: Decoder) throws {
@@ -54,6 +71,22 @@ public struct ConciergeInputBehavior: Codable {
         disableMultiline = try container.decodeIfPresent(Bool.self, forKey: .disableMultiline) ?? true
         showAiChatIcon = try container.decodeIfPresent(ConciergeIconConfig.self, forKey: .showAiChatIcon)
         sendButtonStyle = try container.decodeIfPresent(String.self, forKey: .sendButtonStyle) ?? "default"
+        silenceThreshold = try container.decodeIfPresent(Float.self, forKey: .silenceThreshold) ?? 0.02
+        if let duration = try container.decodeIfPresent(TimeInterval.self, forKey: .silenceDuration) {
+            silenceDuration = duration
+        } else {
+            silenceDuration = 2.0
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(enableVoiceInput, forKey: .enableVoiceInput)
+        try container.encode(disableMultiline, forKey: .disableMultiline)
+        try container.encodeIfPresent(showAiChatIcon, forKey: .showAiChatIcon)
+        try container.encode(sendButtonStyle, forKey: .sendButtonStyle)
+        try container.encode(silenceThreshold, forKey: .silenceThreshold)
+        try container.encode(silenceDuration, forKey: .silenceDuration)
     }
 }
 

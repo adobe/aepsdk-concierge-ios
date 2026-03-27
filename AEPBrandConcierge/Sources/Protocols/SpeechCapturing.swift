@@ -24,4 +24,7 @@ public protocol SpeechCapturing: AnyObject {
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void)
     func beginCapture()
     func endCapture(completion: @escaping (String?, Error?) -> Void)
+
+    /// Updates silence auto-stop parameters before `beginCapture()`.
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval)
 }

@@ -38,6 +38,8 @@ final class MockSpeechCapturer: SpeechCapturing {
             completion()
         }
     }
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {}
+
     func beginCapture() { beginCaptures += 1 }
     func endCapture(completion: @escaping (String?, Error?) -> Void) {
         endCaptures += 1
