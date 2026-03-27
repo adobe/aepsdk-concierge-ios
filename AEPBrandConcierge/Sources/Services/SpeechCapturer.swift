@@ -30,13 +30,20 @@ class SpeechCapturer: SpeechCapturing {
     private var currentTranscription = ""
 
     /// Silence detection
-    private let silenceThreshold: Float = 0.02
-    private let silenceDuration: TimeInterval = 2.0
+    private var silenceThreshold: Float = 0.02
+    private var silenceDuration: TimeInterval = 2.0
     private var silenceStart: Date?
     private var hasSpokeOnce = false
 
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
+    }
+
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {
+        let resolvedThreshold = threshold > 0 ? threshold : 0.02
+        let resolvedDuration = duration > 0 ? duration : 2.0
+        silenceThreshold = resolvedThreshold
+        silenceDuration = resolvedDuration
     }
 
     func initialize(responseProcessor: ((String) -> Void)?) {
@@ -171,7 +178,7 @@ class SpeechCapturer: SpeechCapturing {
 
         DispatchQueue.main.async { [weak self] in self?.audioLevelHandler?(normalized) }
 
-        // Silence detection — auto-stop after 2 seconds of silence once speech has been detected
+        // Silence detection — auto-stop after `silenceDuration` of silence once speech has been detected
         if rms > silenceThreshold {
             hasSpokeOnce = true
             silenceStart = nil

@@ -93,6 +93,11 @@ final class ChatController: ObservableObject {
 
     // MARK: - Mic Control
 
+    /// Applies voice capture settings from the current theme before recording starts.
+    func applyVoiceInputBehavior(_ input: ConciergeInputBehavior) {
+        speechController.configureSilenceDetection(threshold: input.silenceThreshold, duration: input.silenceDuration)
+    }
+
     func toggleMic(currentSelectionLocation: Int) {
         if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
     }

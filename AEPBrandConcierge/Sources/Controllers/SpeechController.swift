@@ -54,6 +54,10 @@ final class SpeechController {
         capturer?.requestSpeechAndMicrophonePermissions(completion: completion)
     }
 
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {
+        capturer?.configureSilenceDetection(threshold: threshold, duration: duration)
+    }
+
     func beginCapture() {
         capturer?.beginCapture()
     }

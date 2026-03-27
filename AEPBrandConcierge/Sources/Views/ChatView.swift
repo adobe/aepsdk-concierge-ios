@@ -303,6 +303,7 @@ public struct ChatView: View {
     }
 
     private func handleMicTap() {
+        controller.applyVoiceInputBehavior(theme.behavior.input)
         if controller.isRecording {
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {

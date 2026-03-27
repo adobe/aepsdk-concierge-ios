@@ -70,13 +70,17 @@ struct ComposerEditingView: View {
             }
 
             if case .recording = inputState {
-                // Waveform replaces the send/mic slot during recording
-                AudioWaveformView(
-                    audioLevel: audioLevel,
-                    barColor: theme.colors.primary.primary.color
-                )
-                .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
-                .accessibilityLabel("Recording audio")
+                // Waveform replaces the send/mic slot during recording; tap to finish and transcribe.
+                Button(action: onStopRecording) {
+                    AudioWaveformView(
+                        audioLevel: audioLevel,
+                        barColor: theme.colors.primary.primary.color
+                    )
+                    .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Stop recording")
             } else if hasText {
                 // Send button appears in the same slot once text is present
                 if theme.behavior.input.sendButtonStyle == "arrow" {

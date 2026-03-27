@@ -13,7 +13,9 @@
     "input": {
       "enableVoiceInput": false,
       "disableMultiline": true,
-      "showAiChatIcon": null
+      "showAiChatIcon": null,
+      "silenceThreshold": 0.02,
+      "silenceDuration": 2
     },
     "chat": {
       "messageAlignment": "left",
