@@ -173,6 +173,7 @@ public struct ConciergeCopy: Codable {
         self.feedbackHelpfulLabel = feedbackHelpfulLabel
     }
 
+    /// To-do: Move strings to a defaults file and load from there instead of hardcoding in the init.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         welcomeHeading = try container.decodeIfPresent(String.self, forKey: .welcomeHeading) ?? "Explore what you can do with Adobe apps."
