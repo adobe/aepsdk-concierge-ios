@@ -187,6 +187,23 @@ public struct ConciergeProductCardColors: Codable {
     }
 }
 
+/// CTA button color tokens
+public struct ConciergeCtaButtonColors: Codable {
+    public var background: CodableColor
+    public var text: CodableColor
+    public var iconColor: CodableColor
+
+    public init(
+        background: CodableColor = CodableColor(Color(UIColor.systemGray6)),
+        text: CodableColor = CodableColor(Color.primary),
+        iconColor: CodableColor = CodableColor(Color.primary)
+    ) {
+        self.background = background
+        self.text = text
+        self.iconColor = iconColor
+    }
+}
+
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
     public var primary: ConciergePrimaryColors
@@ -198,6 +215,7 @@ public struct ConciergeThemeColors: Codable {
     public var feedback: ConciergeFeedbackColors
     public var disclaimer: CodableColor
     public var productCard: ConciergeProductCardColors
+    public var ctaButton: ConciergeCtaButtonColors
 
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
@@ -208,7 +226,8 @@ public struct ConciergeThemeColors: Codable {
         citation: ConciergeCitationColors = ConciergeCitationColors(),
         feedback: ConciergeFeedbackColors = ConciergeFeedbackColors(),
         disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray)),
-        productCard: ConciergeProductCardColors = ConciergeProductCardColors()
+        productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
+        ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors()
     ) {
         self.primary = primary
         self.surface = surface
@@ -219,5 +238,6 @@ public struct ConciergeThemeColors: Codable {
         self.feedback = feedback
         self.disclaimer = disclaimer
         self.productCard = productCard
+        self.ctaButton = ctaButton
     }
 }

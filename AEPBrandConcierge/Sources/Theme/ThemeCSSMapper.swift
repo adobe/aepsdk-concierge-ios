@@ -179,6 +179,19 @@ public enum CSSKeyMapper {
         "product-card-text-horizontal-padding": { cssValue, theme in theme.layout.productCardTextHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-carousel-spacing": { cssValue, theme in theme.layout.productCardCarouselSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-carousel-horizontal-padding": { cssValue, theme in theme.layout.productCardCarouselHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) },
+
+        // Colors - CTA Button
+        "cta-button-background-color": { cssValue, theme in theme.colors.ctaButton.background = CSSValueConverter.parseColor(cssValue) },
+        "cta-button-text-color": { cssValue, theme in theme.colors.ctaButton.text = CSSValueConverter.parseColor(cssValue) },
+        "cta-button-icon-color": { cssValue, theme in theme.colors.ctaButton.iconColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - CTA Button
+        "cta-button-border-radius": { cssValue, theme in theme.layout.ctaButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 99 },
+        "cta-button-horizontal-padding": { cssValue, theme in theme.layout.ctaButtonHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+        "cta-button-vertical-padding": { cssValue, theme in theme.layout.ctaButtonVerticalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "cta-button-font-size": { cssValue, theme in theme.layout.ctaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
+        "cta-button-font-weight": { cssValue, theme in theme.layout.ctaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "cta-button-icon-size": { cssValue, theme in theme.layout.ctaButtonIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

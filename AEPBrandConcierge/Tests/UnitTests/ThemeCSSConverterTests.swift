@@ -31,7 +31,7 @@ final class ThemeCSSConverterTests: XCTestCase {
         XCTAssertEqual(shadow.blurRadius, CGFloat(16))
         XCTAssertEqual(shadow.spreadRadius, CGFloat(0))
         XCTAssertTrue(shadow.isEnabled)
-        XCTAssertEqual(shadow.color.color.toHexString(), "#000000")
+        XCTAssertEqual(shadow.color.color.toHexString(), "#00000029")
     }
     
     func test_parseBoxShadow_none_returnsDisabledShadow() {
