@@ -70,7 +70,11 @@ struct ComposerEditingView: View {
             }
 
             if case .recording = inputState {
-                // Waveform replaces the send/mic slot during recording; tap to finish and transcribe.
+                // Recording uses the send/mic slot: waveform is tappable to finish (`onStopRecording`).
+                //
+                // Future: reintroduce a dedicated stop control (e.g. icon button) beside or instead of
+                // tap-to-stop on the waveform, and gate it with theme JSON such as
+                // `behavior.input.showVoiceStopButton` (Bool, default false) on `ConciergeInputBehavior`
                 Button(action: onStopRecording) {
                     AudioWaveformView(
                         audioLevel: audioLevel,
