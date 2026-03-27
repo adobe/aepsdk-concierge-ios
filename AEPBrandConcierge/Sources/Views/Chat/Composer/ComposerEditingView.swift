@@ -37,7 +37,7 @@ struct ComposerEditingView: View {
     }
 
     var body: some View {
-        HStack(alignment: .bottom) {
+        HStack(alignment: .center) {
             SelectableTextView(
                 text: $inputText,
                 selectedRange: $selectedRange,

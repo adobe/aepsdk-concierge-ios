@@ -42,6 +42,8 @@ struct FeedbackOverlayView: View {
     @Environment(\.conciergeTheme) private var theme
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
+    /// Vertical offset while dragging the action sheet down (action layout only).
+    @State private var actionSheetDragOffset: CGFloat = 0
 
     /// `behavior.feedback.displayMode`: `"action"` uses action sheet layout; `"modal"` uses centered modal layout.
     private var isActionSheet: Bool {
@@ -95,11 +97,19 @@ struct FeedbackOverlayView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Capsule()
-                    .fill(Color.secondary.opacity(0.4))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
+                ZStack {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 44)
+                        .contentShape(Rectangle())
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.4))
+                        .frame(width: 36, height: 5)
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
+                .gesture(actionSheetDismissDragGesture())
 
                 ScrollView {
                     feedbackContent
@@ -120,8 +130,30 @@ struct FeedbackOverlayView: View {
                 RoundedCornerShape(radius: 20, corners: [.topLeft, .topRight])
                     .stroke(borderColor)
             )
+            .offset(y: actionSheetDragOffset)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private func actionSheetDismissDragGesture() -> some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { dragValue in
+                let downwardTranslation = dragValue.translation.height
+                actionSheetDragOffset = max(0, downwardTranslation)
+            }
+            .onEnded { dragValue in
+                let distance = dragValue.translation.height
+                let dismissDistanceThreshold: CGFloat = 100
+                let flingVelocityHint = dragValue.predictedEndTranslation.height - dragValue.translation.height
+                let dismissByFling = flingVelocityHint > 120
+                if distance > dismissDistanceThreshold || dismissByFling {
+                    onCancel()
+                } else {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
+                        actionSheetDragOffset = 0
+                    }
+                }
+            }
     }
 
     // MARK: - Shared Content
