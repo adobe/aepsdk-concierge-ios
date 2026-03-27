@@ -111,6 +111,7 @@ public struct ConciergeWelcomeCardBehavior: Codable {
 }
 
 /// Feedback behavior configuration
+/// To-do: update vars to enums or bools where applicable
 public struct ConciergeFeedbackBehavior: Codable {
     /// Presentation for the feedback flow. Matches concierge extension theme JSON:
     /// - `"modal"` — centered dialog with blurred backdrop (`FeedbackOverlayView` modal layout).
