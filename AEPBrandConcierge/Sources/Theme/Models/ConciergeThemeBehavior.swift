@@ -253,6 +253,17 @@ public struct ConciergeBehaviorConfig: Codable {
     public var feedback: ConciergeFeedbackBehavior?
     public var citations: ConciergeCitationsBehavior?
 
+    private enum CodingKeys: String, CodingKey {
+        case multimodalCarousel
+        case input
+        case chat
+        case privacyNotice
+        case productCard
+        case welcomeCard
+        case feedback
+        case citations
+    }
+
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
         input: ConciergeInputBehavior = ConciergeInputBehavior(),
@@ -271,5 +282,35 @@ public struct ConciergeBehaviorConfig: Codable {
         self.welcomeCard = welcomeCard
         self.feedback = feedback
         self.citations = citations
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        multimodalCarousel = try container.decodeIfPresent(ConciergeMultimodalCarouselBehavior.self, forKey: .multimodalCarousel)
+            ?? ConciergeMultimodalCarouselBehavior()
+        input = try container.decodeIfPresent(ConciergeInputBehavior.self, forKey: .input) ?? ConciergeInputBehavior()
+        chat = try container.decodeIfPresent(ConciergeChatBehavior.self, forKey: .chat) ?? ConciergeChatBehavior()
+        privacyNotice = try container.decodeIfPresent(ConciergePrivacyNoticeBehavior.self, forKey: .privacyNotice)
+            ?? ConciergePrivacyNoticeBehavior()
+        if container.contains(.productCard) {
+            productCard = try container.decodeIfPresent(ConciergeProductCardBehavior.self, forKey: .productCard)
+        } else {
+            productCard = ConciergeProductCardBehavior()
+        }
+        welcomeCard = try container.decodeIfPresent(ConciergeWelcomeCardBehavior.self, forKey: .welcomeCard)
+        feedback = try container.decodeIfPresent(ConciergeFeedbackBehavior.self, forKey: .feedback)
+        citations = try container.decodeIfPresent(ConciergeCitationsBehavior.self, forKey: .citations)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(multimodalCarousel, forKey: .multimodalCarousel)
+        try container.encode(input, forKey: .input)
+        try container.encode(chat, forKey: .chat)
+        try container.encode(privacyNotice, forKey: .privacyNotice)
+        try container.encodeIfPresent(productCard, forKey: .productCard)
+        try container.encodeIfPresent(welcomeCard, forKey: .welcomeCard)
+        try container.encodeIfPresent(feedback, forKey: .feedback)
+        try container.encodeIfPresent(citations, forKey: .citations)
     }
 }
