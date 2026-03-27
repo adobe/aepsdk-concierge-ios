@@ -12,11 +12,29 @@
 
 import SwiftUI
 
+/// Fixed layout for product-detail cards (padding, default image size, corner radius, line heights, letter spacing, badge insets are encoded here).
+private enum ProductDetailCardDimensions {
+    static let contentPadding: CGFloat = 16
+    static let imageWidth: CGFloat = 190
+    static let imageHeight: CGFloat = 190
+    static let cornerRadius: CGFloat = 8
+    static let titleLineHeight: CGFloat = 17
+    static let subtitleLineHeight: CGFloat = 14
+    static let priceLineHeight: CGFloat = 17
+    static let wasPriceLineHeight: CGFloat = 14
+    static let subtitleLetterSpacing: CGFloat = -0.5
+    static let priceLetterSpacing: CGFloat = -0.5
+    static let badgeHorizontalPadding: CGFloat = 12
+    static let badgeVerticalPadding: CGFloat = 4
+}
+
 /// Product card with image, badge, title, subtitle, and price.
 ///
-/// Layout: product image at top (sized via thumbnail dimensions), optional badge
-/// overlapping the bottom of the image, title, optional subtitle, and optional price.
-/// The entire card is tappable, navigating to the product page URL.
+/// Image slot defaults to 190×190 (`ProductDetailCardDimensions`). When `ProductCardData` includes
+/// both `imageWidth` and `imageHeight` (from `thumbnailWidth` / `thumbnailHeight`), the slot uses
+/// that aspect ratio: width is clamped to the inner content width, height scales proportionally, and
+/// height is capped when a fixed `cardHeight` would not leave room for text. Card shadow uses
+/// `multimodalCardBoxShadow`. The image uses center cropping (`scaledToFill` + clip).
 struct ProductDetailCardView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.openURL) private var openURL
@@ -28,20 +46,21 @@ struct ProductDetailCardView: View {
     var cardHeight: CGFloat?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             imageSection
             textSection
         }
+        .padding(ProductDetailCardDimensions.contentPadding)
         .frame(width: cardWidth, height: cardHeight)
         .clipped()
         .background(theme.colors.productCard.backgroundColor.color)
-        .cornerRadius(theme.layout.borderRadiusCard)
+        .cornerRadius(ProductDetailCardDimensions.cornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard)
+            RoundedRectangle(cornerRadius: ProductDetailCardDimensions.cornerRadius)
                 .stroke(theme.colors.productCard.outlineColor.color, lineWidth: 1)
         )
         .shadow(
-            color: shadowColor,
+            color: multimodalCardShadowColor,
             radius: theme.layout.multimodalCardBoxShadow.blurRadius,
             x: theme.layout.multimodalCardBoxShadow.offsetX,
             y: theme.layout.multimodalCardBoxShadow.offsetY
@@ -56,56 +75,69 @@ struct ProductDetailCardView: View {
 private extension ProductDetailCardView {
     var imageSection: some View {
         ZStack(alignment: .bottomLeading) {
-            VStack(spacing: 0) {
-                switch data.imageSource {
-                case .local(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: thumbnailDisplayWidth, height: thumbnailDisplayHeight)
-                        .overlay(debugImageBorder)
-                case .remote(let url):
-                    if let url = url {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: thumbnailDisplayWidth, height: thumbnailDisplayHeight)
-                            case .success(let loaded):
-                                loaded
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: thumbnailDisplayWidth, height: thumbnailDisplayHeight)
-                                    .overlay(debugImageBorder)
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .frame(width: thumbnailDisplayWidth, height: thumbnailDisplayHeight)
-                            @unknown default:
-                                EmptyView()
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                ZStack {
+                    switch data.imageSource {
+                    case .local(let image):
+                            image
+                            .productCardImageCenterCropped(
+                                width: imageSlotSize.width,
+                                height: imageSlotSize.height
+                            )
+                            .overlay(debugImageBorder)
+                    case .remote(let url):
+                        if let url = url {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView()
+                                        .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                                case .success(let loaded):
+                                    loaded
+                                        .productCardImageCenterCropped(
+                                            width: imageSlotSize.width,
+                                            height: imageSlotSize.height
+                                        )
+                                        .overlay(debugImageBorder)
+                                case .failure:
+                                    Image(systemName: "photo")
+                                        .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                                @unknown default:
+                                    EmptyView()
+                                }
                             }
+                        } else {
+                            Image(systemName: "photo")
+                                .frame(width: imageSlotSize.width, height: imageSlotSize.height)
                         }
-                    } else {
-                        Image(systemName: "photo")
-                            .frame(width: thumbnailDisplayWidth, height: thumbnailDisplayHeight)
                     }
                 }
+                .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                Spacer(minLength: 0)
             }
-            .frame(width: cardWidth, height: imageContainerHeight, alignment: .top)
+            .frame(width: innerContentWidth, height: imageSlotSize.height)
 
             if let badge = data.badge, !badge.isEmpty {
                 badgeView(text: badge)
-                    .frame(maxWidth: cardWidth, alignment: .leading)
-                    .offset(y: 12)
+                    .frame(maxWidth: innerContentWidth, alignment: .leading)
+                    // Figma: badge top aligns ~5pt below image bottom (inner coordinates).
+                    .offset(y: 5)
             }
         }
     }
 
-    var textSection: some View {
+    @ViewBuilder
+    var productCardTitleSubtitleBlock: some View {
         VStack(alignment: .leading, spacing: theme.layout.productCardTextSpacing) {
             Text(data.title)
                 .font(.system(size: theme.layout.productCardTitleFontSize))
                 .fontWeight(theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight())
                 .foregroundColor(theme.colors.productCard.titleColor.color)
+                .lineSpacing(productCardExtraLineSpacing(
+                    fontSize: theme.layout.productCardTitleFontSize,
+                    lineHeight: ProductDetailCardDimensions.titleLineHeight
+                ))
                 .lineLimit(2)
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
@@ -115,32 +147,56 @@ private extension ProductDetailCardView {
                     .font(.system(size: theme.layout.productCardSubtitleFontSize))
                     .fontWeight(theme.layout.productCardSubtitleFontWeight.toSwiftUIFontWeight())
                     .foregroundColor(theme.colors.productCard.subtitleColor.color)
+                    .kerning(ProductDetailCardDimensions.subtitleLetterSpacing)
+                    .lineSpacing(productCardExtraLineSpacing(
+                        fontSize: theme.layout.productCardSubtitleFontSize,
+                        lineHeight: ProductDetailCardDimensions.subtitleLineHeight
+                    ))
                     .lineLimit(2)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
 
-            Spacer(minLength: 0)
+    @ViewBuilder
+    var productCardPriceBlock: some View {
+        if let price = data.price, !price.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(price)
+                    .font(.system(size: theme.layout.productCardPriceFontSize))
+                    .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
+                    .foregroundColor(theme.colors.productCard.priceColor.color)
+                    .kerning(ProductDetailCardDimensions.priceLetterSpacing)
+                    .lineSpacing(productCardExtraLineSpacing(
+                        fontSize: theme.layout.productCardPriceFontSize,
+                        lineHeight: ProductDetailCardDimensions.priceLineHeight
+                    ))
 
-            if let price = data.price, !price.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(price)
-                        .font(.system(size: theme.layout.productCardPriceFontSize))
-                        .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
-                        .foregroundColor(theme.colors.productCard.priceColor.color)
-
-                    Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
-                        .font(.system(size: theme.layout.productCardWasPriceFontSize))
-                        .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
-                        .foregroundColor(theme.colors.productCard.wasPriceColor.color)
-                        .opacity(data.wasPrice.map { !$0.isEmpty } ?? false ? 1 : 0)
-                }
+                Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
+                    .font(.system(size: theme.layout.productCardWasPriceFontSize))
+                    .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                    .foregroundColor(theme.colors.productCard.wasPriceColor.color)
+                    .kerning(ProductDetailCardDimensions.priceLetterSpacing)
+                    .lineSpacing(productCardExtraLineSpacing(
+                        fontSize: theme.layout.productCardWasPriceFontSize,
+                        lineHeight: ProductDetailCardDimensions.wasPriceLineHeight
+                    ))
+                    .opacity(data.wasPrice.map { !$0.isEmpty } ?? false ? 1 : 0)
             }
+        }
+    }
+
+    var textSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            productCardTitleSubtitleBlock
+            Spacer(minLength: 0)
+            productCardPriceBlock
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
-        .frame(width: cardWidth, height: textSectionHeight, alignment: .topLeading)
+        .frame(width: innerContentWidth, height: textSectionHeight, alignment: .topLeading)
     }
 
     func badgeView(text: String) -> some View {
@@ -150,8 +206,8 @@ private extension ProductDetailCardView {
             .foregroundColor(theme.colors.productCard.badgeTextColor.color)
             .lineLimit(1)
             .truncationMode(.tail)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, ProductDetailCardDimensions.badgeHorizontalPadding)
+            .padding(.vertical, ProductDetailCardDimensions.badgeVerticalPadding)
             .background(theme.colors.productCard.badgeBackgroundColor.color)
     }
 }
@@ -159,21 +215,48 @@ private extension ProductDetailCardView {
 // MARK: - Helpers
 
 private extension ProductDetailCardView {
-    var thumbnailDisplayWidth: CGFloat {
-        data.imageWidth ?? 150
+    var innerContentWidth: CGFloat {
+        cardWidth - 2 * ProductDetailCardDimensions.contentPadding
     }
 
-    var thumbnailDisplayHeight: CGFloat {
-        data.imageHeight ?? 150
-    }
+    /// Resolved image slot size: uses `ProductCardData.imageWidth` / `imageHeight` when both are
+    /// positive (API thumbnail dimensions); otherwise the default 190×190 (width clamped to inner content).
+    var imageSlotSize: CGSize {
+        let defaultWidth = min(ProductDetailCardDimensions.imageWidth, innerContentWidth)
+        let defaultHeight = ProductDetailCardDimensions.imageHeight
+        guard let apiWidth = data.imageWidth, let apiHeight = data.imageHeight,
+              apiWidth > 0, apiHeight > 0 else {
+            return CGSize(width: defaultWidth, height: defaultHeight)
+        }
 
-    var imageContainerHeight: CGFloat {
-        thumbnailDisplayHeight
+        var width = min(apiWidth, innerContentWidth)
+        var height = apiHeight * (width / apiWidth)
+
+        if let fixedCardHeight = cardHeight {
+            let paddedHeight = fixedCardHeight - 2 * ProductDetailCardDimensions.contentPadding
+            let minimumTextSectionHeight: CGFloat = 72
+            let maximumImageHeight = paddedHeight - minimumTextSectionHeight
+            if maximumImageHeight > 0, height > maximumImageHeight {
+                height = maximumImageHeight
+                width = apiWidth * (height / apiHeight)
+                if width > innerContentWidth {
+                    width = innerContentWidth
+                    height = apiHeight * (width / apiWidth)
+                }
+            }
+        }
+
+        return CGSize(width: width, height: height)
     }
 
     var textSectionHeight: CGFloat? {
         guard let cardHeight = cardHeight else { return nil }
-        return cardHeight - imageContainerHeight
+        let paddedHeight = cardHeight - 2 * ProductDetailCardDimensions.contentPadding
+        return paddedHeight - imageSlotSize.height
+    }
+
+    func productCardExtraLineSpacing(fontSize: CGFloat, lineHeight: CGFloat) -> CGFloat {
+        max(0, lineHeight - fontSize)
     }
 
     @ViewBuilder
@@ -186,7 +269,7 @@ private extension ProductDetailCardView {
         #endif
     }
 
-    var shadowColor: Color {
+    var multimodalCardShadowColor: Color {
         theme.layout.multimodalCardBoxShadow.isEnabled
             ? theme.layout.multimodalCardBoxShadow.color.color
             : .clear
@@ -203,6 +286,17 @@ private extension ProductDetailCardView {
     }
 }
 
+private extension Image {
+    /// Fills the image slot and clips overflow so the crop is centered (same as UIKit `contentMode` `.scaleAspectFill` + center).
+    func productCardImageCenterCropped(width: CGFloat, height: CGFloat) -> some View {
+        self
+            .resizable()
+            .scaledToFill()
+            .frame(width: width, height: height)
+            .clipped()
+    }
+}
+
 #if DEBUG
 
 extension ProductDetailCardView {
@@ -212,13 +306,15 @@ extension ProductDetailCardView {
 }
 
 private struct MeasuredCardView: View {
+    @Environment(\.conciergeTheme) private var theme
     let data: ProductCardData
     let cardWidth: CGFloat
 
     var body: some View {
         ProductDetailCardView(
             data: data,
-            cardWidth: cardWidth
+            cardWidth: cardWidth,
+            cardHeight: theme.layout.productCardHeight
         )
             .overlay(alignment: .topTrailing) {
                 if ProductDetailCardView.showDebugOverlay {
