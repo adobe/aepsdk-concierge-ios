@@ -21,7 +21,7 @@
     },
     "multimodalCarousel": {
       "cardClickAction": "openLink",
-      "carouselStyle": "paged"
+      "carouselStyle": "scroll"
     },
     "input": {
       "enableVoiceInput": true,
