@@ -43,21 +43,22 @@ struct FeedbackOverlayView: View {
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
 
-    private var isBottomSheet: Bool {
-        theme.behavior.feedback?.displayMode == "modal"
+    /// `behavior.feedback.displayMode`: `"action"` uses action sheet layout; `"modal"` uses centered modal layout.
+    private var isActionSheet: Bool {
+        theme.behavior.feedback?.displayMode == "action"
     }
 
     var body: some View {
-        if isBottomSheet {
-            bottomSheetLayout
+        if isActionSheet {
+            actionSheetLayout
         } else {
-            cardLayout
+            modalLayout
         }
     }
 
-    // MARK: - Card Layout (centered overlay)
+    // MARK: - Modal Layout (centered overlay)
 
-    private var cardLayout: some View {
+    private var modalLayout: some View {
         ZStack {
             Rectangle()
                 .fill(.ultraThinMaterial)
@@ -83,13 +84,15 @@ struct FeedbackOverlayView: View {
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: - Bottom Sheet Layout
+    // MARK: - Action Sheet Layout
 
-    private var bottomSheetLayout: some View {
+    private var actionSheetLayout: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
                 .onTapGesture { onCancel() }
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Capsule()

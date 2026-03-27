@@ -211,7 +211,7 @@ public struct ChatView: View {
                     }
                 )
                 .transition(
-                    theme.behavior.feedback?.displayMode == "modal"
+                    theme.behavior.feedback?.displayMode == "action"
                         ? .move(edge: .bottom).combined(with: .opacity)
                         : .opacity
                 )

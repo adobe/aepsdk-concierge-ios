@@ -17,7 +17,6 @@ private enum ProductDetailCardDimensions {
     static let contentPadding: CGFloat = 16
     static let imageWidth: CGFloat = 190
     static let imageHeight: CGFloat = 190
-    static let cornerRadius: CGFloat = 8
     static let titleLineHeight: CGFloat = 17
     static let subtitleLineHeight: CGFloat = 14
     static let priceLineHeight: CGFloat = 17
@@ -54,9 +53,9 @@ struct ProductDetailCardView: View {
         .frame(width: cardWidth, height: cardHeight)
         .clipped()
         .background(theme.colors.productCard.backgroundColor.color)
-        .cornerRadius(ProductDetailCardDimensions.cornerRadius)
+        .cornerRadius(theme.layout.borderRadiusCard)
         .overlay(
-            RoundedRectangle(cornerRadius: ProductDetailCardDimensions.cornerRadius)
+            RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard)
                 .stroke(theme.colors.productCard.outlineColor.color, lineWidth: 1)
         )
         .shadow(

@@ -13,7 +13,7 @@
       "contentAlignment": "top"
     },
     "feedback": {
-      "displayMode": "modal",
+      "displayMode": "action",
       "thumbsPlacement": "below"
     },
     "citations": {
