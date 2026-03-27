@@ -121,8 +121,11 @@ private extension ProductDetailCardView {
             if let badge = data.badge, !badge.isEmpty {
                 badgeView(text: badge)
                     .frame(maxWidth: innerContentWidth, alignment: .leading)
-                    // Figma: badge top aligns ~5pt below image bottom (inner coordinates).
-                    .offset(y: 5)
+                    // Flush to the card’s left edge (ignore content padding); sits slightly below the image.
+                    .offset(
+                        x: -ProductDetailCardDimensions.contentPadding,
+                        y: 5
+                    )
             }
         }
     }

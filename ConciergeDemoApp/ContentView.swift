@@ -83,8 +83,8 @@ struct ContentView: View {
                         Button(action: {
                             Concierge.show(
                                 surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                                title: "Ask Coach",
-                                subtitle: ""
+                                title: "Concierge",
+                                subtitle: "Powered by Adobe"
                             )
                         }) {
                             Text("Open chat (SwiftUI)")
