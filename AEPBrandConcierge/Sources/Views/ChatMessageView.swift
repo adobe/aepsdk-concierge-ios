@@ -307,6 +307,9 @@ struct ChatMessageView: View {
                 actionButtonProductCard(data: cardData)
             }
 
+        case .ctaButton(let action):
+            CtaButtonView(action: action)
+
         case .carouselGroup(let items):
             CarouselGroupView(items: items)
 

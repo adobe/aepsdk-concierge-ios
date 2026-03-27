@@ -521,6 +521,14 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-badge-background-color` | `colors.productCard.badgeBackgroundColor` | `Color` | `primary` | Badge background color |
 | `--product-card-outline-color` | `colors.productCard.outlineColor` | `Color` | `clear` | Card border/outline color |
 
+### Colors - CTA Button
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--cta-button-background-color` | `colors.ctaButton.background` | `Color` | `#EDEDED` | CTA button pill background |
+| `--cta-button-text-color` | `colors.ctaButton.text` | `Color` | `#191F1C` | CTA button label text color |
+| `--cta-button-icon-color` | `colors.ctaButton.iconColor` | `Color` | `#161313` | CTA button icon tint |
+
 ### Colors - Disclaimer
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -616,6 +624,17 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
 | `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
 | `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When `nil`, falls back to `chatHistoryPadding`. |
+
+### Layout - CTA Button
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--cta-button-border-radius` | `layout.ctaButtonBorderRadius` | `CGFloat` | `99` | Corner radius (keep ≥ 20 for pill shape) |
+| `--cta-button-horizontal-padding` | `layout.ctaButtonHorizontalPadding` | `CGFloat` | `16` | Left/right inner padding |
+| `--cta-button-vertical-padding` | `layout.ctaButtonVerticalPadding` | `CGFloat` | `12` | Top/bottom inner padding |
+| `--cta-button-font-size` | `layout.ctaButtonFontSize` | `CGFloat` | `14` | Label font size |
+| `--cta-button-font-weight` | `layout.ctaButtonFontWeight` | `FontWeight` | `regular` | Label font weight |
+| `--cta-button-icon-size` | `layout.ctaButtonIconSize` | `CGFloat` | `16` | External link icon width/height |
 
 ### Layout - Welcome Screen Order
 
@@ -782,7 +801,16 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-text-bottom-padding": "12px",
     "--product-card-text-horizontal-padding": "12px",
     "--product-card-carousel-spacing": "12px",
-    "--product-card-carousel-horizontal-padding": "4px"
+    "--product-card-carousel-horizontal-padding": "4px",
+    "--cta-button-background-color": "#EDEDED",
+    "--cta-button-text-color": "#191F1C",
+    "--cta-button-icon-color": "#161313",
+    "--cta-button-border-radius": "99px",
+    "--cta-button-horizontal-padding": "16px",
+    "--cta-button-vertical-padding": "12px",
+    "--cta-button-font-size": "14px",
+    "--cta-button-font-weight": "400",
+    "--cta-button-icon-size": "16px"
   }
 }
 ```
@@ -913,6 +941,14 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
 | `--disclaimer-color` | ⚠️ | Mapped but disclaimer uses primary.text |
 
+### Theme Tokens - Colors (CTA Button)
+
+| CSS Variable | Status | Notes |
+|--------------|--------|-------|
+| `--cta-button-background-color` | ✅ | Used in CtaButtonView |
+| `--cta-button-text-color` | ✅ | Used in CtaButtonView |
+| `--cta-button-icon-color` | ✅ | Used in CtaButtonView |
+
 ### Theme Tokens - Colors (Product Card)
 
 | CSS Variable | Status | Notes |
@@ -977,6 +1013,12 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-text-horizontal-padding` | ✅ | Used in ProductDetailCardView |
 | `--product-card-carousel-spacing` | ✅ | Used in CarouselGroupView for spacing between cards |
 | `--product-card-carousel-horizontal-padding` | ✅ | Used in MessageListView; falls back to `chatHistoryPadding` when not set |
+| `--cta-button-border-radius` | ✅ | Used in CtaButtonView |
+| `--cta-button-horizontal-padding` | ✅ | Used in CtaButtonView |
+| `--cta-button-vertical-padding` | ✅ | Used in CtaButtonView |
+| `--cta-button-font-size` | ✅ | Used in CtaButtonView |
+| `--cta-button-font-weight` | ✅ | Used in CtaButtonView |
+| `--cta-button-icon-size` | ✅ | Used in CtaButtonView |
 
 ### Unsupported CSS Variables
 

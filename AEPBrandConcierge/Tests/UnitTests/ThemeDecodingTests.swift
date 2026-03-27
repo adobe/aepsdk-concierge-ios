@@ -249,7 +249,7 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Colors
         XCTAssertEqual(theme.colors.primary.primary.color.toHexString(), "#007BFF")
-        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#121212")
+        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#131313")
         XCTAssertEqual(theme.colors.surface.mainContainerBackground.color.toHexString(), "#FFFFFF")
         
         // Layout
@@ -402,6 +402,37 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.colors.productCard.badgeBackgroundColor.color.toHexString(), "#000000")
     }
     
+    // MARK: - CTA Button CSS Variable Tests
+
+    func test_ctaButtonLayout_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonBorderRadius, 99)
+        XCTAssertEqual(theme.layout.ctaButtonHorizontalPadding, 16)
+        XCTAssertEqual(theme.layout.ctaButtonVerticalPadding, 12)
+        XCTAssertEqual(theme.layout.ctaButtonFontSize, 14)
+        XCTAssertEqual(theme.layout.ctaButtonFontWeight, .regular)
+        XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
+    }
+
+    func test_ctaButtonColors_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
+        XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
+    }
+
     func test_missingProductCardBehavior_usesDefaults() {
         // Given — minimal JSON with no productCard behavior
         let minimalJSON = """

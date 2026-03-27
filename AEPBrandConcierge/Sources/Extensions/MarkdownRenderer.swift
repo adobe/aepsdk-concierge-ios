@@ -174,9 +174,9 @@ struct MarkdownRenderer {
             }
 
             // Handle special leaf components based on innermost container
-            #if DEBUG
-            Log.trace(label: LOG_TAG, "consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
-            #endif
+//            #if DEBUG
+//            Log.trace(label: LOG_TAG, "consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
+//            #endif
             if case .some(.thematicBreak) = currentStack.last {
                 events.append(.divider)
             } else {
@@ -318,9 +318,9 @@ struct MarkdownRenderer {
     ///
     /// - Parameter container: The structural component to open.
     private mutating func handleOpen(_ container: PresentationComponent) {
-        #if DEBUG
-        Log.trace(label: LOG_TAG, "OPEN   \(describe(container)) stackDepth(before)=\(nodeStack.count)")
-        #endif
+//        #if DEBUG
+//        Log.trace(label: LOG_TAG, "OPEN   \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+//        #endif
         switch container {
         // Pushes an empty quote node.
         case .blockQuote:
@@ -349,9 +349,9 @@ struct MarkdownRenderer {
     ///
     /// - Parameter container: The structural component to close.
     private mutating func handleClose(_ container: PresentationComponent) {
-        #if DEBUG
-        Log.trace(label: LOG_TAG, "CLOSE  \(describe(container)) stackDepth(before)=\(nodeStack.count)")
-        #endif
+//        #if DEBUG
+//        Log.trace(label: LOG_TAG, "CLOSE  \(describe(container)) stackDepth(before)=\(nodeStack.count)")
+//        #endif
         switch container {
         case .blockQuote:
             popBlockQuote()
