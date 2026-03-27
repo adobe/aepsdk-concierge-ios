@@ -26,30 +26,68 @@ struct ChatTopBar: View {
 
     @State private var showSourcesToggle: Bool = true
 
+    /// Resolved title, preferring theme text over the initializer value.
+    private var resolvedTitle: String {
+        let themeTitle = theme.text.headerTitle
+        return themeTitle.isEmpty ? title : themeTitle
+    }
+
+    /// Resolved subtitle, preferring theme text over the initializer value.
+    private var resolvedSubtitle: String? {
+        let themeSub = theme.text.headerSubtitle
+        if !themeSub.isEmpty { return themeSub }
+        return subtitle
+    }
+
+    private var closeButtonAlignedStart: Bool {
+        theme.behavior.welcomeCard?.closeButtonAlignment == "start"
+    }
+
+    private var titleFont: Font {
+        if let size = theme.layout.headerTitleFontSize {
+            return .system(size: size, design: .rounded).weight(.semibold)
+        }
+        return .system(.title3, design: .rounded).weight(.semibold)
+    }
+
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(.title3, design: .rounded).weight(.semibold))
-                    .foregroundColor(theme.colors.primary.text.color)
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(.footnote))
-                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+        VStack(spacing: 0) {
+            HStack(alignment: .center) {
+                if closeButtonAlignedStart {
+                    closeButton
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(resolvedTitle)
+                        .font(titleFont)
+                        .foregroundColor(theme.colors.primary.text.color)
+                    if let sub = resolvedSubtitle, !sub.isEmpty {
+                        Text(sub)
+                            .font(.system(.footnote))
+                            .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+                    }
+                }
+
+                Spacer()
+
+                if !closeButtonAlignedStart {
+                    closeButton
                 }
             }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
 
-            Spacer()
-
-            Button(action: onClose) {
-                BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
-                    .foregroundColor(theme.colors.primary.text.color)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Close")
+            Divider()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
         .background(theme.colors.surface.mainContainerBackground.color)
+    }
+
+    private var closeButton: some View {
+        Button(action: onClose) {
+            BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
+                .foregroundColor(theme.colors.primary.text.color)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
     }
 }

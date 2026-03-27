@@ -70,6 +70,18 @@ public struct ConciergeLayout: Codable {
     public var ctaButtonFontWeight: CodableFontWeight
     public var ctaButtonIconSize: CGFloat
 
+    // Welcome screen layout
+    public var headerTitleFontSize: CGFloat?
+    public var welcomeTitleFontSize: CGFloat?
+    public var welcomeTextAlign: String?
+    public var welcomeContentPadding: CGFloat?
+    public var welcomePromptImageSize: CGFloat?
+    public var welcomePromptSpacing: CGFloat?
+    public var welcomeTitleBottomSpacing: CGFloat?
+    public var welcomePromptsTopSpacing: CGFloat?
+    public var welcomePromptPadding: CGFloat?
+    public var welcomePromptCornerRadius: CGFloat?
+
     public init(
         inputHeight: CGFloat = 52,
         inputBorderRadius: CGFloat = 12,
@@ -133,7 +145,17 @@ public struct ConciergeLayout: Codable {
         ctaButtonVerticalPadding: CGFloat = 12,
         ctaButtonFontSize: CGFloat = 14,
         ctaButtonFontWeight: CodableFontWeight = .regular,
-        ctaButtonIconSize: CGFloat = 16
+        ctaButtonIconSize: CGFloat = 16,
+        headerTitleFontSize: CGFloat? = nil,
+        welcomeTitleFontSize: CGFloat? = nil,
+        welcomeTextAlign: String? = nil,
+        welcomeContentPadding: CGFloat? = nil,
+        welcomePromptImageSize: CGFloat? = nil,
+        welcomePromptSpacing: CGFloat? = nil,
+        welcomeTitleBottomSpacing: CGFloat? = nil,
+        welcomePromptsTopSpacing: CGFloat? = nil,
+        welcomePromptPadding: CGFloat? = nil,
+        welcomePromptCornerRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -188,6 +210,16 @@ public struct ConciergeLayout: Codable {
         self.ctaButtonFontSize = ctaButtonFontSize
         self.ctaButtonFontWeight = ctaButtonFontWeight
         self.ctaButtonIconSize = ctaButtonIconSize
+        self.headerTitleFontSize = headerTitleFontSize
+        self.welcomeTitleFontSize = welcomeTitleFontSize
+        self.welcomeTextAlign = welcomeTextAlign
+        self.welcomeContentPadding = welcomeContentPadding
+        self.welcomePromptImageSize = welcomePromptImageSize
+        self.welcomePromptSpacing = welcomePromptSpacing
+        self.welcomeTitleBottomSpacing = welcomeTitleBottomSpacing
+        self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
+        self.welcomePromptPadding = welcomePromptPadding
+        self.welcomePromptCornerRadius = welcomePromptCornerRadius
     }
 }
 

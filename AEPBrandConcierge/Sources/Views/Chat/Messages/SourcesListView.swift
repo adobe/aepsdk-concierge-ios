@@ -62,6 +62,19 @@ public struct SourcesListView: View {
         VStack(spacing: 0) {
             Divider().background(Color.black.opacity(0.08))
             sourceRows
+            if !thumbsInline {
+                Divider().background(Color.black.opacity(0.08))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(theme.text.feedbackHelpfulLabel)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    feedbackButtons
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 44)
+                .padding(.trailing, 12)
+                .padding(.vertical, 10)
+            }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
@@ -100,60 +113,72 @@ public struct SourcesListView: View {
             .fill(theme.colors.message.conciergeBackground.color)
     }
 
+    private var thumbsInline: Bool {
+        theme.behavior.feedback?.thumbsPlacement != "below"
+    }
+
     private var header: some View {
-        Button(action: {
-            withAnimation(.easeInOut) {
-                isExpanded.toggle()
-            }
-        }) {
-            HStack(spacing: 8) {
-                chevronImage
-                    .foregroundStyle(theme.colors.message.conciergeText.color)
-                Text("Sources")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.colors.message.conciergeText.color)
-                Spacer()
-                // Feedback buttons
-                HStack(spacing: theme.layout.feedbackContainerGap) {
-                    let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
-
-                    FeedbackIconButton(
-                        iconButtonSize: iconButtonSize,
-                        foregroundColor: thumbUpColor,
-                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
-                        isDisabled: feedbackSentiment != nil,
-                        accessibilityLabel: theme.text.feedbackThumbsUpAria,
-                        action: {
-                        feedbackPresenter.present(.positive, messageId)
-                        },
-                        label: {
-                            thumbUpImage
-                        }
-                    )
-
-                    FeedbackIconButton(
-                        iconButtonSize: iconButtonSize,
-                        foregroundColor: thumbDownColor,
-                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
-                        isDisabled: feedbackSentiment != nil,
-                        accessibilityLabel: theme.text.feedbackThumbsDownAria,
-                        action: {
-                        feedbackPresenter.present(.negative, messageId)
-                        },
-                        label: {
-                            thumbDownImage
-                        }
-                    )
+        VStack(spacing: 0) {
+            Button(action: {
+                withAnimation(.easeInOut) {
+                    isExpanded.toggle()
                 }
+            }) {
+                HStack(spacing: 8) {
+                    chevronImage
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    Text(theme.text.sourcesLabel)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    Spacer()
+                    if thumbsInline {
+                        feedbackButtons
+                    }
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .contentShape(Rectangle())
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .buttonStyle(.plain)
+
         }
-        .buttonStyle(.plain)
         .accessibilityIdentifier("AgentSourcesListView.Header")
+    }
+
+    private var feedbackButtons: some View {
+        HStack(spacing: theme.layout.feedbackContainerGap) {
+            let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
+
+            FeedbackIconButton(
+                iconButtonSize: iconButtonSize,
+                foregroundColor: thumbUpColor,
+                normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
+                isDisabled: feedbackSentiment != nil,
+                accessibilityLabel: theme.text.feedbackThumbsUpAria,
+                action: {
+                    feedbackPresenter.present(.positive, messageId)
+                },
+                label: {
+                    thumbUpImage
+                }
+            )
+
+            FeedbackIconButton(
+                iconButtonSize: iconButtonSize,
+                foregroundColor: thumbDownColor,
+                normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
+                isDisabled: feedbackSentiment != nil,
+                accessibilityLabel: theme.text.feedbackThumbsDownAria,
+                action: {
+                    feedbackPresenter.present(.negative, messageId)
+                },
+                label: {
+                    thumbDownImage
+                }
+            )
+        }
     }
 
     @ViewBuilder
