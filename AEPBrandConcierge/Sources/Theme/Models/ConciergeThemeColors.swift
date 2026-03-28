@@ -98,17 +98,46 @@ public struct ConciergeInputColors: Codable {
     public var text: CodableColor
     public var outline: CodableColor? // TODO: are gradients required?
     public var outlineFocus: CodableColor
+    public var sendIconColor: CodableColor?
+    public var sendArrowIconColor: CodableColor?
+    public var sendArrowBackgroundColor: CodableColor?
+    public var micIconColor: CodableColor?
+    public var micRecordingIconColor: CodableColor?
 
     public init(
         background: CodableColor = CodableColor(Color.white),
         text: CodableColor = CodableColor(Color.primary),
         outline: CodableColor? = nil,
-        outlineFocus: CodableColor = CodableColor(Color.accentColor)
+        outlineFocus: CodableColor = CodableColor(Color.accentColor),
+        sendIconColor: CodableColor? = nil,
+        sendArrowIconColor: CodableColor? = nil,
+        sendArrowBackgroundColor: CodableColor? = nil,
+        micIconColor: CodableColor? = nil,
+        micRecordingIconColor: CodableColor? = nil
     ) {
         self.background = background
         self.text = text
         self.outline = outline
         self.outlineFocus = outlineFocus
+        self.sendIconColor = sendIconColor
+        self.sendArrowIconColor = sendArrowIconColor
+        self.sendArrowBackgroundColor = sendArrowBackgroundColor
+        self.micIconColor = micIconColor
+        self.micRecordingIconColor = micRecordingIconColor
+    }
+}
+
+/// Welcome prompt color tokens
+public struct ConciergeWelcomePromptColors: Codable {
+    public var backgroundColor: CodableColor?
+    public var textColor: CodableColor?
+
+    public init(
+        backgroundColor: CodableColor? = nil,
+        textColor: CodableColor? = nil
+    ) {
+        self.backgroundColor = backgroundColor
+        self.textColor = textColor
     }
 }
 
@@ -187,6 +216,23 @@ public struct ConciergeProductCardColors: Codable {
     }
 }
 
+/// CTA button color tokens
+public struct ConciergeCtaButtonColors: Codable {
+    public var background: CodableColor
+    public var text: CodableColor
+    public var iconColor: CodableColor
+
+    public init(
+        background: CodableColor = CodableColor(Color(UIColor.systemGray6)),
+        text: CodableColor = CodableColor(Color.primary),
+        iconColor: CodableColor = CodableColor(Color.primary)
+    ) {
+        self.background = background
+        self.text = text
+        self.iconColor = iconColor
+    }
+}
+
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
     public var primary: ConciergePrimaryColors
@@ -198,6 +244,8 @@ public struct ConciergeThemeColors: Codable {
     public var feedback: ConciergeFeedbackColors
     public var disclaimer: CodableColor
     public var productCard: ConciergeProductCardColors
+    public var ctaButton: ConciergeCtaButtonColors
+    public var welcomePrompt: ConciergeWelcomePromptColors
 
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
@@ -208,7 +256,9 @@ public struct ConciergeThemeColors: Codable {
         citation: ConciergeCitationColors = ConciergeCitationColors(),
         feedback: ConciergeFeedbackColors = ConciergeFeedbackColors(),
         disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray)),
-        productCard: ConciergeProductCardColors = ConciergeProductCardColors()
+        productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
+        ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
+        welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
     ) {
         self.primary = primary
         self.surface = surface
@@ -219,5 +269,7 @@ public struct ConciergeThemeColors: Codable {
         self.feedback = feedback
         self.disclaimer = disclaimer
         self.productCard = productCard
+        self.ctaButton = ctaButton
+        self.welcomePrompt = welcomePrompt
     }
 }
