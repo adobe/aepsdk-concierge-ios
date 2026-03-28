@@ -100,6 +100,8 @@
 		4C2923E02E7E223200D2D2C1 /* MockChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923DF2E7E223200D2D2C1 /* MockChatService.swift */; };
 		4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923E12E7E226600D2D2C1 /* MockSpeechCapturer.swift */; };
 		4C2923E42E7E27CA00D2D2C1 /* MockSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923E32E7E27CA00D2D2C1 /* MockSpeaker.swift */; };
+		4C2983452F6B7BA10057C927 /* CtaButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983442F6B7BA10057C927 /* CtaButtonView.swift */; };
+		4C2983492F6CBC1B0057C927 /* ColorExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
 		4C3A65BD2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */; };
@@ -167,6 +169,7 @@
 		4CF60C122F000001008CE4F0 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 4CF60C112F000001008CE4F0 /* SnapshotTesting */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPBrandConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */; };
+		B6B082EF543410FE5586506E /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
 /* End PBXBuildFile section */
 
@@ -216,6 +219,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
 		24037AB72EF3645E00FF4031 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -300,6 +304,8 @@
 		4C2923DF2E7E223200D2D2C1 /* MockChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockChatService.swift; sourceTree = "<group>"; };
 		4C2923E12E7E226600D2D2C1 /* MockSpeechCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSpeechCapturer.swift; sourceTree = "<group>"; };
 		4C2923E32E7E27CA00D2D2C1 /* MockSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSpeaker.swift; sourceTree = "<group>"; };
+		4C2983442F6B7BA10057C927 /* CtaButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CtaButtonView.swift; sourceTree = "<group>"; };
+		4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensionTests.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
 		4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Microphone_20_N.svg; sourceTree = "<group>"; };
@@ -659,6 +665,7 @@
 			isa = PBXGroup;
 			children = (
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
+				4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */,
 				244E6A042F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift */,
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
 				24CAB3A32F4506C500CEE013 /* ConciergeLinkHandlerTests.swift */,
@@ -701,6 +708,7 @@
 				4C3A65BF2E55272300EEEF3B /* ChatComposer.swift */,
 				4C3A65C02E55272300EEEF3B /* ComposerDisclaimer.swift */,
 				4C3A65C12E55272300EEEF3B /* ComposerEditingView.swift */,
+				0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */,
 			);
 			path = Composer;
 			sourceTree = "<group>";
@@ -712,6 +720,7 @@
 				4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */,
 				4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */,
 				4C3D5F992E69068500323738 /* ConciergeResponsePlaceholderView.swift */,
+				4C2983442F6B7BA10057C927 /* CtaButtonView.swift */,
 				4C3A65C52E55272300EEEF3B /* MessageListView.swift */,
 				4C1738142E67D59D003E88AF /* SourceRowView.swift */,
 				4C1738102E67C590003E88AF /* SourcesListView.swift */,
@@ -1156,6 +1165,7 @@
 				4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */,
 				24037ADB2EF364B000FF4031 /* ConversationHandle.swift in Sources */,
 				24037ADC2EF364B000FF4031 /* ChatState.swift in Sources */,
+				4C2983452F6B7BA10057C927 /* CtaButtonView.swift in Sources */,
 				24037ADD2EF364B000FF4031 /* ConciergeConfiguration.swift in Sources */,
 				24037ADE2EF364B000FF4031 /* Message.swift in Sources */,
 				24037ADF2EF364B000FF4031 /* CitationDecoration.swift in Sources */,
@@ -1198,6 +1208,7 @@
 				2482FDDD2E3BEA210032F3CA /* SpeechCapturing.swift in Sources */,
 				24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */,
 				247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */,
+				B6B082EF543410FE5586506E /* AudioWaveformView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1208,6 +1219,7 @@
 				4C2923E02E7E223200D2D2C1 /* MockChatService.swift in Sources */,
 				4CDB0DD42EC82CB2000B85D0 /* ThemeTestHelpers.swift in Sources */,
 				4CF60BF12EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift in Sources */,
+				4C2983492F6CBC1B0057C927 /* ColorExtensionTests.swift in Sources */,
 				4C2923DC2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift in Sources */,
 				4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */,
 				244E69ED2F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift in Sources */,
@@ -1335,7 +1347,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.2.0;
+				MARKETING_VERSION = 5.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -1376,7 +1388,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.2.0;
+				MARKETING_VERSION = 5.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;

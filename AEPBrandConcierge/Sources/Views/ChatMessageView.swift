@@ -60,53 +60,93 @@ struct ChatMessageView: View {
     var body: some View {
         switch template {
         case .welcomeHeader(let title, let body):
-            VStack(alignment: .leading, spacing: 10) {
+            let welcomeAlign: TextAlignment = theme.layout.welcomeTextAlign == "center" ? .center : .leading
+            let titleFontSize = theme.layout.welcomeTitleFontSize ?? 22
+            let titleBottomSpacing = theme.layout.welcomeTitleBottomSpacing ?? 10
+            let contentPadding = theme.layout.welcomeContentPadding ?? 0
+
+            VStack(alignment: welcomeAlign == .center ? .center : .leading, spacing: titleBottomSpacing) {
                 Text(title)
-                    .font(.system(.title2, design: .rounded))
-                    .fontWeight(.semibold)
+                    .font(.system(size: titleFontSize, design: .rounded).weight(.semibold))
                     .foregroundColor(theme.colors.primary.text.color)
-                    .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
                 Text(body)
                     .font(.system(.body, design: .rounded))
                     .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
-                    .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
             }
             .padding(.top, 8)
             .padding(.bottom, 4)
+            .padding(.horizontal, contentPadding)
 
         case .welcomePromptSuggestion(let imageSource, let text, let background):
-            Button(action: { onSuggestionTap?(text) }) {
-                HStack(spacing: 0) {
-                    // Left image block
-                    switch imageSource {
-                    case .local(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 90, height: 90)
-                            .clipped()
-                    case .remote(let url):
-                        RemoteImageView(url: url, width: 90, height: 90)
-                    }
+            let promptFullWidth = theme.behavior.welcomeCard?.promptFullWidth ?? true
+            let promptMaxLines = theme.behavior.welcomeCard?.promptMaxLines ?? 3
+            let promptImageSize = theme.layout.welcomePromptImageSize ?? 90
+            let promptPadding = theme.layout.welcomePromptPadding ?? 0
+            let promptCornerRadius = theme.layout.welcomePromptCornerRadius ?? theme.layout.borderRadiusCard
+            let promptBgColor = theme.colors.welcomePrompt.backgroundColor?.color ?? background
+            let promptTextColor = theme.colors.welcomePrompt.textColor?.color ?? theme.colors.primary.text.color
 
-                    // Right text area
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(text)
-                            .font(.system(.body))
-                            .foregroundColor(theme.colors.primary.text.color)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
+            Button(action: { onSuggestionTap?(text) }) {
+                if promptFullWidth {
+                    HStack(spacing: 0) {
+                        // Only render image block when a valid source is available
+                        switch imageSource {
+                        case .local(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: promptImageSize, height: promptImageSize)
+                                .clipped()
+                        case .remote(let url):
+                            if url != nil {
+                                RemoteImageView(url: url, width: promptImageSize, height: promptImageSize)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(text)
+                                .font(.system(.body))
+                                .foregroundColor(promptTextColor)
+                                .multilineTextAlignment(.leading)
+                                .lineLimit(promptMaxLines)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(promptBgColor)
+                    .cornerRadius(promptCornerRadius)
+                } else {
+                    // Compact chip layout
+                    HStack(spacing: 6) {
+                        BrandIcon(assetName: "S2_Icon_Sparkle_20_N", systemName: "sparkles")
+                            .font(.system(size: 14))
+                            .foregroundColor(promptTextColor)
+                        Text(text)
+                            .font(.system(.subheadline))
+                            .foregroundColor(promptTextColor)
+                            .lineLimit(promptMaxLines)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: promptCornerRadius, style: .continuous)
+                            .fill(promptBgColor)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: promptCornerRadius, style: .continuous)
+                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+                    )
                 }
-                .background(background)
-                .cornerRadius(theme.layout.borderRadiusCard)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(promptPadding)
             .buttonStyle(PlainButtonStyle())
             .accessibilityLabel(theme.text.cardAriaSelect)
             .accessibilityHint(text)
@@ -145,6 +185,7 @@ struct ChatMessageView: View {
                                 MarkdownBlockView(
                                     markdown: annotatedBody,
                                     textColor: UIColor(theme.colors.message.conciergeText.color),
+                                    baseFont: resolvedAgentFont,
                                     citationMarkers: markers,
                                     citationStyle: .init(
                                         backgroundColor: UIColor(theme.colors.citation.background.color),
@@ -307,6 +348,9 @@ struct ChatMessageView: View {
                 actionButtonProductCard(data: cardData)
             }
 
+        case .ctaButton(let action):
+            CtaButtonView(action: action)
+
         case .carouselGroup(let items):
             CarouselGroupView(items: items)
 
@@ -460,6 +504,15 @@ private extension ChatMessageView {
 // MARK: - Helpers
 
 private extension ChatMessageView {
+    var resolvedAgentFont: UIFont {
+        let fontSize = theme.typography.fontSize
+        if theme.typography.fontFamily.isEmpty {
+            return UIFont.systemFont(ofSize: fontSize)
+        }
+        return UIFont(name: theme.typography.fontFamily, size: fontSize)
+            ?? UIFont.systemFont(ofSize: fontSize)
+    }
+
     var resolvedMessageMaxWidth: CGFloat? {
         if let behaviorWidth = theme.behavior.chat.messageWidth, behaviorWidth > 1 {
             return behaviorWidth

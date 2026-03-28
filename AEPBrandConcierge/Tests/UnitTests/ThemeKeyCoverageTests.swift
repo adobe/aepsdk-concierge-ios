@@ -246,6 +246,42 @@ private extension ThemeKeyCoverageTests {
         "product-card-text-horizontal-padding": "layout.productCardTextHorizontalPadding",
         "product-card-carousel-spacing": "layout.productCardCarouselSpacing",
         "product-card-carousel-horizontal-padding": "layout.productCardCarouselHorizontalPadding",
+
+        // Colors - CTA Button
+        "cta-button-background-color": "colors.ctaButton.background",
+        "cta-button-text-color": "colors.ctaButton.text",
+        "cta-button-icon-color": "colors.ctaButton.iconColor",
+
+        // Layout - CTA Button
+        "cta-button-border-radius": "layout.ctaButtonBorderRadius",
+        "cta-button-horizontal-padding": "layout.ctaButtonHorizontalPadding",
+        "cta-button-vertical-padding": "layout.ctaButtonVerticalPadding",
+        "cta-button-font-size": "layout.ctaButtonFontSize",
+        "cta-button-font-weight": "layout.ctaButtonFontWeight",
+        "cta-button-icon-size": "layout.ctaButtonIconSize",
+
+        // Colors - Input Icons
+        "input-send-icon-color": "colors.input.sendIconColor",
+        "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",
+        "input-send-arrow-background-color": "colors.input.sendArrowBackgroundColor",
+        "input-mic-icon-color": "colors.input.micIconColor",
+        "input-mic-recording-icon-color": "colors.input.micRecordingIconColor",
+
+        // Colors - Welcome Prompts
+        "welcome-prompt-background-color": "colors.welcomePrompt.backgroundColor",
+        "welcome-prompt-text-color": "colors.welcomePrompt.textColor",
+
+        // Layout - Welcome Screen
+        "header-title-font-size": "layout.headerTitleFontSize",
+        "welcome-title-font-size": "layout.welcomeTitleFontSize",
+        "welcome-text-align": "layout.welcomeTextAlign",
+        "welcome-content-padding": "layout.welcomeContentPadding",
+        "welcome-prompt-image-size": "layout.welcomePromptImageSize",
+        "welcome-prompt-spacing": "layout.welcomePromptSpacing",
+        "welcome-title-bottom-spacing": "layout.welcomeTitleBottomSpacing",
+        "welcome-prompts-top-spacing": "layout.welcomePromptsTopSpacing",
+        "welcome-prompt-padding": "layout.welcomePromptPadding",
+        "welcome-prompt-corner-radius": "layout.welcomePromptCornerRadius",
     ]
 
     // MARK: - Theme token model reflection
@@ -316,6 +352,13 @@ private extension ThemeKeyCoverageTests {
         if path == "colors.surface.light" || path == "colors.surface.dark" {
             return true
         }
+
+        // Welcome prompt colors are optional and covered by CSS mappings (nil by default).
+        // Input icon colors are optional (nil by default), covered by CSS mappings.
+        // These are reported as leaf optionals that don't have values at init.
+
+        // Welcome screen layout tokens are optional (nil by default).
+        // They are covered by CSS key mappings but default to nil.
 
         // Components are derived from canonical tokens on iOS. We intentionally do not require CSS coverage
         // for component style fields because they are not the source of truth.

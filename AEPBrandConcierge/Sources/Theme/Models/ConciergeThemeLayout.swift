@@ -63,6 +63,24 @@ public struct ConciergeLayout: Codable {
     /// Horizontal padding applied to the carousel container within the chat history.
     /// When `nil`, falls back to `chatHistoryPadding`.
     public var productCardCarouselHorizontalPadding: CGFloat?
+    public var ctaButtonBorderRadius: CGFloat
+    public var ctaButtonHorizontalPadding: CGFloat
+    public var ctaButtonVerticalPadding: CGFloat
+    public var ctaButtonFontSize: CGFloat
+    public var ctaButtonFontWeight: CodableFontWeight
+    public var ctaButtonIconSize: CGFloat
+
+    // Welcome screen layout
+    public var headerTitleFontSize: CGFloat?
+    public var welcomeTitleFontSize: CGFloat?
+    public var welcomeTextAlign: String?
+    public var welcomeContentPadding: CGFloat?
+    public var welcomePromptImageSize: CGFloat?
+    public var welcomePromptSpacing: CGFloat?
+    public var welcomeTitleBottomSpacing: CGFloat?
+    public var welcomePromptsTopSpacing: CGFloat?
+    public var welcomePromptPadding: CGFloat?
+    public var welcomePromptCornerRadius: CGFloat?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -121,7 +139,23 @@ public struct ConciergeLayout: Codable {
         productCardTextBottomPadding: CGFloat = 12,
         productCardTextHorizontalPadding: CGFloat = 12,
         productCardCarouselSpacing: CGFloat = 12,
-        productCardCarouselHorizontalPadding: CGFloat? = nil
+        productCardCarouselHorizontalPadding: CGFloat? = nil,
+        ctaButtonBorderRadius: CGFloat = 99,
+        ctaButtonHorizontalPadding: CGFloat = 16,
+        ctaButtonVerticalPadding: CGFloat = 12,
+        ctaButtonFontSize: CGFloat = 14,
+        ctaButtonFontWeight: CodableFontWeight = .regular,
+        ctaButtonIconSize: CGFloat = 16,
+        headerTitleFontSize: CGFloat? = nil,
+        welcomeTitleFontSize: CGFloat? = nil,
+        welcomeTextAlign: String? = nil,
+        welcomeContentPadding: CGFloat? = nil,
+        welcomePromptImageSize: CGFloat? = nil,
+        welcomePromptSpacing: CGFloat? = nil,
+        welcomeTitleBottomSpacing: CGFloat? = nil,
+        welcomePromptsTopSpacing: CGFloat? = nil,
+        welcomePromptPadding: CGFloat? = nil,
+        welcomePromptCornerRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -170,6 +204,22 @@ public struct ConciergeLayout: Codable {
         self.productCardTextHorizontalPadding = productCardTextHorizontalPadding
         self.productCardCarouselSpacing = productCardCarouselSpacing
         self.productCardCarouselHorizontalPadding = productCardCarouselHorizontalPadding
+        self.ctaButtonBorderRadius = ctaButtonBorderRadius
+        self.ctaButtonHorizontalPadding = ctaButtonHorizontalPadding
+        self.ctaButtonVerticalPadding = ctaButtonVerticalPadding
+        self.ctaButtonFontSize = ctaButtonFontSize
+        self.ctaButtonFontWeight = ctaButtonFontWeight
+        self.ctaButtonIconSize = ctaButtonIconSize
+        self.headerTitleFontSize = headerTitleFontSize
+        self.welcomeTitleFontSize = welcomeTitleFontSize
+        self.welcomeTextAlign = welcomeTextAlign
+        self.welcomeContentPadding = welcomeContentPadding
+        self.welcomePromptImageSize = welcomePromptImageSize
+        self.welcomePromptSpacing = welcomePromptSpacing
+        self.welcomeTitleBottomSpacing = welcomeTitleBottomSpacing
+        self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
+        self.welcomePromptPadding = welcomePromptPadding
+        self.welcomePromptCornerRadius = welcomePromptCornerRadius
     }
 }
 

@@ -83,6 +83,34 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertFalse(theme.behavior.input.enableVoiceInput)
         XCTAssertTrue(theme.behavior.input.disableMultiline)
         XCTAssertNil(theme.behavior.input.showAiChatIcon)
+        XCTAssertEqual(theme.behavior.input.silenceThreshold, 0.02, accuracy: 0.0001)
+        XCTAssertEqual(theme.behavior.input.silenceDuration, 2.0, accuracy: 0.0001)
+    }
+
+    func test_behavior_input_decodesCustomSilenceVoiceFields() throws {
+        let minimalJSON = """
+        {
+          "metadata": { "brandName": "Test" },
+          "behavior": {
+            "input": {
+              "silenceThreshold": 0.035,
+              "silenceDuration": 3.5
+            }
+          }
+        }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: minimalJSON)
+        XCTAssertEqual(decoded.behavior.input.silenceThreshold, 0.035, accuracy: 0.0001)
+        XCTAssertEqual(decoded.behavior.input.silenceDuration, 3.5, accuracy: 0.0001)
+    }
+
+    func test_behavior_input_missingSilenceVoiceFields_useDefaults() throws {
+        let minimalJSON = """
+        { "metadata": { "brandName": "Test" } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: minimalJSON)
+        XCTAssertEqual(decoded.behavior.input.silenceThreshold, 0.02, accuracy: 0.0001)
+        XCTAssertEqual(decoded.behavior.input.silenceDuration, 2.0, accuracy: 0.0001)
     }
     
     func test_behavior_chat_decodesCorrectly() {
@@ -107,6 +135,20 @@ final class ThemeDecodingTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.behavior.privacyNotice.title, "Privacy Notice")
         XCTAssertEqual(theme.behavior.privacyNotice.text, "Privacy notice text.")
+    }
+
+    func test_behavior_feedback_displayMode_modalAndAction_decode() throws {
+        let jsonModal = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "feedback": { "displayMode": "modal" } } }
+        """.data(using: .utf8)!
+        let modalTheme = try JSONDecoder().decode(ConciergeTheme.self, from: jsonModal)
+        XCTAssertEqual(modalTheme.behavior.feedback?.displayMode, "modal")
+
+        let jsonAction = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "feedback": { "displayMode": "action" } } }
+        """.data(using: .utf8)!
+        let actionTheme = try JSONDecoder().decode(ConciergeTheme.self, from: jsonAction)
+        XCTAssertEqual(actionTheme.behavior.feedback?.displayMode, "action")
     }
     
     // MARK: - Disclaimer Decoding Tests
@@ -249,7 +291,7 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Colors
         XCTAssertEqual(theme.colors.primary.primary.color.toHexString(), "#007BFF")
-        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#121212")
+        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#131313")
         XCTAssertEqual(theme.colors.surface.mainContainerBackground.color.toHexString(), "#FFFFFF")
         
         // Layout
@@ -402,6 +444,37 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.colors.productCard.badgeBackgroundColor.color.toHexString(), "#000000")
     }
     
+    // MARK: - CTA Button CSS Variable Tests
+
+    func test_ctaButtonLayout_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonBorderRadius, 99)
+        XCTAssertEqual(theme.layout.ctaButtonHorizontalPadding, 16)
+        XCTAssertEqual(theme.layout.ctaButtonVerticalPadding, 12)
+        XCTAssertEqual(theme.layout.ctaButtonFontSize, 14)
+        XCTAssertEqual(theme.layout.ctaButtonFontWeight, .regular)
+        XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
+    }
+
+    func test_ctaButtonColors_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
+        XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
+    }
+
     func test_missingProductCardBehavior_usesDefaults() {
         // Given — minimal JSON with no productCard behavior
         let minimalJSON = """

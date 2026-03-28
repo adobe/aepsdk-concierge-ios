@@ -34,15 +34,123 @@ public struct ConciergeInputBehavior: Codable {
     public var enableVoiceInput: Bool
     public var disableMultiline: Bool
     public var showAiChatIcon: ConciergeIconConfig?
+    public var sendButtonStyle: String
+    /// RMS level above which audio is treated as speech (not silence). Typical range roughly `0.01`–`0.05`.
+    public var silenceThreshold: Float
+    /// Seconds of continuous silence after speech before auto-stopping capture.
+    public var silenceDuration: TimeInterval
+
+    private enum CodingKeys: String, CodingKey {
+        case enableVoiceInput
+        case disableMultiline
+        case showAiChatIcon
+        case sendButtonStyle
+        case silenceThreshold
+        case silenceDuration
+    }
 
     public init(
         enableVoiceInput: Bool = false,
         disableMultiline: Bool = true,
-        showAiChatIcon: ConciergeIconConfig? = nil
+        showAiChatIcon: ConciergeIconConfig? = nil,
+        sendButtonStyle: String = "default",
+        silenceThreshold: Float = 0.02,
+        silenceDuration: TimeInterval = 2.0
     ) {
         self.enableVoiceInput = enableVoiceInput
         self.disableMultiline = disableMultiline
         self.showAiChatIcon = showAiChatIcon
+        self.sendButtonStyle = sendButtonStyle
+        self.silenceThreshold = silenceThreshold
+        self.silenceDuration = silenceDuration
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        enableVoiceInput = try container.decodeIfPresent(Bool.self, forKey: .enableVoiceInput) ?? false
+        disableMultiline = try container.decodeIfPresent(Bool.self, forKey: .disableMultiline) ?? true
+        showAiChatIcon = try container.decodeIfPresent(ConciergeIconConfig.self, forKey: .showAiChatIcon)
+        sendButtonStyle = try container.decodeIfPresent(String.self, forKey: .sendButtonStyle) ?? "default"
+        silenceThreshold = try container.decodeIfPresent(Float.self, forKey: .silenceThreshold) ?? 0.02
+        if let duration = try container.decodeIfPresent(TimeInterval.self, forKey: .silenceDuration) {
+            silenceDuration = duration
+        } else {
+            silenceDuration = 2.0
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(enableVoiceInput, forKey: .enableVoiceInput)
+        try container.encode(disableMultiline, forKey: .disableMultiline)
+        try container.encodeIfPresent(showAiChatIcon, forKey: .showAiChatIcon)
+        try container.encode(sendButtonStyle, forKey: .sendButtonStyle)
+        try container.encode(silenceThreshold, forKey: .silenceThreshold)
+        try container.encode(silenceDuration, forKey: .silenceDuration)
+    }
+}
+
+/// Welcome card behavior configuration
+public struct ConciergeWelcomeCardBehavior: Codable {
+    public var closeButtonAlignment: String
+    public var promptFullWidth: Bool
+    public var promptMaxLines: Int
+    public var contentAlignment: String
+
+    public init(
+        closeButtonAlignment: String = "end",
+        promptFullWidth: Bool = true,
+        promptMaxLines: Int = 3,
+        contentAlignment: String = "top"
+    ) {
+        self.closeButtonAlignment = closeButtonAlignment
+        self.promptFullWidth = promptFullWidth
+        self.promptMaxLines = promptMaxLines
+        self.contentAlignment = contentAlignment
+    }
+}
+
+/// Feedback behavior configuration
+/// To-do: update vars to enums or bools where applicable
+public struct ConciergeFeedbackBehavior: Codable {
+    /// Presentation for the feedback flow. Matches concierge extension theme JSON:
+    /// - `"modal"` — centered dialog with blurred backdrop (`FeedbackOverlayView` modal layout).
+    /// - `"action"` — action sheet-style layout with drag affordance.
+    public var displayMode: String
+    public var thumbsPlacement: String
+
+    private enum CodingKeys: String, CodingKey {
+        case displayMode
+        case thumbsPlacement
+    }
+
+    public init(
+        displayMode: String = "modal",
+        thumbsPlacement: String = "inline"
+    ) {
+        self.displayMode = displayMode
+        self.thumbsPlacement = thumbsPlacement
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode) ?? "modal"
+        thumbsPlacement = try container.decodeIfPresent(String.self, forKey: .thumbsPlacement) ?? "inline"
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(displayMode, forKey: .displayMode)
+        try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
+    }
+}
+
+/// Citations behavior configuration
+public struct ConciergeCitationsBehavior: Codable {
+    public var showLinkIcon: Bool
+
+    public init(showLinkIcon: Bool = false) {
+        self.showLinkIcon = showLinkIcon
     }
 }
 
@@ -141,18 +249,68 @@ public struct ConciergeBehaviorConfig: Codable {
     public var chat: ConciergeChatBehavior
     public var privacyNotice: ConciergePrivacyNoticeBehavior
     public var productCard: ConciergeProductCardBehavior?
+    public var welcomeCard: ConciergeWelcomeCardBehavior?
+    public var feedback: ConciergeFeedbackBehavior?
+    public var citations: ConciergeCitationsBehavior?
+
+    private enum CodingKeys: String, CodingKey {
+        case multimodalCarousel
+        case input
+        case chat
+        case privacyNotice
+        case productCard
+        case welcomeCard
+        case feedback
+        case citations
+    }
 
     public init(
         multimodalCarousel: ConciergeMultimodalCarouselBehavior = ConciergeMultimodalCarouselBehavior(),
         input: ConciergeInputBehavior = ConciergeInputBehavior(),
         chat: ConciergeChatBehavior = ConciergeChatBehavior(),
         privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior(),
-        productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior()
+        productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior(),
+        welcomeCard: ConciergeWelcomeCardBehavior? = nil,
+        feedback: ConciergeFeedbackBehavior? = nil,
+        citations: ConciergeCitationsBehavior? = nil
     ) {
         self.multimodalCarousel = multimodalCarousel
         self.input = input
         self.chat = chat
         self.privacyNotice = privacyNotice
         self.productCard = productCard
+        self.welcomeCard = welcomeCard
+        self.feedback = feedback
+        self.citations = citations
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        multimodalCarousel = try container.decodeIfPresent(ConciergeMultimodalCarouselBehavior.self, forKey: .multimodalCarousel)
+            ?? ConciergeMultimodalCarouselBehavior()
+        input = try container.decodeIfPresent(ConciergeInputBehavior.self, forKey: .input) ?? ConciergeInputBehavior()
+        chat = try container.decodeIfPresent(ConciergeChatBehavior.self, forKey: .chat) ?? ConciergeChatBehavior()
+        privacyNotice = try container.decodeIfPresent(ConciergePrivacyNoticeBehavior.self, forKey: .privacyNotice)
+            ?? ConciergePrivacyNoticeBehavior()
+        if container.contains(.productCard) {
+            productCard = try container.decodeIfPresent(ConciergeProductCardBehavior.self, forKey: .productCard)
+        } else {
+            productCard = ConciergeProductCardBehavior()
+        }
+        welcomeCard = try container.decodeIfPresent(ConciergeWelcomeCardBehavior.self, forKey: .welcomeCard)
+        feedback = try container.decodeIfPresent(ConciergeFeedbackBehavior.self, forKey: .feedback)
+        citations = try container.decodeIfPresent(ConciergeCitationsBehavior.self, forKey: .citations)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(multimodalCarousel, forKey: .multimodalCarousel)
+        try container.encode(input, forKey: .input)
+        try container.encode(chat, forKey: .chat)
+        try container.encode(privacyNotice, forKey: .privacyNotice)
+        try container.encodeIfPresent(productCard, forKey: .productCard)
+        try container.encodeIfPresent(welcomeCard, forKey: .welcomeCard)
+        try container.encodeIfPresent(feedback, forKey: .feedback)
+        try container.encodeIfPresent(citations, forKey: .citations)
     }
 }
