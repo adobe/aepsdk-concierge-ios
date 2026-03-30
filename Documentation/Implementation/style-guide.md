@@ -106,10 +106,14 @@ Supported formats:
 Dimensions use CSS pixel units:
 
 ```json
-"--input-height": "52px"
-"--input-border-radius": "12px"
-"--message-max-width": "100%"
+{
+  "--input-height-mobile": "52px",
+  "--input-border-radius-mobile": "12px",
+  "--message-max-width": "100%"
+}
 ```
+
+On iOS, prefer the `*-mobile` token names for input height and corner radius; `--input-height` and `--input-border-radius` without the suffix are not supported (see [Unsupported CSS Variables](#unsupported-css-variables)).
 
 ### Padding
 
@@ -168,10 +172,10 @@ Theme identification information.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `metadata.brandName` | `String` | `""` | Brand/company name |
-| `metadata.version` | `String` | `"0.0.0"` | Theme version |
-| `metadata.language` | `String` | `"en-US"` | Locale identifier |
-| `metadata.namespace` | `String` | `"brand-concierge"` | Theme namespace |
+| `metadata.brandName` | string | `""` | Brand/company name |
+| `metadata.version` | string | `"0.0.0"` | Theme version |
+| `metadata.language` | string | `"en-US"` | Locale identifier |
+| `metadata.namespace` | string | `"brand-concierge"` | Theme namespace |
 
 ### Example
 
@@ -196,61 +200,61 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.multimodalCarousel.cardClickAction` | `String` | `"openLink"` | Action when carousel card is tapped. Currently "openLink" is the only option available. |
-| `behavior.multimodalCarousel.carouselStyle` | `String` | `"paged"` | Carousel scroll style. `"paged"` snaps to one item at a time with prev/next buttons and page indicator dots. `"scroll"` provides continuous horizontal scrolling. |
+| `behavior.multimodalCarousel.cardClickAction` | string | `"openLink"` | Action when carousel card is tapped. Currently "openLink" is the only option available. |
+| `behavior.multimodalCarousel.carouselStyle` | string | `"paged"` | Carousel scroll style. `"paged"` snaps to one item at a time with prev/next buttons and page indicator dots. `"scroll"` provides continuous horizontal scrolling. |
 
 ### Input
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.input.enableVoiceInput` | `Bool` | `false` | Enable voice input button |
-| `behavior.input.disableMultiline` | `Bool` | `true` | Disable multiline text input |
-| `behavior.input.showAiChatIcon` | `Object?` | `null` | AI chat icon configuration |
-| `behavior.input.sendButtonStyle` | `String` | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
-| `behavior.input.silenceThreshold` | `Number` | `0.02` | Voice capture: RMS level (raw, before UI normalization) above which input counts as speech. Lower values detect quieter speech but may increase false “speech” detection. |
-| `behavior.input.silenceDuration` | `Number` | `2` | Voice capture: seconds of silence after speech is detected before recording stops automatically. |
+| `behavior.input.enableVoiceInput` | boolean | `false` | Enable voice input button |
+| `behavior.input.disableMultiline` | boolean | `true` | Disable multiline text input |
+| `behavior.input.showAiChatIcon` | object | `null` | AI chat icon configuration. Object with an `icon` property (SVG string or URL). |
+| `behavior.input.sendButtonStyle` | string | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
+| `behavior.input.silenceThreshold` | number | `0.02` | Voice capture: RMS level (raw, before UI normalization) above which input counts as speech. Lower values detect quieter speech but may increase false “speech” detection. |
+| `behavior.input.silenceDuration` | number | `2` | Voice capture: seconds of silence after speech is detected before recording stops automatically. |
 
 ### Chat
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.chat.messageAlignment` | `String` | `"left"` | Message alignment (`"left"`, `"center"`, `"right"`) |
-| `behavior.chat.messageWidth` | `String` | `"100%"` | Max message width (e.g., `"100%"`, `"768px"`) |
+| `behavior.chat.messageAlignment` | string | `"left"` | Message alignment (`"left"`, `"center"`, `"right"`) |
+| `behavior.chat.messageWidth` | string | `"100%"` | Max message width (e.g., `"100%"`, `"768px"`) |
 
 ### Product Card
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.productCard.cardStyle` | `String` | `"actionButton"` | Rendering style for product cards. `"actionButton"` shows an image, description text, and primary/secondary action buttons. `"productDetail"` shows an image, optional badge, title, subtitle, and price — the entire card is tappable. |
+| `behavior.productCard.cardStyle` | string | `"actionButton"` | Rendering style for product cards. `"actionButton"` shows an image, description text, and primary/secondary action buttons. `"productDetail"` shows an image, optional badge, title, subtitle, and price — the entire card is tappable. |
 
 ### Welcome Card
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.welcomeCard.closeButtonAlignment` | `String` | `"end"` | Close button placement on header. `"start"` places it before the title, `"end"` places it after (trailing). |
-| `behavior.welcomeCard.promptFullWidth` | `Bool` | `true` | When `true`, prompt suggestions render as full-width cards with image thumbnails. When `false`, they render as compact chips. |
-| `behavior.welcomeCard.promptMaxLines` | `Int` | `3` | Maximum number of text lines shown in prompt suggestion cards. |
-| `behavior.welcomeCard.contentAlignment` | `String` | `"top"` | Vertical alignment of welcome content. `"center"` centers content vertically, `"top"` aligns to top. |
+| `behavior.welcomeCard.closeButtonAlignment` | string | `"end"` | Close button placement on header. `"start"` places it before the title, `"end"` places it after (trailing). |
+| `behavior.welcomeCard.promptFullWidth` | boolean | `true` | When `true`, prompt suggestions render as full-width cards with image thumbnails. When `false`, they render as compact chips. |
+| `behavior.welcomeCard.promptMaxLines` | number | `3` | Maximum number of text lines shown in prompt suggestion cards. |
+| `behavior.welcomeCard.contentAlignment` | string | `"top"` | Vertical alignment of welcome content. `"center"` centers content vertically, `"top"` aligns to top. |
 
 ### Feedback
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.feedback.displayMode` | `String` | `"modal"` | Feedback dialog display mode. `"modal"` renders inline as a Modal overlay; `"action"` renders as an ActionSheet. |
-| `behavior.feedback.thumbsPlacement` | `String` | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
+| `behavior.feedback.displayMode` | string | `"modal"` | Feedback dialog display mode. `"modal"` renders inline as a Modal overlay; `"action"` renders as an action sheet-style layout. |
+| `behavior.feedback.thumbsPlacement` | string | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
 
 ### Citations
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.citations.showLinkIcon` | `Bool` | `false` | When `true`, shows an external link icon next to citation URLs in the sources list. |
+| `behavior.citations.showLinkIcon` | boolean | `false` | When `true`, shows an external link icon next to citation URLs in the sources list. |
 
 ### Privacy Notice
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.privacyNotice.title` | `String` | `"Privacy Notice"` | Privacy dialog title |
-| `behavior.privacyNotice.text` | `String` | `"Privacy notice text."` | Privacy notice content |
+| `behavior.privacyNotice.title` | string | `"Privacy Notice"` | Privacy dialog title |
+| `behavior.privacyNotice.text` | string | `"Privacy notice text."` | Privacy notice content |
 
 ### Example
 
@@ -305,10 +309,10 @@ Legal disclaimer text with embedded links.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `disclaimer.text` | `String` | `"AI responses may be inaccurate..."` | Disclaimer text with `{placeholders}` for links |
-| `disclaimer.links` | `Array` | `[]` | Array of link objects |
-| `disclaimer.links[].text` | `String` | `""` | Link display text (matches placeholder) |
-| `disclaimer.links[].url` | `String` | `""` | Link URL |
+| `disclaimer.text` | string | `"AI responses may be inaccurate..."` | Disclaimer text with `{placeholders}` for links |
+| `disclaimer.links` | array | `[]` | Array of link objects; each item has string properties `text` and `url`. |
+| `disclaimer.links[].text` | string | `""` | Link display text (matches placeholder) |
+| `disclaimer.links[].url` | string | `""` | Link URL |
 
 ### Example
 
@@ -426,10 +430,10 @@ List-based configuration for examples and feedback options.
 
 | JSON Key | Type | Description |
 |----------|------|-------------|
-| `arrays["welcome.examples"]` | `Array` | Welcome screen example cards |
-| `arrays["welcome.examples"][].text` | `String` | Card display text |
-| `arrays["welcome.examples"][].image` | `String?` | Card image URL |
-| `arrays["welcome.examples"][].backgroundColor` | `String?` | Card background color (hex) |
+| `arrays["welcome.examples"]` | array | Welcome screen example cards; each item is an object with `text`, optional `image`, and optional `backgroundColor` (hex string). |
+| `arrays["welcome.examples"][].text` | string | Card display text |
+| `arrays["welcome.examples"][].image` | string | Card image URL (optional; may be `null` or omitted). |
+| `arrays["welcome.examples"][].backgroundColor` | string | Card background color as hex string (optional; may be `null` or omitted). |
 
 ### Feedback Options
 
@@ -439,8 +443,8 @@ List-based configuration for examples and feedback options.
 
 | JSON Key | Type | Description |
 |----------|------|-------------|
-| `arrays["feedback.positive.options"]` | `Array<String>` | Positive feedback checkbox options |
-| `arrays["feedback.negative.options"]` | `Array<String>` | Negative feedback checkbox options |
+| `arrays["feedback.positive.options"]` | array | Positive feedback checkbox options; array of strings. |
+| `arrays["feedback.negative.options"]` | array | Negative feedback checkbox options; array of strings. |
 
 ### Example
 
@@ -476,7 +480,7 @@ Icon and image asset configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `assets.icons.company` | `String` | `""` | Company logo (SVG string or URL) |
+| `assets.icons.company` | string | `""` | Company logo (SVG string or URL) |
 
 ### Example
 
