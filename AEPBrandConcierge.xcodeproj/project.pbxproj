@@ -42,6 +42,7 @@
 		24037AE32EF364B000FF4031 /* MessageTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AC92EF364B000FF4031 /* MessageTemplate.swift */; };
 		24037AE42EF364B000FF4031 /* WelcomePromptSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ACC2EF364B000FF4031 /* WelcomePromptSuggestion.swift */; };
 		24037AE92EF364D800FF4031 /* ConciergeOverlayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */; };
+		244E6A102F29010000ADF1AA /* ConciergeChatViewReuse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244E6A112F29010000ADF1AA /* ConciergeChatViewReuse.swift */; };
 		24037AEA2EF364D800FF4031 /* ConciergeWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AE72EF364D800FF4031 /* ConciergeWrapper.swift */; };
 		24037AEB2EF364D800FF4031 /* ConciergeHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AE52EF364D800FF4031 /* ConciergeHostingController.swift */; };
 		243013782E67A27700F6673E /* ButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243013772E67A27700F6673E /* ButtonView.swift */; };
@@ -244,6 +245,7 @@
 		24037AD52EF364B000FF4031 /* Source.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Source.swift; sourceTree = "<group>"; };
 		24037AE52EF364D800FF4031 /* ConciergeHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeHostingController.swift; sourceTree = "<group>"; };
 		24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeOverlayManager.swift; sourceTree = "<group>"; };
+		244E6A112F29010000ADF1AA /* ConciergeChatViewReuse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatViewReuse.swift; sourceTree = "<group>"; };
 		24037AE72EF364D800FF4031 /* ConciergeWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeWrapper.swift; sourceTree = "<group>"; };
 		243013772E67A27700F6673E /* ButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonView.swift; sourceTree = "<group>"; };
 		243868C02EB1758E004BF9C0 /* Event+Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Event+Concierge.swift"; sourceTree = "<group>"; };
@@ -478,6 +480,7 @@
 		24037AE82EF364D800FF4031 /* Presentation */ = {
 			isa = PBXGroup;
 			children = (
+				244E6A112F29010000ADF1AA /* ConciergeChatViewReuse.swift */,
 				24037AE52EF364D800FF4031 /* ConciergeHostingController.swift */,
 				24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */,
 				24037AE72EF364D800FF4031 /* ConciergeWrapper.swift */,
@@ -1122,6 +1125,7 @@
 			files = (
 				2482FDE22E3C14C10032F3CA /* TextSpeaker.swift in Sources */,
 				24037AE92EF364D800FF4031 /* ConciergeOverlayManager.swift in Sources */,
+				244E6A102F29010000ADF1AA /* ConciergeChatViewReuse.swift in Sources */,
 				24037AEA2EF364D800FF4031 /* ConciergeWrapper.swift in Sources */,
 				24037AEB2EF364D800FF4031 /* ConciergeHostingController.swift in Sources */,
 				4C5FE3272EBD9D2F004F9286 /* CitationAttachmentBuilder.swift in Sources */,

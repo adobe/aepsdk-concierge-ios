@@ -88,3 +88,15 @@ public struct ConciergeConfiguration: Codable {
         try container.encode(surfaces, forKey: .surfaces)
     }
 }
+
+extension ConciergeConfiguration {
+    /// Whether ECID, server, datastream, and surfaces match so the same in-memory `ChatView` can keep serving this Concierge connection after dismiss.
+    func hasSameChatServiceIdentity(as other: ConciergeConfiguration) -> Bool {
+        guard ecid == other.ecid,
+              server == other.server,
+              datastream == other.datastream else {
+            return false
+        }
+        return Set(surfaces) == Set(other.surfaces)
+    }
+}
