@@ -41,6 +41,9 @@ class SpeechCapturer: SpeechCapturing {
 
     private var routeChangeObserver: NSObjectProtocol?
 
+    /// Prevents stale `SFSpeechRecognitionTask` callbacks (from a prior session or `cancel()`) from mutating state or calling `abortStreamingCapture` after a new capture has started.
+    private var recognitionSessionToken = UUID()
+
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
         routeChangeObserver = NotificationCenter.default.addObserver(
@@ -119,10 +122,14 @@ class SpeechCapturer: SpeechCapturing {
     }
 
     func endCapture(completion: @escaping (String?, (any Error)?) -> Void) {
+        recognitionSessionToken = UUID()
         if audioEngine.isRunning {
             audioEngine.stop()
         }
         recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
         removeInputTapIfNeeded()
         isCapturing = false
         DispatchQueue.main.async { [weak self] in self?.audioLevelHandler?(0) }
@@ -175,9 +182,10 @@ class SpeechCapturer: SpeechCapturing {
         return request
     }
 
-    private func recognitionTaskResultHandler() -> (SFSpeechRecognitionResult?, Error?) -> Void {
+    private func recognitionTaskResultHandler(sessionToken: UUID) -> (SFSpeechRecognitionResult?, Error?) -> Void {
         { [weak self] result, error in
             guard let self = self else { return }
+            guard self.recognitionSessionToken == sessionToken else { return }
 
             if let result = result {
                 let text = result.bestTranscription.formattedString
@@ -192,18 +200,22 @@ class SpeechCapturer: SpeechCapturing {
             if isCanceled { return }
 
             DispatchQueue.main.async { [weak self] in
-                self?.abortStreamingCapture(shouldStopEngineFirst: true)
+                guard let self = self, self.recognitionSessionToken == sessionToken else { return }
+                self.abortStreamingCapture(shouldStopEngineFirst: true)
             }
         }
     }
 
     /// Installs the tap with `format: nil` so it tracks the live input bus (required when the route/sample rate changes, e.g. Bluetooth).
     private func startRecognitionPipeline(recognizer: SFSpeechRecognizer) throws {
+        recognitionSessionToken = UUID()
+        let sessionToken = recognitionSessionToken
+
         let inputNode = audioEngine.inputNode
         let request = makeStreamingRecognitionRequest()
         recognitionRequest = request
 
-        recognitionTask = recognizer.recognitionTask(with: request, resultHandler: recognitionTaskResultHandler())
+        recognitionTask = recognizer.recognitionTask(with: request, resultHandler: recognitionTaskResultHandler(sessionToken: sessionToken))
 
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] buffer, _ in
             request.append(buffer)
@@ -264,6 +276,7 @@ class SpeechCapturer: SpeechCapturing {
     private func abortStreamingCapture(shouldStopEngineFirst: Bool) {
         let performTeardown = { [weak self] in
             guard let self = self, self.isCapturing else { return }
+            self.recognitionSessionToken = UUID()
             if shouldStopEngineFirst {
                 self.audioEngine.stop()
             }
@@ -281,16 +294,21 @@ class SpeechCapturer: SpeechCapturing {
     }
 
     private func processAudioLevel(buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData?[0] else { return }
         let frameLength = Int(buffer.frameLength)
         guard frameLength > 0 else { return }
 
-        var sum: Float = 0
-        for i in 0..<frameLength {
-            let sample = channelData[i]
-            sum += sample * sample
+        let rootMeanSquare: Float?
+        if let floatSamples = buffer.floatChannelData?[0] {
+            rootMeanSquare = Self.rootMeanSquare(floatSamples: floatSamples, frameLength: frameLength)
+        } else if let int16Samples = buffer.int16ChannelData?[0] {
+            rootMeanSquare = Self.rootMeanSquare(int16Samples: int16Samples, frameLength: frameLength)
+        } else if let int32Samples = buffer.int32ChannelData?[0] {
+            rootMeanSquare = Self.rootMeanSquare(int32Samples: int32Samples, frameLength: frameLength)
+        } else {
+            rootMeanSquare = nil
         }
-        let rms = sqrtf(sum / Float(frameLength))
+
+        guard let rms = rootMeanSquare else { return }
         // Normalize to 0...1 range (clamp raw RMS, typical speech peaks ~0.1-0.3)
         let normalized = min(rms / 0.2, 1.0)
 
@@ -305,9 +323,39 @@ class SpeechCapturer: SpeechCapturing {
                 silenceStart = Date()
             } else if let start = silenceStart, Date().timeIntervalSince(start) >= silenceDuration {
                 silenceStart = nil
+                hasSpokeOnce = false
                 DispatchQueue.main.async { [weak self] in self?.silenceHandler?() }
             }
         }
+    }
+
+    private static func rootMeanSquare(floatSamples: UnsafePointer<Float>, frameLength: Int) -> Float {
+        var sum: Float = 0
+        for sampleIndex in 0..<frameLength {
+            let sample = floatSamples[sampleIndex]
+            sum += sample * sample
+        }
+        return sqrtf(sum / Float(frameLength))
+    }
+
+    private static func rootMeanSquare(int16Samples: UnsafePointer<Int16>, frameLength: Int) -> Float {
+        let int16Scale = 1.0 / Float(Int16.max)
+        var sum: Float = 0
+        for sampleIndex in 0..<frameLength {
+            let sample = Float(int16Samples[sampleIndex]) * int16Scale
+            sum += sample * sample
+        }
+        return sqrtf(sum / Float(frameLength))
+    }
+
+    private static func rootMeanSquare(int32Samples: UnsafePointer<Int32>, frameLength: Int) -> Float {
+        let int32Scale = 1.0 / Float(Int32.max)
+        var sum: Float = 0
+        for sampleIndex in 0..<frameLength {
+            let sample = Float(int32Samples[sampleIndex]) * int32Scale
+            sum += sample * sample
+        }
+        return sqrtf(sum / Float(frameLength))
     }
 
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void) {
