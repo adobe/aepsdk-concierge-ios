@@ -30,37 +30,14 @@ public extension Concierge {
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
-        // Dispatch event to request state data necessary for displaying the UI
-        let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
-                              type: ConciergeConstants.EventType.concierge,
-                              source: EventSource.requestContent,
-                              data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
-
-        MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
-            guard let responseEvent = responseEvent,
-                  let eventData = responseEvent.data,
-                  let config = eventData[ConciergeConstants.EventData.Key.CONFIG] as? ConciergeConfiguration else {
-                Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
-                return
-            }
-
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
             self.speechCapturer = speechCapturer
             self.textSpeaker = textSpeaker
             self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
             self.chatSubtitle = subtitle
             self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
-            let view = ChatView(
-                speechCapturer: self.speechCapturer,
-                textSpeaker: self.textSpeaker,
-                title: self.chatTitle,
-                subtitle: self.chatSubtitle,
-                conciergeConfiguration: config,
-                onClose: { Concierge.hide() }
-            )
-            Task { @MainActor in
-                ConciergeOverlayManager.shared.showChat(view)
-            }
+            presentConciergeSwiftUIOverlay(configuration: config)
         }
     }
 
@@ -124,30 +101,121 @@ public extension Concierge {
     ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title displayed in the chat header.
     ///   - subtitle: Optional subtitle displayed under the title.
+    ///   - speechCapturer: Optional speech capture; when `nil`, any implementation set by a previous `show` / `present` call is kept.
+    ///   - textSpeaker: Optional TTS; when `nil`, any implementation set by a previous call is kept.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
-    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, handleLink: ((URL) -> Bool)? = nil) {
-        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
-        self.chatSubtitle = subtitle
-        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
+            if let speechCapturer = speechCapturer {
+                self.speechCapturer = speechCapturer
+            }
+            if let textSpeaker = textSpeaker {
+                self.textSpeaker = textSpeaker
+            }
+            self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
+            self.chatSubtitle = subtitle
+            self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
-        // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
-        // as we have in the swiftui version
+            attachConciergeUIKitHost(configuration: config, presentingViewController: presentingViewController)
+        }
+    }
+}
 
-        let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(surfaces: surfaces), title: title, subtitle: subtitle)
+// MARK: - Shared presentation internals
+
+extension Concierge {
+    /// Fetches `ConciergeConfiguration` via the shared `SHOW_UI` event for SwiftUI and UIKit entry points.
+    fileprivate static func fetchChatConfiguration(
+        forSurfaces surfaces: [String],
+        completion: @escaping @MainActor (ConciergeConfiguration) -> Void
+    ) {
+        let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
+                              type: ConciergeConstants.EventType.concierge,
+                              source: EventSource.requestContent,
+                              data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
+
+        MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
+            guard let responseEvent = responseEvent,
+                  let eventData = responseEvent.data,
+                  let config = eventData[ConciergeConstants.EventData.Key.CONFIG] as? ConciergeConfiguration else {
+                Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
+                return
+            }
+            Task { @MainActor in
+                completion(config)
+            }
+        }
+    }
+
+    @MainActor
+    fileprivate static func makeChatView(
+        configuration: ConciergeConfiguration,
+        title: String,
+        subtitle: String?
+    ) -> ChatView {
+        ChatView(
+            speechCapturer: speechCapturer,
+            textSpeaker: textSpeaker,
+            title: title,
+            subtitle: subtitle,
+            conciergeConfiguration: configuration,
+            onClose: { Concierge.hide() }
+        )
+    }
+
+    @MainActor
+    fileprivate static func presentConciergeSwiftUIOverlay(configuration: ConciergeConfiguration) {
+        let overlay = ConciergeOverlayManager.shared
+        let resolvedTitle = chatTitle
+        let resolvedSubtitle = chatSubtitle
+        _ = overlay.makeOverlayChatView(
+            configuration: configuration,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle
+        ) {
+            makeChatView(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle)
+        }
+        overlay.showingConcierge = true
+    }
+
+    @MainActor
+    fileprivate static func attachConciergeUIKitHost(
+        configuration: ConciergeConfiguration,
+        presentingViewController: UIViewController
+    ) {
+        if let previousHosting = presentedUIKitController {
+            previousHosting.willMove(toParent: nil)
+            previousHosting.view.removeFromSuperview()
+            previousHosting.removeFromParent()
+            presentedUIKitController = nil
+        }
+
+        let resolvedTitle = chatTitle
+        let resolvedSubtitle = chatSubtitle
+        let view = ConciergeChatViewReuse.existingOrNew(
+            configuration: configuration,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle,
+            storedView: &detachedUIKitChatView,
+            storedTitle: &detachedUIKitChatTitle,
+            storedSubtitle: &detachedUIKitChatSubtitle
+        ) {
+            makeChatView(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle)
+        }
+
+        let hosting = ConciergeHostingController(chatView: view)
         presentedUIKitController = hosting
 
-        Task { @MainActor in
-            presentingViewController.addChild(hosting)
-            hosting.view.translatesAutoresizingMaskIntoConstraints = false
-            presentingViewController.view.addSubview(hosting.view)
-            NSLayoutConstraint.activate([
-                hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
-                hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
-                hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
-                hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
-            ])
-            hosting.didMove(toParent: presentingViewController)
-        }
+        presentingViewController.addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        presentingViewController.view.addSubview(hosting.view)
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
+        ])
+        hosting.didMove(toParent: presentingViewController)
     }
 }

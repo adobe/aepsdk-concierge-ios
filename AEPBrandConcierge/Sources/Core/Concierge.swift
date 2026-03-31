@@ -36,6 +36,12 @@ public class Concierge: NSObject, Extension {
     static var linkInterceptor: ConciergeLinkInterceptor = ConciergeLinkInterceptor()
     static var presentedUIKitController: UIViewController?
 
+    // Held while the UIKit hosting controller is detached (`hide`) so the next `present` can reuse the same `ChatView` (SwiftUI overlay uses `ConciergeOverlayManager`).
+
+    @MainActor static var detachedUIKitChatView: ChatView?
+    @MainActor static var detachedUIKitChatTitle: String?
+    @MainActor static var detachedUIKitChatSubtitle: String?
+
     // MARK: - Extension Protocol Methods
 
     public required init?(runtime: ExtensionRuntime) {

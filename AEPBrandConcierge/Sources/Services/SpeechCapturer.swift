@@ -28,6 +28,7 @@ class SpeechCapturer: SpeechCapturing {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var currentTranscription = ""
+    private var hasInputTapInstalled = false
 
     /// Silence detection
     private var silenceThreshold: Float = 0.02
@@ -35,8 +36,26 @@ class SpeechCapturer: SpeechCapturing {
     private var silenceStart: Date?
     private var hasSpokeOnce = false
 
+    /// Avoid overlapping pipeline restarts when route notifications fire in quick succession.
+    private var isRestartingCaptureForRouteChange = false
+
+    private var routeChangeObserver: NSObjectProtocol?
+
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
+        routeChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleAudioRouteChange(notification: notification)
+        }
+    }
+
+    deinit {
+        if let routeChangeObserver {
+            NotificationCenter.default.removeObserver(routeChangeObserver)
+        }
     }
 
     func configureSilenceDetection(threshold: Float, duration: TimeInterval) {
@@ -71,81 +90,31 @@ class SpeechCapturer: SpeechCapturing {
     }
 
     func beginCapture() {
-        // Prevent double-starts
+        // Prevent double-starts which can cause a crash due to multiple recognition tasks trying to access the same audio engine/tap
         if isCapturing {
             Log.warning(label: self.LOG_TAG, "beginCapture ignored. Capturing is already in progress.")
             return
         }
+
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            Log.error(label: self.LOG_TAG, "Speech recognition is not available for the current locale or configuration.")
+            return
+        }
+
         isCapturing = true
-        currentTranscription = ""
-        silenceStart = nil
-        hasSpokeOnce = false
-        // Cancel any existing recognition task
-        recognitionTask?.cancel()
-        recognitionTask = nil
+        resetTranscriptionAndSilenceTracking()
+        cancelRecognitionTaskAndClearRequest()
 
-        // Set up audio session
-        let audioSession = AVAudioSession.sharedInstance()
+        prepareAudioEngineForNewInputTap()
 
         do {
-            try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
-            try audioSession.setMode(.measurement)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
+            try configureAudioSessionForCapture()
+            try startRecognitionPipeline(recognizer: recognizer)
         } catch {
-            Log.error(label: self.LOG_TAG, "Failed to set up audio session: \(error)")
+            Log.error(label: self.LOG_TAG, "Failed to start speech capture: \(error)")
             isCapturing = false
-            return
-        }
-
-        // Ensure a clean slate on the input node
-        let inputNode = audioEngine.inputNode
-        if audioEngine.isRunning {
-            audioEngine.stop()
-        }
-        inputNode.removeTap(onBus: 0)
-
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        if #available(iOS 16, *) {
-            recognitionRequest?.addsPunctuation = true
-        }
-
-        guard let recognitionRequest = recognitionRequest else {
-            Log.error(label: self.LOG_TAG, "Unable to create recognition request")
-            isCapturing = false
-            return
-        }
-
-        recognitionRequest.shouldReportPartialResults = true
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
-            if let result = result {
-                let text = result.bestTranscription.formattedString
-                self.currentTranscription = text
-                self.responseProcessor?(text)
-            }
-
-            if error != nil {
-                self.audioEngine.stop()
-                inputNode.removeTap(onBus: 0)
-                self.recognitionRequest = nil
-                self.recognitionTask = nil
-                self.isCapturing = false
-            }
-        }
-
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            recognitionRequest.append(buffer)
-            self?.processAudioLevel(buffer: buffer)
-        }
-
-        audioEngine.prepare()
-
-        do {
-            try audioEngine.start()
-        } catch {
-            Log.error(label: self.LOG_TAG, "Failed to start audio engine: \(error)")
-            isCapturing = false
+            cancelRecognitionTaskAndClearRequest()
+            prepareAudioEngineForNewInputTap()
         }
     }
 
@@ -154,13 +123,162 @@ class SpeechCapturer: SpeechCapturing {
             audioEngine.stop()
         }
         recognitionRequest?.endAudio()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        removeInputTapIfNeeded()
         isCapturing = false
         DispatchQueue.main.async { [weak self] in self?.audioLevelHandler?(0) }
         completion(currentTranscription, nil)
     }
 
     // MARK: - private methods
+
+    private func resetTranscriptionAndSilenceTracking() {
+        currentTranscription = ""
+        silenceStart = nil
+        hasSpokeOnce = false
+    }
+
+    private func cancelRecognitionTaskAndClearRequest() {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+    }
+
+    private func configureAudioSessionForCapture() throws {
+        let audioSession = AVAudioSession.sharedInstance()
+        try audioSession.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
+        try audioSession.setMode(.measurement)
+        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        try audioSession.setAllowHapticsAndSystemSoundsDuringRecording(true)
+    }
+
+    private func prepareAudioEngineForNewInputTap() {
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        // Remove tap before `reset()` — `reset()` can clear taps; `removeTap` after that is unsafe.
+        removeInputTapIfNeeded()
+        audioEngine.reset()
+    }
+
+    private func removeInputTapIfNeeded() {
+        guard hasInputTapInstalled else { return }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        hasInputTapInstalled = false
+    }
+
+    private func makeStreamingRecognitionRequest() -> SFSpeechAudioBufferRecognitionRequest {
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        if #available(iOS 16, *) {
+            request.addsPunctuation = true
+        }
+        request.shouldReportPartialResults = true
+        return request
+    }
+
+    private func recognitionTaskResultHandler() -> (SFSpeechRecognitionResult?, Error?) -> Void {
+        { [weak self] result, error in
+            guard let self = self else { return }
+
+            if let result = result {
+                let text = result.bestTranscription.formattedString
+                self.currentTranscription = text
+                self.responseProcessor?(text)
+            }
+
+            guard let error = error else { return }
+            let nsError = error as NSError
+            let isCanceled = (nsError.domain == "kLSRErrorDomain" && nsError.code == 301)
+                || (nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled)
+            if isCanceled { return }
+
+            DispatchQueue.main.async { [weak self] in
+                self?.abortStreamingCapture(shouldStopEngineFirst: true)
+            }
+        }
+    }
+
+    /// Installs the tap with `format: nil` so it tracks the live input bus (required when the route/sample rate changes, e.g. Bluetooth).
+    private func startRecognitionPipeline(recognizer: SFSpeechRecognizer) throws {
+        let inputNode = audioEngine.inputNode
+        let request = makeStreamingRecognitionRequest()
+        recognitionRequest = request
+
+        recognitionTask = recognizer.recognitionTask(with: request, resultHandler: recognitionTaskResultHandler())
+
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] buffer, _ in
+            request.append(buffer)
+            self?.processAudioLevel(buffer: buffer)
+        }
+        hasInputTapInstalled = true
+
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+
+    private func handleAudioRouteChange(notification: Notification) {
+        guard isCapturing, !isRestartingCaptureForRouteChange else { return }
+        guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+
+        // Only react when the set of audio devices actually changes. `categoryChange`, `override`, and
+        // `routeConfigurationChange` often fire when *we* activate the session or start the engine;
+        // restarting there cancels the recognition task before any audio is processed (broken dictation).
+        let shouldRestartForHardwareRouteChange: Bool
+        switch reason {
+        case .newDeviceAvailable, .oldDeviceUnavailable:
+            shouldRestartForHardwareRouteChange = true
+        default:
+            shouldRestartForHardwareRouteChange = false
+        }
+
+        guard shouldRestartForHardwareRouteChange else { return }
+
+        Log.debug(label: LOG_TAG, "Audio route hardware change (\(reason.rawValue)); restarting speech capture for new input format.")
+        restartLiveCaptureAfterRouteChange()
+    }
+
+    private func restartLiveCaptureAfterRouteChange() {
+        guard isCapturing, !isRestartingCaptureForRouteChange else { return }
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            abortStreamingCapture(shouldStopEngineFirst: true)
+            return
+        }
+
+        isRestartingCaptureForRouteChange = true
+        defer { isRestartingCaptureForRouteChange = false }
+
+        cancelRecognitionTaskAndClearRequest()
+        prepareAudioEngineForNewInputTap()
+
+        do {
+            try configureAudioSessionForCapture()
+            try startRecognitionPipeline(recognizer: recognizer)
+        } catch {
+            Log.error(label: LOG_TAG, "Failed to restart speech capture after route change: \(error)")
+            cancelRecognitionTaskAndClearRequest()
+            abortStreamingCapture(shouldStopEngineFirst: false)
+        }
+    }
+
+    /// If `start()` failed, use `shouldStopEngineFirst: false` (do not call `stop()` before `removeTap`).
+    private func abortStreamingCapture(shouldStopEngineFirst: Bool) {
+        let performTeardown = { [weak self] in
+            guard let self = self, self.isCapturing else { return }
+            if shouldStopEngineFirst {
+                self.audioEngine.stop()
+            }
+            self.removeInputTapIfNeeded()
+            self.audioEngine.reset()
+            self.recognitionRequest = nil
+            self.recognitionTask = nil
+            self.isCapturing = false
+        }
+        if Thread.isMainThread {
+            performTeardown()
+        } else {
+            DispatchQueue.main.async(execute: performTeardown)
+        }
+    }
 
     private func processAudioLevel(buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData?[0] else { return }

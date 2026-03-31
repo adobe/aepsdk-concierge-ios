@@ -44,7 +44,7 @@ public struct ChatView: View {
     private let onClose: (() -> Void)?
     private let titleText: String
     private let subtitleText: String?
-    private var conciergeConfiguration: ConciergeConfiguration
+    private let conciergeConfiguration: ConciergeConfiguration
 
     // MARK: - UI
 
@@ -73,6 +73,11 @@ public struct ChatView: View {
         )
         _controller = StateObject(wrappedValue: chatController)
         _inputController = ObservedObject(wrappedValue: chatController.inputController)
+    }
+
+    /// Whether this view targets the same Concierge service identity (ECID, server, datastream, surfaces) as `configuration`.
+    func hasSameChatServiceIdentity(as configuration: ConciergeConfiguration) -> Bool {
+        conciergeConfiguration.hasSameChatServiceIdentity(as: configuration)
     }
 
     // Internal use only for previews
