@@ -26,6 +26,7 @@ final class ChatController: ObservableObject {
     @Published var userScrollTick: Int = 0
     @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
+    @Published var audioLevel: Float = 0
 
     // MARK: - Input Controller
 
@@ -95,6 +96,11 @@ final class ChatController: ObservableObject {
 
     // MARK: - Mic Control
 
+    /// Applies voice capture settings from the current theme before recording starts.
+    func applyVoiceInputBehavior(_ input: ConciergeInputBehavior) {
+        speechController.configureSilenceDetection(threshold: input.silenceThreshold, duration: input.silenceDuration)
+    }
+
     func toggleMic(currentSelectionLocation: Int) {
         if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
     }
@@ -150,8 +156,7 @@ final class ChatController: ObservableObject {
                     // After user responds to system prompts, check if permissions were granted
                     if self.speechController.isAvailable {
                         Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
-                        self.inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
-                        self.speechController.beginCapture()
+                        self.beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
                     } else {
                         Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
                         self.showPermissionDialog = true
@@ -170,6 +175,16 @@ final class ChatController: ObservableObject {
         }
 
         // Permissions granted - proceed with recording
+        beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
+    }
+
+    private func beginCaptureSession(currentSelectionLocation: Int) {
+        speechController.setAudioLevelHandler { [weak self] level in
+            self?.audioLevel = level
+        }
+        speechController.setSilenceHandler { [weak self] in
+            self?.completeMic()
+        }
         inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         speechController.beginCapture()
     }
