@@ -122,11 +122,12 @@ public struct ChatView: View {
                 controller.trackPromptSuggestionClicked(suggestion: suggestion)
                 isInputFocused = true
                 controller.applyTextChange(suggestion)
-                selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
+                controller.sendMessage(isUser: true)
             }
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .conciergePlaceholderConfig(
             ConciergeResponsePlaceholderConfig(
@@ -169,6 +170,7 @@ public struct ChatView: View {
                 composerEditable: controller.chatState != .processing,
                 micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
                 sendEnabled: inputController.data.canSend,
+                audioLevel: controller.audioLevel,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
                 onCancel: {
@@ -205,17 +207,21 @@ public struct ChatView: View {
             }
         })
         // Overlay after layout to avoid affecting layout metrics
-        .overlay(alignment: .center) {
+        .overlay {
             if showFeedbackOverlay {
                 FeedbackOverlayView(
                     sentiment: feedbackSentiment,
-                    onCancel: { showFeedbackOverlay = false },
+                    onCancel: { withAnimation { showFeedbackOverlay = false } },
                     onSubmit: { payload in
                         controller.sendFeedbackFor(messageId: feedbackMessageId, with: payload)
-                        showFeedbackOverlay = false
+                        withAnimation { showFeedbackOverlay = false }
                     }
                 )
-                .transition(.opacity)
+                .transition(
+                    theme.behavior.feedback?.displayMode == "action"
+                        ? .move(edge: .bottom).combined(with: .opacity)
+                        : .opacity
+                )
                 .zIndex(1000)
             }
         }
@@ -304,9 +310,12 @@ public struct ChatView: View {
     }
 
     private func handleMicTap() {
+        controller.applyVoiceInputBehavior(theme.behavior.input)
         if controller.isRecording {
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
+            // Dismiss keyboard before starting recording
+            isInputFocused = false
             hapticFeedback.impactOccurred()
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }

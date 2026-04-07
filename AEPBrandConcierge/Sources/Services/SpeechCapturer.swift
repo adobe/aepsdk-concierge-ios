@@ -17,6 +17,8 @@ import AEPServices
 
 class SpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
+    var audioLevelHandler: ((Float) -> Void)?
+    var silenceHandler: (() -> Void)?
 
     private let LOG_TAG = "SpeechCapturer"
     private var isCapturing: Bool = false
@@ -27,8 +29,21 @@ class SpeechCapturer: SpeechCapturing {
     private let audioEngine = AVAudioEngine()
     private var currentTranscription = ""
 
+    /// Silence detection
+    private var silenceThreshold: Float = 0.02
+    private var silenceDuration: TimeInterval = 2.0
+    private var silenceStart: Date?
+    private var hasSpokeOnce = false
+
     init() {
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale.autoupdatingCurrent)
+    }
+
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {
+        let resolvedThreshold = threshold > 0 ? threshold : 0.02
+        let resolvedDuration = duration > 0 ? duration : 2.0
+        silenceThreshold = resolvedThreshold
+        silenceDuration = resolvedDuration
     }
 
     func initialize(responseProcessor: ((String) -> Void)?) {
@@ -63,6 +78,8 @@ class SpeechCapturer: SpeechCapturing {
         }
         isCapturing = true
         currentTranscription = ""
+        silenceStart = nil
+        hasSpokeOnce = false
         // Cancel any existing recognition task
         recognitionTask?.cancel()
         recognitionTask = nil
@@ -117,8 +134,9 @@ class SpeechCapturer: SpeechCapturing {
         }
 
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             recognitionRequest.append(buffer)
+            self?.processAudioLevel(buffer: buffer)
         }
 
         audioEngine.prepare()
@@ -138,10 +156,42 @@ class SpeechCapturer: SpeechCapturing {
         recognitionRequest?.endAudio()
         audioEngine.inputNode.removeTap(onBus: 0)
         isCapturing = false
+        DispatchQueue.main.async { [weak self] in self?.audioLevelHandler?(0) }
         completion(currentTranscription, nil)
     }
 
     // MARK: - private methods
+
+    private func processAudioLevel(buffer: AVAudioPCMBuffer) {
+        guard let channelData = buffer.floatChannelData?[0] else { return }
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return }
+
+        var sum: Float = 0
+        for i in 0..<frameLength {
+            let sample = channelData[i]
+            sum += sample * sample
+        }
+        let rms = sqrtf(sum / Float(frameLength))
+        // Normalize to 0...1 range (clamp raw RMS, typical speech peaks ~0.1-0.3)
+        let normalized = min(rms / 0.2, 1.0)
+
+        DispatchQueue.main.async { [weak self] in self?.audioLevelHandler?(normalized) }
+
+        // Silence detection — auto-stop after `silenceDuration` of silence once speech has been detected
+        if rms > silenceThreshold {
+            hasSpokeOnce = true
+            silenceStart = nil
+        } else if hasSpokeOnce {
+            if silenceStart == nil {
+                silenceStart = Date()
+            } else if let start = silenceStart, Date().timeIntervalSince(start) >= silenceDuration {
+                silenceStart = nil
+                DispatchQueue.main.async { [weak self] in self?.silenceHandler?() }
+            }
+        }
+    }
+
     func requestSpeechAndMicrophonePermissions(completion: @escaping () -> Void) {
         // Use a dispatch group to wait for both permission requests to complete
         let permissionGroup = DispatchGroup()
