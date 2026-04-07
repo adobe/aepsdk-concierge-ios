@@ -58,7 +58,8 @@ public struct ChatView: View {
         title: String = "Concierge",
         subtitle: String? = "Powered by Adobe",
         conciergeConfiguration: ConciergeConfiguration,
-        onClose: (() -> Void)? = nil
+        onClose: (() -> Void)? = nil,
+        dispatch: ((_ event: Event) -> Void)? = nil
     ) {
         self.textSpeaker = textSpeaker
         self.titleText = title
@@ -69,7 +70,8 @@ public struct ChatView: View {
         let chatController = ChatController(
             configuration: conciergeConfiguration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
-            speaker: textSpeaker
+            speaker: textSpeaker,
+            dispatch: dispatch
         )
         _controller = StateObject(wrappedValue: chatController)
         _inputController = ObservedObject(wrappedValue: chatController.inputController)
@@ -117,6 +119,8 @@ public struct ChatView: View {
             ) { text in
                 textSpeaker?.utter(text: text)
             } onSuggestionTap: { suggestion in
+                controller.trackPromptSuggestionClicked(suggestion: suggestion)
+                isInputFocused = true
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
             }
@@ -180,6 +184,9 @@ public struct ChatView: View {
                 onSend: sendTapped
             )
         }
+        .conciergeCardTapHandler(ConciergeCardTapHandler { cardData in
+            controller.trackCardClicked(cardData: cardData)
+        })
         .onAppear {
             hapticFeedback.prepare()
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }

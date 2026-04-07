@@ -179,6 +179,51 @@ enum ConciergeConstants {
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
 
+    // MARK: - Tracking Events
+
+    enum TrackingEvent {
+        enum Name {
+            static let SESSION_INITIALIZED = "Brand Concierge Session Initialized"
+            static let QUERY_SUBMITTED = "Brand Concierge Query Submitted"
+            static let PROMPT_SUGGESTION_CLICKED = "Brand Concierge Prompt Suggestion Clicked"
+            static let CARD_CLICKED = "Brand Concierge Card Clicked"
+            static let RESPONSE_STARTED = "Brand Concierge Response Started"
+            static let RESPONSE_COMPLETED = "Brand Concierge Response Completed"
+            static let CARDS_RENDERED = "Brand Concierge Cards Rendered"
+            static let FEEDBACK_SUBMITTED = "Brand Concierge Feedback Submitted"
+            static let ERROR_OCCURRED = "Brand Concierge Error Occurred"
+        }
+
+        enum XDMType {
+            static let SESSION_INITIALIZED = "session:initialized"
+            static let QUERY_SUBMITTED = "query:submitted"
+            static let PROMPT_SUGGESTION_CLICKED = "promptSuggestion:clicked"
+            static let CARD_CLICKED = "card:clicked"
+            static let RESPONSE_STARTED = "response:started"
+            static let RESPONSE_COMPLETED = "response:completed"
+            static let CARDS_RENDERED = "cards:rendered"
+            static let FEEDBACK_SUBMITTED = "feedback:submitted"
+            static let ERROR_OCCURRED = "error:occurred"
+        }
+
+        enum EventData {
+            enum Key {
+                static let EVENT_TYPE = "concierge.eventType"
+                static let QUERY = "query"
+                static let SUGGESTION = "suggestion"
+                static let ELEMENT = "element"
+                static let ELEMENTS = "elements"
+                static let DISPLAY_MODE = "displayMode"
+                static let CONVERSATION_ID = "conversationId"
+                static let INTERACTION_ID = "interactionId"
+                static let FEEDBACK_TYPE = "feedbackType"
+                static let SELECTED_OPTIONS = "selectedOptions"
+                static let NOTES = "notes"
+                static let ERROR_MESSAGE = "errorMessage"
+            }
+        }
+    }
+
     // MARK: - Session Management
 
     enum Session {
