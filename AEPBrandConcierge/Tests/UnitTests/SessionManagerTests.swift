@@ -119,6 +119,48 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertFalse(sessionId.isEmpty)
     }
     
+    // MARK: - isSessionActive Tests
+
+    func test_isSessionActive_withNoSession_returnsFalse() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+        XCTAssertFalse(sessionManager.isSessionActive)
+    }
+
+    func test_isSessionActive_withValidSession_returnsTrue() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+        _ = sessionManager.getOrCreateSessionId()
+        XCTAssertTrue(sessionManager.isSessionActive)
+    }
+
+    func test_isSessionActive_withExpiredSession_returnsFalse() {
+        let shortTTL: TimeInterval = 0.1
+        let sessionManager = SessionManager(dataStore: testDataStore, sessionTTL: shortTTL)
+        _ = sessionManager.getOrCreateSessionId()
+
+        Thread.sleep(forTimeInterval: 0.2)
+        XCTAssertFalse(sessionManager.isSessionActive)
+    }
+
+    func test_isSessionActive_afterRefresh_returnsTrue() {
+        let shortTTL: TimeInterval = 0.3
+        let sessionManager = SessionManager(dataStore: testDataStore, sessionTTL: shortTTL)
+        _ = sessionManager.getOrCreateSessionId()
+
+        Thread.sleep(forTimeInterval: 0.2)
+        sessionManager.refreshSessionActivity()
+
+        Thread.sleep(forTimeInterval: 0.2)
+        XCTAssertTrue(sessionManager.isSessionActive, "Refresh should have reset the TTL window")
+    }
+
+    func test_isSessionActive_afterClear_returnsFalse() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+        _ = sessionManager.getOrCreateSessionId()
+
+        sessionManager.clearSession()
+        XCTAssertFalse(sessionManager.isSessionActive)
+    }
+
     // MARK: - Multiple SessionManager Instances Tests
     
     func test_multipleInstances_shareDataStore_returnSameSession() {

@@ -23,6 +23,7 @@ struct MessageListView: View {
     let messages: [Message]
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
+    var scrollToLastOnAppear: Bool = false
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
@@ -64,6 +65,14 @@ struct MessageListView: View {
                     DispatchQueue.main.async {
                         withAnimation {
                             proxy.scrollTo(messageId, anchor: .top)
+                        }
+                    }
+                }
+                // When reopening a chat with prior messages, jump to the bottom so the user sees the latest exchange.
+                .onAppear {
+                    if scrollToLastOnAppear, let lastId = messages.last?.id {
+                        DispatchQueue.main.async {
+                            proxy.scrollTo(lastId, anchor: .top)
                         }
                     }
                 }
