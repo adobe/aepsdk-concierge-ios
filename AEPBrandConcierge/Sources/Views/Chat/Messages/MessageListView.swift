@@ -43,7 +43,7 @@ struct MessageListView: View {
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
-                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(horizontalPadding(for: message.template))
                                 .onAppear {
                                     if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
                                         onSpeak(messageBody)
@@ -76,17 +76,31 @@ struct MessageListView: View {
         }
     }
 
-    /// Returns the horizontal padding for a given message template.
+    /// Returns the padding insets for a given message template.
     ///
-    /// Carousel messages use `productCardCarouselHorizontalPadding` when set,
-    /// falling back to `chatHistoryPadding` when not configured.
-    /// All other messages use `chatHistoryPadding` plus the base scroll content padding
-    /// to preserve the original combined inset.
-    private func horizontalPadding(for template: MessageTemplate) -> CGFloat {
+    /// - Carousel messages use `productCardCarouselHorizontalPadding` when set,
+    ///   falling back to `chatHistoryPadding`.
+    /// - Agent basic messages with a configured icon use `chatHistoryPadding` as the
+    ///   leading inset only, so the icon sits flush at the history padding boundary.
+    ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
+    /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
+    private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
         if case .carouselGroup = template {
-            return theme.layout.productCardCarouselHorizontalPadding
+            let h = theme.layout.productCardCarouselHorizontalPadding
                 ?? theme.layout.chatHistoryPadding
+            return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
         }
-        return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        if case .basic(let isUserMessage) = template,
+           !isUserMessage,
+           !theme.assets.icons.company.isEmpty {
+            return EdgeInsets(
+                top: 0,
+                leading: theme.layout.chatHistoryPadding,
+                bottom: 0,
+                trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+            )
+        }
+        let h = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
     }
 }

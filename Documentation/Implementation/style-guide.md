@@ -480,7 +480,15 @@ Icon and image asset configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `assets.icons.company` | string | `""` | Company logo (SVG string or URL) |
+| `assets.icons.company` | string | `""` | Company icon displayed to the left of agent text message bubbles. Accepts a remote URL (`http://` or `https://`) or a local asset name from the app bundle (checked via `UIImage(named:)` and supported file extensions: `.png`, `.jpg`, `.jpeg`, `.webp`, `.heic`, `.heif`, `.gif`, `.tiff`, `.tif`, `.bmp`). Leave empty to display no icon. |
+
+### Bundling local icons
+
+**Asset catalog (recommended):** Add the image to an `.xcassets` file in the host app and use the image set name as the value. This supports `@1x`/`@2x`/`@3x` scale variants and dark mode variants automatically.
+
+**Loose bundle file:** Add the image file directly to the app target so it is copied to the bundle root, then use the filename without its extension as the value.
+
+Remote URLs must resolve to a supported raster format (PNG, JPEG, WebP, HEIC/HEIF, GIF, TIFF, BMP). SVG is not supported for remote or local icons.
 
 ### Example
 
@@ -488,7 +496,7 @@ Icon and image asset configuration.
 {
   "assets": {
     "icons": {
-      "company": ""
+      "company": "company-logo"
     }
   }
 }
@@ -1044,7 +1052,7 @@ This section documents which properties are fully implemented, partially impleme
 
 | Property | Status | Notes |
 |----------|--------|-------|
-| `assets.icons.company` | ⚠️ | Parsed but not rendered in any view |
+| `assets.icons.company` | ✅ | Rendered as circular icon to the left of agent text message bubbles |
 
 ### Theme Tokens - Typography
 
@@ -1179,6 +1187,8 @@ This section documents which properties are fully implemented, partially impleme
 | `--cta-button-font-size` | ✅ | Used in CtaButtonView |
 | `--cta-button-font-weight` | ✅ | Used in CtaButtonView |
 | `--cta-button-icon-size` | ✅ | Used in CtaButtonView |
+| `--agent-icon-size` | ✅ | Diameter of the agent icon in points; default 39 |
+| `--agent-icon-spacing` | ✅ | Horizontal spacing between the agent icon and message bubble in points; default 12 |
 
 ### Unsupported CSS Variables
 

@@ -118,7 +118,7 @@
   },
   "assets": {
     "icons": {
-      "company": ""
+      "company": "logo"
     }
   },
   "theme": {
@@ -146,10 +146,12 @@
     "--message-concierge-text": "#292929",
     "--message-concierge-link-color": "#004C3F",
     "--message-user-text": "#FFFFFF",
-
     "--message-max-width": "100%",
-    "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
+    "--message-border-radius": "8px",
+
+    "--agent-icon-size": "39px",
+    "--agent-icon-spacing": "12px",
 
     "--chat-interface-max-width": "768px",
     "--chat-history-padding": "16px",

@@ -24,40 +24,86 @@ final class MessageBubbleSnapshotTests: XCTestCase {
     
     func test_messageBubbleProbe_exaggeratedTheme() {
         var probeTheme = ConciergeThemeLoader.default()
-        
+
         // Exaggerate bubble styling so wiring issues are obvious.
         probeTheme.colors.message.userBackground = CodableColor(.yellow)
         probeTheme.colors.message.userText = CodableColor(.black)
-        
+
         probeTheme.colors.message.conciergeBackground = CodableColor(.purple)
         probeTheme.colors.message.conciergeText = CodableColor(.white)
-        
+
         probeTheme.layout.messagePadding = ConciergePadding(vertical: 24, horizontal: 30)
         probeTheme.layout.messageBorderRadius = 28
-        
+
         // Sibling control for bubbles: cap width so the change is visible and stable.
         probeTheme.layout.messageMaxWidth = 260
-        
+
         let view = MessageBubbleProbeHost(theme: probeTheme)
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 320)))
+    }
+
+    // MARK: - Agent Icon Layout Tests
+
+    func test_messageBubbleProbe_agentIconLayout() {
+        var probeTheme = ConciergeThemeLoader.default()
+        // Non-empty path activates icon layout mode (asymmetric padding + icon slot).
+        // The asset won't load at test time; the test captures the padding/spacing geometry.
+        probeTheme.assets.icons.company = "agent-icon"
+
+        let view = MessageBubbleAgentIconProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 160)))
+    }
+
+    func test_messageBubbleProbe_agentIconLayout_exaggeratedTheme() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.assets.icons.company = "agent-icon"
+
+        // Exaggerate colors and icon dimensions so wiring issues are obvious.
+        probeTheme.colors.message.conciergeBackground = CodableColor(.orange)
+        probeTheme.colors.message.conciergeText = CodableColor(.black)
+        probeTheme.layout.agentIconSize = 50
+        probeTheme.layout.agentIconSpacing = 20
+
+        let view = MessageBubbleAgentIconProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 180)))
+    }
+
+    // MARK: - Response Placeholder Leading Padding Tests
+
+    func test_responsePlaceholder_defaultLeadingPadding() {
+        let view = ResponsePlaceholderProbeHost(
+            leadingPadding: ConciergeResponsePlaceholderView.defaultHorizontalPadding,
+            theme: ConciergeThemeLoader.default()
+        )
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 80)))
+    }
+
+    func test_responsePlaceholder_zeroLeadingPadding() {
+        // Simulates the icon layout mode where the agent icon provides the visual inset,
+        // so the placeholder uses zero leading padding.
+        let view = ResponsePlaceholderProbeHost(
+            leadingPadding: 0,
+            theme: ConciergeThemeLoader.default()
+        )
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 80)))
     }
 }
 
 private struct MessageBubbleProbeHost: View {
     let theme: ConciergeTheme
-    
+
     var body: some View {
         VStack(spacing: 16) {
             ChatMessageView(
                 template: .basic(isUserMessage: true),
                 messageBody: "User message bubble with a bit of text."
             )
-            
+
             ChatMessageView(
                 template: .basic(isUserMessage: false),
                 messageBody: "Agent message bubble with a bit of text."
             )
-            
+
             Spacer(minLength: 0)
         }
         .padding(16)
@@ -67,4 +113,43 @@ private struct MessageBubbleProbeHost: View {
     }
 }
 
+/// Probe for agent icon layout: a settled bubble and a loading placeholder, both in icon layout mode.
+private struct MessageBubbleAgentIconProbeHost: View {
+    let theme: ConciergeTheme
 
+    var body: some View {
+        VStack(spacing: 12) {
+            ChatMessageView(
+                template: .basic(isUserMessage: false),
+                messageBody: "Agent response rendered in icon layout mode."
+            )
+            // nil body renders the loading placeholder, also in icon layout mode.
+            ChatMessageView(
+                template: .basic(isUserMessage: false),
+                messageBody: nil
+            )
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .frame(width: 390, height: 160, alignment: .top)
+        .background(Color.white)
+        .conciergeTheme(theme)
+    }
+}
+
+/// Probe for isolated ConciergeResponsePlaceholderView leading-padding variants.
+private struct ResponsePlaceholderProbeHost: View {
+    let leadingPadding: CGFloat
+    let theme: ConciergeTheme
+
+    var body: some View {
+        HStack(alignment: .top) {
+            ConciergeResponsePlaceholderView(leadingPadding: leadingPadding)
+            Spacer()
+        }
+        .padding(16)
+        .frame(width: 390, height: 80, alignment: .top)
+        .background(Color.white)
+        .conciergeTheme(theme)
+    }
+}
