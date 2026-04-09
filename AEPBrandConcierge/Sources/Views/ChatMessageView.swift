@@ -355,26 +355,33 @@ struct ChatMessageView: View {
             CarouselGroupView(items: items)
 
         case .promptSuggestion(let text):
+            let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
+                ?? theme.colors.message.conciergeText.color
+            let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.secondarySystemBackground)
+            let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
+            let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+
             HStack(alignment: .bottom) {
-                Group {
-                    Button(action: { onSuggestionTap?(text) }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrowshape.turn.up.right")
-                                .imageScale(.small)
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                            Text(text)
-                                .font(.system(.subheadline))
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                .fill(theme.colors.message.conciergeBackground.color)
-                        )
+                Button(action: { onSuggestionTap?(text) }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .imageScale(.small)
+                            .foregroundColor(suggestionTextColor)
+                        Text(text)
+                            .font(.system(.subheadline))
+                            .foregroundColor(suggestionTextColor)
+                            .lineLimit(suggestionMaxLines)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
+                            .fill(suggestionBgColor)
+                    )
                 }
+                .buttonStyle(PlainButtonStyle())
                 Spacer()
             }
         }
