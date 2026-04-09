@@ -16,31 +16,16 @@ import UIKit
 /// A UIKit wrapper that presents the SwiftUI `ChatView` from a
 /// UIKit context (ex: pushing or presenting modally).
 final class ConciergeHostingController: UIHostingController<AnyView> {
-    /// Creates a hosting controller for `ChatView`.
-    /// - Parameters:
-    ///   - title: Title shown in the chat header. If `nil`, uses the SDK default.
-    ///   - subtitle: Subtitle shown under the title. If `nil`, uses the SDK default.
-    init(configuration: ConciergeConfiguration, title: String?, subtitle: String?) {
-        let view = ChatView(
-            speechCapturer: Concierge.speechCapturer,
-            textSpeaker: Concierge.textSpeaker,
-            title: title ?? Concierge.chatTitle,
-            subtitle: subtitle ?? Concierge.chatSubtitle,
-            conciergeConfiguration: configuration,
-            onClose: {
-                Task { @MainActor in
-                    Concierge.hide()
-                }
-            }
-        )
-        .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
-
+    /// Creates a hosting controller wrapping a resolved `ChatView` (new or reused).
+    init(chatView: ChatView) {
+        let view = chatView
+            .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
         super.init(rootView: AnyView(view))
         modalPresentationStyle = .fullScreen
     }
 
     // Required for storyboard/XIB decoding, but unused in our implementation
-    /// Unavailable. Use `init(title:subtitle:)` to construct programmatically.
+    /// Unavailable. Use `init(chatView:)` to construct programmatically.
     @MainActor @available(*, unavailable)
     required dynamic init?(coder decoder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
