@@ -15,7 +15,7 @@ import AEPCore
 import AEPServices
 
 /// Main chat view presenting the Concierge conversation interface.
-public struct ChatView: View {
+struct ChatView: View {
     private let LOG_TAG = "ChatView"
 
     // MARK: - Environment
@@ -26,7 +26,7 @@ public struct ChatView: View {
 
     // MARK: - State
 
-    @StateObject private var controller: ChatController
+    @ObservedObject private var controller: ChatController
     @ObservedObject private var inputController: InputController
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
@@ -40,11 +40,9 @@ public struct ChatView: View {
 
     // MARK: - Dependencies and Configuration
 
-    private let textSpeaker: TextSpeaking?
     private let onClose: (() -> Void)?
     private let titleText: String
     private let subtitleText: String?
-    private var conciergeConfiguration: ConciergeConfiguration
 
     // MARK: - UI
 
@@ -52,46 +50,34 @@ public struct ChatView: View {
 
     // MARK: - Initializers
 
-    public init(
-        speechCapturer: SpeechCapturing? = nil,
-        textSpeaker: TextSpeaking? = nil,
-        title: String = "Concierge",
-        subtitle: String? = "Powered by Adobe",
-        conciergeConfiguration: ConciergeConfiguration,
+    init(
+        controller: ChatController,
+        title: String = ConciergeConstants.Defaults.TITLE,
+        subtitle: String? = ConciergeConstants.Defaults.SUBTITLE,
         onClose: (() -> Void)? = nil
     ) {
-        self.textSpeaker = textSpeaker
         self.titleText = title
         self.subtitleText = subtitle
         self.onClose = onClose
-        self.conciergeConfiguration = conciergeConfiguration
-
-        let chatController = ChatController(
-            configuration: conciergeConfiguration,
-            speechCapturer: speechCapturer ?? SpeechCapturer(),
-            speaker: textSpeaker
-        )
-        _controller = StateObject(wrappedValue: chatController)
-        _inputController = ObservedObject(wrappedValue: chatController.inputController)
+        self._controller = ObservedObject(wrappedValue: controller)
+        self._inputController = ObservedObject(wrappedValue: controller.inputController)
     }
 
     // Internal use only for previews
     init(messages: [Message]) {
-        self.textSpeaker = nil
         self.titleText = ConciergeConstants.Defaults.TITLE
-        self.subtitleText = "Powered by Adobe"
+        self.subtitleText = ConciergeConstants.Defaults.SUBTITLE
         self.onClose = nil
-        self.conciergeConfiguration = ConciergeConfiguration()
 
         let chatController = ChatController(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         chatController.messages = messages
-        _controller = StateObject(wrappedValue: chatController)
-        _inputController = ObservedObject(wrappedValue: chatController.inputController)
+        self._controller = ObservedObject(wrappedValue: chatController)
+        self._inputController = ObservedObject(wrappedValue: chatController.inputController)
     }
 
     // MARK: - Body
 
-    public var body: some View {
+    var body: some View {
         ZStack(alignment: .bottom) {
             // Full background color ignoring safe area (dynamic for light/dark)
             theme.colors.surface.mainContainerBackground.color
@@ -113,9 +99,10 @@ public struct ChatView: View {
                 messages: displayMessages,
                 userScrollTick: controller.userScrollTick,
                 userMessageToScrollId: controller.userMessageToScrollId,
+                scrollToLastOnAppear: controller.hasUserSentMessage,
                 isInputFocused: $isInputFocused
             ) { text in
-                textSpeaker?.utter(text: text)
+                controller.speak(text)
             } onSuggestionTap: { suggestion in
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)

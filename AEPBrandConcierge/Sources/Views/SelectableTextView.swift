@@ -59,8 +59,10 @@ struct SelectableTextView: UIViewRepresentable {
             constant: textView.textContainerInset.top
         )
         context.coordinator.placeholderTopConstraint = placeholderTop
+        // align hint text and text caret
+        let horizontalTextOrigin = textView.textContainerInset.left
         NSLayoutConstraint.activate([
-            placeholderLabel.leadingAnchor.constraint(equalTo: textView.leadingAnchor, constant: 12),
+            placeholderLabel.leadingAnchor.constraint(equalTo: textView.leadingAnchor, constant: horizontalTextOrigin),
             placeholderTop
         ])
         return textView
