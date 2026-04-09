@@ -11,7 +11,6 @@
  */
 
 import SwiftUI
-import UIKit
 import AEPCore
 import AEPServices
 
@@ -37,7 +36,8 @@ public extension Concierge {
             self.chatSubtitle = subtitle
             self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
 
-            presentConciergeSwiftUIOverlay(configuration: config)
+            let session = resolveSession(configuration: config)
+            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
         }
     }
 
@@ -124,9 +124,18 @@ public extension Concierge {
 
 // MARK: - Shared presentation internals
 
-extension Concierge {
-    /// Fetches `ConciergeConfiguration` via the shared `SHOW_UI` event for SwiftUI and UIKit entry points.
-    fileprivate static func fetchChatConfiguration(
+private extension Concierge {
+
+    /// Dispatches a `SHOW_UI` event to retrieve the `ConciergeConfiguration` needed to present the chat.
+    ///
+    /// The event triggers the extension's `handleShowChatUIRequestEvent`.
+    /// If the response is missing, malformed, or times out (ex: configuration or Edge Identity not yet available),
+    /// the completion is not called and a warning is logged.
+    ///
+    /// - Parameters:
+    ///   - surfaces: The surface identifiers for this chat experience.
+    ///   - completion: Called on the main actor with the resolved configuration. Not called on failure.
+    static func fetchChatConfiguration(
         forSurfaces surfaces: [String],
         completion: @escaping @MainActor (ConciergeConfiguration) -> Void
     ) {
@@ -148,39 +157,65 @@ extension Concierge {
         }
     }
 
+    /// Returns the current `ConciergeChatSession` if its service identity (ECID, server, datastream, surfaces),
+    /// title, and subtitle all match the incoming values, and the server session has not expired;
+    /// otherwise creates and stores a new session.
+    ///
+    /// This is the single decision point for chat reuse across both SwiftUI and UIKit presentation paths.
+    /// The `ChatController` inside the returned session retains all messages and the chat
+    /// service from prior interactions when a match is found.
+    ///
+    /// - Parameter configuration: The freshly fetched configuration from the `SHOW_UI` response event.
+    /// - Returns: An existing or newly created session.
     @MainActor
-    fileprivate static func makeChatView(
-        configuration: ConciergeConfiguration,
-        title: String,
-        subtitle: String?
-    ) -> ChatView {
-        ChatView(
+    static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
+        let resolvedTitle = chatTitle
+        let resolvedSubtitle = chatSubtitle
+
+        if let existing = currentSession,
+           SessionManager.shared.isSessionActive,
+           existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
+            return existing
+        }
+
+        let session = ConciergeChatSession(
+            configuration: configuration,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,
-            textSpeaker: textSpeaker,
-            title: title,
-            subtitle: subtitle,
-            conciergeConfiguration: configuration,
+            textSpeaker: textSpeaker
+        )
+        currentSession = session
+        return session
+    }
+
+    /// Creates a new `ChatView` bound to the given session's `ChatController`.
+    ///
+    /// The view is lightweight and stateless; all conversation state lives on the controller.
+    ///
+    /// - Parameter session: The session whose controller the view will observe.
+    /// - Returns: A configured `ChatView` ready for embedding in a SwiftUI overlay or UIKit host.
+    @MainActor
+    static func makeChatView(session: ConciergeChatSession) -> ChatView {
+        ChatView(
+            controller: session.controller,
+            title: session.title,
+            subtitle: session.subtitle,
             onClose: { Concierge.hide() }
         )
     }
 
+    /// Embeds the Concierge chat UI as a child view controller of the given `UIViewController`.
+    ///
+    /// If a previous UIKit-hosted chat is still attached, it is removed from the hierarchy first.
+    /// The method resolves or reuses a session, creates a `ChatView`, wraps it in a
+    /// `ConciergeHostingController`, and pins it edge-to-edge within the presenting view controller.
+    ///
+    /// - Parameters:
+    ///   - configuration: The configuration for this chat session.
+    ///   - presentingViewController: The UIKit view controller that will host the chat UI as a child.
     @MainActor
-    fileprivate static func presentConciergeSwiftUIOverlay(configuration: ConciergeConfiguration) {
-        let overlay = ConciergeOverlayManager.shared
-        let resolvedTitle = chatTitle
-        let resolvedSubtitle = chatSubtitle
-        _ = overlay.makeOverlayChatView(
-            configuration: configuration,
-            title: resolvedTitle,
-            subtitle: resolvedSubtitle
-        ) {
-            makeChatView(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle)
-        }
-        overlay.showingConcierge = true
-    }
-
-    @MainActor
-    fileprivate static func attachConciergeUIKitHost(
+    static func attachConciergeUIKitHost(
         configuration: ConciergeConfiguration,
         presentingViewController: UIViewController
     ) {
@@ -191,18 +226,8 @@ extension Concierge {
             presentedUIKitController = nil
         }
 
-        let resolvedTitle = chatTitle
-        let resolvedSubtitle = chatSubtitle
-        let view = ConciergeChatViewReuse.existingOrNew(
-            configuration: configuration,
-            title: resolvedTitle,
-            subtitle: resolvedSubtitle,
-            storedView: &detachedUIKitChatView,
-            storedTitle: &detachedUIKitChatTitle,
-            storedSubtitle: &detachedUIKitChatSubtitle
-        ) {
-            makeChatView(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle)
-        }
+        let session = resolveSession(configuration: configuration)
+        let view = makeChatView(session: session)
 
         let hosting = ConciergeHostingController(chatView: view)
         presentedUIKitController = hosting
