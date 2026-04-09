@@ -31,16 +31,14 @@ public class Concierge: NSObject, Extension {
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
     static var chatTitle: String = ConciergeConstants.Defaults.TITLE
-    static var chatSubtitle: String? = "Powered by Adobe"
+    static var chatSubtitle: String? = ConciergeConstants.Defaults.SUBTITLE
     static var surfaces: [String] = []
     static var linkInterceptor: ConciergeLinkInterceptor = ConciergeLinkInterceptor()
     static var presentedUIKitController: UIViewController?
 
-    // Held while the UIKit hosting controller is detached (`hide`) so the next `present` can reuse the same `ChatView` (SwiftUI overlay uses `ConciergeOverlayManager`).
-
-    @MainActor static var detachedUIKitChatView: ChatView?
-    @MainActor static var detachedUIKitChatTitle: String?
-    @MainActor static var detachedUIKitChatSubtitle: String?
+    /// The active chat session, shared by both SwiftUI and UIKit presentation paths.
+    /// Cleared and replaced when the server session expires or the chat identity changes.
+    @MainActor static var currentSession: ConciergeChatSession?
 
     // MARK: - Extension Protocol Methods
 

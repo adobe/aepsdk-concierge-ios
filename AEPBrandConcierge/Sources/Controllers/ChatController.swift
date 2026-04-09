@@ -91,6 +91,12 @@ final class ChatController: ObservableObject {
         inputController.applyTextChange(newText)
     }
 
+    // MARK: - Speech Output
+
+    func speak(_ text: String) {
+        speechController.speak(text)
+    }
+
     // MARK: - Mic Control
 
     /// Applies voice capture settings from the current theme before recording starts.

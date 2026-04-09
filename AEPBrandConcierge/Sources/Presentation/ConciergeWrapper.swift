@@ -28,16 +28,12 @@ struct ConciergeWrapper<Content: View>: View {
         ZStack {
             content
 
-            // Keep a non-nil chat view in the hierarchy while dismissed so `ChatView`'s `StateObject` controller survives hide/show in one app session.
-            if let chatView = stateManager.chatView {
+            if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
                     .conciergeTheme(theme)
                     .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
                     .transition(.opacity)
                     .zIndex(1)
-                    .opacity(stateManager.showingConcierge ? 1 : 0)
-                    .allowsHitTesting(stateManager.showingConcierge)
-                    .accessibilityHidden(!stateManager.showingConcierge)
             }
 
             // Floating Concierge button
