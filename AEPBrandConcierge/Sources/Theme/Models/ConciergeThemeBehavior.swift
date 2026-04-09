@@ -237,6 +237,12 @@ public struct ConciergePromptSuggestionsBehavior: Codable {
     /// Align chips to the inner content edge of the bot message bubble. Default: `false`.
     public var alignToMessage: Bool
 
+    private enum CodingKeys: String, CodingKey {
+        case itemMaxLines
+        case showHeader
+        case alignToMessage
+    }
+
     public init(
         itemMaxLines: Int = 1,
         showHeader: Bool = false,
@@ -252,6 +258,13 @@ public struct ConciergePromptSuggestionsBehavior: Codable {
         itemMaxLines = try container.decodeIfPresent(Int.self, forKey: .itemMaxLines) ?? 1
         showHeader = try container.decodeIfPresent(Bool.self, forKey: .showHeader) ?? false
         alignToMessage = try container.decodeIfPresent(Bool.self, forKey: .alignToMessage) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(itemMaxLines, forKey: .itemMaxLines)
+        try container.encode(showHeader, forKey: .showHeader)
+        try container.encode(alignToMessage, forKey: .alignToMessage)
     }
 }
 
