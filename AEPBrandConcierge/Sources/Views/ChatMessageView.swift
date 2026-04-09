@@ -172,9 +172,22 @@ struct ChatMessageView: View {
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
 
+            let agentIconPath = theme.assets.icons.company
+            let showAgentIcon = !isUserMessage
+                && theme.behavior.chat.messageAlignment != .center
+                && !agentIconPath.isEmpty
+
             VStack(alignment: alignment, spacing: 0) {
-                HStack(alignment: .bottom) {
+                // Top-align so the agent icon stays pinned to the first line of text,
+                // rather than drifting to the bottom when multi-line bubbles expand.
+                HStack(alignment: .top) {
                     if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
+
+                    if showAgentIcon {
+                        LocalAssetImageView(iconPath: agentIconPath, size: theme.layout.agentIconSize)
+                            .padding(.trailing, theme.layout.agentIconSpacing)
+                    }
+
                     Group {
                         // User text
                         if isUserMessage {
@@ -200,12 +213,14 @@ struct ChatMessageView: View {
                                     }
                                 )
                             } else {
-                                ConciergeResponsePlaceholderView()
+                                ConciergeResponsePlaceholderView(leadingPadding: showAgentIcon ? 0 : ConciergeResponsePlaceholderView.defaultHorizontalPadding)
                             }
                         }
                     }
                         .lineSpacing(messageLineSpacing)
-                        .padding(theme.layout.messagePadding.edgeInsets)
+                        .padding(showAgentIcon
+                            ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
+                            : theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
                         .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
