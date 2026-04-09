@@ -62,6 +62,6 @@ struct ConciergeWrapper<Content: View>: View {
     }
 
     private func showConcierge() {
-        Concierge.show(surfaces: Concierge.surfaces)
+        Concierge.reshow()
     }
 }

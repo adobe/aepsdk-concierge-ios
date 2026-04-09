@@ -30,11 +30,7 @@ public extension Concierge {
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config in
-            self.speechCapturer = speechCapturer
-            self.textSpeaker = textSpeaker
-            self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
-            self.chatSubtitle = subtitle
-            self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
             let session = resolveSession(configuration: config)
             ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
@@ -101,23 +97,47 @@ public extension Concierge {
     ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title displayed in the chat header.
     ///   - subtitle: Optional subtitle displayed under the title.
-    ///   - speechCapturer: Optional speech capture; when `nil`, any implementation set by a previous `show` / `present` call is kept.
-    ///   - textSpeaker: Optional TTS; when `nil`, any implementation set by a previous call is kept.
+    ///   - speechCapturer: Optional speech capture implementation to use.
+    ///   - textSpeaker: Optional text-to-speech implementation to use.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config in
-            if let speechCapturer = speechCapturer {
-                self.speechCapturer = speechCapturer
-            }
-            if let textSpeaker = textSpeaker {
-                self.textSpeaker = textSpeaker
-            }
-            self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
-            self.chatSubtitle = subtitle
-            self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
             attachConciergeUIKitHost(configuration: config, presentingViewController: presentingViewController)
+        }
+    }
+}
+
+// MARK: - Internal presentation helpers
+
+extension Concierge {
+
+    /// Overwrites the stored presentation properties with the given values.
+    static func applyPresentationConfiguration(
+        title: String?,
+        subtitle: String?,
+        speechCapturer: SpeechCapturing?,
+        textSpeaker: TextSpeaking?,
+        handleLink: ((URL) -> Bool)?
+    ) {
+        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
+        self.chatSubtitle = subtitle
+        self.speechCapturer = speechCapturer
+        self.textSpeaker = textSpeaker
+        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+    }
+
+    /// Re-presents the Concierge chat overlay using the currently stored configuration
+    /// (title, subtitle, link interceptor, speech capturer, etc.) without overwriting any values.
+    ///
+    /// Used by the floating button and other internal re-show paths where the customer's
+    /// previously configured values should be preserved.
+    static func reshow() {
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
+            let session = resolveSession(configuration: config)
+            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
         }
     }
 }
