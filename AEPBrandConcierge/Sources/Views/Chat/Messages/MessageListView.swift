@@ -32,7 +32,20 @@ struct MessageListView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(messages) { message in
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            // showHeader: insert a "Suggestions" label above the first chip in a group
+                            if isFirstInSuggestionGroup(at: index),
+                               theme.behavior.promptSuggestions?.showHeader == true {
+                                HStack {
+                                    Text(theme.text.suggestionsHeader)
+                                        .font(.system(.subheadline).weight(.semibold))
+                                        .foregroundColor(theme.colors.message.conciergeText.color)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(.bottom, -4)
+                            }
+
                             ChatMessageView(
                                 messageId: message.id,
                                 template: message.template,
@@ -80,6 +93,8 @@ struct MessageListView: View {
     ///
     /// Carousel messages use `productCardCarouselHorizontalPadding` when set,
     /// falling back to `chatHistoryPadding` when not configured.
+    /// Prompt suggestion chips use the default inset unless `alignToMessage` is true,
+    /// in which case they align to the message bubble content edge.
     /// All other messages use `chatHistoryPadding` plus the base scroll content padding
     /// to preserve the original combined inset.
     private func horizontalPadding(for template: MessageTemplate) -> CGFloat {
@@ -87,6 +102,20 @@ struct MessageListView: View {
             return theme.layout.productCardCarouselHorizontalPadding
                 ?? theme.layout.chatHistoryPadding
         }
+        if case .promptSuggestion = template,
+           theme.behavior.promptSuggestions?.alignToMessage == true {
+            // Align to message bubble: match the bubble's horizontal inset (padding + message padding)
+            return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+                + theme.layout.messagePadding.leading
+        }
         return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+    }
+
+    /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.
+    private func isFirstInSuggestionGroup(at index: Int) -> Bool {
+        guard case .promptSuggestion = messages[index].template else { return false }
+        if index == 0 { return true }
+        if case .promptSuggestion = messages[index - 1].template { return false }
+        return true
     }
 }
