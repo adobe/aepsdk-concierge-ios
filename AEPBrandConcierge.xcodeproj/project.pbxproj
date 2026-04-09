@@ -105,6 +105,7 @@
 		4C2983492F6CBC1B0057C927 /* ColorExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */; };
 		4C29834B2F870A430057C927 /* ConciergeChatSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834A2F870A430057C927 /* ConciergeChatSession.swift */; };
 		4C29834D2F870A580057C927 /* ConciergeChatSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */; };
+		4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
 		4C3A65BD2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */; };
@@ -312,6 +313,7 @@
 		4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensionTests.swift; sourceTree = "<group>"; };
 		4C29834A2F870A430057C927 /* ConciergeChatSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSession.swift; sourceTree = "<group>"; };
 		4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSessionTests.swift; sourceTree = "<group>"; };
+		4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergePresentationConfigTests.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
 		4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Microphone_20_N.svg; sourceTree = "<group>"; };
@@ -671,6 +673,7 @@
 		4C2923DD2E7E21F400D2D2C1 /* UnitTests */ = {
 			isa = PBXGroup;
 			children = (
+				4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */,
 				4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */,
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
 				4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */,
@@ -1261,6 +1264,7 @@
 				24CAB3652F2D579B00CEE013 /* StringFormattingTests.swift in Sources */,
 				24CAB3662F2D579B00CEE013 /* MarkdownRendererTests.swift in Sources */,
 				4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */,
+				4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */,
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
 				24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */,
 				244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */,
