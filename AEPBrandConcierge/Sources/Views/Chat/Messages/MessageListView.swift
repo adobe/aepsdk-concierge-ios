@@ -98,13 +98,10 @@ struct MessageListView: View {
     ///   so they align with the agent response text.
     /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
     private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
-        let hasAgentIcon = !theme.assets.icons.company.isEmpty
-            && theme.behavior.chat.messageAlignment != .center
-
         if case .carouselGroup = template {
             let h = theme.layout.productCardCarouselHorizontalPadding
                 ?? theme.layout.chatHistoryPadding
-            if hasAgentIcon {
+            if theme.hasAgentIcon {
                 return EdgeInsets(
                     top: 0,
                     leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
@@ -116,7 +113,7 @@ struct MessageListView: View {
         }
         if case .basic(let isUserMessage) = template,
            !isUserMessage,
-           hasAgentIcon {
+           theme.hasAgentIcon {
             return EdgeInsets(
                 top: 0,
                 leading: theme.layout.chatHistoryPadding,
@@ -124,7 +121,7 @@ struct MessageListView: View {
                 trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
             )
         }
-        if hasAgentIcon {
+        if theme.hasAgentIcon {
             switch template {
             case .promptSuggestion, .productCard, .ctaButton, .thumbnail:
                 return EdgeInsets(

@@ -226,6 +226,7 @@ Feature toggles and interaction configuration.
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
 | `behavior.productCard.cardStyle` | string | `"actionButton"` | Rendering style for product cards. `"actionButton"` shows an image, description text, and primary/secondary action buttons. `"productDetail"` shows an image, optional badge, title, subtitle, and price — the entire card is tappable. |
+| `behavior.productCard.cardsAlignment` | string | `"center"` | Horizontal alignment of a single product card within its container. Accepted values: `"start"`, `"center"`, `"end"`. |
 
 ### Welcome Card
 
@@ -278,7 +279,8 @@ Feature toggles and interaction configuration.
       "messageWidth": "100%"
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
     },
     "welcomeCard": {
       "closeButtonAlignment": "end",
@@ -773,7 +775,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
       "messageWidth": "100%"
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
     },
     "welcomeCard": {
       "closeButtonAlignment": "end",
@@ -982,6 +985,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.multimodalCarousel.cardClickAction` | ⚠️ | Parsed but not implemented in carousel views |
 | `behavior.multimodalCarousel.carouselStyle` | ✅ | Controls carousel scroll style (paged vs scroll) in CarouselGroupView |
 | `behavior.productCard.cardStyle` | ✅ | Selects product card rendering (actionButton vs productDetail) in ChatMessageView |
+| `behavior.productCard.cardsAlignment` | ✅ | Horizontal alignment of single product card within its container (start/center/end) |
 | `behavior.input.enableVoiceInput` | ✅ | Controls mic button visibility |
 | `behavior.input.disableMultiline` | ✅ | Controls input line limit |
 | `behavior.input.showAiChatIcon` | ⚠️ | Parsed and mapped to component but not rendered |
