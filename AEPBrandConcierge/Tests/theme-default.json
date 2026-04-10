@@ -196,6 +196,13 @@
     "--cta-button-vertical-padding": "12px",
     "--cta-button-font-size": "14px",
     "--cta-button-font-weight": "400",
-    "--cta-button-icon-size": "16px"
+    "--cta-button-icon-size": "16px",
+    "--thinking-dot-color": "#007BFF",
+    "--thinking-dot-size": "8px",
+    "--thinking-dot-spacing": "8px",
+    "--thinking-bubble-border-radius": "8px",
+    "--thinking-bubble-padding-horizontal": "16px",
+    "--thinking-bubble-padding-vertical": "8px",
+    "--thinking-dot-vertical-alignment": "center"
   }
 }

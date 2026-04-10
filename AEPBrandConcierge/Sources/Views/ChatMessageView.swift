@@ -158,6 +158,8 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
 
         case .basic(let isUserMessage):
+            // Thinking state: agent message with no content yet — show compact placeholder bubble.
+            let isThinking = !isUserMessage && (messageBody?.isEmpty ?? true)
             let rawSources = sources ?? []
             // Attempt to decorate the message so citation markers can be injected into the markdown rendering logic.
             // If decoration fails (ex: no sources or empty body), fall back to rendering the original message and
@@ -175,13 +177,17 @@ struct ChatMessageView: View {
             VStack(alignment: alignment, spacing: 0) {
                 HStack(alignment: .bottom) {
                     if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
-                    Group {
-                        // User text
-                        if isUserMessage {
-                            Text(messageBody ?? "")
-                        // Agent - Placeholder before message content is available, Markdown renderer otherwise.
-                        } else {
-                            if let messageBody, !messageBody.isEmpty {
+
+                    if isThinking {
+                        // Compact self-contained bubble — no outer padding, background, or width fill.
+                        ConciergeResponsePlaceholderView()
+                    } else {
+                        Group {
+                            // User text
+                            if isUserMessage {
+                                Text(messageBody ?? "")
+                            // Agent — Markdown renderer (messageBody is non-empty when not thinking).
+                            } else {
                                 MarkdownBlockView(
                                     markdown: annotatedBody,
                                     textColor: UIColor(theme.colors.message.conciergeText.color),
@@ -199,11 +205,8 @@ struct ChatMessageView: View {
                                         handleLinkTap(url)
                                     }
                                 )
-                            } else {
-                                ConciergeResponsePlaceholderView()
                             }
                         }
-                    }
                         .lineSpacing(messageLineSpacing)
                         .padding(theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
@@ -236,12 +239,13 @@ struct ChatMessageView: View {
                                 Label("Copy", systemImage: "doc.on.doc")
                             }
                         }
+                    }
 
                     if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                 }
 
-                // Attach sources dropdown for agent messages only
-                if !isUserMessage, !displayedSources.isEmpty {
+                // Attach sources dropdown for agent messages only — suppressed while thinking.
+                if !isUserMessage, !isThinking, !displayedSources.isEmpty {
                     HStack(alignment: .top) {
                         SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
                         Spacer()

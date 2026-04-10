@@ -611,6 +611,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--disclaimer-color` | `colors.disclaimer` | `Color` | `systemGray` | Disclaimer text color |
 
+### Colors - Thinking Animation
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--thinking-dot-color` | `colors.thinking.dotColor` | `Color?` | `nil` (falls back to `primaryDotColor` from `ConciergeResponsePlaceholderConfig`) | Thinking indicator dot color |
+
 ### Layout - Input
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -734,6 +740,17 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--welcome-prompts-top-spacing` | `layout.welcomePromptsTopSpacing` | `CGFloat?` | `nil` | Spacing above the prompt suggestions section. |
 | `--welcome-prompt-padding` | `layout.welcomePromptPadding` | `CGFloat?` | `nil` | Padding around each prompt suggestion card. |
 | `--welcome-prompt-corner-radius` | `layout.welcomePromptCornerRadius` | `CGFloat?` | `nil` | Corner radius of prompt suggestion cards. Falls back to `--border-radius-card`. |
+
+### Layout - Thinking Animation
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--thinking-dot-size` | `layout.thinkingDotSize` | `CGFloat?` | `8` | Diameter of each thinking indicator dot |
+| `--thinking-dot-spacing` | `layout.thinkingDotSpacing` | `CGFloat?` | `8` | Space between thinking indicator dots |
+| `--thinking-bubble-border-radius` | `layout.thinkingBubbleBorderRadius` | `CGFloat?` | `8` | Corner radius of the thinking bubble |
+| `--thinking-bubble-padding-horizontal` | `layout.thinkingBubblePaddingHorizontal` | `CGFloat?` | `16` | Horizontal inner padding of the thinking bubble |
+| `--thinking-bubble-padding-vertical` | `layout.thinkingBubblePaddingVertical` | `CGFloat?` | `8` | Vertical inner padding of the thinking bubble |
+| `--thinking-dot-vertical-alignment` | `layout.thinkingDotVerticalAlignment` | `String?` | `"center"` | Vertical alignment of the dots row: `"top"`, `"center"`, or `"bottom"` |
 
 ---
 
