@@ -68,6 +68,33 @@ final class MessageBubbleSnapshotTests: XCTestCase {
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 180)))
     }
 
+    // MARK: - Sources + Agent Icon Alignment Tests
+
+    func test_agentMessage_sourcesAlignWithText_withAgentIcon() {
+        var probeTheme = ConciergeThemeLoader.default()
+        // Non-empty path activates icon layout mode; sources should indent to align with agent text.
+        probeTheme.assets.icons.company = "agent-icon"
+
+        let view = AgentMessageWithSourcesProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 160)))
+    }
+
+    func test_agentMessage_sourcesAlignWithText_noAgentIcon() {
+        // Without an icon the sources row should sit at the default message leading edge.
+        let view = AgentMessageWithSourcesProbeHost(theme: ConciergeThemeLoader.default())
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 120)))
+    }
+
+    // MARK: - Prompt Suggestion Alignment Tests
+
+    func test_promptSuggestion_alignsWithAgentText_withAgentIcon() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.assets.icons.company = "agent-icon"
+
+        let view = PromptSuggestionAlignmentProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 240)))
+    }
+
     // MARK: - Response Placeholder Leading Padding Tests
 
     func test_responsePlaceholder_defaultLeadingPadding() {
@@ -132,6 +159,57 @@ private struct MessageBubbleAgentIconProbeHost: View {
         }
         .padding(.horizontal, 16)
         .frame(width: 390, height: 160, alignment: .top)
+        .background(Color.white)
+        .conciergeTheme(theme)
+    }
+}
+
+/// Probe for sources + agent icon alignment: an agent bubble with sources attached.
+/// The sources row should indent to align with the start of the agent response text.
+private struct AgentMessageWithSourcesProbeHost: View {
+    let theme: ConciergeTheme
+
+    private let sources: [Source] = [
+        Source(url: "https://example.com/1", title: "A source", startIndex: 1, endIndex: 2, citationNumber: 1)
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ChatMessageView(
+                template: .basic(isUserMessage: false),
+                messageBody: "Agent response with a source attached.",
+                sources: sources
+            )
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .frame(width: 390, alignment: .top)
+        .background(Color.white)
+        .conciergeTheme(theme)
+    }
+}
+
+/// Probe for prompt suggestion alignment: an agent bubble followed by a prompt suggestion pill.
+/// The pill leading edge should align with the agent response text (not the icon).
+private struct PromptSuggestionAlignmentProbeHost: View {
+    let theme: ConciergeTheme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ChatMessageView(
+                template: .basic(isUserMessage: false),
+                messageBody: "Which option interests you most?"
+            )
+            ChatMessageView(
+                template: .promptSuggestion(text: "Tell me more about option A")
+            )
+            ChatMessageView(
+                template: .promptSuggestion(text: "Show me something else")
+            )
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .frame(width: 390, height: 240, alignment: .top)
         .background(Color.white)
         .conciergeTheme(theme)
     }
