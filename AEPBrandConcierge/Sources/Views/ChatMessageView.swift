@@ -255,12 +255,14 @@ struct ChatMessageView: View {
                     if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                 }
 
-                // Attach sources dropdown for agent messages only
+                // Attach sources dropdown for agent messages only.
+                // Indent by the icon width + spacing so it aligns with the agent text.
                 if !isUserMessage, !displayedSources.isEmpty {
                     HStack(alignment: .top) {
                         SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
                         Spacer()
                     }
+                    .padding(.leading, showAgentIcon ? theme.layout.agentTextIndent : 0)
                 }
             }
 
