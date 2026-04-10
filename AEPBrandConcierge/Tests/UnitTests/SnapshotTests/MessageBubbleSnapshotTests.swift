@@ -22,6 +22,13 @@ final class MessageBubbleSnapshotTests: XCTestCase {
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 320)))
     }
     
+    func test_messageBubbleProbe_balloonStyle() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.behavior.chat.userMessageBubbleStyle = .balloon
+        let view = MessageBubbleProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 320)))
+    }
+
     func test_messageBubbleProbe_exaggeratedTheme() {
         var probeTheme = ConciergeThemeLoader.default()
         
