@@ -119,10 +119,35 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // Then
         XCTAssertEqual(theme.behavior.chat.messageAlignment, .leading) // "left" -> .leading
         XCTAssertNil(theme.behavior.chat.messageWidth) // "100%" -> nil
+        XCTAssertEqual(theme.behavior.chat.userMessageBubbleStyle, .default) // "default" -> .default
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_balloon_decodes() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "balloon" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .balloon)
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_caseInsensitive_decodes() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "Balloon" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .balloon)
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_unknownValue_fallsBackToDefault() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "unknown" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .default)
     }
     
     func test_behavior_privacyNotice_decodesCorrectly() {
