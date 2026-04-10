@@ -67,9 +67,36 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // Then
         XCTAssertEqual(theme.behavior.productCard?.cardStyle, .productDetail)
+        XCTAssertEqual(theme.behavior.productCard?.cardsAlignment, .center)
+    }
+
+    func test_behavior_productCard_cardsAlignment_decodesAllValues() {
+        let cases: [(String, CardsAlignment)] = [
+            ("start", .start),
+            ("center", .center),
+            ("end", .end)
+        ]
+        for (raw, expected) in cases {
+            let json = """
+            {"behavior":{"productCard":{"cardStyle":"actionButton","cardsAlignment":"\(raw)"}}}
+            """
+            let data = json.data(using: .utf8)!
+            let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+            XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, expected, "Failed for raw value '\(raw)'")
+        }
+    }
+
+    func test_behavior_productCard_cardsAlignment_defaultsToCenter() {
+        // When cardsAlignment is omitted, it should default to .center
+        let json = """
+        {"behavior":{"productCard":{"cardStyle":"actionButton"}}}
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, .center)
     }
     
     func test_behavior_input_decodesCorrectly() {

@@ -77,9 +77,8 @@ struct CarouselGroupView: View {
 
     /// Leading inset so the first card aligns with the agent response text.
     private var scrollContentLeadingInset: CGFloat {
-        let hasAgentIcon = !theme.assets.icons.company.isEmpty
-            && theme.behavior.chat.messageAlignment != .center
-        if hasAgentIcon { return 0 }
+        if theme.hasAgentIcon { return 0 }
+        // 16 matches MessageListView.scrollContentBasePadding (the base inset applied to non-carousel messages).
         let messageInset = theme.layout.chatHistoryPadding + 16
         let carouselInset = theme.layout.productCardCarouselHorizontalPadding
             ?? theme.layout.chatHistoryPadding

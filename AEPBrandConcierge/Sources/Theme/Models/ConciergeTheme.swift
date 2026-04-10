@@ -178,6 +178,16 @@ public struct ConciergeTheme: Codable {
     }
 }
 
+// MARK: - Agent icon helpers
+
+extension ConciergeTheme {
+    /// Whether the agent icon column should be shown in chat.
+    /// True when a company icon path is configured and message alignment is not center.
+    var hasAgentIcon: Bool {
+        !assets.icons.company.isEmpty && behavior.chat.messageAlignment != .center
+    }
+}
+
 // MARK: - Derived component styles
 
 private extension ConciergeTheme {

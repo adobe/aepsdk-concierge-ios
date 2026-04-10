@@ -173,9 +173,7 @@ struct ChatMessageView: View {
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
 
             let agentIconPath = theme.assets.icons.company
-            let showAgentIcon = !isUserMessage
-                && theme.behavior.chat.messageAlignment != .center
-                && !agentIconPath.isEmpty
+            let showAgentIcon = !isUserMessage && theme.hasAgentIcon
 
             VStack(alignment: alignment, spacing: 0) {
                 // Top-align so the agent icon stays pinned to the first line of text,
@@ -218,6 +216,8 @@ struct ChatMessageView: View {
                         }
                     }
                         .lineSpacing(messageLineSpacing)
+                        // In icon layout mode the icon itself provides the visual leading/trailing
+                        // offset, so suppress horizontal message padding to avoid double-indenting.
                         .padding(showAgentIcon
                             ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
                             : theme.layout.messagePadding.edgeInsets)
@@ -354,16 +354,26 @@ struct ChatMessageView: View {
             }
 
         case .productCard(let cardData):
-            switch theme.behavior.productCard?.cardStyle ?? .actionButton {
-            case .productDetail:
-                ProductDetailCardView(
-                    data: cardData,
-                    cardWidth: theme.layout.productCardWidth,
-                    cardHeight: theme.layout.productCardHeight
-                )
-            case .actionButton:
-                actionButtonProductCard(data: cardData)
+            let cardAlignment: Alignment = {
+                switch theme.behavior.productCard?.cardsAlignment ?? .center {
+                case .start:  return .leading
+                case .end:    return .trailing
+                case .center: return .center
+                }
+            }()
+            Group {
+                switch theme.behavior.productCard?.cardStyle ?? .actionButton {
+                case .productDetail:
+                    ProductDetailCardView(
+                        data: cardData,
+                        cardWidth: theme.layout.productCardWidth,
+                        cardHeight: theme.layout.productCardHeight
+                    )
+                case .actionButton:
+                    actionButtonProductCard(data: cardData)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: cardAlignment)
 
         case .ctaButton(let action):
             CtaButtonView(action: action)

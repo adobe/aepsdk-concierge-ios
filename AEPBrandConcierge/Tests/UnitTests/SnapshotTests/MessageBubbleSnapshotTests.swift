@@ -95,6 +95,32 @@ final class MessageBubbleSnapshotTests: XCTestCase {
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 240)))
     }
 
+    // MARK: - Product Card Alignment Tests
+
+    func test_productCard_cardsAlignmentStart() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.behavior.productCard = ConciergeProductCardBehavior(cardsAlignment: .start)
+
+        let view = ProductCardAlignmentProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 120)))
+    }
+
+    func test_productCard_cardsAlignmentCenter() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.behavior.productCard = ConciergeProductCardBehavior(cardsAlignment: .center)
+
+        let view = ProductCardAlignmentProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 120)))
+    }
+
+    func test_productCard_cardsAlignmentEnd() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.behavior.productCard = ConciergeProductCardBehavior(cardsAlignment: .end)
+
+        let view = ProductCardAlignmentProbeHost(theme: probeTheme)
+        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 120)))
+    }
+
     // MARK: - Response Placeholder Leading Padding Tests
 
     func test_responsePlaceholder_defaultLeadingPadding() {
@@ -212,6 +238,31 @@ private struct PromptSuggestionAlignmentProbeHost: View {
         .frame(width: 390, height: 240, alignment: .top)
         .background(Color.white)
         .conciergeTheme(theme)
+    }
+}
+
+/// Probe for product card horizontal alignment variants (start / center / end).
+private struct ProductCardAlignmentProbeHost: View {
+    let theme: ConciergeTheme
+
+    private static let cardData = ProductCardData(
+        title: "Running Shoes",
+        subtitle: nil,
+        price: "$129.99",
+        wasPrice: nil,
+        imageSource: .remote(nil),
+        badge: nil,
+        destinationURL: nil,
+        primaryButton: nil,
+        secondaryButton: nil
+    )
+
+    var body: some View {
+        ChatMessageView(template: .productCard(Self.cardData))
+            .padding(.horizontal, 16)
+            .frame(width: 390, height: 120, alignment: .top)
+            .background(Color.white)
+            .conciergeTheme(theme)
     }
 }
 

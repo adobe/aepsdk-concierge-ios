@@ -26,7 +26,8 @@
       "text": "Privacy notice text."
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
     }
   },
   "disclaimer": {

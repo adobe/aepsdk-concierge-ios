@@ -43,7 +43,7 @@ struct LocalAssetImageView: View {
         // else: empty path or missing asset — renders nothing
     }
 
-    private enum SupportedImageExtension: String, CaseIterable {
+    enum SupportedImageExtension: String, CaseIterable {
         case png, jpg, jpeg, webp, heic, heif, gif, tiff, tif, bmp
     }
 
