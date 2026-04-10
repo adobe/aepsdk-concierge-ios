@@ -82,6 +82,14 @@ public struct ConciergeLayout: Codable {
     public var welcomePromptPadding: CGFloat?
     public var welcomePromptCornerRadius: CGFloat?
 
+    // Thinking animation layout
+    public var thinkingDotSize: CGFloat?
+    public var thinkingDotSpacing: CGFloat?
+    public var thinkingBubbleBorderRadius: CGFloat?
+    public var thinkingBubblePaddingHorizontal: CGFloat?
+    public var thinkingBubblePaddingVertical: CGFloat?
+    public var thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment?
+
     public init(
         inputHeight: CGFloat = 52,
         inputBorderRadius: CGFloat = 12,
@@ -155,7 +163,13 @@ public struct ConciergeLayout: Codable {
         welcomeTitleBottomSpacing: CGFloat? = nil,
         welcomePromptsTopSpacing: CGFloat? = nil,
         welcomePromptPadding: CGFloat? = nil,
-        welcomePromptCornerRadius: CGFloat? = nil
+        welcomePromptCornerRadius: CGFloat? = nil,
+        thinkingDotSize: CGFloat? = nil,
+        thinkingDotSpacing: CGFloat? = nil,
+        thinkingBubbleBorderRadius: CGFloat? = nil,
+        thinkingBubblePaddingHorizontal: CGFloat? = nil,
+        thinkingBubblePaddingVertical: CGFloat? = nil,
+        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -220,7 +234,20 @@ public struct ConciergeLayout: Codable {
         self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
         self.welcomePromptPadding = welcomePromptPadding
         self.welcomePromptCornerRadius = welcomePromptCornerRadius
+        self.thinkingDotSize = thinkingDotSize
+        self.thinkingDotSpacing = thinkingDotSpacing
+        self.thinkingBubbleBorderRadius = thinkingBubbleBorderRadius
+        self.thinkingBubblePaddingHorizontal = thinkingBubblePaddingHorizontal
+        self.thinkingBubblePaddingVertical = thinkingBubblePaddingVertical
+        self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
     }
+}
+
+/// Vertical alignment of the dots row within the thinking bubble.
+public enum ThinkingDotVerticalAlignment: String, Codable {
+    case top
+    case center
+    case bottom
 }
 
 /// Typography configuration (font families, sizes, line heights, weights)
