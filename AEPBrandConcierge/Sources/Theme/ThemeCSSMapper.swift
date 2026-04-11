@@ -29,6 +29,7 @@ public enum CSSKeyMapper {
         // Colors - Primary
         "color-primary": { cssValue, theme in theme.colors.primary.primary = CSSValueConverter.parseColor(cssValue) },
         "color-text": { cssValue, theme in theme.colors.primary.text = CSSValueConverter.parseColor(cssValue) },
+        "color-container": { cssValue, theme in theme.colors.primary.container = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Surface
         "main-container-background": { cssValue, theme in theme.colors.surface.mainContainerBackground = CSSValueConverter.parseColor(cssValue) },
@@ -208,6 +209,11 @@ public enum CSSKeyMapper {
         "welcome-prompt-background-color": { cssValue, theme in theme.colors.welcomePrompt.backgroundColor = CSSValueConverter.parseColor(cssValue) },
         "welcome-prompt-text-color": { cssValue, theme in theme.colors.welcomePrompt.textColor = CSSValueConverter.parseColor(cssValue) },
 
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": { cssValue, theme in theme.colors.promptSuggestion.backgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-text-color": { cssValue, theme in theme.colors.promptSuggestion.textColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
+
         // Layout - Welcome Screen
         "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-title-font-size": { cssValue, theme in theme.layout.welcomeTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
@@ -233,7 +239,7 @@ public enum CSSKeyMapper {
             theme.layout.thinkingDotVerticalAlignment = ThinkingDotVerticalAlignment(
                 rawValue: cssValue.lowercased().trimmingCharacters(in: .whitespaces)
             )
-        },
+        }
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

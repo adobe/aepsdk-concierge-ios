@@ -928,5 +928,51 @@ final class ThemeCSSMapperTests: XCTestCase {
         // Then
         XCTAssertNil(theme.layout.thinkingDotVerticalAlignment)
     }
+
+    // MARK: - Prompt Suggestions CSS Key Tests
+
+    func test_colorContainer_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--color-container", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.primary.container)
+    }
+
+    func test_suggestionBackgroundColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
+    }
+
+    func test_suggestionTextColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-text-color", cssValue: "#131313", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
+    }
+
+    func test_suggestionItemBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-item-border-radius", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.suggestionItemBorderRadius, 10)
+    }
 }
 
