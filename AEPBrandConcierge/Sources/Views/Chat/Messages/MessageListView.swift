@@ -33,7 +33,20 @@ struct MessageListView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(messages) { message in
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            // showHeader: insert a "Suggestions" label above the first chip in a group
+                            if isFirstInSuggestionGroup(at: index),
+                               theme.behavior.promptSuggestions?.showHeader == true {
+                                HStack {
+                                    Text(theme.text.suggestionsHeader)
+                                        .font(.system(.subheadline).weight(.semibold))
+                                        .foregroundColor(theme.colors.message.conciergeText.color)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(.bottom, -4)
+                            }
+
                             ChatMessageView(
                                 messageId: message.id,
                                 template: message.template,
@@ -145,5 +158,13 @@ struct MessageListView: View {
         }
         let h = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
         return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
+    }
+
+    /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.
+    private func isFirstInSuggestionGroup(at index: Int) -> Bool {
+        guard case .promptSuggestion = messages[index].template else { return false }
+        if index == 0 { return true }
+        if case .promptSuggestion = messages[index - 1].template { return false }
+        return true
     }
 }

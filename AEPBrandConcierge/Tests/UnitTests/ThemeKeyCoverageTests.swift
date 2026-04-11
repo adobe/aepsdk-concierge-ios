@@ -275,6 +275,13 @@ private extension ThemeKeyCoverageTests {
         "welcome-prompt-background-color": "colors.welcomePrompt.backgroundColor",
         "welcome-prompt-text-color": "colors.welcomePrompt.textColor",
 
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": "colors.promptSuggestion.backgroundColor",
+        "suggestion-text-color": "colors.promptSuggestion.textColor",
+
+        // Colors - Container
+        "color-container": "colors.primary.container",
+
         // Layout - Welcome Screen
         "header-title-font-size": "layout.headerTitleFontSize",
         "welcome-title-font-size": "layout.welcomeTitleFontSize",
@@ -297,6 +304,9 @@ private extension ThemeKeyCoverageTests {
         "thinking-bubble-padding-horizontal": "layout.thinkingBubblePaddingHorizontal",
         "thinking-bubble-padding-vertical": "layout.thinkingBubblePaddingVertical",
         "thinking-dot-vertical-alignment": "layout.thinkingDotVerticalAlignment",
+
+        // Layout - Prompt Suggestions
+        "suggestion-item-border-radius": "layout.suggestionItemBorderRadius",
     ]
 
     // MARK: - Theme token model reflection
