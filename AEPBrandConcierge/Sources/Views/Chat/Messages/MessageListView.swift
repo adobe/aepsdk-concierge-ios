@@ -43,7 +43,7 @@ struct MessageListView: View {
                                         .foregroundColor(theme.colors.message.conciergeText.color)
                                     Spacer()
                                 }
-                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(horizontalPadding(for: message.template))
                                 .padding(.bottom, -4)
                             }
 
@@ -57,7 +57,7 @@ struct MessageListView: View {
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
-                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(horizontalPadding(for: message.template))
                                 .onAppear {
                                     if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
                                         onSpeak(messageBody)
@@ -98,26 +98,57 @@ struct MessageListView: View {
         }
     }
 
-    /// Returns the horizontal padding for a given message template.
+    /// Returns the padding insets for a given message template.
     ///
-    /// Carousel messages use `productCardCarouselHorizontalPadding` when set,
-    /// falling back to `chatHistoryPadding` when not configured.
-    /// Prompt suggestion chips use the default inset unless `alignToMessage` is true,
-    /// in which case they align to the message bubble content edge.
-    /// All other messages use `chatHistoryPadding` plus the base scroll content padding
-    /// to preserve the original combined inset.
-    private func horizontalPadding(for template: MessageTemplate) -> CGFloat {
+    /// - Carousel messages use `productCardCarouselHorizontalPadding` when set,
+    ///   falling back to `chatHistoryPadding`. When an agent icon is configured the leading
+    ///   inset is shifted to align the first card with the agent response text.
+    /// - Agent basic messages with a configured icon use `chatHistoryPadding` as the
+    ///   leading inset only, so the icon sits flush at the history padding boundary.
+    ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
+    /// - Secondary agent-response elements (product cards, CTA buttons, thumbnails, prompt
+    ///   suggestions) with a configured icon are indented by `agentIconSize + agentIconSpacing`
+    ///   so they align with the agent response text.
+    /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
+    private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
         if case .carouselGroup = template {
-            return theme.layout.productCardCarouselHorizontalPadding
+            let h = theme.layout.productCardCarouselHorizontalPadding
                 ?? theme.layout.chatHistoryPadding
+            if theme.hasAgentIcon {
+                return EdgeInsets(
+                    top: 0,
+                    leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
+                    bottom: 0,
+                    trailing: h
+                )
+            }
+            return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
         }
-        if case .promptSuggestion = template,
-           theme.behavior.promptSuggestions?.alignToMessage == true {
-            // Align to message bubble: match the bubble's horizontal inset (padding + message padding)
-            return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
-                + theme.layout.messagePadding.leading
+        if case .basic(let isUserMessage) = template,
+           !isUserMessage,
+           theme.hasAgentIcon {
+            return EdgeInsets(
+                top: 0,
+                leading: theme.layout.chatHistoryPadding,
+                bottom: 0,
+                trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+            )
         }
-        return theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        if theme.hasAgentIcon {
+            switch template {
+            case .promptSuggestion, .productCard, .ctaButton, .thumbnail:
+                return EdgeInsets(
+                    top: 0,
+                    leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
+                    bottom: 0,
+                    trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+                )
+            default:
+                break
+            }
+        }
+        let h = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
     }
 
     /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.

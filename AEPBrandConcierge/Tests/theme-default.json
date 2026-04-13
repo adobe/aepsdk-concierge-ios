@@ -26,7 +26,8 @@
       "text": "Privacy notice text."
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
     }
   },
   "disclaimer": {
@@ -196,6 +197,8 @@
     "--cta-button-vertical-padding": "12px",
     "--cta-button-font-size": "14px",
     "--cta-button-font-weight": "400",
-    "--cta-button-icon-size": "16px"
+    "--cta-button-icon-size": "16px",
+    "--agent-icon-size": "39px",
+    "--agent-icon-spacing": "12px"
   }
 }

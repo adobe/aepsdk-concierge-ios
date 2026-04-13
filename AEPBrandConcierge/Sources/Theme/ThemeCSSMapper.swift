@@ -193,6 +193,11 @@ public enum CSSKeyMapper {
         "cta-button-font-size": { cssValue, theme in theme.layout.ctaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "cta-button-font-weight": { cssValue, theme in theme.layout.ctaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "cta-button-icon-size": { cssValue, theme in theme.layout.ctaButtonIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+
+        // Layout - Agent Icon
+        "agent-icon-size": { cssValue, theme in theme.layout.agentIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 39 },
+        "agent-icon-spacing": { cssValue, theme in theme.layout.agentIconSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+
         // Colors - Input Icons
         "input-send-icon-color": { cssValue, theme in theme.colors.input.sendIconColor = CSSValueConverter.parseColor(cssValue) },
         "input-send-arrow-icon-color": { cssValue, theme in theme.colors.input.sendArrowIconColor = CSSValueConverter.parseColor(cssValue) },

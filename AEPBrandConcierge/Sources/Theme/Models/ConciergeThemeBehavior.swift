@@ -219,12 +219,31 @@ public enum CarouselStyle: String, Codable {
     case scroll
 }
 
+/// Horizontal alignment of product cards within their container.
+public enum CardsAlignment: String, Codable {
+    case start
+    case center
+    case end
+}
+
 /// Product card behavior configuration
 public struct ConciergeProductCardBehavior: Codable {
     public var cardStyle: ProductCardStyle
+    /// Horizontal alignment of product cards within their container. Default is `.center`.
+    public var cardsAlignment: CardsAlignment
 
-    public init(cardStyle: ProductCardStyle = .actionButton) {
+    public init(
+        cardStyle: ProductCardStyle = .actionButton,
+        cardsAlignment: CardsAlignment = .center
+    ) {
         self.cardStyle = cardStyle
+        self.cardsAlignment = cardsAlignment
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cardStyle = try container.decodeIfPresent(ProductCardStyle.self, forKey: .cardStyle) ?? .actionButton
+        cardsAlignment = try container.decodeIfPresent(CardsAlignment.self, forKey: .cardsAlignment) ?? .center
     }
 }
 
