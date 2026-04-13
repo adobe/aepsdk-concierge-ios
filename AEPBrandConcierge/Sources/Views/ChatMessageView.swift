@@ -231,8 +231,13 @@ struct ChatMessageView: View {
                         .background(
                             Group {
                                 if isUserMessage {
-                                    RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                        .fill(theme.colors.message.userBackground.color)
+                                    if theme.behavior.chat.userMessageBubbleStyle == .balloon {
+                                        RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight, .bottomLeft])
+                                            .fill(theme.colors.message.userBackground.color)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                            .fill(theme.colors.message.userBackground.color)
+                                    }
                                 } else {
                                     if !displayedSources.isEmpty {
                                         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
