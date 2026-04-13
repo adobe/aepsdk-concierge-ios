@@ -435,7 +435,7 @@ final class ThemeDecodingTests: XCTestCase {
         }
         
         // Then
-        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#FFFFFF")
         XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#292929")
@@ -656,6 +656,28 @@ final class ThemeDecodingTests: XCTestCase {
         let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
 
         XCTAssertEqual(decoded.text.suggestionsHeader, "Suggestions")
+    }
+
+    // MARK: - primary.container defaults
+
+    func test_primaryColors_container_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.primary.container)
+    }
+
+    func test_promptSuggestion_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.promptSuggestion.backgroundColor)
+    }
+
+    func test_message_conciergeBackground_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.message.conciergeBackground)
+    }
+
+    func test_productCard_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.productCard.backgroundColor)
     }
 
 }
