@@ -110,7 +110,11 @@ public struct SourcesListView: View {
 
     private var backgroundShape: some View {
         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
-            .fill(theme.colors.message.conciergeBackground.color)
+            .fill(
+                theme.colors.message.conciergeBackground?.color
+                    ?? theme.colors.primary.container?.color
+                    ?? Color(UIColor.systemBackground)
+            )
     }
 
     private var thumbsInline: Bool {

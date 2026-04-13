@@ -42,6 +42,11 @@
     "productCard": {
       "cardStyle": "productDetail",
       "cardsAlignment": "start"
+    },
+    "promptSuggestions": {
+      "itemMaxLines": 1,
+      "showHeader": true,
+      "alignToMessage": true
     }
   },
   "disclaimer": {
@@ -82,7 +87,8 @@
     "header.title": "",
     "header.subtitle": "",
     "sourcesLabel": "Sources",
-    "feedbackHelpfulLabel": "Was this helpful?"
+    "feedbackHelpfulLabel": "Was this helpful?",
+    "suggestions.header": "Suggestions"
   },
   "arrays": {
     "welcome.examples": [
@@ -133,12 +139,16 @@
     "--welcome-prompt-corner-radius": "20px",
     "--welcome-prompt-background-color": "#D3D3D3",
     "--welcome-prompt-text-color": "#000000",
+    "--suggestion-background-color": "#F0F0F0",
+    "--suggestion-text-color": "#131313",
+    "--suggestion-item-border-radius": "60px",
 
     "--font-family": "",
     "--line-height-body": "1.5",
 
     "--color-primary": "#006554",
     "--color-text": "#131313",
+    "--color-container": "#F0F0F0",
     "--main-container-background": "#FFFFFF",
     "--main-container-bottom-background": "#FFFFFF",
     "--message-blocker-background": "#FFFFFF",
