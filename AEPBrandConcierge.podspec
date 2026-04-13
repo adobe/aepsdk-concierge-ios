@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "AEPBrandConcierge"
-  s.version      = "5.3.0"
+  s.version      = "5.4.0"
   s.summary      = "Brand Concierge extension for Adobe Experience Cloud SDK. Written and maintained by Adobe."
   s.description  = <<-DESC
                    The Brand Concierge extension is used to enable Brand Concierge experiences in your app.
