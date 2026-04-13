@@ -239,6 +239,12 @@ public struct ConciergeProductCardBehavior: Codable {
         self.cardStyle = cardStyle
         self.cardsAlignment = cardsAlignment
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cardStyle = try container.decodeIfPresent(ProductCardStyle.self, forKey: .cardStyle) ?? .actionButton
+        cardsAlignment = try container.decodeIfPresent(CardsAlignment.self, forKey: .cardsAlignment) ?? .center
+    }
 }
 
 /// Privacy notice configuration
