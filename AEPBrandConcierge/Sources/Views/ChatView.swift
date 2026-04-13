@@ -214,7 +214,11 @@ struct ChatView: View {
                     .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(theme.colors.message.conciergeBackground.color.opacity(0.96))
+                            .fill(
+                                (theme.colors.message.conciergeBackground?.color
+                                    ?? theme.colors.primary.container?.color
+                                    ?? Color(UIColor.systemBackground)).opacity(0.96)
+                            )
                     )
                     .padding(.top, 12)
                     .padding(.horizontal, 16)

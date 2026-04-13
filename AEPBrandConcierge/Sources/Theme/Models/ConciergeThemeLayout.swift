@@ -81,6 +81,7 @@ public struct ConciergeLayout: Codable {
     public var welcomePromptsTopSpacing: CGFloat?
     public var welcomePromptPadding: CGFloat?
     public var welcomePromptCornerRadius: CGFloat?
+    public var suggestionItemBorderRadius: CGFloat?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -155,7 +156,8 @@ public struct ConciergeLayout: Codable {
         welcomeTitleBottomSpacing: CGFloat? = nil,
         welcomePromptsTopSpacing: CGFloat? = nil,
         welcomePromptPadding: CGFloat? = nil,
-        welcomePromptCornerRadius: CGFloat? = nil
+        welcomePromptCornerRadius: CGFloat? = nil,
+        suggestionItemBorderRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -220,6 +222,7 @@ public struct ConciergeLayout: Codable {
         self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
         self.welcomePromptPadding = welcomePromptPadding
         self.welcomePromptCornerRadius = welcomePromptCornerRadius
+        self.suggestionItemBorderRadius = suggestionItemBorderRadius
     }
 }
 
