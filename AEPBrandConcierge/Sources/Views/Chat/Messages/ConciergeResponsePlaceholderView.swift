@@ -48,7 +48,7 @@ struct ConciergeResponsePlaceholderView: View {
         switch theme.layout.thinkingDotVerticalAlignment {
         case .top: return .top
         case .bottom: return .bottom
-        default: return .center
+        case .center, nil: return .center
         }
     }
 
@@ -68,11 +68,7 @@ struct ConciergeResponsePlaceholderView: View {
         .padding(.vertical, bubblePaddingVertical)
         .background(
             RoundedRectangle(cornerRadius: bubbleBorderRadius, style: .continuous)
-                .fill(
-                    theme.colors.message.conciergeBackground?.color
-                        ?? theme.colors.primary.container?.color
-                        ?? Color(UIColor.systemBackground)
-                )
+                .fill(theme.components.chatMessage.conciergeBackground.color)
         )
     }
 }

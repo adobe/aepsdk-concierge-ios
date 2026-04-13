@@ -12,6 +12,13 @@
 
 import SwiftUI
 
+/// Vertical alignment of the dots row within the thinking bubble.
+public enum ThinkingDotVerticalAlignment: String, Codable {
+    case top
+    case center
+    case bottom
+}
+
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
     public var inputHeight: CGFloat
@@ -253,13 +260,6 @@ public struct ConciergeLayout: Codable {
         self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
         self.suggestionItemBorderRadius = suggestionItemBorderRadius
     }
-}
-
-/// Vertical alignment of the dots row within the thinking bubble.
-public enum ThinkingDotVerticalAlignment: String, Codable {
-    case top
-    case center
-    case bottom
 }
 
 /// Typography configuration (font families, sizes, line heights, weights)

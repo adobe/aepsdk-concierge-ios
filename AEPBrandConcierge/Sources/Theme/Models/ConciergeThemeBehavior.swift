@@ -110,6 +110,19 @@ public struct ConciergeWelcomeCardBehavior: Codable {
     }
 }
 
+/// Where feedback thumbs are placed relative to the sources list.
+public enum ThumbsPlacement: String, Codable {
+    /// Thumbs sit inline in the sources header row (default).
+    case inline = "inline"
+    /// Thumbs appear in a dedicated row below the expanded sources list.
+    case below = "below"
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = ThumbsPlacement(rawValue: raw.lowercased()) ?? .inline
+    }
+}
+
 /// Feedback behavior configuration
 /// To-do: update vars to enums or bools where applicable
 public struct ConciergeFeedbackBehavior: Codable {
@@ -117,7 +130,7 @@ public struct ConciergeFeedbackBehavior: Codable {
     /// - `"modal"` — centered dialog with blurred backdrop (`FeedbackOverlayView` modal layout).
     /// - `"action"` — action sheet-style layout with drag affordance.
     public var displayMode: String
-    public var thumbsPlacement: String
+    public var thumbsPlacement: ThumbsPlacement
 
     private enum CodingKeys: String, CodingKey {
         case displayMode
@@ -126,7 +139,7 @@ public struct ConciergeFeedbackBehavior: Codable {
 
     public init(
         displayMode: String = "modal",
-        thumbsPlacement: String = "inline"
+        thumbsPlacement: ThumbsPlacement = .inline
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
@@ -135,7 +148,7 @@ public struct ConciergeFeedbackBehavior: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode) ?? "modal"
-        thumbsPlacement = try container.decodeIfPresent(String.self, forKey: .thumbsPlacement) ?? "inline"
+        thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
     }
 
     public func encode(to encoder: Encoder) throws {
