@@ -150,7 +150,7 @@ final class ThemeDecodingTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.behavior.chat.messageAlignment, .leading) // "left" -> .leading
         XCTAssertNil(theme.behavior.chat.messageWidth) // "100%" -> nil
-        XCTAssertEqual(theme.behavior.chat.userMessageBubbleStyle, .default) // "default" -> .default
+        XCTAssertEqual(theme.behavior.chat.userMessageBubbleStyle, .balloon) // "default" -> .balloon
     }
 
     func test_behavior_chat_userMessageBubbleStyle_balloon_decodes() throws {
