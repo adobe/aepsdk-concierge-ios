@@ -275,7 +275,7 @@ public struct ConciergeThemeColors: Codable {
         productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
         ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
         welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors(),
-        thinking: ConciergeThinkingColors = ConciergeThinkingColors()
+        thinking: ConciergeThinkingColors = ConciergeThinkingColors(),
         promptSuggestion: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
     ) {
         self.primary = primary

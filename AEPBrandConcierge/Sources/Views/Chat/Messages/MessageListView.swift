@@ -43,7 +43,8 @@ struct MessageListView: View {
                                         .foregroundColor(theme.colors.message.conciergeText.color)
                                     Spacer()
                                 }
-                                .padding(.horizontal, horizontalPadding(for: message.template))
+                                .padding(.leading, horizontalPadding(for: message.template).leading)
+                                .padding(.trailing, horizontalPadding(for: message.template).trailing)
                                 .padding(.bottom, -4)
                             }
 
