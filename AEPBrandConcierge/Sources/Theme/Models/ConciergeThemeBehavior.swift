@@ -163,22 +163,39 @@ public struct ConciergeIconConfig: Codable {
     }
 }
 
+/// Shape style for the user message bubble.
+public enum UserMessageBubbleStyle: String, Codable {
+    /// Fully rounded corners on all sides (default).
+    case `default` = "default"
+    /// Speech-bubble style with a squared-off bottom-right corner.
+    case balloon = "balloon"
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = UserMessageBubbleStyle(rawValue: raw.lowercased()) ?? .default
+    }
+}
+
 /// Chat behavior configuration
 public struct ConciergeChatBehavior: Codable {
     public var messageAlignment: ConciergeTextAlignment
     public var messageWidth: CGFloat? // nil = no max width, value = max width in points
+    public var userMessageBubbleStyle: UserMessageBubbleStyle
 
     private enum CodingKeys: String, CodingKey {
         case messageAlignment
         case messageWidth
+        case userMessageBubbleStyle
     }
 
     public init(
         messageAlignment: ConciergeTextAlignment = .leading,
-        messageWidth: CGFloat? = nil
+        messageWidth: CGFloat? = nil,
+        userMessageBubbleStyle: UserMessageBubbleStyle = .default
     ) {
         self.messageAlignment = messageAlignment
         self.messageWidth = messageWidth
+        self.userMessageBubbleStyle = userMessageBubbleStyle
     }
 
     public init(from decoder: Decoder) throws {
@@ -192,6 +209,8 @@ public struct ConciergeChatBehavior: Codable {
         } else {
             messageWidth = nil
         }
+
+        userMessageBubbleStyle = try container.decodeIfPresent(UserMessageBubbleStyle.self, forKey: .userMessageBubbleStyle) ?? .default
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -199,6 +218,9 @@ public struct ConciergeChatBehavior: Codable {
         try container.encode(messageAlignment, forKey: .messageAlignment)
         if let width = messageWidth {
             try container.encode(width, forKey: .messageWidth)
+        }
+        if userMessageBubbleStyle != .default {
+            try container.encode(userMessageBubbleStyle, forKey: .userMessageBubbleStyle)
         }
     }
 }

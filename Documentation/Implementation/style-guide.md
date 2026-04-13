@@ -220,6 +220,7 @@ Feature toggles and interaction configuration.
 |----------|------|---------|-------------|
 | `behavior.chat.messageAlignment` | string | `"left"` | Message alignment (`"left"`, `"center"`, `"right"`) |
 | `behavior.chat.messageWidth` | string | `"100%"` | Max message width (e.g., `"100%"`, `"768px"`) |
+| `behavior.chat.userMessageBubbleStyle` | string | `"default"` | User message bubble shape: `"balloon"` for speech-bubble style (squared-off bottom-right corner); any other value uses fully rounded corners |
 
 ### Product Card
 
@@ -284,7 +285,8 @@ Feature toggles and interaction configuration.
     },
     "chat": {
       "messageAlignment": "left",
-      "messageWidth": "100%"
+      "messageWidth": "100%",
+      "userMessageBubbleStyle": "default"
     },
     "productCard": {
       "cardStyle": "productDetail",
@@ -804,7 +806,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     },
     "chat": {
       "messageAlignment": "left",
-      "messageWidth": "100%"
+      "messageWidth": "100%",
+      "userMessageBubbleStyle": "default"
     },
     "productCard": {
       "cardStyle": "productDetail",
@@ -1046,6 +1049,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
+| `behavior.chat.userMessageBubbleStyle` | ✅ | Controls user bubble shape (`"balloon"` = speech bubble with squared-off bottom-right; default = fully rounded) |
 | `behavior.privacyNotice.title` | ⚠️ | Parsed but no privacy dialog implemented |
 | `behavior.privacyNotice.text` | ⚠️ | Parsed but no privacy dialog implemented |
 
