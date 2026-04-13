@@ -260,6 +260,10 @@ private extension ThemeKeyCoverageTests {
         "cta-button-font-weight": "layout.ctaButtonFontWeight",
         "cta-button-icon-size": "layout.ctaButtonIconSize",
 
+        // Layout - Agent Icon
+        "agent-icon-size": "layout.agentIconSize",
+        "agent-icon-spacing": "layout.agentIconSpacing",
+
         // Colors - Input Icons
         "input-send-icon-color": "colors.input.sendIconColor",
         "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",

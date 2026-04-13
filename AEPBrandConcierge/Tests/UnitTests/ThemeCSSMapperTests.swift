@@ -767,6 +767,30 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
     }
 
+    // MARK: - Agent Icon Layout Mapping Tests
+
+    func test_agentIconSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--agent-icon-size", cssValue: "44px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSize, CGFloat(44))
+    }
+
+    func test_agentIconSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--agent-icon-spacing", cssValue: "8px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSpacing, CGFloat(8))
+    }
+
     // MARK: - Prompt Suggestions CSS Key Tests
 
     func test_colorContainer_mapsToColors() {

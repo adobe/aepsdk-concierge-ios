@@ -75,12 +75,10 @@ struct CarouselGroupView: View {
         .padding(.vertical, 8)
     }
 
-    /// Leading inset so the first card aligns with the left edge of non-carousel message content.
-    ///
-    /// Non-carousel messages are inset by `chatHistoryPadding + MessageListView.scrollContentBasePadding`.
-    /// The carousel itself is inset by `productCardCarouselHorizontalPadding ?? chatHistoryPadding`.
-    /// The difference is applied here as the scroll content's leading padding.
+    /// Leading inset so the first card aligns with the agent response text.
     private var scrollContentLeadingInset: CGFloat {
+        if theme.hasAgentIcon { return 0 }
+        // 16 matches MessageListView.scrollContentBasePadding (the base inset applied to non-carousel messages).
         let messageInset = theme.layout.chatHistoryPadding + 16
         let carouselInset = theme.layout.productCardCarouselHorizontalPadding
             ?? theme.layout.chatHistoryPadding
