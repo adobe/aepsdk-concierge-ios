@@ -20,6 +20,12 @@ struct ConciergeResponsePlaceholderView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
 
+    /// Default horizontal padding applied to each side of the bubble content.
+    static let defaultHorizontalPadding: CGFloat = 16
+
+    /// Pass `0` when an agent icon is already providing the leading inset.
+    var leadingPadding: CGFloat = defaultHorizontalPadding
+
     private var lighterDotColor1: Color {
         placeholderConfig.primaryDotColor.opacity(0.7)
     }
@@ -38,11 +44,16 @@ struct ConciergeResponsePlaceholderView: View {
             LoadingDotsView(dotColors: [placeholderConfig.primaryDotColor, lighterDotColor1, lighterDotColor2])
                 .fixedSize()
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, leadingPadding)
+        .padding(.trailing, Self.defaultHorizontalPadding)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(theme.colors.message.conciergeBackground.color)
+                .fill(
+                    theme.colors.message.conciergeBackground?.color
+                        ?? theme.colors.primary.container?.color
+                        ?? Color(UIColor.systemBackground)
+                )
         )
     }
 }

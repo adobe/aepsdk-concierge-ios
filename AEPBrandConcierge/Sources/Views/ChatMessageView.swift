@@ -171,10 +171,24 @@ struct ChatMessageView: View {
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
+            let conciergeBackgroundColor = theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
+
+            let agentIconPath = theme.assets.icons.company
+            let showAgentIcon = !isUserMessage && theme.hasAgentIcon
 
             VStack(alignment: alignment, spacing: 0) {
-                HStack(alignment: .bottom) {
+                // Top-align so the agent icon stays pinned to the first line of text,
+                // rather than drifting to the bottom when multi-line bubbles expand.
+                HStack(alignment: .top) {
                     if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
+
+                    if showAgentIcon {
+                        LocalAssetImageView(iconPath: agentIconPath, size: theme.layout.agentIconSize)
+                            .padding(.trailing, theme.layout.agentIconSpacing)
+                    }
+
                     Group {
                         // User text
                         if isUserMessage {
@@ -200,12 +214,16 @@ struct ChatMessageView: View {
                                     }
                                 )
                             } else {
-                                ConciergeResponsePlaceholderView()
+                                ConciergeResponsePlaceholderView(leadingPadding: showAgentIcon ? 0 : ConciergeResponsePlaceholderView.defaultHorizontalPadding)
                             }
                         }
                     }
                         .lineSpacing(messageLineSpacing)
-                        .padding(theme.layout.messagePadding.edgeInsets)
+                        // In icon layout mode the icon itself provides the visual leading/trailing
+                        // offset, so suppress horizontal message padding to avoid double-indenting.
+                        .padding(showAgentIcon
+                            ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
+                            : theme.layout.messagePadding.edgeInsets)
                         // Allow themes to cap bubble width (nil means unconstrained).
                         .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                         .textSelection(.enabled)
@@ -223,10 +241,10 @@ struct ChatMessageView: View {
                                 } else {
                                     if !displayedSources.isEmpty {
                                         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     } else {
                                         RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     }
                                 }
                             }
@@ -245,12 +263,14 @@ struct ChatMessageView: View {
                     if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
                 }
 
-                // Attach sources dropdown for agent messages only
+                // Attach sources dropdown for agent messages only.
+                // Indent by the icon width + spacing so it aligns with the agent text.
                 if !isUserMessage, !displayedSources.isEmpty {
                     HStack(alignment: .top) {
                         SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
                         Spacer()
                     }
+                    .padding(.leading, showAgentIcon ? theme.layout.agentTextIndent : 0)
                 }
             }
 
@@ -342,16 +362,26 @@ struct ChatMessageView: View {
             }
 
         case .productCard(let cardData):
-            switch theme.behavior.productCard?.cardStyle ?? .actionButton {
-            case .productDetail:
-                ProductDetailCardView(
-                    data: cardData,
-                    cardWidth: theme.layout.productCardWidth,
-                    cardHeight: theme.layout.productCardHeight
-                )
-            case .actionButton:
-                actionButtonProductCard(data: cardData)
+            let cardAlignment: Alignment = {
+                switch theme.behavior.productCard?.cardsAlignment ?? .center {
+                case .start:  return .leading
+                case .end:    return .trailing
+                case .center: return .center
+                }
+            }()
+            Group {
+                switch theme.behavior.productCard?.cardStyle ?? .actionButton {
+                case .productDetail:
+                    ProductDetailCardView(
+                        data: cardData,
+                        cardWidth: theme.layout.productCardWidth,
+                        cardHeight: theme.layout.productCardHeight
+                    )
+                case .actionButton:
+                    actionButtonProductCard(data: cardData)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: cardAlignment)
 
         case .ctaButton(let action):
             CtaButtonView(action: action)
@@ -360,26 +390,33 @@ struct ChatMessageView: View {
             CarouselGroupView(items: items)
 
         case .promptSuggestion(let text):
+            let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
+                ?? theme.colors.message.conciergeText.color
+            let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.secondarySystemBackground)
+            let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
+            let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+
             HStack(alignment: .bottom) {
-                Group {
-                    Button(action: { onSuggestionTap?(text) }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrowshape.turn.up.right")
-                                .imageScale(.small)
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                            Text(text)
-                                .font(.system(.subheadline))
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                .fill(theme.colors.message.conciergeBackground.color)
-                        )
+                Button(action: { onSuggestionTap?(text) }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .imageScale(.small)
+                            .foregroundColor(suggestionTextColor)
+                        Text(text)
+                            .font(.system(.subheadline))
+                            .foregroundColor(suggestionTextColor)
+                            .lineLimit(suggestionMaxLines)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
+                            .fill(suggestionBgColor)
+                    )
                 }
+                .buttonStyle(PlainButtonStyle())
                 Spacer()
             }
         }
@@ -494,7 +531,11 @@ private extension ChatMessageView {
             .padding(14)
             .frame(width: 350, alignment: .leading)
         }
-        .background(theme.colors.message.conciergeBackground.color)
+        .background(
+            theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
+        )
         .cornerRadius(theme.layout.borderRadiusCard)
         .shadow(
             color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
