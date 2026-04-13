@@ -173,9 +173,7 @@ struct ChatMessageView: View {
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
-            let conciergeBackgroundColor = theme.colors.message.conciergeBackground?.color
-                ?? theme.colors.primary.container?.color
-                ?? Color(UIColor.systemBackground)
+            let conciergeBackgroundColor = theme.components.chatMessage.conciergeBackground.color
 
             let agentIconPath = theme.assets.icons.company
             let showAgentIcon = !isUserMessage && theme.hasAgentIcon
@@ -367,13 +365,7 @@ struct ChatMessageView: View {
             }
 
         case .productCard(let cardData):
-            let cardAlignment: Alignment = {
-                switch theme.behavior.productCard?.cardsAlignment ?? .center {
-                case .start:  return .leading
-                case .end:    return .trailing
-                case .center: return .center
-                }
-            }()
+            let cardAlignment = (theme.behavior.productCard?.cardsAlignment ?? .center).swiftUIAlignment
             Group {
                 switch theme.behavior.productCard?.cardStyle ?? .actionButton {
                 case .productDetail:
@@ -536,11 +528,7 @@ private extension ChatMessageView {
             .padding(14)
             .frame(width: 350, alignment: .leading)
         }
-        .background(
-            theme.colors.message.conciergeBackground?.color
-                ?? theme.colors.primary.container?.color
-                ?? Color(UIColor.systemBackground)
-        )
+        .background(theme.components.chatMessage.conciergeBackground.color)
         .cornerRadius(theme.layout.borderRadiusCard)
         .shadow(
             color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
@@ -578,5 +566,15 @@ private extension ChatMessageView {
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )
+    }
+}
+
+private extension CardsAlignment {
+    var swiftUIAlignment: Alignment {
+        switch self {
+        case .start:  return .leading
+        case .end:    return .trailing
+        case .center: return .center
+        }
     }
 }

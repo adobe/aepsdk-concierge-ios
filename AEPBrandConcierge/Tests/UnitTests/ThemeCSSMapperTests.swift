@@ -774,7 +774,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--agent-icon-size", cssValue: "44px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "agent-icon-size", cssValue: "44px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.agentIconSize, CGFloat(44))
@@ -785,7 +785,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--agent-icon-spacing", cssValue: "8px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "agent-icon-spacing", cssValue: "8px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.agentIconSpacing, CGFloat(8))
@@ -798,7 +798,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--color-container", cssValue: "#F0F0F0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "color-container", cssValue: "#F0F0F0", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.primary.container)
@@ -810,7 +810,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
@@ -822,7 +822,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-text-color", cssValue: "#131313", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-text-color", cssValue: "#131313", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
@@ -834,7 +834,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-item-border-radius", cssValue: "10px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-item-border-radius", cssValue: "10px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.suggestionItemBorderRadius, 10)
