@@ -247,6 +247,46 @@ public struct ConciergeProductCardBehavior: Codable {
     }
 }
 
+/// Prompt suggestions behavior configuration
+public struct ConciergePromptSuggestionsBehavior: Codable {
+    /// Max lines of text per chip before ellipsis. Default: `1`.
+    public var itemMaxLines: Int
+    /// Show a customizable "Suggestions" header label above the chips. Default: `false`.
+    public var showHeader: Bool
+    /// Align chips to the inner content edge of the bot message bubble. Default: `false`.
+    public var alignToMessage: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case itemMaxLines
+        case showHeader
+        case alignToMessage
+    }
+
+    public init(
+        itemMaxLines: Int = 1,
+        showHeader: Bool = false,
+        alignToMessage: Bool = false
+    ) {
+        self.itemMaxLines = itemMaxLines
+        self.showHeader = showHeader
+        self.alignToMessage = alignToMessage
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        itemMaxLines = try container.decodeIfPresent(Int.self, forKey: .itemMaxLines) ?? 1
+        showHeader = try container.decodeIfPresent(Bool.self, forKey: .showHeader) ?? false
+        alignToMessage = try container.decodeIfPresent(Bool.self, forKey: .alignToMessage) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(itemMaxLines, forKey: .itemMaxLines)
+        try container.encode(showHeader, forKey: .showHeader)
+        try container.encode(alignToMessage, forKey: .alignToMessage)
+    }
+}
+
 /// Privacy notice configuration
 public struct ConciergePrivacyNoticeBehavior: Codable {
     public var title: String
@@ -271,6 +311,7 @@ public struct ConciergeBehaviorConfig: Codable {
     public var welcomeCard: ConciergeWelcomeCardBehavior?
     public var feedback: ConciergeFeedbackBehavior?
     public var citations: ConciergeCitationsBehavior?
+    public var promptSuggestions: ConciergePromptSuggestionsBehavior?
 
     private enum CodingKeys: String, CodingKey {
         case multimodalCarousel
@@ -281,6 +322,7 @@ public struct ConciergeBehaviorConfig: Codable {
         case welcomeCard
         case feedback
         case citations
+        case promptSuggestions
     }
 
     public init(
@@ -291,7 +333,8 @@ public struct ConciergeBehaviorConfig: Codable {
         productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior(),
         welcomeCard: ConciergeWelcomeCardBehavior? = nil,
         feedback: ConciergeFeedbackBehavior? = nil,
-        citations: ConciergeCitationsBehavior? = nil
+        citations: ConciergeCitationsBehavior? = nil,
+        promptSuggestions: ConciergePromptSuggestionsBehavior? = nil
     ) {
         self.multimodalCarousel = multimodalCarousel
         self.input = input
@@ -301,6 +344,7 @@ public struct ConciergeBehaviorConfig: Codable {
         self.welcomeCard = welcomeCard
         self.feedback = feedback
         self.citations = citations
+        self.promptSuggestions = promptSuggestions
     }
 
     public init(from decoder: Decoder) throws {
@@ -319,6 +363,7 @@ public struct ConciergeBehaviorConfig: Codable {
         welcomeCard = try container.decodeIfPresent(ConciergeWelcomeCardBehavior.self, forKey: .welcomeCard)
         feedback = try container.decodeIfPresent(ConciergeFeedbackBehavior.self, forKey: .feedback)
         citations = try container.decodeIfPresent(ConciergeCitationsBehavior.self, forKey: .citations)
+        promptSuggestions = try container.decodeIfPresent(ConciergePromptSuggestionsBehavior.self, forKey: .promptSuggestions)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -331,5 +376,6 @@ public struct ConciergeBehaviorConfig: Codable {
         try container.encodeIfPresent(welcomeCard, forKey: .welcomeCard)
         try container.encodeIfPresent(feedback, forKey: .feedback)
         try container.encodeIfPresent(citations, forKey: .citations)
+        try container.encodeIfPresent(promptSuggestions, forKey: .promptSuggestions)
     }
 }
