@@ -81,6 +81,7 @@ public struct ConciergeCopy: Codable {
     public var headerSubtitle: String
     public var sourcesLabel: String
     public var feedbackHelpfulLabel: String
+    public var suggestionsHeader: String
 
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
@@ -111,6 +112,7 @@ public struct ConciergeCopy: Codable {
         case headerSubtitle = "header.subtitle"
         case sourcesLabel = "sourcesLabel"
         case feedbackHelpfulLabel = "feedbackHelpfulLabel"
+        case suggestionsHeader = "suggestions.header"
     }
 
     public init(
@@ -141,7 +143,8 @@ public struct ConciergeCopy: Codable {
         headerTitle: String = "",
         headerSubtitle: String = "",
         sourcesLabel: String = "Sources",
-        feedbackHelpfulLabel: String = "Was this helpful?"
+        feedbackHelpfulLabel: String = "Was this helpful?",
+        suggestionsHeader: String = "Suggestions"
     ) {
         self.welcomeHeading = welcomeHeading
         self.welcomeSubheading = welcomeSubheading
@@ -171,6 +174,7 @@ public struct ConciergeCopy: Codable {
         self.headerSubtitle = headerSubtitle
         self.sourcesLabel = sourcesLabel
         self.feedbackHelpfulLabel = feedbackHelpfulLabel
+        self.suggestionsHeader = suggestionsHeader
     }
 
     /// To-do: Move strings to a defaults file and load from there instead of hardcoding in the init.
@@ -204,6 +208,7 @@ public struct ConciergeCopy: Codable {
         headerSubtitle = try container.decodeIfPresent(String.self, forKey: .headerSubtitle) ?? ""
         sourcesLabel = try container.decodeIfPresent(String.self, forKey: .sourcesLabel) ?? "Sources"
         feedbackHelpfulLabel = try container.decodeIfPresent(String.self, forKey: .feedbackHelpfulLabel) ?? "Was this helpful?"
+        suggestionsHeader = try container.decodeIfPresent(String.self, forKey: .suggestionsHeader) ?? "Suggestions"
     }
 }
 

@@ -67,9 +67,36 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // Then
         XCTAssertEqual(theme.behavior.productCard?.cardStyle, .productDetail)
+        XCTAssertEqual(theme.behavior.productCard?.cardsAlignment, .center)
+    }
+
+    func test_behavior_productCard_cardsAlignment_decodesAllValues() {
+        let cases: [(String, CardsAlignment)] = [
+            ("start", .start),
+            ("center", .center),
+            ("end", .end)
+        ]
+        for (raw, expected) in cases {
+            let json = """
+            {"behavior":{"productCard":{"cardStyle":"actionButton","cardsAlignment":"\(raw)"}}}
+            """
+            let data = json.data(using: .utf8)!
+            let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+            XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, expected, "Failed for raw value '\(raw)'")
+        }
+    }
+
+    func test_behavior_productCard_cardsAlignment_defaultsToCenter() {
+        // When cardsAlignment is omitted, it should default to .center
+        let json = """
+        {"behavior":{"productCard":{"cardStyle":"actionButton"}}}
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, .center)
     }
     
     func test_behavior_input_decodesCorrectly() {
@@ -460,7 +487,7 @@ final class ThemeDecodingTests: XCTestCase {
         }
         
         // Then
-        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#FFFFFF")
         XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#292929")
@@ -592,17 +619,118 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // When
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted]
         let encodedData = try encoder.encode(theme)
-        
+
         // Then
         XCTAssertNotNil(encodedData)
         let jsonObject = try JSONSerialization.jsonObject(with: encodedData, options: [])
         XCTAssertTrue(jsonObject is [String: Any])
     }
-    
+
+    // MARK: - Prompt Suggestions Behavior Decoding Tests
+
+    func test_behavior_promptSuggestions_decodesCorrectly() throws {
+        let json = """
+        {
+          "behavior": {
+            "promptSuggestions": {
+              "itemMaxLines": 2,
+              "showHeader": true,
+              "alignToMessage": true
+            }
+          }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.itemMaxLines, 2)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.showHeader, true)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.alignToMessage, true)
+    }
+
+    func test_behavior_promptSuggestions_absentBlock_isNil() throws {
+        let json = """
+        { "behavior": {} }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertNil(decoded.behavior.promptSuggestions)
+    }
+
+    func test_behavior_promptSuggestions_defaults() {
+        let behavior = ConciergePromptSuggestionsBehavior()
+        XCTAssertEqual(behavior.itemMaxLines, 1)
+        XCTAssertFalse(behavior.showHeader)
+        XCTAssertFalse(behavior.alignToMessage)
+    }
+
+    func test_behavior_promptSuggestions_partialJson_usesDefaults() throws {
+        let json = """
+        {
+          "behavior": {
+            "promptSuggestions": {
+              "showHeader": true
+            }
+          }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.itemMaxLines, 1)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.showHeader, true)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.alignToMessage, false)
+    }
+
+    // MARK: - suggestions.header Text String Tests
+
+    func test_text_suggestionsHeader_decodesCorrectly() throws {
+        let json = """
+        { "text": { "suggestions.header": "Explore More" } }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.suggestionsHeader, "Explore More")
+    }
+
+    func test_text_suggestionsHeader_defaultsToSuggestions() throws {
+        let json = """
+        { "text": {} }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.suggestionsHeader, "Suggestions")
+    }
+
+    // MARK: - primary.container defaults
+
+    func test_primaryColors_container_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.primary.container)
+    }
+
+    func test_promptSuggestion_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.promptSuggestion.backgroundColor)
+    }
+
+    func test_message_conciergeBackground_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.message.conciergeBackground)
+    }
+
+    func test_productCard_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.productCard.backgroundColor)
+    }
+
 }
 
