@@ -294,6 +294,17 @@ private extension ThemeKeyCoverageTests {
         "welcome-prompt-padding": "layout.welcomePromptPadding",
         "welcome-prompt-corner-radius": "layout.welcomePromptCornerRadius",
 
+        // Colors - Thinking Animation
+        "thinking-dot-color": "colors.thinking.dotColor",
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": "layout.thinkingDotSize",
+        "thinking-dot-spacing": "layout.thinkingDotSpacing",
+        "thinking-bubble-border-radius": "layout.thinkingBubbleBorderRadius",
+        "thinking-bubble-padding-horizontal": "layout.thinkingBubblePaddingHorizontal",
+        "thinking-bubble-padding-vertical": "layout.thinkingBubblePaddingVertical",
+        "thinking-dot-vertical-alignment": "layout.thinkingDotVerticalAlignment",
+
         // Layout - Prompt Suggestions
         "suggestion-item-border-radius": "layout.suggestionItemBorderRadius",
     ]

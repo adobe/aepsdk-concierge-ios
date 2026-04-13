@@ -13,62 +13,79 @@
 import SwiftUI
 
 /// A placeholder response bubble shown while the agent is loading a response.
-/// Customizable elements:
-/// - Placeholder bubble's text (ex: "Thinking...")
-/// - Loading dot color (primary). The two lighter shades are derived automatically.
+/// Renders as a compact, self-contained bubble that wraps its content.
+/// Dot color, size, spacing, bubble shape, padding, and dot alignment are all
+/// customizable via CSS theme.
 struct ConciergeResponsePlaceholderView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergePlaceholderConfig) private var placeholderConfig
 
-    /// Default horizontal padding applied to each side of the bubble content.
-    static let defaultHorizontalPadding: CGFloat = 16
-
-    /// Pass `0` when an agent icon is already providing the leading inset.
-    var leadingPadding: CGFloat = defaultHorizontalPadding
-
-    private var lighterDotColor1: Color {
-        placeholderConfig.primaryDotColor.opacity(0.7)
+    private var dotColor: Color {
+        theme.colors.thinking.dotColor?.color ?? placeholderConfig.primaryDotColor
     }
 
-    private var lighterDotColor2: Color {
-        placeholderConfig.primaryDotColor.opacity(0.45)
+    private var dotSize: CGFloat {
+        theme.layout.thinkingDotSize ?? 8
+    }
+
+    private var dotSpacing: CGFloat {
+        theme.layout.thinkingDotSpacing ?? 8
+    }
+
+    private var bubbleBorderRadius: CGFloat {
+        theme.layout.thinkingBubbleBorderRadius ?? 8
+    }
+
+    private var bubblePaddingHorizontal: CGFloat {
+        theme.layout.thinkingBubblePaddingHorizontal ?? 16
+    }
+
+    private var bubblePaddingVertical: CGFloat {
+        theme.layout.thinkingBubblePaddingVertical ?? 8
+    }
+
+    private var dotVerticalAlignment: VerticalAlignment {
+        switch theme.layout.thinkingDotVerticalAlignment {
+        case .top: return .top
+        case .bottom: return .bottom
+        case .center, nil: return .center
+        }
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Text(placeholderConfig.loadingText)
-                .foregroundColor(theme.colors.message.conciergeText.color)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: dotVerticalAlignment, spacing: 8) {
+            if !placeholderConfig.loadingText.isEmpty {
+                Text(placeholderConfig.loadingText)
+                    .foregroundColor(theme.colors.message.conciergeText.color)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-            LoadingDotsView(dotColors: [placeholderConfig.primaryDotColor, lighterDotColor1, lighterDotColor2])
+            LoadingDotsView(dotColor: dotColor, dotSize: dotSize, dotSpacing: dotSpacing)
                 .fixedSize()
         }
-        .padding(.leading, leadingPadding)
-        .padding(.trailing, Self.defaultHorizontalPadding)
-        .padding(.vertical, 10)
+        .padding(.horizontal, bubblePaddingHorizontal)
+        .padding(.vertical, bubblePaddingVertical)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    theme.colors.message.conciergeBackground?.color
-                        ?? theme.colors.primary.container?.color
-                        ?? Color(UIColor.systemBackground)
-                )
+            RoundedRectangle(cornerRadius: bubbleBorderRadius, style: .continuous)
+                .fill(theme.components.chatMessage.conciergeBackground.color)
         )
     }
 }
 
-/// Three dot loading indicator that animates the opacity of dots in a wave.
+/// Three dot loading indicator that animates the opacity of each dot in a wave.
 private struct LoadingDotsView: View {
-    let dotColors: [Color]
+    let dotColor: Color
+    let dotSize: CGFloat
+    let dotSpacing: CGFloat
     @State private var isAnimating: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: dotSpacing) {
             ForEach(0..<3) { index in
                 Circle()
-                    .fill(dotColors[min(index, dotColors.count - 1)])
-                    .frame(width: 10, height: 10)
+                    .fill(dotColor)
+                    .frame(width: dotSize, height: dotSize)
                     .opacity(isAnimating ? 1.0 : 0.3)
                     .animation(
                         .easeInOut(duration: 0.9)
@@ -87,6 +104,8 @@ private struct LoadingDotsView: View {
         ConciergeResponsePlaceholderView()
         ConciergeResponsePlaceholderView()
             .conciergePlaceholderConfig(ConciergeResponsePlaceholderConfig(loadingText: "Loading personalized ideas...", primaryDotColor: .purple))
+        ConciergeResponsePlaceholderView()
+            .conciergePlaceholderConfig(ConciergeResponsePlaceholderConfig(loadingText: "", primaryDotColor: .accentColor))
     }
     .padding()
     .conciergeTheme(ConciergeTheme())

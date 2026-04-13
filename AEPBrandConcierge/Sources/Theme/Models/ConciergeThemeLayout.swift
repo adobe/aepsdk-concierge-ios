@@ -12,6 +12,13 @@
 
 import SwiftUI
 
+/// Vertical alignment of the dots row within the thinking bubble.
+public enum ThinkingDotVerticalAlignment: String, Codable {
+    case top
+    case center
+    case bottom
+}
+
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
     public var inputHeight: CGFloat
@@ -87,6 +94,14 @@ public struct ConciergeLayout: Codable {
     public var welcomePromptPadding: CGFloat?
     public var welcomePromptCornerRadius: CGFloat?
     public var suggestionItemBorderRadius: CGFloat?
+
+    // Thinking animation layout
+    public var thinkingDotSize: CGFloat?
+    public var thinkingDotSpacing: CGFloat?
+    public var thinkingBubbleBorderRadius: CGFloat?
+    public var thinkingBubblePaddingHorizontal: CGFloat?
+    public var thinkingBubblePaddingVertical: CGFloat?
+    public var thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -164,6 +179,12 @@ public struct ConciergeLayout: Codable {
         welcomePromptsTopSpacing: CGFloat? = nil,
         welcomePromptPadding: CGFloat? = nil,
         welcomePromptCornerRadius: CGFloat? = nil,
+        thinkingDotSize: CGFloat? = nil,
+        thinkingDotSpacing: CGFloat? = nil,
+        thinkingBubbleBorderRadius: CGFloat? = nil,
+        thinkingBubblePaddingHorizontal: CGFloat? = nil,
+        thinkingBubblePaddingVertical: CGFloat? = nil,
+        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil,
         suggestionItemBorderRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
@@ -231,6 +252,12 @@ public struct ConciergeLayout: Codable {
         self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
         self.welcomePromptPadding = welcomePromptPadding
         self.welcomePromptCornerRadius = welcomePromptCornerRadius
+        self.thinkingDotSize = thinkingDotSize
+        self.thinkingDotSpacing = thinkingDotSpacing
+        self.thinkingBubbleBorderRadius = thinkingBubbleBorderRadius
+        self.thinkingBubblePaddingHorizontal = thinkingBubblePaddingHorizontal
+        self.thinkingBubblePaddingVertical = thinkingBubblePaddingVertical
+        self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
         self.suggestionItemBorderRadius = suggestionItemBorderRadius
     }
 }

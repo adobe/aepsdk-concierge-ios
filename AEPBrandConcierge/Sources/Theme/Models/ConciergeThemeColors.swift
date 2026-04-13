@@ -223,6 +223,15 @@ public struct ConciergeProductCardColors: Codable {
     }
 }
 
+/// Thinking animation color tokens
+public struct ConciergeThinkingColors: Codable {
+    public var dotColor: CodableColor?
+
+    public init(dotColor: CodableColor? = nil) {
+        self.dotColor = dotColor
+    }
+}
+
 /// CTA button color tokens
 public struct ConciergeCtaButtonColors: Codable {
     public var background: CodableColor
@@ -253,6 +262,7 @@ public struct ConciergeThemeColors: Codable {
     public var productCard: ConciergeProductCardColors
     public var ctaButton: ConciergeCtaButtonColors
     public var welcomePrompt: ConciergeWelcomePromptColors
+    public var thinking: ConciergeThinkingColors
     public var promptSuggestion: ConciergeWelcomePromptColors
 
     public init(
@@ -267,6 +277,7 @@ public struct ConciergeThemeColors: Codable {
         productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
         ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
         welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors(),
+        thinking: ConciergeThinkingColors = ConciergeThinkingColors(),
         promptSuggestion: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
     ) {
         self.primary = primary
@@ -280,6 +291,7 @@ public struct ConciergeThemeColors: Codable {
         self.productCard = productCard
         self.ctaButton = ctaButton
         self.welcomePrompt = welcomePrompt
+        self.thinking = thinking
         self.promptSuggestion = promptSuggestion
     }
 }

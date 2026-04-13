@@ -72,7 +72,7 @@
     "carousel.next.aria": "Next cards",
     "scroll.bottom.aria": "Scroll to bottom",
     "error.network": "I'm sorry, I'm having trouble connecting to our services right now.",
-    "loading.message": "Generating response from our knowledge base",
+    "loading.message": "",
     "feedbackHelpfulLabel": "Was this info helpful?",
     "feedback.dialog.title.positive": "Your feedback is appreciated",
     "feedback.dialog.title.negative": "Your feedback is appreciated",
@@ -154,7 +154,7 @@
     "--main-container-bottom-background": "#FFFFFF",
     "--message-blocker-background": "#FFFFFF",
     "--message-user-background": "#006554",
-    "--message-concierge-background": "#00000000",
+    "--message-concierge-background": "#EEEEEE",
     "--message-concierge-text": "#292929",
     "--message-concierge-link-color": "#004C3F",
     "--message-user-text": "#FFFFFF",
@@ -164,6 +164,14 @@
 
     "--agent-icon-size": "39px",
     "--agent-icon-spacing": "12px",
+
+    "--thinking-dot-size": "6px",
+    "--thinking-dot-spacing": "5px",
+    "--thinking-bubble-border-radius": "8px",
+    "--thinking-bubble-padding-horizontal": "14px",
+    "--thinking-bubble-padding-vertical": "12px",
+    "--thinking-dot-vertical-alignment": "center",
+    "--thinking-dot-color": "#666666",
 
     "--chat-interface-max-width": "768px",
     "--chat-history-padding": "16px",

@@ -527,6 +527,50 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
     }
 
+    // MARK: - Thinking Animation CSS Variable Tests
+
+    func test_thinkingAnimationColors_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then — "--thinking-dot-color": "#007BFF"
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#007BFF")
+    }
+
+    func test_thinkingAnimationLayout_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSize, 8)
+        XCTAssertEqual(theme.layout.thinkingDotSpacing, 8)
+        XCTAssertEqual(theme.layout.thinkingBubbleBorderRadius, 8)
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingHorizontal, 16)
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingVertical, 8)
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .center)
+    }
+
+    func test_thinkingDotVerticalAlignment_missingFromTheme_isNil() {
+        // Given
+        let minimalJSON = """
+        { "metadata": { "brandName": "Test" } }
+        """.data(using: .utf8)!
+
+        // When
+        let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: minimalJSON)
+
+        // Then — all thinking properties should be nil when not set
+        XCTAssertNil(decoded?.layout.thinkingDotVerticalAlignment)
+        XCTAssertNil(decoded?.layout.thinkingDotSize)
+        XCTAssertNil(decoded?.colors.thinking.dotColor)
+    }
+
     func test_missingProductCardBehavior_usesDefaults() {
         // Given — minimal JSON with no productCard behavior
         let minimalJSON = """
