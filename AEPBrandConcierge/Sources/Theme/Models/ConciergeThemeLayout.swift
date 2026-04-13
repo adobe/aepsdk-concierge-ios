@@ -177,7 +177,7 @@ public struct ConciergeLayout: Codable {
         thinkingBubbleBorderRadius: CGFloat? = nil,
         thinkingBubblePaddingHorizontal: CGFloat? = nil,
         thinkingBubblePaddingVertical: CGFloat? = nil,
-        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil
+        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil,
         suggestionItemBorderRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
