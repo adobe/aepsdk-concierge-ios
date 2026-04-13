@@ -212,6 +212,7 @@ public enum CSSKeyMapper {
         // Colors - Prompt Suggestions
         "suggestion-background-color": { cssValue, theme in theme.colors.promptSuggestion.backgroundColor = CSSValueConverter.parseColor(cssValue) },
         "suggestion-text-color": { cssValue, theme in theme.colors.promptSuggestion.textColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Welcome Screen
         "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
@@ -224,7 +225,21 @@ public enum CSSKeyMapper {
         "welcome-prompts-top-spacing": { cssValue, theme in theme.layout.welcomePromptsTopSpacing = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-padding": { cssValue, theme in theme.layout.welcomePromptPadding = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-corner-radius": { cssValue, theme in theme.layout.welcomePromptCornerRadius = CSSValueConverter.parsePxValue(cssValue) },
-        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": { cssValue, theme in theme.colors.thinking.dotColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": { cssValue, theme in theme.layout.thinkingDotSize = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-spacing": { cssValue, theme in theme.layout.thinkingDotSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-border-radius": { cssValue, theme in theme.layout.thinkingBubbleBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-horizontal": { cssValue, theme in theme.layout.thinkingBubblePaddingHorizontal = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-vertical": { cssValue, theme in theme.layout.thinkingBubblePaddingVertical = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-vertical-alignment": { cssValue, theme in
+            theme.layout.thinkingDotVerticalAlignment = ThinkingDotVerticalAlignment(
+                rawValue: cssValue.lowercased().trimmingCharacters(in: .whitespaces)
+            )
+        },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

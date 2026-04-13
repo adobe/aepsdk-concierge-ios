@@ -774,7 +774,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--agent-icon-size", cssValue: "44px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "agent-icon-size", cssValue: "44px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.agentIconSize, CGFloat(44))
@@ -785,7 +785,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--agent-icon-spacing", cssValue: "8px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "agent-icon-spacing", cssValue: "8px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.agentIconSpacing, CGFloat(8))
@@ -798,7 +798,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--color-container", cssValue: "#F0F0F0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "color-container", cssValue: "#F0F0F0", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.primary.container)
@@ -810,7 +810,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
@@ -822,7 +822,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-text-color", cssValue: "#131313", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-text-color", cssValue: "#131313", to: &theme)
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
@@ -834,10 +834,148 @@ final class ThemeCSSMapperTests: XCTestCase {
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "--suggestion-item-border-radius", cssValue: "10px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "suggestion-item-border-radius", cssValue: "10px", to: &theme)
 
         // Then
         XCTAssertEqual(theme.layout.suggestionItemBorderRadius, 10)
+    }
+
+    // MARK: - Thinking Animation Color Mapping Tests
+
+    func test_thinkingDotColor_mapsToThinkingColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-color", cssValue: "#006554", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#006554")
+    }
+
+    func test_thinkingDotColor_doesNotAffectOtherColors() {
+        // Given
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "color-primary", cssValue: "#007BFF", to: &theme)
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-color", cssValue: "#006554", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.primary.primary.color.toHexString(), "#007BFF")
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#006554")
+    }
+
+    // MARK: - Thinking Animation Layout Mapping Tests
+
+    func test_thinkingDotSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-size", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSize, 10)
+    }
+
+    func test_thinkingDotSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-spacing", cssValue: "6px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSpacing, 6)
+    }
+
+    func test_thinkingBubbleBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-border-radius", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubbleBorderRadius, 16)
+    }
+
+    func test_thinkingBubblePaddingHorizontal_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-padding-horizontal", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingHorizontal, 14)
+    }
+
+    func test_thinkingBubblePaddingVertical_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-padding-vertical", cssValue: "12px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingVertical, 12)
+    }
+
+    func test_thinkingDotVerticalAlignment_center_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "center", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .center)
+    }
+
+    func test_thinkingDotVerticalAlignment_top_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "top", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .top)
+    }
+
+    func test_thinkingDotVerticalAlignment_bottom_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "bottom", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .bottom)
+    }
+
+    func test_thinkingDotVerticalAlignment_uppercased_isCaseInsensitive() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "TOP", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .top)
+    }
+
+    func test_thinkingDotVerticalAlignment_invalid_mapsToNil() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "left", to: &theme)
+
+        // Then
+        XCTAssertNil(theme.layout.thinkingDotVerticalAlignment)
     }
 }
 

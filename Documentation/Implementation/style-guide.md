@@ -652,6 +652,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--disclaimer-color` | `colors.disclaimer` | `Color` | `systemGray` | Disclaimer text color |
 
+### Colors - Thinking Animation
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--thinking-dot-color` | `colors.thinking.dotColor` | `Color?` | `nil` (falls back to `primaryDotColor` from `ConciergeResponsePlaceholderConfig`) | Thinking indicator dot color |
+
 > **Layout value format:** All layout measurements are specified as CSS strings in the JSON theme object (e.g. `"8px"`, `"16px"`) and integer quantities as numeric strings (e.g. `"700"`, `"400"`). The SDK parses these into their internal Swift types (`CGFloat` for point values, `Int` for weights and orders). The **Type** and **Default** columns below reflect the internal representation.
 
 ### Layout - Input
@@ -778,6 +784,17 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--welcome-prompt-padding` | `layout.welcomePromptPadding` | `CGFloat?` | `nil` | Padding around each prompt suggestion card. |
 | `--welcome-prompt-corner-radius` | `layout.welcomePromptCornerRadius` | `CGFloat?` | `nil` | Corner radius of prompt suggestion cards. Falls back to `--border-radius-card`. |
 | `--suggestion-item-border-radius` | `layout.suggestionItemBorderRadius` | `CGFloat?` | `nil` (defaults to `10`) | Corner radius of post-response prompt suggestion chips. |
+
+### Layout - Thinking Animation
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--thinking-dot-size` | `layout.thinkingDotSize` | `CGFloat?` | `8` | Diameter of each thinking indicator dot |
+| `--thinking-dot-spacing` | `layout.thinkingDotSpacing` | `CGFloat?` | `8` | Space between thinking indicator dots |
+| `--thinking-bubble-border-radius` | `layout.thinkingBubbleBorderRadius` | `CGFloat?` | `8` | Corner radius of the thinking bubble |
+| `--thinking-bubble-padding-horizontal` | `layout.thinkingBubblePaddingHorizontal` | `CGFloat?` | `16` | Horizontal inner padding of the thinking bubble |
+| `--thinking-bubble-padding-vertical` | `layout.thinkingBubblePaddingVertical` | `CGFloat?` | `8` | Vertical inner padding of the thinking bubble |
+| `--thinking-dot-vertical-alignment` | `layout.thinkingDotVerticalAlignment` | `String?` | `"center"` | Vertical alignment of the dots row: `"top"`, `"center"`, or `"bottom"` |
 
 ---
 
