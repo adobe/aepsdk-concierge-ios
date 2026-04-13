@@ -373,7 +373,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: "product-card-background-color", cssValue: "#F5F5F5", to: &theme)
 
         // Then
-        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#F5F5F5")
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#F5F5F5")
     }
 
     func test_productCardTitleColor_mapsToProductCardColors() {
@@ -778,6 +778,7 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertNotNil(theme.colors.primary.container)
+        XCTAssertEqual(theme.colors.primary.container?.color.toHexString(), "#F0F0F0")
     }
 
     func test_suggestionBackgroundColor_mapsToColors() {
@@ -789,6 +790,7 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.backgroundColor?.color.toHexString(), "#F0F0F0")
     }
 
     func test_suggestionTextColor_mapsToColors() {
@@ -800,6 +802,7 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.textColor?.color.toHexString(), "#131313")
     }
 
     func test_suggestionItemBorderRadius_mapsToLayout() {

@@ -360,6 +360,8 @@ While there are no strict requirements for character limits in many of these tex
 | `text["header.title"]` | `""` | Header title text. When non-empty, overrides the programmatic `title` parameter passed to `ChatView`. |
 | `text["header.subtitle"]` | `""` | Header subtitle text. When non-empty, overrides the programmatic `subtitle` parameter passed to `ChatView`. |
 
+> **Tip:** To hide the header subtitle, set `text["header.subtitle"]` to `""`. The subtitle is automatically hidden when its text is blank.
+
 ### Welcome Screen
 
 | JSON Key | Default | Description |
@@ -421,8 +423,6 @@ While there are no strict requirements for character limits in many of these tex
 | JSON Key | Default | Description |
 |----------|---------|-------------|
 | `text["suggestions.header"]` | `"Suggestions"` | Header label shown above prompt suggestion chips when `behavior.promptSuggestions.showHeader` is `true`. |
-
-> **Tip:** To hide the header subtitle, set `text["header.subtitle"]` to `""`. The subtitle is automatically hidden when its text is blank.
 
 ### Example
 

@@ -171,6 +171,9 @@ struct ChatMessageView: View {
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
+            let conciergeBackgroundColor = theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
 
             VStack(alignment: alignment, spacing: 0) {
                 HStack(alignment: .bottom) {
@@ -218,10 +221,10 @@ struct ChatMessageView: View {
                                 } else {
                                     if !displayedSources.isEmpty {
                                         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     } else {
                                         RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     }
                                 }
                             }
@@ -496,7 +499,11 @@ private extension ChatMessageView {
             .padding(14)
             .frame(width: 350, alignment: .leading)
         }
-        .background(theme.colors.message.conciergeBackground.color)
+        .background(
+            theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
+        )
         .cornerRadius(theme.layout.borderRadiusCard)
         .shadow(
             color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
