@@ -212,6 +212,7 @@ public enum CSSKeyMapper {
         // Colors - Prompt Suggestions
         "suggestion-background-color": { cssValue, theme in theme.colors.promptSuggestion.backgroundColor = CSSValueConverter.parseColor(cssValue) },
         "suggestion-text-color": { cssValue, theme in theme.colors.promptSuggestion.textColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Welcome Screen
         "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
@@ -239,8 +240,6 @@ public enum CSSKeyMapper {
                 rawValue: cssValue.lowercased().trimmingCharacters(in: .whitespaces)
             )
         },
-
-        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.
