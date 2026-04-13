@@ -121,23 +121,10 @@ final class MessageBubbleSnapshotTests: XCTestCase {
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 120)))
     }
 
-    // MARK: - Response Placeholder Leading Padding Tests
+    // MARK: - Response Placeholder Tests
 
-    func test_responsePlaceholder_defaultLeadingPadding() {
-        let view = ResponsePlaceholderProbeHost(
-            leadingPadding: ConciergeResponsePlaceholderView.defaultHorizontalPadding,
-            theme: ConciergeThemeLoader.default()
-        )
-        assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 80)))
-    }
-
-    func test_responsePlaceholder_zeroLeadingPadding() {
-        // Simulates the icon layout mode where the agent icon provides the visual inset,
-        // so the placeholder uses zero leading padding.
-        let view = ResponsePlaceholderProbeHost(
-            leadingPadding: 0,
-            theme: ConciergeThemeLoader.default()
-        )
+    func test_responsePlaceholder_defaultAppearance() {
+        let view = ResponsePlaceholderProbeHost(theme: ConciergeThemeLoader.default())
         assertSnapshot(of: view, as: .image(layout: .fixed(width: 390, height: 80)))
     }
 }
@@ -246,15 +233,17 @@ private struct ProductCardAlignmentProbeHost: View {
     let theme: ConciergeTheme
 
     private static let cardData = ProductCardData(
+        imageSource: .remote(nil),
         title: "Running Shoes",
         subtitle: nil,
         price: "$129.99",
         wasPrice: nil,
-        imageSource: .remote(nil),
         badge: nil,
         destinationURL: nil,
         primaryButton: nil,
-        secondaryButton: nil
+        secondaryButton: nil,
+        imageWidth: nil,
+        imageHeight: nil
     )
 
     var body: some View {
@@ -266,14 +255,13 @@ private struct ProductCardAlignmentProbeHost: View {
     }
 }
 
-/// Probe for isolated ConciergeResponsePlaceholderView leading-padding variants.
+/// Probe for ConciergeResponsePlaceholderView default appearance.
 private struct ResponsePlaceholderProbeHost: View {
-    let leadingPadding: CGFloat
     let theme: ConciergeTheme
 
     var body: some View {
         HStack(alignment: .top) {
-            ConciergeResponsePlaceholderView(leadingPadding: leadingPadding)
+            ConciergeResponsePlaceholderView()
             Spacer()
         }
         .padding(16)
