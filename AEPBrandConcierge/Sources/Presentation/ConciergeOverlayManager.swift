@@ -23,22 +23,21 @@ final class ConciergeOverlayManager: ObservableObject {
     static let shared = ConciergeOverlayManager()
 
     /// Whether the overlay chat UI should be presented.
-    @Published var showingConcierge = false
+    @Published private(set) var showingConcierge = false
     /// The currently configured chat view to render as an overlay.
-    @Published var chatView: ChatView?
+    @Published private(set) var chatView: ChatView?
 
     private init() {}
 
-    /// Presents the supplied chat view as an overlay.
+    /// Presents the given chat view as the overlay.
     /// - Parameter chatView: A fully configured `ChatView` to overlay.
     func showChat(_ chatView: ChatView) {
         self.chatView = chatView
         self.showingConcierge = true
     }
 
-    /// Hides the overlay and clears the current chat view.
+    /// Hides the overlay without discarding the chat view, so the transcript survives until `show(...)` replaces it or the app exits.
     func hideChat() {
         self.showingConcierge = false
-        self.chatView = nil
     }
 }

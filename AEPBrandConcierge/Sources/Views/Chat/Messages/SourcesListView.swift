@@ -23,6 +23,10 @@ public struct SourcesListView: View {
     public let messageId: UUID?
 
     @State private var isExpanded: Bool = false
+    /// Tracks whether the expand animation has finished. Used to defer showing source rows
+    /// in the "thumbs below" layout until the expansion animation completes, preventing
+    /// them from being visible while the container is still animating.
+    @State private var sourceLinksVisible: Bool = false
 
     /// Creates a new Sources list view.
     /// - Parameters:
@@ -36,6 +40,7 @@ public struct SourcesListView: View {
         self.feedbackSentiment = feedbackSentiment
         self.messageId = messageId
         self._isExpanded = State(initialValue: initiallyExpanded)
+        self._sourceLinksVisible = State(initialValue: initiallyExpanded)
     }
 
     public var body: some View {
@@ -56,14 +61,21 @@ public struct SourcesListView: View {
             }
         }
         .background(backgroundShape)
+        .clipped()
     }
 
     private var expandedContent: some View {
         VStack(spacing: 0) {
             Divider().background(Color.black.opacity(0.08))
-            sourceRows
-            if !thumbsInline {
+            if thumbsInline {
+                sourceRows
+            } else {
+                // In the "below" layout, keep content in the layout so the container expands
+                // to full height immediately, then fade in the content after expansion completes.
+                sourceRows
+                    .opacity(sourceLinksVisible ? 1 : 0)
                 Divider().background(Color.black.opacity(0.08))
+                    .opacity(sourceLinksVisible ? 1 : 0)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(theme.text.feedbackHelpfulLabel)
                         .font(.footnote.weight(.semibold))
@@ -74,6 +86,7 @@ public struct SourcesListView: View {
                 .padding(.leading, 44)
                 .padding(.trailing, 12)
                 .padding(.vertical, 10)
+                .opacity(sourceLinksVisible ? 1 : 0)
             }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -110,18 +123,38 @@ public struct SourcesListView: View {
 
     private var backgroundShape: some View {
         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
-            .fill(theme.colors.message.conciergeBackground.color)
+            .fill(theme.components.chatMessage.conciergeBackground.color)
     }
 
     private var thumbsInline: Bool {
-        theme.behavior.feedback?.thumbsPlacement != "below"
+        theme.behavior.feedback?.thumbsPlacement != .below
     }
 
     private var header: some View {
         VStack(spacing: 0) {
             Button(action: {
-                withAnimation(.easeInOut) {
-                    isExpanded.toggle()
+                if isExpanded {
+                    // Collapsing: hide source links immediately so they don't
+                    // remain visible while the container animates closed.
+                    sourceLinksVisible = false
+                    withAnimation(.easeInOut) {
+                        isExpanded = false
+                    }
+                } else {
+                    withAnimation(.easeInOut) {
+                        isExpanded = true
+                    }
+                    // Fade in content after the expand animation finishes.
+                    // .easeInOut default duration is 0.35 s.
+                    if !thumbsInline {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            if isExpanded {
+                                withAnimation(.easeIn(duration: 0.2)) {
+                                    sourceLinksVisible = true
+                                }
+                            }
+                        }
+                    }
                 }
             }) {
                 HStack(spacing: 8) {
