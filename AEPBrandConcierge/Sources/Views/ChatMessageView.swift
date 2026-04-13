@@ -171,6 +171,9 @@ struct ChatMessageView: View {
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
+            let conciergeBackgroundColor = theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
 
             VStack(alignment: alignment, spacing: 0) {
                 HStack(alignment: .bottom) {
@@ -218,10 +221,10 @@ struct ChatMessageView: View {
                                 } else {
                                     if !displayedSources.isEmpty {
                                         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     } else {
                                         RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                            .fill(theme.colors.message.conciergeBackground.color)
+                                            .fill(conciergeBackgroundColor)
                                     }
                                 }
                             }
@@ -355,26 +358,33 @@ struct ChatMessageView: View {
             CarouselGroupView(items: items)
 
         case .promptSuggestion(let text):
+            let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
+                ?? theme.colors.message.conciergeText.color
+            let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.secondarySystemBackground)
+            let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
+            let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+
             HStack(alignment: .bottom) {
-                Group {
-                    Button(action: { onSuggestionTap?(text) }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrowshape.turn.up.right")
-                                .imageScale(.small)
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                            Text(text)
-                                .font(.system(.subheadline))
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                .fill(theme.colors.message.conciergeBackground.color)
-                        )
+                Button(action: { onSuggestionTap?(text) }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .imageScale(.small)
+                            .foregroundColor(suggestionTextColor)
+                        Text(text)
+                            .font(.system(.subheadline))
+                            .foregroundColor(suggestionTextColor)
+                            .lineLimit(suggestionMaxLines)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
+                            .fill(suggestionBgColor)
+                    )
                 }
+                .buttonStyle(PlainButtonStyle())
                 Spacer()
             }
         }
@@ -489,7 +499,11 @@ private extension ChatMessageView {
             .padding(14)
             .frame(width: 350, alignment: .leading)
         }
-        .background(theme.colors.message.conciergeBackground.color)
+        .background(
+            theme.colors.message.conciergeBackground?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.systemBackground)
+        )
         .cornerRadius(theme.layout.borderRadiusCard)
         .shadow(
             color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,

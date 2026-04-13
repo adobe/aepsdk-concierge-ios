@@ -42,7 +42,11 @@ struct ConciergeResponsePlaceholderView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(theme.colors.message.conciergeBackground.color)
+                .fill(
+                    theme.colors.message.conciergeBackground?.color
+                        ?? theme.colors.primary.container?.color
+                        ?? Color(UIColor.systemBackground)
+                )
         )
     }
 }

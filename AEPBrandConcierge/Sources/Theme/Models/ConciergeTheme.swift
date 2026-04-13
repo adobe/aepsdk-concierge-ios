@@ -222,6 +222,8 @@ private extension ConciergeTheme {
         resolved.chatMessage.userBackground = colors.message.userBackground
         resolved.chatMessage.userText = colors.message.userText
         resolved.chatMessage.conciergeBackground = colors.message.conciergeBackground
+            ?? colors.primary.container
+            ?? CodableColor(Color(UIColor.systemBackground))
         resolved.chatMessage.conciergeText = colors.message.conciergeText
         resolved.chatMessage.linkColor = colors.message.conciergeLink
         resolved.chatMessage.borderRadius = layout.messageBorderRadius
