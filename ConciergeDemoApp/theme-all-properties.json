@@ -33,14 +33,21 @@
     },
     "chat": {
       "messageAlignment": "left",
-      "messageWidth": "100%"
+      "messageWidth": "100%",
+      "userMessageBubbleStyle": "balloon"
     },
     "privacyNotice": {
       "title": "Privacy Notice",
       "text": "Privacy notice text."
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "start"
+    },
+    "promptSuggestions": {
+      "itemMaxLines": 1,
+      "showHeader": true,
+      "alignToMessage": true
     }
   },
   "disclaimer": {
@@ -81,7 +88,8 @@
     "header.title": "",
     "header.subtitle": "",
     "sourcesLabel": "Sources",
-    "feedbackHelpfulLabel": "Was this helpful?"
+    "feedbackHelpfulLabel": "Was this helpful?",
+    "suggestions.header": "Suggestions"
   },
   "arrays": {
     "welcome.examples": [
@@ -118,7 +126,7 @@
   },
   "assets": {
     "icons": {
-      "company": ""
+      "company": "logo"
     }
   },
   "theme": {
@@ -132,12 +140,16 @@
     "--welcome-prompt-corner-radius": "20px",
     "--welcome-prompt-background-color": "#D3D3D3",
     "--welcome-prompt-text-color": "#000000",
+    "--suggestion-background-color": "#F0F0F0",
+    "--suggestion-text-color": "#131313",
+    "--suggestion-item-border-radius": "60px",
 
     "--font-family": "",
     "--line-height-body": "1.5",
 
     "--color-primary": "#006554",
     "--color-text": "#131313",
+    "--color-container": "#F0F0F0",
     "--main-container-background": "#FFFFFF",
     "--main-container-bottom-background": "#FFFFFF",
     "--message-blocker-background": "#FFFFFF",
@@ -146,10 +158,12 @@
     "--message-concierge-text": "#292929",
     "--message-concierge-link-color": "#004C3F",
     "--message-user-text": "#FFFFFF",
-
     "--message-max-width": "100%",
-    "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
+    "--message-border-radius": "8px",
+
+    "--agent-icon-size": "39px",
+    "--agent-icon-spacing": "12px",
 
     "--thinking-dot-size": "6px",
     "--thinking-dot-spacing": "5px",

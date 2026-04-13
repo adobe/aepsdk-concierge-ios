@@ -19,14 +19,16 @@
     },
     "chat": {
       "messageAlignment": "left",
-      "messageWidth": "100%"
+      "messageWidth": "100%",
+      "userMessageBubbleStyle": "balloon"
     },
     "privacyNotice": {
       "title": "Privacy Notice",
       "text": "Privacy notice text."
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
     }
   },
   "disclaimer": {
@@ -203,6 +205,8 @@
     "--thinking-bubble-border-radius": "8px",
     "--thinking-bubble-padding-horizontal": "16px",
     "--thinking-bubble-padding-vertical": "8px",
-    "--thinking-dot-vertical-alignment": "center"
+    "--thinking-dot-vertical-alignment": "center",
+    "--agent-icon-size": "39px",
+    "--agent-icon-spacing": "12px"
   }
 }

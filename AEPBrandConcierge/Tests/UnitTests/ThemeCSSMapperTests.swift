@@ -373,7 +373,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: "product-card-background-color", cssValue: "#F5F5F5", to: &theme)
 
         // Then
-        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#F5F5F5")
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#F5F5F5")
     }
 
     func test_productCardTitleColor_mapsToProductCardColors() {
@@ -765,6 +765,79 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
+    }
+
+    // MARK: - Agent Icon Layout Mapping Tests
+
+    func test_agentIconSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--agent-icon-size", cssValue: "44px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSize, CGFloat(44))
+    }
+
+    func test_agentIconSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--agent-icon-spacing", cssValue: "8px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSpacing, CGFloat(8))
+    }
+
+    // MARK: - Prompt Suggestions CSS Key Tests
+
+    func test_colorContainer_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--color-container", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.primary.container)
+        XCTAssertEqual(theme.colors.primary.container?.color.toHexString(), "#F0F0F0")
+    }
+
+    func test_suggestionBackgroundColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.backgroundColor?.color.toHexString(), "#F0F0F0")
+    }
+
+    func test_suggestionTextColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-text-color", cssValue: "#131313", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.textColor?.color.toHexString(), "#131313")
+    }
+
+    func test_suggestionItemBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "--suggestion-item-border-radius", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.suggestionItemBorderRadius, 10)
     }
 
     // MARK: - Thinking Animation Color Mapping Tests

@@ -40,14 +40,15 @@ public struct ConciergeSurfaceColors: Codable {
 public struct ConciergeMessageColors: Codable {
     public var userBackground: CodableColor
     public var userText: CodableColor
-    public var conciergeBackground: CodableColor
+    /// Concierge message bubble background. When nil, falls back to `primary.container` then system default.
+    public var conciergeBackground: CodableColor?
     public var conciergeText: CodableColor
     public var conciergeLink: CodableColor
 
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
         userText: CodableColor = CodableColor(Color.primary),
-        conciergeBackground: CodableColor = CodableColor(Color(UIColor.systemBackground)),
+        conciergeBackground: CodableColor? = nil,
         conciergeText: CodableColor = CodableColor(Color.primary),
         conciergeLink: CodableColor = CodableColor(Color.accentColor)
     ) {
@@ -172,21 +173,27 @@ public struct ConciergePrimaryColors: Codable {
     public var primary: CodableColor
     public var secondary: CodableColor
     public var text: CodableColor
+    /// Background for cards and container elements (prompt suggestion chips, product cards, message bubble fallback).
+    /// Configurable via `--color-container`. When nil, falls back to hardcoded light/dark system values.
+    public var container: CodableColor?
 
     public init(
         primary: CodableColor = CodableColor(Color.accentColor),
         secondary: CodableColor = CodableColor(Color.accentColor),
-        text: CodableColor = CodableColor(Color.primary)
+        text: CodableColor = CodableColor(Color.primary),
+        container: CodableColor? = nil
     ) {
         self.primary = primary
         self.secondary = secondary
         self.text = text
+        self.container = container
     }
 }
 
 /// Product card color tokens (used by the productDetail card style)
 public struct ConciergeProductCardColors: Codable {
-    public var backgroundColor: CodableColor
+    /// Card background. When nil, falls back to `primary.container` then white.
+    public var backgroundColor: CodableColor?
     public var titleColor: CodableColor
     public var subtitleColor: CodableColor
     public var priceColor: CodableColor
@@ -196,7 +203,7 @@ public struct ConciergeProductCardColors: Codable {
     public var outlineColor: CodableColor
 
     public init(
-        backgroundColor: CodableColor = CodableColor(Color.white),
+        backgroundColor: CodableColor? = nil,
         titleColor: CodableColor = CodableColor(Color.primary),
         subtitleColor: CodableColor = CodableColor(Color.primary),
         priceColor: CodableColor = CodableColor(Color.primary),
@@ -256,6 +263,7 @@ public struct ConciergeThemeColors: Codable {
     public var ctaButton: ConciergeCtaButtonColors
     public var welcomePrompt: ConciergeWelcomePromptColors
     public var thinking: ConciergeThinkingColors
+    public var promptSuggestion: ConciergeWelcomePromptColors
 
     public init(
         primary: ConciergePrimaryColors = ConciergePrimaryColors(),
@@ -269,7 +277,8 @@ public struct ConciergeThemeColors: Codable {
         productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
         ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
         welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors(),
-        thinking: ConciergeThinkingColors = ConciergeThinkingColors()
+        thinking: ConciergeThinkingColors = ConciergeThinkingColors(),
+        promptSuggestion: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
     ) {
         self.primary = primary
         self.surface = surface
@@ -283,5 +292,6 @@ public struct ConciergeThemeColors: Codable {
         self.ctaButton = ctaButton
         self.welcomePrompt = welcomePrompt
         self.thinking = thinking
+        self.promptSuggestion = promptSuggestion
     }
 }
