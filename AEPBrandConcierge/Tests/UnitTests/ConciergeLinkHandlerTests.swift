@@ -173,134 +173,65 @@ final class ConciergeLinkHandlerTests: XCTestCase {
         XCTAssertEqual(receivedOptions?[.universalLinksOnly] as? Bool, true)
     }
 
-    func testHandleURL_withCustomScheme_triesToOpenWithUIApplication() {
+    func testHandleURL_withCustomScheme_callsOpenWithSystem() {
         let url = URL(string: "myapp://example.com/path")!
-        var urlOpenerCalled = false
         var openInWebViewCalled = false
-
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
+        var openWithSystemCalled = false
+        
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { _ in openInWebViewCalled = true },
-            openWithSystem: { _ in }
+            openWithSystem: { _ in openWithSystemCalled = true }
         )
-
-        XCTAssertTrue(urlOpenerCalled)
+        
         XCTAssertFalse(openInWebViewCalled)
-    }
-
-    func testHandleURL_withCustomScheme_whenUIApplicationFails_callsOpenWithSystem() {
-        let url = URL(string: "myapp://example.com/path")!
-        let expectation = expectation(description: "openWithSystem called")
-        var openWithSystemCalled = false
-
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            completion?(false)
-        }
-
-        ConciergeLinkHandler.handleURL(
-            url,
-            openInWebView: { _ in },
-            openWithSystem: { _ in
-                openWithSystemCalled = true
-                expectation.fulfill()
-            }
-        )
-
-        waitForExpectations(timeout: 1)
         XCTAssertTrue(openWithSystemCalled)
     }
 
-    func testHandleURL_withMailto_triesToOpenWithUIApplication() {
+    func testHandleURL_withMailto_callsOpenWithSystem() {
         let url = URL(string: "mailto:user@example.com")!
-        var urlOpenerCalled = false
         var openInWebViewCalled = false
-
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
+        var openWithSystemCalled = false
+        
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { _ in openInWebViewCalled = true },
-            openWithSystem: { _ in }
+            openWithSystem: { _ in openWithSystemCalled = true }
         )
-
-        XCTAssertTrue(urlOpenerCalled)
+        
         XCTAssertFalse(openInWebViewCalled)
-    }
-
-    func testHandleURL_withTelScheme_triesToOpenWithUIApplication() {
-        let url = URL(string: "tel:+1234567890")!
-        var urlOpenerCalled = false
-        var receivedURL: URL?
-
-        ConciergeLinkHandler.urlOpener = { url, _, completion in
-            urlOpenerCalled = true
-            receivedURL = url
-            completion?(true)
-        }
-
-        ConciergeLinkHandler.handleURL(url, openInWebView: { _ in }, openWithSystem: { _ in })
-
-        XCTAssertTrue(urlOpenerCalled)
-        XCTAssertEqual(receivedURL, url)
-    }
-
-    func testHandleURL_withNonWebScheme_doesNotPassUniversalLinksOption() {
-        let url = URL(string: "tel:+1234567890")!
-        var receivedOptions: [UIApplication.OpenExternalURLOptionsKey: Any]?
-
-        ConciergeLinkHandler.urlOpener = { _, options, completion in
-            receivedOptions = options
-            completion?(true)
-        }
-
-        ConciergeLinkHandler.handleURL(url, openInWebView: { _ in }, openWithSystem: { _ in })
-
-        XCTAssertNil(receivedOptions?[.universalLinksOnly])
+        XCTAssertTrue(openWithSystemCalled)
     }
 
     func testHandleURL_whenNotUniversalLink_passesCorrectURLToWebViewClosure() {
         let url = URL(string: "https://www.example.com/products")!
         let expectation = expectation(description: "webview called with URL")
         var receivedURL: URL?
-
+        
         ConciergeLinkHandler.urlOpener = { _, _, completion in
             completion?(false)
         }
-
+        
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { receivedURL = $0; expectation.fulfill() },
             openWithSystem: { _ in }
         )
-
+        
         waitForExpectations(timeout: 1)
         XCTAssertEqual(receivedURL, url)
     }
 
-    func testHandleURL_withTelScheme_whenUIApplicationFails_callsOpenWithSystem() {
+    func testHandleURL_passesCorrectURLToSystemClosure() {
         let url = URL(string: "tel:+1234567890")!
-        let expectation = expectation(description: "openWithSystem called with correct URL")
         var receivedURL: URL?
-
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            completion?(false)
-        }
-
+        
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { _ in },
-            openWithSystem: { receivedURL = $0; expectation.fulfill() }
+            openWithSystem: { receivedURL = $0 }
         )
-
-        waitForExpectations(timeout: 1)
+        
         XCTAssertEqual(receivedURL, url)
     }
 }

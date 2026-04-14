@@ -93,9 +93,7 @@
 		24CAB3902F3E63BD00CEE013 /* WebViewPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB38E2F3E63BD00CEE013 /* WebViewPopover.swift */; };
 		24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A32F4506C500CEE013 /* ConciergeLinkHandlerTests.swift */; };
 		58E40AC93A0EE8DD4EC264D2 /* ConciergeWebViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeWebViewTests.swift; sourceTree = "<group>"; };
-		13E84E4BA84363791B47FD5E /* MarkdownTextCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextCoordinatorTests.swift; sourceTree = "<group>"; };
 		76F54A334FDFF707FE3E83F4 /* ConciergeWebViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E40AC93A0EE8DD4EC264D2 /* ConciergeWebViewTests.swift */; };
-		A119E4BE01267E2BDCC770E0 /* MarkdownTextCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E84E4BA84363791B47FD5E /* MarkdownTextCoordinatorTests.swift */; };
 		24CAB3A62F45085400CEE013 /* View+WebViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A52F45083A00CEE013 /* View+WebViewPresenter.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
@@ -687,7 +685,6 @@
 				4C2923DB2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift */,
 				24CAB3A32F4506C500CEE013 /* ConciergeLinkHandlerTests.swift */,
 				58E40AC93A0EE8DD4EC264D2 /* ConciergeWebViewTests.swift */,
-				13E84E4BA84363791B47FD5E /* MarkdownTextCoordinatorTests.swift */,
 				4CC11B292F68E31500EEF226 /* ConciergeLinkInterceptorTests.swift */,
 				24CAB3702F5E000100CEE070 /* ConciergeServiceIdentityTests.swift */,
 				244E6A052F22F5EB00ADF1AA /* ConsentStateTests.swift */,
@@ -1278,7 +1275,6 @@
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
 				24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */,
 				76F54A334FDFF707FE3E83F4 /* ConciergeWebViewTests.swift in Sources */,
-				A119E4BE01267E2BDCC770E0 /* MarkdownTextCoordinatorTests.swift in Sources */,
 				244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */,
 				244E6A072F22F5EB00ADF1AA /* ConciergeChatServiceTests.swift in Sources */,
 				4CDB0DD22EC82CA2000B85D0 /* ThemeLoaderTests.swift in Sources */,

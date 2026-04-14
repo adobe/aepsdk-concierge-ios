@@ -49,18 +49,15 @@ public enum ConciergeLinkHandler {
     
     /// Opens the URL using the appropriate handler.
     ///
+    /// For custom scheme URLs (deep links), the system handler is called immediately.
     /// For http/https URLs, the system is first asked to open the URL as a universal link.
     /// If the host app has registered the URL's domain and path via Associated Domains,
     /// the app handles the navigation natively. Otherwise, the URL falls back to the in-app webview.
     ///
-    /// For non-web URLs (tel:, mailto:, sms:, custom schemes), UIApplication.open is called
-    /// directly. SwiftUI's openURL environment does not reliably open these schemes.
-    /// If UIApplication.open fails, the openWithSystem fallback is invoked.
-    ///
     /// - Parameters:
     ///   - url: The URL to open.
     ///   - openInWebView: Closure called when the URL should be displayed in the in-app webview.
-    ///   - openWithSystem: Closure called as a fallback when UIApplication.open fails for non-web URLs.
+    ///   - openWithSystem: Closure called when the URL should be handled by the system (deep links).
     public static func handleURL(
         _ url: URL,
         openInWebView: @escaping (URL) -> Void,
@@ -75,13 +72,7 @@ public enum ConciergeLinkHandler {
                 }
             }
         } else {
-            // Use UIApplication.open directly so non-web schemes like tel:, mailto:, sms:
-            // are handled reliably. SwiftUI's openURL environment does not open these.
-            urlOpener(url, [:]) { success in
-                if !success {
-                    DispatchQueue.main.async { openWithSystem(url) }
-                }
-            }
+            openWithSystem(url)
         }
     }
 }
