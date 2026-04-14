@@ -158,6 +158,8 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
 
         case .basic(let isUserMessage):
+            // Thinking state: agent message with no content yet — show compact placeholder bubble.
+            let isThinking = !isUserMessage && (messageBody?.isEmpty ?? true)
             let rawSources = sources ?? []
             // Attempt to decorate the message so citation markers can be injected into the markdown rendering logic.
             // If decoration fails (ex: no sources or empty body), fall back to rendering the original message and
@@ -171,81 +173,107 @@ struct ChatMessageView: View {
             let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
             let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
+            let conciergeBackgroundColor = theme.components.chatMessage.conciergeBackground.color
+
+            let agentIconPath = theme.assets.icons.company
+            let showAgentIcon = !isUserMessage && theme.hasAgentIcon
 
             VStack(alignment: alignment, spacing: 0) {
-                HStack(alignment: .bottom) {
+                // Top-align so the agent icon stays pinned to the first line of text,
+                // rather than drifting to the bottom when multi-line bubbles expand.
+                // Use center alignment during the thinking state so the icon is vertically
+                // centered next to the compact placeholder bubble instead of hanging below it.
+                HStack(alignment: isThinking ? .center : .top) {
                     if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
-                    Group {
-                        // User text
-                        if isUserMessage {
-                            Text(messageBody ?? "")
-                        // Agent - Placeholder before message content is available, Markdown renderer otherwise.
-                        } else {
-                            if let messageBody, !messageBody.isEmpty {
-                                MarkdownBlockView(
-                                    markdown: annotatedBody,
-                                    textColor: UIColor(theme.colors.message.conciergeText.color),
-                                    baseFont: resolvedAgentFont,
-                                    citationMarkers: markers,
-                                    citationStyle: .init(
-                                        backgroundColor: UIColor(theme.colors.citation.background.color),
-                                        textColor: UIColor(theme.colors.citation.text.color),
-                                        font: UIFont.systemFont(
-                                            ofSize: theme.layout.citationsDesktopButtonFontSize,
-                                            weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
-                                        )
-                                    ),
-                                    onOpenLink: { url in
-                                        handleLinkTap(url)
-                                    }
-                                )
-                            } else {
-                                ConciergeResponsePlaceholderView()
-                            }
-                        }
+
+                    if showAgentIcon {
+                        LocalAssetImageView(iconPath: agentIconPath, size: theme.layout.agentIconSize)
+                            .padding(.trailing, theme.layout.agentIconSpacing)
                     }
-                        .lineSpacing(messageLineSpacing)
-                        .padding(theme.layout.messagePadding.edgeInsets)
-                        // Allow themes to cap bubble width (nil means unconstrained).
-                        .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
-                        .textSelection(.enabled)
-                        .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
-                        .background(
+
+                    if isThinking {
+                        // Compact self-contained bubble — no outer padding, background, or width fill.
+                        ConciergeResponsePlaceholderView()
+                    } else {
+                        // Wrap bubble + sources in a shared VStack so both views are offered
+                        // identical width, keeping their backgrounds flush at the right edge.
+                        VStack(alignment: .leading, spacing: 0) {
                             Group {
+                                // User text
                                 if isUserMessage {
-                                    RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                        .fill(theme.colors.message.userBackground.color)
+                                    Text(messageBody ?? "")
+                                // Agent — Markdown renderer (messageBody is non-empty when not thinking).
                                 } else {
-                                    if !displayedSources.isEmpty {
-                                        RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
-                                            .fill(theme.colors.message.conciergeBackground.color)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                            .fill(theme.colors.message.conciergeBackground.color)
-                                    }
+                                    MarkdownBlockView(
+                                        markdown: annotatedBody,
+                                        textColor: UIColor(theme.colors.message.conciergeText.color),
+                                        baseFont: resolvedAgentFont,
+                                        citationMarkers: markers,
+                                        citationStyle: .init(
+                                            backgroundColor: UIColor(theme.colors.citation.background.color),
+                                            textColor: UIColor(theme.colors.citation.text.color),
+                                            font: UIFont.systemFont(
+                                                ofSize: theme.layout.citationsDesktopButtonFontSize,
+                                                weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
+                                            )
+                                        ),
+                                        onOpenLink: { url in
+                                            handleLinkTap(url)
+                                        }
+                                    )
                                 }
                             }
-                        )
-                        .compositingGroup()
-                        .contextMenu {
-                            Button(action: {
-                                let source = messageBody ?? ""
-                                // Copy raw markdown (preserve markers)
-                                UIPasteboard.general.string = source
-                            }) {
-                                Label("Copy", systemImage: "doc.on.doc")
+                            .lineSpacing(messageLineSpacing)
+                            // In icon layout mode the icon itself provides the visual leading/trailing
+                            // offset, so suppress horizontal message padding to avoid double-indenting.
+                            .padding(showAgentIcon
+                                ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
+                                : theme.layout.messagePadding.edgeInsets)
+                            // Allow themes to cap bubble width (nil means unconstrained).
+                            .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
+                            .textSelection(.enabled)
+                            .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
+                            .background(
+                                Group {
+                                    if isUserMessage {
+                                        if theme.behavior.chat.userMessageBubbleStyle == .balloon {
+                                            RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight, .bottomLeft])
+                                                .fill(theme.colors.message.userBackground.color)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                                .fill(theme.colors.message.userBackground.color)
+                                        }
+                                    } else {
+                                        if !displayedSources.isEmpty {
+                                            RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
+                                                .fill(conciergeBackgroundColor)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
+                                                .fill(conciergeBackgroundColor)
+                                        }
+                                    }
+                                }
+                            )
+                            .compositingGroup()
+                            .contextMenu {
+                                Button(action: {
+                                    let source = messageBody ?? ""
+                                    // Copy raw markdown (preserve markers)
+                                    UIPasteboard.general.string = source
+                                }) {
+                                    Label("Copy", systemImage: "doc.on.doc")
+                                }
+                            }
+
+                            // Sources sit directly below the bubble inside the same VStack,
+                            // so they share the bubble's exact width with no extra padding needed.
+                            if !isUserMessage, !displayedSources.isEmpty {
+                                SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
                             }
                         }
+                    }
 
                     if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
-                }
-
-                // Attach sources dropdown for agent messages only
-                if !isUserMessage, !displayedSources.isEmpty {
-                    HStack(alignment: .top) {
-                        SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
-                        Spacer()
-                    }
                 }
             }
 
@@ -337,16 +365,20 @@ struct ChatMessageView: View {
             }
 
         case .productCard(let cardData):
-            switch theme.behavior.productCard?.cardStyle ?? .actionButton {
-            case .productDetail:
-                ProductDetailCardView(
-                    data: cardData,
-                    cardWidth: theme.layout.productCardWidth,
-                    cardHeight: theme.layout.productCardHeight
-                )
-            case .actionButton:
-                actionButtonProductCard(data: cardData)
+            let cardAlignment = (theme.behavior.productCard?.cardsAlignment ?? .center).swiftUIAlignment
+            Group {
+                switch theme.behavior.productCard?.cardStyle ?? .actionButton {
+                case .productDetail:
+                    ProductDetailCardView(
+                        data: cardData,
+                        cardWidth: theme.layout.productCardWidth,
+                        cardHeight: theme.layout.productCardHeight
+                    )
+                case .actionButton:
+                    actionButtonProductCard(data: cardData)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: cardAlignment)
 
         case .ctaButton(let action):
             CtaButtonView(action: action)
@@ -355,26 +387,33 @@ struct ChatMessageView: View {
             CarouselGroupView(items: items)
 
         case .promptSuggestion(let text):
+            let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
+                ?? theme.colors.message.conciergeText.color
+            let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color(UIColor.secondarySystemBackground)
+            let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
+            let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+
             HStack(alignment: .bottom) {
-                Group {
-                    Button(action: { onSuggestionTap?(text) }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrowshape.turn.up.right")
-                                .imageScale(.small)
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                            Text(text)
-                                .font(.system(.subheadline))
-                                .foregroundColor(theme.colors.message.conciergeText.color)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                .fill(theme.colors.message.conciergeBackground.color)
-                        )
+                Button(action: { onSuggestionTap?(text) }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .imageScale(.small)
+                            .foregroundColor(suggestionTextColor)
+                        Text(text)
+                            .font(.system(.subheadline))
+                            .foregroundColor(suggestionTextColor)
+                            .lineLimit(suggestionMaxLines)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
+                            .fill(suggestionBgColor)
+                    )
                 }
+                .buttonStyle(PlainButtonStyle())
                 Spacer()
             }
         }
@@ -489,7 +528,7 @@ private extension ChatMessageView {
             .padding(14)
             .frame(width: 350, alignment: .leading)
         }
-        .background(theme.colors.message.conciergeBackground.color)
+        .background(theme.components.chatMessage.conciergeBackground.color)
         .cornerRadius(theme.layout.borderRadiusCard)
         .shadow(
             color: theme.layout.multimodalCardBoxShadow.isEnabled ? theme.layout.multimodalCardBoxShadow.color.color : .clear,
@@ -527,5 +566,15 @@ private extension ChatMessageView {
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )
+    }
+}
+
+private extension CardsAlignment {
+    var swiftUIAlignment: Alignment {
+        switch self {
+        case .start:  return .leading
+        case .end:    return .trailing
+        case .center: return .center
+        }
     }
 }

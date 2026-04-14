@@ -67,9 +67,36 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // Then
         XCTAssertEqual(theme.behavior.productCard?.cardStyle, .productDetail)
+        XCTAssertEqual(theme.behavior.productCard?.cardsAlignment, .center)
+    }
+
+    func test_behavior_productCard_cardsAlignment_decodesAllValues() {
+        let cases: [(String, CardsAlignment)] = [
+            ("start", .start),
+            ("center", .center),
+            ("end", .end)
+        ]
+        for (raw, expected) in cases {
+            let json = """
+            {"behavior":{"productCard":{"cardStyle":"actionButton","cardsAlignment":"\(raw)"}}}
+            """
+            let data = json.data(using: .utf8)!
+            let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+            XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, expected, "Failed for raw value '\(raw)'")
+        }
+    }
+
+    func test_behavior_productCard_cardsAlignment_defaultsToCenter() {
+        // When cardsAlignment is omitted, it should default to .center
+        let json = """
+        {"behavior":{"productCard":{"cardStyle":"actionButton"}}}
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(decoded?.behavior.productCard?.cardsAlignment, .center)
     }
     
     func test_behavior_input_decodesCorrectly() {
@@ -119,10 +146,35 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // Then
         XCTAssertEqual(theme.behavior.chat.messageAlignment, .leading) // "left" -> .leading
         XCTAssertNil(theme.behavior.chat.messageWidth) // "100%" -> nil
+        XCTAssertEqual(theme.behavior.chat.userMessageBubbleStyle, .balloon) // "default" -> .balloon
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_balloon_decodes() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "balloon" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .balloon)
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_caseInsensitive_decodes() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "Balloon" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .balloon)
+    }
+
+    func test_behavior_chat_userMessageBubbleStyle_unknownValue_fallsBackToDefault() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "userMessageBubbleStyle": "unknown" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .default)
     }
     
     func test_behavior_privacyNotice_decodesCorrectly() {
@@ -435,7 +487,7 @@ final class ThemeDecodingTests: XCTestCase {
         }
         
         // Then
-        XCTAssertEqual(theme.colors.productCard.backgroundColor.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#FFFFFF")
         XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#292929")
         XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#292929")
@@ -473,6 +525,50 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
         XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
         XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
+    }
+
+    // MARK: - Thinking Animation CSS Variable Tests
+
+    func test_thinkingAnimationColors_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then — "--thinking-dot-color": "#007BFF"
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#007BFF")
+    }
+
+    func test_thinkingAnimationLayout_convertsCorrectly() {
+        // Given
+        guard let theme = theme else {
+            XCTFail("Theme should be loaded")
+            return
+        }
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSize, 8)
+        XCTAssertEqual(theme.layout.thinkingDotSpacing, 8)
+        XCTAssertEqual(theme.layout.thinkingBubbleBorderRadius, 8)
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingHorizontal, 16)
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingVertical, 8)
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .center)
+    }
+
+    func test_thinkingDotVerticalAlignment_missingFromTheme_isNil() {
+        // Given
+        let minimalJSON = """
+        { "metadata": { "brandName": "Test" } }
+        """.data(using: .utf8)!
+
+        // When
+        let decoded = try? JSONDecoder().decode(ConciergeTheme.self, from: minimalJSON)
+
+        // Then — all thinking properties should be nil when not set
+        XCTAssertNil(decoded?.layout.thinkingDotVerticalAlignment)
+        XCTAssertNil(decoded?.layout.thinkingDotSize)
+        XCTAssertNil(decoded?.colors.thinking.dotColor)
     }
 
     func test_missingProductCardBehavior_usesDefaults() {
@@ -567,17 +663,118 @@ final class ThemeDecodingTests: XCTestCase {
             XCTFail("Theme should be loaded")
             return
         }
-        
+
         // When
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted]
         let encodedData = try encoder.encode(theme)
-        
+
         // Then
         XCTAssertNotNil(encodedData)
         let jsonObject = try JSONSerialization.jsonObject(with: encodedData, options: [])
         XCTAssertTrue(jsonObject is [String: Any])
     }
-    
+
+    // MARK: - Prompt Suggestions Behavior Decoding Tests
+
+    func test_behavior_promptSuggestions_decodesCorrectly() throws {
+        let json = """
+        {
+          "behavior": {
+            "promptSuggestions": {
+              "itemMaxLines": 2,
+              "showHeader": true,
+              "alignToMessage": true
+            }
+          }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.itemMaxLines, 2)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.showHeader, true)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.alignToMessage, true)
+    }
+
+    func test_behavior_promptSuggestions_absentBlock_isNil() throws {
+        let json = """
+        { "behavior": {} }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertNil(decoded.behavior.promptSuggestions)
+    }
+
+    func test_behavior_promptSuggestions_defaults() {
+        let behavior = ConciergePromptSuggestionsBehavior()
+        XCTAssertEqual(behavior.itemMaxLines, 1)
+        XCTAssertFalse(behavior.showHeader)
+        XCTAssertFalse(behavior.alignToMessage)
+    }
+
+    func test_behavior_promptSuggestions_partialJson_usesDefaults() throws {
+        let json = """
+        {
+          "behavior": {
+            "promptSuggestions": {
+              "showHeader": true
+            }
+          }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.itemMaxLines, 1)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.showHeader, true)
+        XCTAssertEqual(decoded.behavior.promptSuggestions?.alignToMessage, false)
+    }
+
+    // MARK: - suggestions.header Text String Tests
+
+    func test_text_suggestionsHeader_decodesCorrectly() throws {
+        let json = """
+        { "text": { "suggestions.header": "Explore More" } }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.suggestionsHeader, "Explore More")
+    }
+
+    func test_text_suggestionsHeader_defaultsToSuggestions() throws {
+        let json = """
+        { "text": {} }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.suggestionsHeader, "Suggestions")
+    }
+
+    // MARK: - primary.container defaults
+
+    func test_primaryColors_container_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.primary.container)
+    }
+
+    func test_promptSuggestion_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.promptSuggestion.backgroundColor)
+    }
+
+    func test_message_conciergeBackground_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.message.conciergeBackground)
+    }
+
+    func test_productCard_backgroundColor_defaultsToNil() {
+        let theme = ConciergeTheme()
+        XCTAssertNil(theme.colors.productCard.backgroundColor)
+    }
+
 }
 

@@ -260,6 +260,10 @@ private extension ThemeKeyCoverageTests {
         "cta-button-font-weight": "layout.ctaButtonFontWeight",
         "cta-button-icon-size": "layout.ctaButtonIconSize",
 
+        // Layout - Agent Icon
+        "agent-icon-size": "layout.agentIconSize",
+        "agent-icon-spacing": "layout.agentIconSpacing",
+
         // Colors - Input Icons
         "input-send-icon-color": "colors.input.sendIconColor",
         "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",
@@ -270,6 +274,13 @@ private extension ThemeKeyCoverageTests {
         // Colors - Welcome Prompts
         "welcome-prompt-background-color": "colors.welcomePrompt.backgroundColor",
         "welcome-prompt-text-color": "colors.welcomePrompt.textColor",
+
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": "colors.promptSuggestion.backgroundColor",
+        "suggestion-text-color": "colors.promptSuggestion.textColor",
+
+        // Colors - Container
+        "color-container": "colors.primary.container",
 
         // Layout - Welcome Screen
         "header-title-font-size": "layout.headerTitleFontSize",
@@ -282,6 +293,20 @@ private extension ThemeKeyCoverageTests {
         "welcome-prompts-top-spacing": "layout.welcomePromptsTopSpacing",
         "welcome-prompt-padding": "layout.welcomePromptPadding",
         "welcome-prompt-corner-radius": "layout.welcomePromptCornerRadius",
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": "colors.thinking.dotColor",
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": "layout.thinkingDotSize",
+        "thinking-dot-spacing": "layout.thinkingDotSpacing",
+        "thinking-bubble-border-radius": "layout.thinkingBubbleBorderRadius",
+        "thinking-bubble-padding-horizontal": "layout.thinkingBubblePaddingHorizontal",
+        "thinking-bubble-padding-vertical": "layout.thinkingBubblePaddingVertical",
+        "thinking-dot-vertical-alignment": "layout.thinkingDotVerticalAlignment",
+
+        // Layout - Prompt Suggestions
+        "suggestion-item-border-radius": "layout.suggestionItemBorderRadius",
     ]
 
     // MARK: - Theme token model reflection

@@ -52,7 +52,11 @@ struct ProductDetailCardView: View {
         .padding(ProductDetailCardDimensions.contentPadding)
         .frame(width: cardWidth, height: cardHeight)
         .clipped()
-        .background(theme.colors.productCard.backgroundColor.color)
+        .background(
+            theme.colors.productCard.backgroundColor?.color
+                ?? theme.colors.primary.container?.color
+                ?? Color.white
+        )
         .cornerRadius(theme.layout.borderRadiusCard)
         .overlay(
             RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard)
