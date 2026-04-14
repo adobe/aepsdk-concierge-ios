@@ -204,19 +204,58 @@ struct ConciergeWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
-        
+
+        // Inject JS polyfills at document start so Akamai Bot Manager sees a real
+        // Mobile Safari environment rather than a WKWebView:
+        //   - window.safari: present in Safari, absent in WKWebView
+        //   - navigator.standalone: false in Safari browser, undefined in WKWebView
+        //   - window.webkit.messageHandlers: clear any registered handlers from view
+        let polyfill = WKUserScript(
+            source: """
+                (function() {
+                    if (!window.safari) {
+                        Object.defineProperty(window, 'safari', {
+                            value: {
+                                pushNotification: Object.defineProperty(Object.create(null), 'toString', {
+                                    value: function() { return '[object SafariRemoteNotification]'; },
+                                    enumerable: false
+                                })
+                            },
+                            writable: false, enumerable: true, configurable: false
+                        });
+                    }
+                    if (navigator.standalone === undefined) {
+                        Object.defineProperty(navigator, 'standalone', {
+                            value: false,
+                            writable: false, enumerable: true, configurable: false
+                        });
+                    }
+                })();
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        configuration.userContentController.addUserScript(polyfill)
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
-        
+
+        // Set a Mobile Safari UA in the correct token order (Version/x.x before Mobile/)
+        // so Akamai's server-side UA check passes alongside the JS polyfills above.
+        let osVersion = UIDevice.current.systemVersion
+        let osVersionUnderscore = osVersion.replacingOccurrences(of: ".", with: "_")
+        let shortVersion = osVersion.split(separator: ".").prefix(2).joined(separator: ".")
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(osVersionUnderscore) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(shortVersion) Mobile/15E148 Safari/604.1"
+
         // Set a non-transparent background to avoid black screen before content loads
         webView.isOpaque = false
         webView.backgroundColor = .systemBackground
         webView.scrollView.backgroundColor = .systemBackground
-        
+
         let request = URLRequest(url: url)
         webView.load(request)
-        
+
         return webView
     }
     
