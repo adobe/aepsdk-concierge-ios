@@ -12,6 +12,13 @@
 
 import SwiftUI
 
+/// Vertical alignment of the dots row within the thinking bubble.
+public enum ThinkingDotVerticalAlignment: String, Codable {
+    case top
+    case center
+    case bottom
+}
+
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
     public var inputHeight: CGFloat
@@ -69,6 +76,11 @@ public struct ConciergeLayout: Codable {
     public var ctaButtonFontSize: CGFloat
     public var ctaButtonFontWeight: CodableFontWeight
     public var ctaButtonIconSize: CGFloat
+    public var agentIconSize: CGFloat
+    public var agentIconSpacing: CGFloat
+    /// Total horizontal space occupied by the agent icon column (size + trailing spacing).
+    /// Use this to align sibling elements with the start of the agent response text.
+    public var agentTextIndent: CGFloat { agentIconSize + agentIconSpacing }
 
     // Welcome screen layout
     public var headerTitleFontSize: CGFloat?
@@ -81,6 +93,15 @@ public struct ConciergeLayout: Codable {
     public var welcomePromptsTopSpacing: CGFloat?
     public var welcomePromptPadding: CGFloat?
     public var welcomePromptCornerRadius: CGFloat?
+    public var suggestionItemBorderRadius: CGFloat?
+
+    // Thinking animation layout
+    public var thinkingDotSize: CGFloat?
+    public var thinkingDotSpacing: CGFloat?
+    public var thinkingBubbleBorderRadius: CGFloat?
+    public var thinkingBubblePaddingHorizontal: CGFloat?
+    public var thinkingBubblePaddingVertical: CGFloat?
+    public var thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -146,6 +167,8 @@ public struct ConciergeLayout: Codable {
         ctaButtonFontSize: CGFloat = 14,
         ctaButtonFontWeight: CodableFontWeight = .regular,
         ctaButtonIconSize: CGFloat = 16,
+        agentIconSize: CGFloat = 39,
+        agentIconSpacing: CGFloat = 12,
         headerTitleFontSize: CGFloat? = nil,
         welcomeTitleFontSize: CGFloat? = nil,
         welcomeTextAlign: String? = nil,
@@ -155,7 +178,14 @@ public struct ConciergeLayout: Codable {
         welcomeTitleBottomSpacing: CGFloat? = nil,
         welcomePromptsTopSpacing: CGFloat? = nil,
         welcomePromptPadding: CGFloat? = nil,
-        welcomePromptCornerRadius: CGFloat? = nil
+        welcomePromptCornerRadius: CGFloat? = nil,
+        thinkingDotSize: CGFloat? = nil,
+        thinkingDotSpacing: CGFloat? = nil,
+        thinkingBubbleBorderRadius: CGFloat? = nil,
+        thinkingBubblePaddingHorizontal: CGFloat? = nil,
+        thinkingBubblePaddingVertical: CGFloat? = nil,
+        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil,
+        suggestionItemBorderRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -210,6 +240,8 @@ public struct ConciergeLayout: Codable {
         self.ctaButtonFontSize = ctaButtonFontSize
         self.ctaButtonFontWeight = ctaButtonFontWeight
         self.ctaButtonIconSize = ctaButtonIconSize
+        self.agentIconSize = agentIconSize
+        self.agentIconSpacing = agentIconSpacing
         self.headerTitleFontSize = headerTitleFontSize
         self.welcomeTitleFontSize = welcomeTitleFontSize
         self.welcomeTextAlign = welcomeTextAlign
@@ -220,6 +252,13 @@ public struct ConciergeLayout: Codable {
         self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
         self.welcomePromptPadding = welcomePromptPadding
         self.welcomePromptCornerRadius = welcomePromptCornerRadius
+        self.thinkingDotSize = thinkingDotSize
+        self.thinkingDotSpacing = thinkingDotSpacing
+        self.thinkingBubbleBorderRadius = thinkingBubbleBorderRadius
+        self.thinkingBubblePaddingHorizontal = thinkingBubblePaddingHorizontal
+        self.thinkingBubblePaddingVertical = thinkingBubblePaddingVertical
+        self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
+        self.suggestionItemBorderRadius = suggestionItemBorderRadius
     }
 }
 

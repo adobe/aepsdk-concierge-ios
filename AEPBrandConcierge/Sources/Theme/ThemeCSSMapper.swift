@@ -29,6 +29,7 @@ public enum CSSKeyMapper {
         // Colors - Primary
         "color-primary": { cssValue, theme in theme.colors.primary.primary = CSSValueConverter.parseColor(cssValue) },
         "color-text": { cssValue, theme in theme.colors.primary.text = CSSValueConverter.parseColor(cssValue) },
+        "color-container": { cssValue, theme in theme.colors.primary.container = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Surface
         "main-container-background": { cssValue, theme in theme.colors.surface.mainContainerBackground = CSSValueConverter.parseColor(cssValue) },
@@ -192,6 +193,11 @@ public enum CSSKeyMapper {
         "cta-button-font-size": { cssValue, theme in theme.layout.ctaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "cta-button-font-weight": { cssValue, theme in theme.layout.ctaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "cta-button-icon-size": { cssValue, theme in theme.layout.ctaButtonIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+
+        // Layout - Agent Icon
+        "agent-icon-size": { cssValue, theme in theme.layout.agentIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 39 },
+        "agent-icon-spacing": { cssValue, theme in theme.layout.agentIconSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+
         // Colors - Input Icons
         "input-send-icon-color": { cssValue, theme in theme.colors.input.sendIconColor = CSSValueConverter.parseColor(cssValue) },
         "input-send-arrow-icon-color": { cssValue, theme in theme.colors.input.sendArrowIconColor = CSSValueConverter.parseColor(cssValue) },
@@ -202,6 +208,11 @@ public enum CSSKeyMapper {
         // Colors - Welcome Prompts
         "welcome-prompt-background-color": { cssValue, theme in theme.colors.welcomePrompt.backgroundColor = CSSValueConverter.parseColor(cssValue) },
         "welcome-prompt-text-color": { cssValue, theme in theme.colors.welcomePrompt.textColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": { cssValue, theme in theme.colors.promptSuggestion.backgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-text-color": { cssValue, theme in theme.colors.promptSuggestion.textColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Welcome Screen
         "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
@@ -214,6 +225,21 @@ public enum CSSKeyMapper {
         "welcome-prompts-top-spacing": { cssValue, theme in theme.layout.welcomePromptsTopSpacing = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-padding": { cssValue, theme in theme.layout.welcomePromptPadding = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-corner-radius": { cssValue, theme in theme.layout.welcomePromptCornerRadius = CSSValueConverter.parsePxValue(cssValue) },
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": { cssValue, theme in theme.colors.thinking.dotColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": { cssValue, theme in theme.layout.thinkingDotSize = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-spacing": { cssValue, theme in theme.layout.thinkingDotSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-border-radius": { cssValue, theme in theme.layout.thinkingBubbleBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-horizontal": { cssValue, theme in theme.layout.thinkingBubblePaddingHorizontal = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-vertical": { cssValue, theme in theme.layout.thinkingBubblePaddingVertical = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-vertical-alignment": { cssValue, theme in
+            theme.layout.thinkingDotVerticalAlignment = ThinkingDotVerticalAlignment(
+                rawValue: cssValue.lowercased().trimmingCharacters(in: .whitespaces)
+            )
+        },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.
