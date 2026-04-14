@@ -161,10 +161,26 @@ Concierge.hide()
 
 When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHandler` using the following flow:
 
-1. **Custom scheme URLs** (e.g. `myapp://`, `mailto:`, `tel:`) — opened immediately via the system (deep link).
-2. **http/https URLs** — the system is first asked to open the URL as a universal link. If the host app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), the app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay.
+1. **http/https URLs** — the system is first asked to open the URL as a universal link. If the host app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), the app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay.
+2. **Non-web URLs** (e.g. `tel:`, `mailto:`, `sms:`, `myapp://`) — opened via `UIApplication.open` to hand off to the appropriate system app (Phone, Mail, Messages, etc.).
 
-**Default link handling flow:** host `handleLink` callback (if provided) → deep link / universal link check → WebView overlay.
+**Default link handling flow:** host `handleLink` callback (if provided) → universal link check → WebView overlay (http/https) or system app (other schemes).
+
+### Info.plist requirements for non-web links
+
+iOS requires URL schemes to be declared in `LSApplicationQueriesSchemes` before `UIApplication.open` can open them. Add the following to your app's `Info.plist` to enable `tel:`, `mailto:`, and `sms:` link handling:
+
+```xml
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>tel</string>
+    <string>telprompt</string>
+    <string>mailto</string>
+    <string>sms</string>
+</array>
+```
+
+Add any additional custom schemes your app needs to handle here as well.
 
 ### Custom link handling
 

@@ -20,10 +20,19 @@ final class MarkdownTextCoordinator: NSObject, UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
-        if let handler = parent.onOpenLink {
-            handler(URL)
+        if ConciergeLinkHandler.isWebLink(URL) {
+            // Route http/https links through the custom handler (opens in in-app webview).
+            parent.onOpenLink?(URL)
             return false
         }
-        return true
+        // Intercept non-web links and open via UIApplication directly.
+        // UITextView converts tel: → telprompt:// internally, which requires LSApplicationQueriesSchemes
+        // in the host app's Info.plist and can fail silently. Opening via UIApplication.open bypasses
+        // that conversion and works reliably for tel:, mailto:, sms:, etc.
+        // If UIApplication.open fails, fall back to letting UITextView handle it natively by
+        // returning true — this preserves the system default behavior as a last resort.
+        var handledBySystem = false
+        ConciergeLinkHandler.urlOpener(URL, [:]) { success in handledBySystem = success }
+        return !handledBySystem
     }
 }
