@@ -242,10 +242,7 @@ struct ConciergeWebView: UIViewRepresentable {
 
         // Set a Mobile Safari UA in the correct token order (Version/x.x before Mobile/)
         // so Akamai's server-side UA check passes alongside the JS polyfills above.
-        let osVersion = UIDevice.current.systemVersion
-        let osVersionUnderscore = osVersion.replacingOccurrences(of: ".", with: "_")
-        let shortVersion = osVersion.split(separator: ".").prefix(2).joined(separator: ".")
-        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(osVersionUnderscore) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(shortVersion) Mobile/15E148 Safari/604.1"
+        webView.customUserAgent = ConciergeWebView.mobileSafariUserAgent(for: UIDevice.current.systemVersion)
 
         // Set a non-transparent background to avoid black screen before content loads
         webView.isOpaque = false
@@ -258,6 +255,15 @@ struct ConciergeWebView: UIViewRepresentable {
         return webView
     }
     
+    /// Builds a Mobile Safari User-Agent string for the given iOS version string.
+    /// Produces the correct token order (`Version/x.x` before `Mobile/`) that
+    /// bot-protection services (e.g. Akamai) require to identify a legitimate browser.
+    static func mobileSafariUserAgent(for osVersion: String) -> String {
+        let underscored = osVersion.replacingOccurrences(of: ".", with: "_")
+        let short = osVersion.split(separator: ".").prefix(2).joined(separator: ".")
+        return "Mozilla/5.0 (iPhone; CPU iPhone OS \(underscored) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(short) Mobile/15E148 Safari/604.1"
+    }
+
     func updateUIView(_ webView: WKWebView, context: Context) {
         // Only reload if the URL has changed from the original
         if webView.url != url && currentURLString == url.absoluteString {
