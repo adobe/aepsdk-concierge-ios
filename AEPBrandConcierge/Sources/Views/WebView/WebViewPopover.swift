@@ -209,7 +209,6 @@ struct ConciergeWebView: UIViewRepresentable {
         // Mobile Safari environment rather than a WKWebView:
         //   - window.safari: present in Safari, absent in WKWebView
         //   - navigator.standalone: false in Safari browser, undefined in WKWebView
-        //   - window.webkit.messageHandlers: clear any registered handlers from view
         let polyfill = WKUserScript(
             source: """
                 (function() {
@@ -233,7 +232,7 @@ struct ConciergeWebView: UIViewRepresentable {
                 })();
             """,
             injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
+            forMainFrameOnly: true
         )
         configuration.userContentController.addUserScript(polyfill)
 
