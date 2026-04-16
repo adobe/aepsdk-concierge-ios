@@ -17,10 +17,28 @@ import SwiftUI
 /// Supports two modes controlled by `behavior.multimodalCarousel.carouselStyle`:
 /// - paged: `TabView` that snaps to the current item with prev/next buttons and page indicator dots
 /// - scroll: continuous horizontal `ScrollView` with freely scrollable cards
+///
+/// The `ScrollView` always spans the full available width so cards are never clipped during
+/// horizontal scrolling. The leading inset is applied inside the scroll content so the first
+/// card aligns with the agent icon (or the standard chat history padding when no icon is set).
 struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
     @State private var currentIndex = 0
+
+    /// Leading offset applied inside the scroll content so the first card aligns correctly
+    /// while the ScrollView itself spans the full width (preventing clipping on scroll).
+    ///
+    /// - With an agent icon: `chatHistoryPadding + agentTextIndent`, matching the leading inset
+    ///   of prompt suggestions and agent text (i.e. the start of the response text column).
+    /// - Without an agent icon: `chatHistoryPadding + scrollContentBasePadding`, matching the
+    ///   leading inset of text bubbles and suggestion chips.
+    private var scrollContentLeadingInset: CGFloat {
+        if theme.hasAgentIcon {
+            return theme.layout.chatHistoryPadding + theme.layout.agentTextIndent
+        }
+        return theme.layout.chatHistoryPadding + MessageListView.scrollContentBasePadding
+    }
 
     private var carouselIdealHeight: CGFloat {
         switch theme.behavior.productCard?.cardStyle ?? .actionButton {
@@ -82,6 +100,7 @@ struct CarouselGroupView: View {
                     message.chatMessageView
                 }
             }
+            .padding(.leading, scrollContentLeadingInset)
             .padding(.trailing, theme.layout.productCardCarouselSpacing)
             .padding(.vertical, 12)
         }
