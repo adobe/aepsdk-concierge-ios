@@ -132,29 +132,54 @@ struct MarkdownRenderer {
         // its predecessor
         var events: [BuildEvent] = []
         var prevStack: [PresentationComponent] = []
-        var prevHadInlineStyling = false
+        var prevParagraphIdentity: Int?
 
         for run in attributed.runs {
             let runSlice = AttributedString(attributed[run.range])
             // Extract the concrete containers for the text based on the run's parse result
             let currentStack = containersFor(presentation: run.presentationIntent)
             let longestCommonIndex = commonPrefixLength(prevStack, currentStack)
-            // Determine whether this run carries inline styling (bold/italic/code/link/etc.)
-            let hasInlineStyling = runHasInlineStyling(run)
+            // Ask the parser (via PresentationIntent.IntentType.identity) whether this run belongs to
+            // the same paragraph as the previous one. Runs that share a paragraph (ex: "**bold** normal"
+            // within one paragraph) share the same identity, while sibling paragraphs receive distinct
+            // identities even when their container stacks are structurally identical.
+            let currentParagraphIdentity = innermostParagraphIdentity(presentation: run.presentationIntent)
+
+//            #if DEBUG
+//            Log.trace(label: LOG_TAG,
+//                      "run text=\(debugPreview(String(runSlice.characters))) "
+//                      + "stack=\(describe(currentStack)) "
+//                      + "paragraphIdentity=\(currentParagraphIdentity.map(String.init) ?? "nil") "
+//                      + "(prevIdentity=\(prevParagraphIdentity.map(String.init) ?? "nil")) "
+//                      + "commonPrefix=\(longestCommonIndex)")
+//            #endif
 
             // Only when container hierarchies are identical, create block breaks for certain types
             if longestCommonIndex == currentStack.count && prevStack.count == currentStack.count {
-                // Create a new paragraph boundary when the split isn't caused by inline styling.
+                // Emit a paragraph boundary whenever the parser reports that the innermost paragraph
+                // identity changed between runs. This is authoritative: it respects true paragraph
+                // breaks (\n\n) regardless of whether either side carries inline styling, and does not
+                // falsely split a single paragraph that contains multiple inline runs.
                 if prevStack.last == .paragraph
                     && currentStack.last == .paragraph
-                    && !hasInlineStyling
-                    && !prevHadInlineStyling {
+                    && prevParagraphIdentity != currentParagraphIdentity {
+//                    #if DEBUG
+//                    Log.trace(label: LOG_TAG,
+//                              "paragraph boundary detected: identity "
+//                              + "\(prevParagraphIdentity.map(String.init) ?? "nil") -> "
+//                              + "\(currentParagraphIdentity.map(String.init) ?? "nil") "
+//                              + "- emitting close(.paragraph) + open(.paragraph)")
+//                    #endif
                     events.append(.close(.paragraph))
                     events.append(.open(.paragraph))
                 }
 
                 // Create a new code block boundary
                 if prevStack.last == .codeBlock && currentStack.last == .codeBlock {
+//                    #if DEBUG
+//                    Log.trace(label: LOG_TAG,
+//                              "code block boundary detected - emitting close(.codeBlock) + open(.codeBlock)")
+//                    #endif
                     events.append(.close(.codeBlock))
                     events.append(.open(.codeBlock))
                 }
@@ -175,7 +200,8 @@ struct MarkdownRenderer {
 
             // Handle special leaf components based on innermost container
 //            #if DEBUG
-//            Log.trace(label: LOG_TAG, "consume leaf for innermost=\(String(describing: currentStack.last.map { describe($0) }))")
+//            Log.trace(label: LOG_TAG,
+//                      "consume leaf innermost=\(currentStack.last.map { describe($0) } ?? "nil")")
 //            #endif
             if case .some(.thematicBreak) = currentStack.last {
                 events.append(.divider)
@@ -188,7 +214,7 @@ struct MarkdownRenderer {
 
             // Once run processing is complete, set up properties for the next run
             prevStack = currentStack
-            prevHadInlineStyling = hasInlineStyling
+            prevParagraphIdentity = currentParagraphIdentity
         }
 
         // This closes the final run's common components
@@ -256,6 +282,26 @@ struct MarkdownRenderer {
         }
 
         return containers
+    }
+
+    /// Returns the identity of the innermost `.paragraph` component for a run's presentation intent,
+    /// or `nil` if the run is not inside a paragraph container (ex: a header, code block, or thematic
+    /// break). `PresentationIntent.IntentType.identity` is assigned by the parser per block instance,
+    /// so two sibling paragraphs receive different identity values even when their container stacks
+    /// are structurally identical — which is exactly what we need to detect true paragraph breaks.
+    ///
+    /// - Parameter presentation: The run's `PresentationIntent` (if any).
+    /// - Returns: The identity of the innermost paragraph component, or `nil`.
+    private func innermostParagraphIdentity(presentation: PresentationIntent?) -> Int? {
+        guard let presentation = presentation else { return nil }
+        // `presentation.components` is delivered innermost-first by the parser, so the first
+        // `.paragraph` encountered is the innermost text container for this run.
+        for component in presentation.components {
+            if case .paragraph = component.kind {
+                return component.identity
+            }
+        }
+        return nil
     }
 
     /// Returns the length of the shared leading sequence between two container stacks.
@@ -674,22 +720,6 @@ struct MarkdownRenderer {
         }
     }
 
-    /// Returns true if the run has any inline styling indicators:
-    /// - Bold
-    /// - Italic
-    /// - Inline code
-    /// - Link
-    /// - Underline or
-    /// - Font override
-    ///
-    /// Used to avoid splitting paragraphs due to inline styling changes.
-    private func runHasInlineStyling(_ run: AttributedString.Runs.Run) -> Bool {
-        if run.inlinePresentationIntent != nil { return true }
-        if run.attributes[AttributeScopes.FoundationAttributes.LinkAttribute.self] != nil { return true }
-        if run.attributes[AttributeScopes.UIKitAttributes.FontAttribute.self] != nil { return true }
-        if run.attributes[AttributeScopes.UIKitAttributes.UnderlineStyleAttribute.self] != nil { return true }
-        return false
-    }
 }
 
 #if DEBUG
@@ -749,6 +779,22 @@ extension MarkdownRenderer {
         case .codeBlock: return "codeBlock"
         case .thematicBreak: return "thematicBreak"
         }
+    }
+
+    /// Returns a compact `[outer > ... > inner]` string for a stack of containers, used in debug logs.
+    private func describe(_ stack: [PresentationComponent]) -> String {
+        guard !stack.isEmpty else { return "[]" }
+        return "[" + stack.map { describe($0) }.joined(separator: " > ") + "]"
+    }
+
+    /// Produces a short, newline-escaped preview of a run's text for readable log output.
+    private func debugPreview(_ text: String, limit: Int = 40) -> String {
+        let escaped = text
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+        if escaped.count <= limit { return "\"\(escaped)\"" }
+        let endIndex = escaped.index(escaped.startIndex, offsetBy: limit)
+        return "\"\(escaped[..<endIndex])…\""
     }
 }
 #endif
