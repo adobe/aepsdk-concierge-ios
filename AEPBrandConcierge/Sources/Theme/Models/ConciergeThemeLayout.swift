@@ -67,8 +67,9 @@ public struct ConciergeLayout: Codable {
     public var productCardTextBottomPadding: CGFloat
     public var productCardTextHorizontalPadding: CGFloat
     public var productCardCarouselSpacing: CGFloat
-    /// Horizontal padding applied to the carousel container within the chat history.
-    /// When `nil`, falls back to `chatHistoryPadding`.
+    /// Horizontal padding for the scrolling carousel content.
+    /// - Leading: added on top of the column-aligned base (first card cannot move left of the base).
+    /// - Trailing: used directly; when `nil`, falls back to `chatHistoryPadding`.
     public var productCardCarouselHorizontalPadding: CGFloat?
     public var ctaButtonBorderRadius: CGFloat
     public var ctaButtonHorizontalPadding: CGFloat
