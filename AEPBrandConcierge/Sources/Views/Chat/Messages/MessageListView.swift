@@ -16,9 +16,10 @@ import SwiftUI
 struct MessageListView: View {
     @Environment(\.conciergeTheme) private var theme
 
-    /// Base scroll content padding. Combined with `chatHistoryPadding` to preserve the 
-    // original total inset for non carousel messages.
-    private static let scrollContentBasePadding: CGFloat = 16
+    /// Base scroll content padding. Combined with `chatHistoryPadding` to produce the standard
+    /// horizontal inset used by text bubbles, suggestion chips, and non-carousel agent elements.
+    /// Also referenced by `CarouselGroupView` when computing `scrollContentLeadingInset`.
+    static let scrollContentBasePadding: CGFloat = 16
 
     let messages: [Message]
     var userScrollTick: Int = 0
@@ -101,10 +102,9 @@ struct MessageListView: View {
 
     /// Returns the padding insets for a given message template.
     ///
-    /// - Carousel messages use `productCardCarouselHorizontalPadding` when set,
-    ///   falling back to `chatHistoryPadding + scrollContentBasePadding` (same as all other agent
-    ///   elements) so the first card's left edge aligns with agent text. When an agent icon is
-    ///   configured the leading inset is shifted by `agentTextIndent` instead.
+    /// - Carousel messages receive zero container padding. The carousel's `ScrollView` spans
+    ///   the full available width so cards are never clipped during horizontal scrolling.
+    ///   `CarouselGroupView` applies the appropriate leading inset inside the scroll content.
     /// - Agent basic messages with a configured icon use `chatHistoryPadding` as the
     ///   leading inset only, so the icon sits flush at the history padding boundary.
     ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
@@ -114,25 +114,10 @@ struct MessageListView: View {
     /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
     private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
         if case .carouselGroup = template {
-            if theme.hasAgentIcon {
-                let trailing = theme.layout.productCardCarouselHorizontalPadding
-                    ?? theme.layout.chatHistoryPadding
-                return EdgeInsets(
-                    top: 0,
-                    leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
-                    bottom: 0,
-                    trailing: trailing
-                )
-            }
-            // Without an agent icon the carousel leading must match other agent elements
-            // (chatHistoryPadding + scrollContentBasePadding) so the scroll container boundary
-            // is flush with text bubbles and suggestion chips.
-            // productCardCarouselHorizontalPadding still controls the trailing inset, letting
-            // cards scroll closer to the right edge when a smaller value is configured.
-            let leading = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
-            let trailing = theme.layout.productCardCarouselHorizontalPadding
-                ?? theme.layout.chatHistoryPadding
-            return EdgeInsets(top: 0, leading: leading, bottom: 0, trailing: trailing)
+            // Carousel manages its own leading inset inside the ScrollView content
+            // (see CarouselGroupView.scrollContentLeadingInset) so the ScrollView container
+            // spans the full available width, preventing cards from being clipped on scroll.
+            return EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         }
         if case .basic(let isUserMessage) = template,
            !isUserMessage,
