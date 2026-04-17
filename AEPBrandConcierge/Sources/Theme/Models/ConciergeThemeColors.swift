@@ -167,7 +167,7 @@ public struct ConciergeFeedbackColors: Codable {
     public var questionText: CodableColor?
     /// Checkbox option label color. Defaults to system `.primary`. Set alongside `titleText` when `sheetBackground` is pinned.
     public var optionsText: CodableColor?
-    /// Checkbox unchecked outline color. `nil` = adaptive (`white @ 28%` dark, `black @ 35%` light). Set explicitly when `sheetBackground` is pinned.
+    /// Checkbox unchecked outline color. `nil` = adaptive (`#FFFFFF47` dark, `#00000059` light). Set explicitly when `sheetBackground` is pinned.
     public var checkboxBorder: CodableColor?
     /// Action sheet drag handle color. Defaults to `Color.secondary.opacity(0.4)`. Only rendered in `action` display mode.
     public var dragHandle: CodableColor?
