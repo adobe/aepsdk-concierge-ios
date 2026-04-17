@@ -14,7 +14,9 @@
     },
     "feedback": {
       "displayMode": "action",
-      "thumbsPlacement": "below"
+      "thumbsPlacement": "below",
+      "showCloseButton": true,
+      "showCancelButton": false
     },
     "citations": {
       "showLinkIcon": true
@@ -227,6 +229,25 @@
     "--feedback-icon-btn-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-container-gap": "4px",
+
+    "--feedback-sheet-background-color": "#FFFFFF",
+    "--feedback-title-text-color": "#131313",
+    "--feedback-question-text-color": "#424242",
+    "--feedback-options-text-color": "#131313",
+    "--feedback-checkbox-border-color": "#131313",
+    "--feedback-drag-handle-color": "#CCCCCC",
+    "--feedback-submit-button-fill-color": "#006554",
+    "--feedback-submit-button-text-color": "#FFFFFF",
+    "--feedback-submit-button-border-radius": "10px",
+    "--feedback-submit-button-font-weight": "600",
+    "--feedback-cancel-button-fill-color": "#006554",
+    "--feedback-cancel-button-text-color": "#006554",
+    "--feedback-cancel-button-border-color": "#006554",
+    "--feedback-cancel-button-border-width": "1px",
+    "--feedback-cancel-button-border-radius": "10px",
+    "--feedback-cancel-button-font-weight": "600",
+    "--feedback-checkbox-border-radius": "6px",
+    "--feedback-title-font-size": "22px",
 
     "--multimodal-card-box-shadow": "0px 1px 4px 0 #191F1C1A",
     "--border-radius-card": "16px",

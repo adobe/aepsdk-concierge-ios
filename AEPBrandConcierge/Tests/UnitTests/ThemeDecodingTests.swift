@@ -176,6 +176,44 @@ final class ThemeDecodingTests: XCTestCase {
         let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
         XCTAssertEqual(decoded.behavior.chat.userMessageBubbleStyle, .default)
     }
+
+    // MARK: - behavior.chat.messageAlignment decoding (accepted value variants)
+
+    private func decodeMessageAlignment(_ raw: String) throws -> ConciergeTextAlignment {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "behavior": { "chat": { "messageAlignment": "\(raw)" } } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        return decoded.behavior.chat.messageAlignment
+    }
+
+    func test_behavior_chat_messageAlignment_webValues_decode() throws {
+        XCTAssertEqual(try decodeMessageAlignment("left"), .leading)
+        XCTAssertEqual(try decodeMessageAlignment("right"), .trailing)
+        XCTAssertEqual(try decodeMessageAlignment("center"), .center)
+        XCTAssertEqual(try decodeMessageAlignment("justify"), .center)
+    }
+
+    func test_behavior_chat_messageAlignment_composeValues_decode() throws {
+        XCTAssertEqual(try decodeMessageAlignment("start"), .leading)
+        XCTAssertEqual(try decodeMessageAlignment("end"), .trailing)
+    }
+
+    func test_behavior_chat_messageAlignment_swiftUIValues_decode() throws {
+        XCTAssertEqual(try decodeMessageAlignment("leading"), .leading)
+        XCTAssertEqual(try decodeMessageAlignment("trailing"), .trailing)
+    }
+
+    func test_behavior_chat_messageAlignment_caseInsensitive_decodes() throws {
+        XCTAssertEqual(try decodeMessageAlignment("LEFT"), .leading)
+        XCTAssertEqual(try decodeMessageAlignment("Trailing"), .trailing)
+        XCTAssertEqual(try decodeMessageAlignment("CENTER"), .center)
+    }
+
+    func test_behavior_chat_messageAlignment_unknownValue_fallsBackToLeading() throws {
+        XCTAssertEqual(try decodeMessageAlignment("sideways"), .leading)
+    }
+
     
     func test_behavior_privacyNotice_decodesCorrectly() {
         // Given

@@ -131,30 +131,54 @@ public struct ConciergeFeedbackBehavior: Codable {
     /// - `"action"` — action sheet-style layout with drag affordance.
     public var displayMode: String
     public var thumbsPlacement: ThumbsPlacement
+    /// Overrides the close (X) button visibility. `nil` defaults to `true` for `"action"`, `false` for `"modal"`.
+    public var showCloseButton: Bool?
+    /// Overrides the Cancel button visibility. `nil` defaults to `true` for `"modal"`, `false` for `"action"`.
+    public var showCancelButton: Bool?
+
+    /// Effective close button visibility: `showCloseButton` when set, otherwise `displayMode == "action"`.
+    public var resolvedShowCloseButton: Bool {
+        showCloseButton ?? (displayMode == "action")
+    }
+
+    /// Effective Cancel button visibility: `showCancelButton` when set, otherwise `displayMode == "modal"`.
+    public var resolvedShowCancelButton: Bool {
+        showCancelButton ?? (displayMode == "modal")
+    }
 
     private enum CodingKeys: String, CodingKey {
         case displayMode
         case thumbsPlacement
+        case showCloseButton
+        case showCancelButton
     }
 
     public init(
         displayMode: String = "modal",
-        thumbsPlacement: ThumbsPlacement = .inline
+        thumbsPlacement: ThumbsPlacement = .inline,
+        showCloseButton: Bool? = nil,
+        showCancelButton: Bool? = nil
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
+        self.showCloseButton = showCloseButton
+        self.showCancelButton = showCancelButton
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode) ?? "modal"
         thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
+        showCloseButton = try container.decodeIfPresent(Bool.self, forKey: .showCloseButton)
+        showCancelButton = try container.decodeIfPresent(Bool.self, forKey: .showCancelButton)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(displayMode, forKey: .displayMode)
         try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
+        try container.encodeIfPresent(showCloseButton, forKey: .showCloseButton)
+        try container.encodeIfPresent(showCancelButton, forKey: .showCancelButton)
     }
 }
 
