@@ -159,12 +159,32 @@ public struct ConciergeCitationColors: Codable {
 /// Feedback color tokens
 public struct ConciergeFeedbackColors: Codable {
     public var iconButtonBackground: CodableColor
+    /// Submit button fill. Defaults to `button.primaryBackground`.
+    public var submitButtonFill: CodableColor?
+    /// Submit button text color. Defaults to `button.primaryText`.
+    public var submitButtonText: CodableColor?
+    /// Cancel button fill. `nil` = transparent (outline style). Also tints the X close icon.
+    public var cancelButtonFill: CodableColor?
+    /// Cancel button text color. Defaults to `button.secondaryText`.
+    public var cancelButtonText: CodableColor?
+    /// Cancel button border color. Defaults to `button.secondaryBorder`.
+    public var cancelButtonBorderColor: CodableColor?
 
     public init(
         // Default feedback icons render without a background unless explicitly themed.
-        iconButtonBackground: CodableColor = CodableColor(Color.clear)
+        iconButtonBackground: CodableColor = CodableColor(Color.clear),
+        submitButtonFill: CodableColor? = nil,
+        submitButtonText: CodableColor? = nil,
+        cancelButtonFill: CodableColor? = nil,
+        cancelButtonText: CodableColor? = nil,
+        cancelButtonBorderColor: CodableColor? = nil
     ) {
         self.iconButtonBackground = iconButtonBackground
+        self.submitButtonFill = submitButtonFill
+        self.submitButtonText = submitButtonText
+        self.cancelButtonFill = cancelButtonFill
+        self.cancelButtonText = cancelButtonText
+        self.cancelButtonBorderColor = cancelButtonBorderColor
     }
 }
 

@@ -164,6 +164,11 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Feedback
         "feedback-icon-btn-background": "colors.feedback.iconButtonBackground",
+        "feedback-submit-button-fill-color": "colors.feedback.submitButtonFill",
+        "feedback-submit-button-text-color": "colors.feedback.submitButtonText",
+        "feedback-cancel-button-fill-color": "colors.feedback.cancelButtonFill",
+        "feedback-cancel-button-text-color": "colors.feedback.cancelButtonText",
+        "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorderColor",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",
@@ -200,6 +205,11 @@ private extension ThemeKeyCoverageTests {
 
         // Layout - Feedback
         "feedback-container-gap": "layout.feedbackContainerGap",
+        "feedback-submit-button-border-radius": "layout.feedbackSubmitButtonBorderRadius",
+        "feedback-submit-button-font-weight": "layout.feedbackSubmitButtonFontWeight",
+        "feedback-cancel-button-border-radius": "layout.feedbackCancelButtonBorderRadius",
+        "feedback-cancel-button-border-width": "layout.feedbackCancelButtonBorderWidth",
+        "feedback-cancel-button-font-weight": "layout.feedbackCancelButtonFontWeight",
 
         // Layout - Citations
         "citations-text-font-weight": "layout.citationsTextFontWeight",

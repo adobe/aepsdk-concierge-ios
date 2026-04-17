@@ -76,6 +76,11 @@ public enum CSSKeyMapper {
 
         // Colors - Feedback
         "feedback-icon-btn-background": { cssValue, theme in theme.colors.feedback.iconButtonBackground = CSSValueConverter.parseColor(cssValue) },
+        "feedback-submit-button-fill-color": { cssValue, theme in theme.colors.feedback.submitButtonFill = CSSValueConverter.parseColor(cssValue) },
+        "feedback-submit-button-text-color": { cssValue, theme in theme.colors.feedback.submitButtonText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-fill-color": { cssValue, theme in theme.colors.feedback.cancelButtonFill = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-text-color": { cssValue, theme in theme.colors.feedback.cancelButtonText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorderColor = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
@@ -130,6 +135,11 @@ public enum CSSKeyMapper {
 
         // Layout - Feedback
         "feedback-container-gap": { cssValue, theme in theme.layout.feedbackContainerGap = CSSValueConverter.parsePxValue(cssValue) ?? 4 },
+        "feedback-submit-button-border-radius": { cssValue, theme in theme.layout.feedbackSubmitButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
+        "feedback-submit-button-font-weight": { cssValue, theme in theme.layout.feedbackSubmitButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "feedback-cancel-button-border-radius": { cssValue, theme in theme.layout.feedbackCancelButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
+        "feedback-cancel-button-border-width": { cssValue, theme in theme.layout.feedbackCancelButtonBorderWidth = CSSValueConverter.parsePxValue(cssValue) ?? 1 },
+        "feedback-cancel-button-font-weight": { cssValue, theme in theme.layout.feedbackCancelButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
 
         // Layout - Citations
         "citations-text-font-weight": { cssValue, theme in theme.layout.citationsTextFontWeight = CSSValueConverter.parseFontWeight(cssValue) },

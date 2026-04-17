@@ -40,6 +40,11 @@ public struct ConciergeLayout: Codable {
     public var buttonHeightSmall: CGFloat
     public var feedbackContainerGap: CGFloat
     public var feedbackIconButtonSize: CGFloat
+    public var feedbackSubmitButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderWidth: CGFloat
+    public var feedbackSubmitButtonFontWeight: CodableFontWeight
+    public var feedbackCancelButtonFontWeight: CodableFontWeight
     public var citationsTextFontWeight: CodableFontWeight
     public var citationsDesktopButtonFontSize: CGFloat
     public var disclaimerFontSize: CGFloat
@@ -126,6 +131,11 @@ public struct ConciergeLayout: Codable {
         buttonHeightSmall: CGFloat = 30,
         feedbackContainerGap: CGFloat = 4,
         feedbackIconButtonSize: CGFloat = 44,
+        feedbackSubmitButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderWidth: CGFloat = 1,
+        feedbackSubmitButtonFontWeight: CodableFontWeight = .semibold,
+        feedbackCancelButtonFontWeight: CodableFontWeight = .semibold,
         citationsTextFontWeight: CodableFontWeight = .bold,
         citationsDesktopButtonFontSize: CGFloat = 14,
         disclaimerFontSize: CGFloat = 12,
@@ -207,6 +217,11 @@ public struct ConciergeLayout: Codable {
         self.buttonHeightSmall = buttonHeightSmall
         self.feedbackContainerGap = feedbackContainerGap
         self.feedbackIconButtonSize = feedbackIconButtonSize
+        self.feedbackSubmitButtonBorderRadius = feedbackSubmitButtonBorderRadius
+        self.feedbackCancelButtonBorderRadius = feedbackCancelButtonBorderRadius
+        self.feedbackCancelButtonBorderWidth = feedbackCancelButtonBorderWidth
+        self.feedbackSubmitButtonFontWeight = feedbackSubmitButtonFontWeight
+        self.feedbackCancelButtonFontWeight = feedbackCancelButtonFontWeight
         self.citationsTextFontWeight = citationsTextFontWeight
         self.citationsDesktopButtonFontSize = citationsDesktopButtonFontSize
         self.disclaimerFontSize = disclaimerFontSize

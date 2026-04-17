@@ -29,6 +29,12 @@
     "productCard": {
       "cardStyle": "productDetail",
       "cardsAlignment": "center"
+    },
+    "feedback": {
+      "displayMode": "modal",
+      "thumbsPlacement": "inline",
+      "showCloseButton": null,
+      "showCancelButton": null
     }
   },
   "disclaimer": {
@@ -150,6 +156,16 @@
     "--feedback-icon-btn-hover-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-container-gap": "4px",
+    "--feedback-submit-button-fill-color": "#3B63FB",
+    "--feedback-submit-button-text-color": "#FFFFFF",
+    "--feedback-submit-button-border-radius": "10px",
+    "--feedback-submit-button-font-weight": "600",
+    "--feedback-cancel-button-fill-color": "#FFFFFF",
+    "--feedback-cancel-button-text-color": "#2C2C2C",
+    "--feedback-cancel-button-border-color": "#2C2C2C",
+    "--feedback-cancel-button-border-width": "1px",
+    "--feedback-cancel-button-border-radius": "10px",
+    "--feedback-cancel-button-font-weight": "600",
     "--multimodal-card-box-shadow": "none",
     "--border-radius-card": "16px",
     "--button-height-s": "30px",

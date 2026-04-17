@@ -50,6 +50,23 @@ struct FeedbackOverlayView: View {
         theme.behavior.feedback?.displayMode == "action"
     }
 
+    /// Shows the close (X) button. Explicit `behavior.feedback.showCloseButton` takes precedence;
+    /// defaults to `true` for `"action"` mode, `false` for `"modal"`.
+    private var resolvedShowCloseButton: Bool {
+        theme.behavior.feedback?.resolvedShowCloseButton ?? false
+    }
+
+    /// Shows the Cancel button. Explicit `behavior.feedback.showCancelButton` takes precedence;
+    /// defaults to `true` for `"modal"` mode, `false` for `"action"`.
+    private var resolvedShowCancelButton: Bool {
+        theme.behavior.feedback?.resolvedShowCancelButton ?? true
+    }
+
+    /// X close icon tint; resolved from `cancelButtonFill` with `button.secondaryText` fallback.
+    private var closeIconTint: Color {
+        theme.colors.feedback.cancelButtonFill?.color ?? theme.colors.button.secondaryText.color
+    }
+
     var body: some View {
         if isActionSheet {
             actionSheetLayout
@@ -81,6 +98,11 @@ struct FeedbackOverlayView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(borderColor)
             )
+            .overlay(alignment: .topTrailing) {
+                if resolvedShowCloseButton {
+                    closeButton
+                }
+            }
             .padding(.horizontal, 20)
         }
         .accessibilityElement(children: .contain)
@@ -130,9 +152,28 @@ struct FeedbackOverlayView: View {
                 RoundedCornerShape(radius: 20, corners: [.topLeft, .topRight])
                     .stroke(borderColor)
             )
+            .overlay(alignment: .topTrailing) {
+                if resolvedShowCloseButton {
+                    closeButton
+                }
+            }
             .offset(y: actionSheetDragOffset)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - Close (X) Button
+
+    private var closeButton: some View {
+        Button(action: onCancel) {
+            Image(systemName: "xmark")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(closeIconTint)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(theme.text.feedbackDialogCancel)
     }
 
     private func actionSheetDismissDragGesture() -> some Gesture {
@@ -219,15 +260,15 @@ struct FeedbackOverlayView: View {
 
     private var feedbackActionButtons: some View {
         HStack(spacing: 12) {
-            Button(action: onCancel) {
-                Text(theme.text.feedbackDialogCancel)
-                    .font(.body.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
+            if resolvedShowCancelButton {
+                Button(action: onCancel) {
+                    Text(theme.text.feedbackDialogCancel)
+                        .font(.body.weight(theme.layout.feedbackCancelButtonFontWeight.toSwiftUIFontWeight()))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(cancelButtonStyle)
             }
-            .buttonStyle(
-                ConciergeActionButtonStyle(theme: theme, variant: .secondary)
-            )
 
             Button(action: {
                 let payload = FeedbackPayload(
@@ -240,14 +281,41 @@ struct FeedbackOverlayView: View {
                 onSubmit(payload)
             }) {
                 Text(theme.text.feedbackDialogSubmit)
-                    .font(.body.weight(.semibold))
+                    .font(.body.weight(theme.layout.feedbackSubmitButtonFontWeight.toSwiftUIFontWeight()))
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
             }
-            .buttonStyle(
-                ConciergeActionButtonStyle(theme: theme, variant: .primary)
-            )
+            .buttonStyle(submitButtonStyle)
         }
+    }
+
+    // MARK: - Resolved Button Styles
+
+    /// Submit button style; `feedback.submitButton*` tokens with `button.primary*` fallbacks.
+    private var submitButtonStyle: FeedbackButtonStyle {
+        FeedbackButtonStyle(
+            backgroundColor: theme.colors.feedback.submitButtonFill?.color ?? theme.colors.button.primaryBackground.color,
+            foregroundColor: theme.colors.feedback.submitButtonText?.color ?? theme.colors.button.primaryText.color,
+            borderColor: .clear,
+            borderWidth: 0,
+            cornerRadius: theme.layout.feedbackSubmitButtonBorderRadius
+        )
+    }
+
+    /// Cancel button style, resolved from `feedback.cancelButton*` tokens with `button.secondary*` fallbacks.
+    /// - Fill: transparent by default (outline style); set `cancelButtonFill` for a solid background.
+    /// - Border: always applied; set `feedbackCancelButtonBorderWidth` to `0` to suppress it.
+    private var cancelButtonStyle: FeedbackButtonStyle {
+        let foreground = theme.colors.feedback.cancelButtonText?.color ?? theme.colors.button.secondaryText.color
+        let background = theme.colors.feedback.cancelButtonFill?.color ?? .clear
+        let border = theme.colors.feedback.cancelButtonBorderColor?.color ?? theme.colors.button.secondaryBorder.color
+        return FeedbackButtonStyle(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            borderColor: border,
+            borderWidth: theme.layout.feedbackCancelButtonBorderWidth,
+            cornerRadius: theme.layout.feedbackCancelButtonBorderRadius
+        )
     }
 }
 
