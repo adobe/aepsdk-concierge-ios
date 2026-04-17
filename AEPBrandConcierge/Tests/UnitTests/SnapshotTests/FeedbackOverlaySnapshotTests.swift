@@ -141,7 +141,7 @@ final class FeedbackOverlaySnapshotTests: XCTestCase {
         probeTheme.colors.feedback.submitButtonText = CodableColor(.black)
         probeTheme.colors.feedback.cancelButtonFill = CodableColor(.purple)
         probeTheme.colors.feedback.cancelButtonText = CodableColor(.white)
-        probeTheme.colors.feedback.cancelButtonBorderColor = CodableColor(.green)
+        probeTheme.colors.feedback.cancelButtonBorder = CodableColor(.green)
 
         probeTheme.layout.feedbackSubmitButtonBorderRadius = 2
         probeTheme.layout.feedbackCancelButtonBorderRadius = 20
@@ -152,7 +152,7 @@ final class FeedbackOverlaySnapshotTests: XCTestCase {
         // Additional styling controls mixed in so one probe covers the whole surface.
         probeTheme.colors.feedback.sheetBackground = CodableColor(.orange)
         probeTheme.layout.feedbackCheckboxBorderRadius = 12
-        probeTheme.layout.feedbackTitleTextAlign = "center"
+        probeTheme.layout.feedbackTitleTextAlign = .center
 
         probeTheme.text.feedbackDialogNotesPlaceholder = "Additional notes placeholder"
 
@@ -192,10 +192,10 @@ final class FeedbackOverlaySnapshotTests: XCTestCase {
         )
     }
 
-    /// Centered title alignment via `layout.feedbackTitleTextAlign = "center"`.
+    /// Centered title alignment via `layout.feedbackTitleTextAlign = .center`.
     func test_feedbackDialogProbe_centeredTitleAlignment() {
         var probeTheme = ConciergeThemeLoader.default()
-        probeTheme.layout.feedbackTitleTextAlign = "center"
+        probeTheme.layout.feedbackTitleTextAlign = .center
 
         let view = FeedbackOverlayProbeHost(theme: probeTheme)
 

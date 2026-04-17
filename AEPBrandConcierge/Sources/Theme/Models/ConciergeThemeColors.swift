@@ -180,7 +180,7 @@ public struct ConciergeFeedbackColors: Codable {
     /// Cancel button text color. Defaults to `button.secondaryText`.
     public var cancelButtonText: CodableColor?
     /// Cancel button border color. Defaults to `button.secondaryBorder`.
-    public var cancelButtonBorderColor: CodableColor?
+    public var cancelButtonBorder: CodableColor?
 
     public init(
         // Default feedback icons render without a background unless explicitly themed.
@@ -195,7 +195,7 @@ public struct ConciergeFeedbackColors: Codable {
         submitButtonText: CodableColor? = nil,
         cancelButtonFill: CodableColor? = nil,
         cancelButtonText: CodableColor? = nil,
-        cancelButtonBorderColor: CodableColor? = nil
+        cancelButtonBorder: CodableColor? = nil
     ) {
         self.iconButtonBackground = iconButtonBackground
         self.sheetBackground = sheetBackground
@@ -208,7 +208,7 @@ public struct ConciergeFeedbackColors: Codable {
         self.submitButtonText = submitButtonText
         self.cancelButtonFill = cancelButtonFill
         self.cancelButtonText = cancelButtonText
-        self.cancelButtonBorderColor = cancelButtonBorderColor
+        self.cancelButtonBorder = cancelButtonBorder
     }
 }
 

@@ -100,13 +100,21 @@ struct FeedbackOverlayView: View {
         theme.colors.feedback.dragHandle?.color ?? Color.secondary.opacity(0.4)
     }
 
-    /// Title alignment from `feedbackTitleTextAlign`: `.center` when set to `"center"`, otherwise `.leading`.
+    /// Title alignment from `feedbackTitleTextAlign`. Defaults to `.leading` when unset.
     private var titleTextAlignment: TextAlignment {
-        theme.layout.feedbackTitleTextAlign?.lowercased() == "center" ? .center : .leading
+        switch theme.layout.feedbackTitleTextAlign {
+        case .center: return .center
+        case .trailing: return .trailing
+        case .leading, .none: return .leading
+        }
     }
 
     private var titleFrameAlignment: Alignment {
-        titleTextAlignment == .center ? .center : .leading
+        switch titleTextAlignment {
+        case .center: return .center
+        case .trailing: return .trailing
+        case .leading: return .leading
+        }
     }
 
     /// Title font. Falls back to `.title2.weight(.semibold)` when `feedbackTitleFontSize` is nil.
@@ -118,30 +126,11 @@ struct FeedbackOverlayView: View {
     }
 
     var body: some View {
-        Group {
-            if isActionSheet {
-                actionSheetLayout
-            } else {
-                modalLayout
-            }
+        if isActionSheet {
+            actionSheetLayout
+        } else {
+            modalLayout
         }
-        .onAppear(perform: logResolvedFeedbackColors)
-    }
-
-    /// Logs all resolved feedback colors at `.debug` level on appear. Useful for diagnosing legibility when `sheetBackground` is pinned.
-    private func logResolvedFeedbackColors() {
-        let sheetHex = sheetBackgroundColor.toHexString()
-        let titleHex = titleTextColor?.toHexString() ?? "system(.primary)"
-        let questionHex = questionTextColor?.toHexString() ?? "system(.secondary)"
-        let optionsHex = optionsTextColor?.toHexString() ?? "system(.primary)"
-        let checkboxBorderHex = checkboxBorderColor?.toHexString() ?? "system(adaptive)"
-        let dragHandleHex = dragHandleColor.toHexString()
-        let borderHex = borderColor.toHexString()
-        let closeTintHex = closeIconTint.toHexString()
-        Log.debug(
-            label: ConciergeConstants.LOG_TAG,
-            "Feedback colors resolved — colorScheme=\(colorScheme) displayMode=\(isActionSheet ? "action" : "modal") sheetBackground=\(sheetHex) titleText=\(titleHex) questionText=\(questionHex) optionsText=\(optionsHex) checkboxBorder=\(checkboxBorderHex) dragHandle=\(dragHandleHex) border=\(borderHex) closeIconTint=\(closeTintHex)"
-        )
     }
 
     // MARK: - Modal Layout (centered overlay)
@@ -270,29 +259,15 @@ struct FeedbackOverlayView: View {
 
     private var feedbackContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Group {
-                if let titleTextColor {
-                    Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
-                        .foregroundStyle(titleTextColor)
-                } else {
-                    Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
-                        .foregroundStyle(.primary)
-                }
-            }
-            .font(titleFont)
-            .multilineTextAlignment(titleTextAlignment)
-            .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
+            Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
+                .font(titleFont)
+                .foregroundStyle(titleTextColor ?? Color.primary)
+                .multilineTextAlignment(titleTextAlignment)
+                .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
 
-            Group {
-                if let questionTextColor {
-                    Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
-                        .foregroundStyle(questionTextColor)
-                } else {
-                    Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.body)
+            Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
+                .font(.body)
+                .foregroundStyle(questionTextColor ?? Color.secondary)
 
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(effectiveOptions, id: \.self) { option in
@@ -396,7 +371,7 @@ struct FeedbackOverlayView: View {
     private var cancelButtonStyle: FeedbackButtonStyle {
         let foreground = theme.colors.feedback.cancelButtonText?.color ?? theme.colors.button.secondaryText.color
         let background = theme.colors.feedback.cancelButtonFill?.color ?? .clear
-        let border = theme.colors.feedback.cancelButtonBorderColor?.color ?? theme.colors.button.secondaryBorder.color
+        let border = theme.colors.feedback.cancelButtonBorder?.color ?? theme.colors.button.secondaryBorder.color
         return FeedbackButtonStyle(
             backgroundColor: background,
             foregroundColor: foreground,

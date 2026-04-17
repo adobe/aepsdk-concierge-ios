@@ -638,9 +638,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--feedback-drag-handle-color` | `colors.feedback.dragHandle` | `Color?` | `nil` (falls back to `Color.secondary.opacity(0.4)`) | Action sheet drag handle (capsule) color. Only rendered when `displayMode` resolves to `action`. Set this alongside `--feedback-sheet-background-color` so the handle stays visible against the pinned fill. |
 | `--feedback-submit-button-fill-color` | `colors.feedback.submitButtonFill` | `Color?` | `nil` (falls back to `colors.button.primaryBackground`) | Feedback dialog Submit button fill color |
 | `--feedback-submit-button-text-color` | `colors.feedback.submitButtonText` | `Color?` | `nil` (falls back to `colors.button.primaryText`) | Feedback dialog Submit button text color |
-| `--feedback-cancel-button-fill-color` | `colors.feedback.cancelButtonFill` | `Color?` | `nil` (transparent fill → outline look; also drives the X icon tint — falls back there to `colors.button.secondaryText`) | Feedback dialog Cancel button fill color. When `nil`, Cancel renders with a transparent background. When set, Cancel renders with that fill. The Cancel border (`cancelButtonBorderColor` + `feedbackCancelButtonBorderWidth`) is always honored — set the border width to `0` to produce a solid, borderless button. Also used as the tint of the X close icon when the close affordance is visible. |
+| `--feedback-cancel-button-fill-color` | `colors.feedback.cancelButtonFill` | `Color?` | `nil` (transparent; outline style) | Cancel button fill. `nil` = transparent (outline style); set to a color for a solid fill. Border is always applied — set `feedbackCancelButtonBorderWidth` to `0` to suppress it. Also tints the X close icon. |
 | `--feedback-cancel-button-text-color` | `colors.feedback.cancelButtonText` | `Color?` | `nil` (falls back to `colors.button.secondaryText`) | Feedback dialog Cancel button text color |
-| `--feedback-cancel-button-border-color` | `colors.feedback.cancelButtonBorderColor` | `Color?` | `nil` (falls back to `colors.button.secondaryBorder`) | Feedback dialog Cancel button border color. Always applied when `feedbackCancelButtonBorderWidth > 0`, regardless of whether `cancelButtonFill` is set. |
+| `--feedback-cancel-button-border-color` | `colors.feedback.cancelButtonBorder` | `Color?` | `nil` (falls back to `colors.button.secondaryBorder`) | Feedback dialog Cancel button border color. Always applied when `feedbackCancelButtonBorderWidth > 0`, regardless of whether `cancelButtonFill` is set. |
 
 ### Colors - Product Card
 
@@ -734,7 +734,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--feedback-cancel-button-border-width` | `layout.feedbackCancelButtonBorderWidth` | `CGFloat` | `1` | Feedback dialog Cancel button border width. Honored whether or not `cancelButtonFill` is set; set to `0` to suppress the stroke. |
 | `--feedback-cancel-button-font-weight` | `layout.feedbackCancelButtonFontWeight` | `FontWeight` | `semibold` | Feedback dialog Cancel button text weight |
 | `--feedback-checkbox-border-radius` | `layout.feedbackCheckboxBorderRadius` | `CGFloat` | `6` | Feedback dialog option checkbox corner radius. |
-| `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `String?` | `nil` (leading) | Horizontal alignment for the feedback dialog title text. `"center"` centers the title; any other value (or `nil`) preserves the default leading alignment. Mirrors the `welcome-text-align` precedent. |
+| `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `ConciergeTextAlignment?` | `nil` (`.leading`) | Feedback dialog title alignment. Accepts `"leading"` / `"left"`, `"center"`, `"trailing"` / `"right"`, `"justify"` (mapped to `.leading`). Case-insensitive; unknown values fall back to `.leading`. |
 | `--feedback-title-font-size` | `layout.feedbackTitleFontSize` | `CGFloat?` | `nil` (falls back to system `.title2`, ~22pt at default Dynamic Type) | Feedback dialog title font size in points. |
 
 ### Layout - Citations
@@ -998,7 +998,6 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-cancel-button-border-radius": "10px",
     "--feedback-cancel-button-font-weight": "600",
     "--feedback-checkbox-border-radius": "6px",
-    "--feedback-title-text-align": "leading",
     "--feedback-title-font-size": "22px",
     "--citations-text-font-weight": "700",
     "--citations-desktop-button-font-size": "12px",

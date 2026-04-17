@@ -94,7 +94,7 @@ final class ConciergeFeedbackBehaviorTests: XCTestCase {
     }
 
     func test_codable_missingKeys_leaveOverridesNilAndApplyDefaults() throws {
-        let json = #"{"displayMode":"action","thumbsPlacement":"inline"}"#
+        let json = #"{"displayMode":"action"}"#
         let data = Data(json.utf8)
 
         let decoded = try JSONDecoder().decode(ConciergeFeedbackBehavior.self, from: data)

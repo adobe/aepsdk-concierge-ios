@@ -169,15 +169,15 @@ public enum CSSValueConverter {
         }
     }
 
-    /// Parses CSS text alignment string to ConciergeTextAlignment
-    /// Maps "left" -> .leading, "right" -> .trailing for RTL support
+    /// Parses a CSS text-align string to `ConciergeTextAlignment`. Case-insensitive.
+    /// Accepts `"left"` / `"leading"`, `"right"` / `"trailing"`, `"center"`, `"justify"` (mapped to `.leading`).
     public static func parseTextAlignment(_ cssValue: String) -> ConciergeTextAlignment {
         let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         switch trimmed {
-        case "left":
+        case "left", "leading":
             return .leading
-        case "right":
+        case "right", "trailing":
             return .trailing
         case "center":
             return .center

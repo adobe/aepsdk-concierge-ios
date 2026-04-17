@@ -35,28 +35,15 @@ struct CheckboxRow: View {
                     }
                 }
                 .frame(width: 44, height: 44)
-                labelText
+                Text(label)
+                    .foregroundStyle(labelColor ?? Color.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
-    }
-
-    @ViewBuilder
-    private var labelText: some View {
-        if let labelColor {
-            Text(label)
-                .foregroundStyle(labelColor)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            Text(label)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
     }
 
     private var checkboxBorderColor: Color {

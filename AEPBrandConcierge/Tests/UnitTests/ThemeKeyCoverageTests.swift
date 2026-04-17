@@ -168,7 +168,7 @@ private extension ThemeKeyCoverageTests {
         "feedback-submit-button-text-color": "colors.feedback.submitButtonText",
         "feedback-cancel-button-fill-color": "colors.feedback.cancelButtonFill",
         "feedback-cancel-button-text-color": "colors.feedback.cancelButtonText",
-        "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorderColor",
+        "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorder",
         "feedback-sheet-background-color": "colors.feedback.sheetBackground",
         "feedback-title-text-color": "colors.feedback.titleText",
         "feedback-question-text-color": "colors.feedback.questionText",

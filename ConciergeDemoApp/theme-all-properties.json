@@ -247,7 +247,6 @@
     "--feedback-cancel-button-border-radius": "10px",
     "--feedback-cancel-button-font-weight": "600",
     "--feedback-checkbox-border-radius": "6px",
-    "--feedback-title-text-align": "leading",
     "--feedback-title-font-size": "22px",
 
     "--multimodal-card-box-shadow": "0px 1px 4px 0 #191F1C1A",

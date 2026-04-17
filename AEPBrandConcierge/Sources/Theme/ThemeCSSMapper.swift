@@ -80,7 +80,7 @@ public enum CSSKeyMapper {
         "feedback-submit-button-text-color": { cssValue, theme in theme.colors.feedback.submitButtonText = CSSValueConverter.parseColor(cssValue) },
         "feedback-cancel-button-fill-color": { cssValue, theme in theme.colors.feedback.cancelButtonFill = CSSValueConverter.parseColor(cssValue) },
         "feedback-cancel-button-text-color": { cssValue, theme in theme.colors.feedback.cancelButtonText = CSSValueConverter.parseColor(cssValue) },
-        "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorderColor = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorder = CSSValueConverter.parseColor(cssValue) },
         "feedback-sheet-background-color": { cssValue, theme in theme.colors.feedback.sheetBackground = CSSValueConverter.parseColor(cssValue) },
         "feedback-title-text-color": { cssValue, theme in theme.colors.feedback.titleText = CSSValueConverter.parseColor(cssValue) },
         "feedback-question-text-color": { cssValue, theme in theme.colors.feedback.questionText = CSSValueConverter.parseColor(cssValue) },
@@ -147,7 +147,7 @@ public enum CSSKeyMapper {
         "feedback-cancel-button-border-width": { cssValue, theme in theme.layout.feedbackCancelButtonBorderWidth = CSSValueConverter.parsePxValue(cssValue) ?? 1 },
         "feedback-cancel-button-font-weight": { cssValue, theme in theme.layout.feedbackCancelButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "feedback-checkbox-border-radius": { cssValue, theme in theme.layout.feedbackCheckboxBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 6 },
-        "feedback-title-text-align": { cssValue, theme in theme.layout.feedbackTitleTextAlign = cssValue },
+        "feedback-title-text-align": { cssValue, theme in theme.layout.feedbackTitleTextAlign = CSSValueConverter.parseTextAlignment(cssValue) },
         "feedback-title-font-size": { cssValue, theme in theme.layout.feedbackTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Citations
