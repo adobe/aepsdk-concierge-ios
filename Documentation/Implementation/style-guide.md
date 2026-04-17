@@ -631,6 +631,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--feedback-icon-btn-background` | `colors.feedback.iconButtonBackground` | `Color` | `clear` | Feedback button background |
 | `--feedback-sheet-background-color` | `colors.feedback.sheetBackground` | `Color?` | `nil` (falls back to `colors.surface.light`) | Feedback dialog sheet/modal background fill. Drives both the outer sheet/modal card and the notes editor fill so the dialog reads as a single cohesive surface. |
+| `--feedback-title-text-color` | `colors.feedback.titleText` | `Color?` | `nil` (falls back to system `.primary`) | Feedback dialog title text color. Set this explicitly whenever `--feedback-sheet-background-color` is pinned to a fixed color; `.primary` adapts to the device's interface style, not the themed sheet fill, which can make the title invisible when the sheet background is forced light/dark. |
+| `--feedback-question-text-color` | `colors.feedback.questionText` | `Color?` | `nil` (falls back to system `.secondary`) | Feedback dialog question text color (e.g. "What went well? Select all that apply.") |
+| `--feedback-options-text-color` | `colors.feedback.optionsText` | `Color?` | `nil` (falls back to system `.primary`) | Feedback dialog checkbox option label color. Set this alongside `--feedback-title-text-color` whenever `--feedback-sheet-background-color` is pinned; same pitfall as the title. |
+| `--feedback-checkbox-border-color` | `colors.feedback.checkboxBorder` | `Color?` | `nil` (adaptive: `white @ 28%` in dark, `black @ 35%` in light) | Feedback checkbox unchecked outline color. Also reused for the notes editor outline so both strokes stay visually cohesive. The adaptive fallback can disappear on a pinned sheet background (e.g. near-white outline on a pinned-white sheet in dark mode), so set this explicitly alongside `--feedback-sheet-background-color`. |
+| `--feedback-notes-text-color` | `colors.feedback.notesText` | `Color?` | `nil` (falls back to system `.secondary`) | Feedback notes field text color; applied to both the "Notes" label and the placeholder shown inside the empty editor. Set this explicitly whenever `--feedback-sheet-background-color` is pinned — the `.secondary` fallback adapts to the device's interface style, not the themed fill, and can become unreadable against a forced-light or forced-dark sheet. Has no visible effect when `behavior.feedback.showNotes` is `false`. |
+| `--feedback-drag-handle-color` | `colors.feedback.dragHandle` | `Color?` | `nil` (falls back to `Color.secondary.opacity(0.4)`) | Action sheet drag handle (capsule) color. Only rendered when `displayMode` resolves to `action`. Set this alongside `--feedback-sheet-background-color` so the handle stays visible against the pinned fill. |
 | `--feedback-submit-button-fill-color` | `colors.feedback.submitButtonFill` | `Color?` | `nil` (falls back to `colors.button.primaryBackground`) | Feedback dialog Submit button fill color |
 | `--feedback-submit-button-text-color` | `colors.feedback.submitButtonText` | `Color?` | `nil` (falls back to `colors.button.primaryText`) | Feedback dialog Submit button text color |
 | `--feedback-cancel-button-fill-color` | `colors.feedback.cancelButtonFill` | `Color?` | `nil` (transparent fill → outline look; also drives the X icon tint — falls back there to `colors.button.secondaryText`) | Feedback dialog Cancel button fill color. When `nil`, Cancel renders with a transparent background. When set, Cancel renders with that fill. The Cancel border (`cancelButtonBorderColor` + `feedbackCancelButtonBorderWidth`) is always honored — set the border width to `0` to produce a solid, borderless button. Also used as the tint of the X close icon when the close affordance is visible. |
@@ -730,6 +736,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--feedback-cancel-button-font-weight` | `layout.feedbackCancelButtonFontWeight` | `FontWeight` | `semibold` | Feedback dialog Cancel button text weight |
 | `--feedback-checkbox-border-radius` | `layout.feedbackCheckboxBorderRadius` | `CGFloat` | `6` | Feedback dialog option checkbox corner radius. |
 | `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `String?` | `nil` (leading) | Horizontal alignment for the feedback dialog title text. `"center"` centers the title; any other value (or `nil`) preserves the default leading alignment. Mirrors the `welcome-text-align` precedent. |
+| `--feedback-title-font-size` | `layout.feedbackTitleFontSize` | `CGFloat?` | `nil` (falls back to system `.title2`, ~22pt at default Dynamic Type) | Feedback dialog title font size in points. |
 
 ### Layout - Citations
 
@@ -977,6 +984,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-icon-btn-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-sheet-background-color": "#FFFFFF",
+    "--feedback-title-text-color": "#131313",
+    "--feedback-question-text-color": "#424242",
+    "--feedback-options-text-color": "#131313",
+    "--feedback-checkbox-border-color": "#131313",
+    "--feedback-notes-text-color": "#131313",
+    "--feedback-drag-handle-color": "#CCCCCC",
     "--feedback-submit-button-fill-color": "#006554",
     "--feedback-submit-button-text-color": "#FFFFFF",
     "--feedback-submit-button-border-radius": "10px",
@@ -989,6 +1002,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-cancel-button-font-weight": "600",
     "--feedback-checkbox-border-radius": "6px",
     "--feedback-title-text-align": "leading",
+    "--feedback-title-font-size": "22px",
     "--citations-text-font-weight": "700",
     "--citations-desktop-button-font-size": "12px",
     "--product-card-background-color": "#FFFFFF",
@@ -1203,6 +1217,12 @@ This section documents which properties are fully implemented, partially impleme
 | `--citations-text-color` | ✅ | Used in MarkdownBlockView |
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
 | `--feedback-sheet-background-color` | ✅ | Used in FeedbackOverlayView sheet/modal card + notes editor fill |
+| `--feedback-title-text-color` | ✅ | Used in FeedbackOverlayView title text |
+| `--feedback-question-text-color` | ✅ | Used in FeedbackOverlayView question text |
+| `--feedback-options-text-color` | ✅ | Used in FeedbackOverlayView checkbox option labels |
+| `--feedback-checkbox-border-color` | ✅ | Used in FeedbackOverlayView CheckboxRow unchecked outline + notes editor outline |
+| `--feedback-notes-text-color` | ✅ | Used in FeedbackOverlayView notes label + editor placeholder |
+| `--feedback-drag-handle-color` | ✅ | Used in FeedbackOverlayView action-sheet drag handle |
 | `--feedback-submit-button-fill-color` | ✅ | Used in FeedbackOverlayView Submit button |
 | `--feedback-submit-button-text-color` | ✅ | Used in FeedbackOverlayView Submit button |
 | `--feedback-cancel-button-fill-color` | ✅ | Used in FeedbackOverlayView Cancel button + X close icon tint |
@@ -1271,6 +1291,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-cancel-button-font-weight` | ✅ | Used in FeedbackOverlayView Cancel button |
 | `--feedback-checkbox-border-radius` | ✅ | Used in FeedbackOverlayView CheckboxRow corner radius |
 | `--feedback-title-text-align` | ✅ | Used in FeedbackOverlayView title alignment |
+| `--feedback-title-font-size` | ✅ | Used in FeedbackOverlayView title font size |
 | `--citations-text-font-weight` | ✅ | Used in ChatMessageView |
 | `--citations-desktop-button-font-size` | ✅ | Used in ChatMessageView |
 | `--disclaimer-font-size` | ✅ | Used in ComposerDisclaimer via components.disclaimer.fontSize |

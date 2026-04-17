@@ -48,6 +48,8 @@ public struct ConciergeLayout: Codable {
     public var feedbackCheckboxBorderRadius: CGFloat
     /// Title text alignment. `"center"` centers it; anything else (or `nil`) uses leading alignment.
     public var feedbackTitleTextAlign: String?
+    /// Dialog title font size in points. Defaults to `.title2` (~22pt at default Dynamic Type).
+    public var feedbackTitleFontSize: CGFloat?
     public var citationsTextFontWeight: CodableFontWeight
     public var citationsDesktopButtonFontSize: CGFloat
     public var disclaimerFontSize: CGFloat
@@ -141,6 +143,7 @@ public struct ConciergeLayout: Codable {
         feedbackCancelButtonFontWeight: CodableFontWeight = .semibold,
         feedbackCheckboxBorderRadius: CGFloat = 6,
         feedbackTitleTextAlign: String? = nil,
+        feedbackTitleFontSize: CGFloat? = nil,
         citationsTextFontWeight: CodableFontWeight = .bold,
         citationsDesktopButtonFontSize: CGFloat = 14,
         disclaimerFontSize: CGFloat = 12,
@@ -229,6 +232,7 @@ public struct ConciergeLayout: Codable {
         self.feedbackCancelButtonFontWeight = feedbackCancelButtonFontWeight
         self.feedbackCheckboxBorderRadius = feedbackCheckboxBorderRadius
         self.feedbackTitleTextAlign = feedbackTitleTextAlign
+        self.feedbackTitleFontSize = feedbackTitleFontSize
         self.citationsTextFontWeight = citationsTextFontWeight
         self.citationsDesktopButtonFontSize = citationsDesktopButtonFontSize
         self.disclaimerFontSize = disclaimerFontSize

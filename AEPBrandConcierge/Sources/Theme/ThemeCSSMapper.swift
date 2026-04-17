@@ -82,6 +82,12 @@ public enum CSSKeyMapper {
         "feedback-cancel-button-text-color": { cssValue, theme in theme.colors.feedback.cancelButtonText = CSSValueConverter.parseColor(cssValue) },
         "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorderColor = CSSValueConverter.parseColor(cssValue) },
         "feedback-sheet-background-color": { cssValue, theme in theme.colors.feedback.sheetBackground = CSSValueConverter.parseColor(cssValue) },
+        "feedback-title-text-color": { cssValue, theme in theme.colors.feedback.titleText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-question-text-color": { cssValue, theme in theme.colors.feedback.questionText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-options-text-color": { cssValue, theme in theme.colors.feedback.optionsText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-checkbox-border-color": { cssValue, theme in theme.colors.feedback.checkboxBorder = CSSValueConverter.parseColor(cssValue) },
+        "feedback-notes-text-color": { cssValue, theme in theme.colors.feedback.notesText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-drag-handle-color": { cssValue, theme in theme.colors.feedback.dragHandle = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
@@ -143,6 +149,7 @@ public enum CSSKeyMapper {
         "feedback-cancel-button-font-weight": { cssValue, theme in theme.layout.feedbackCancelButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "feedback-checkbox-border-radius": { cssValue, theme in theme.layout.feedbackCheckboxBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 6 },
         "feedback-title-text-align": { cssValue, theme in theme.layout.feedbackTitleTextAlign = cssValue },
+        "feedback-title-font-size": { cssValue, theme in theme.layout.feedbackTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Citations
         "citations-text-font-weight": { cssValue, theme in theme.layout.citationsTextFontWeight = CSSValueConverter.parseFontWeight(cssValue) },

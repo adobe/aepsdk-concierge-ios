@@ -12,6 +12,10 @@ struct CheckboxRow: View {
     let label: String
     let accent: Color
     var cornerRadius: CGFloat = 6
+    /// Label text color. Defaults to system `.primary`.
+    var labelColor: Color? = nil
+    /// Checkbox outline border color. `nil` = adaptive default based on `colorScheme`.
+    var borderColor: Color? = nil
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -31,19 +35,33 @@ struct CheckboxRow: View {
                     }
                 }
                 .frame(width: 44, height: 44)
-                Text(label)
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                labelText
             }
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
     }
 
+    @ViewBuilder
+    private var labelText: some View {
+        if let labelColor {
+            Text(label)
+                .foregroundStyle(labelColor)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Text(label)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     private var checkboxBorderColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.35)
+        if let borderColor { return borderColor }
+        return colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.35)
     }
 }
 

@@ -170,6 +170,12 @@ private extension ThemeKeyCoverageTests {
         "feedback-cancel-button-text-color": "colors.feedback.cancelButtonText",
         "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorderColor",
         "feedback-sheet-background-color": "colors.feedback.sheetBackground",
+        "feedback-title-text-color": "colors.feedback.titleText",
+        "feedback-question-text-color": "colors.feedback.questionText",
+        "feedback-options-text-color": "colors.feedback.optionsText",
+        "feedback-checkbox-border-color": "colors.feedback.checkboxBorder",
+        "feedback-notes-text-color": "colors.feedback.notesText",
+        "feedback-drag-handle-color": "colors.feedback.dragHandle",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",
@@ -213,6 +219,7 @@ private extension ThemeKeyCoverageTests {
         "feedback-cancel-button-font-weight": "layout.feedbackCancelButtonFontWeight",
         "feedback-checkbox-border-radius": "layout.feedbackCheckboxBorderRadius",
         "feedback-title-text-align": "layout.feedbackTitleTextAlign",
+        "feedback-title-font-size": "layout.feedbackTitleFontSize",
 
         // Layout - Citations
         "citations-text-font-weight": "layout.citationsTextFontWeight",

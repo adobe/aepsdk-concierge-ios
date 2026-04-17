@@ -77,6 +77,36 @@ struct FeedbackOverlayView: View {
         theme.colors.feedback.sheetBackground?.color ?? theme.colors.surface.light.color
     }
 
+    /// Feedback title text color; when nil, the view falls back to the system `.primary` style.
+    private var titleTextColor: Color? {
+        theme.colors.feedback.titleText?.color
+    }
+
+    /// Feedback question text color; when nil, the view falls back to the system `.secondary` style.
+    private var questionTextColor: Color? {
+        theme.colors.feedback.questionText?.color
+    }
+
+    /// Feedback checkbox option label color; when nil, the row falls back to the system `.primary` style.
+    private var optionsTextColor: Color? {
+        theme.colors.feedback.optionsText?.color
+    }
+
+    /// Feedback checkbox outline border color; when nil, the row uses its `colorScheme`-adaptive default.
+    private var checkboxBorderColor: Color? {
+        theme.colors.feedback.checkboxBorder?.color
+    }
+
+    /// Notes section text color; when nil, label and placeholder fall back to the system `.secondary` style.
+    private var notesTextColor: Color? {
+        theme.colors.feedback.notesText?.color
+    }
+
+    /// Action sheet drag handle color; when nil, the view falls back to `Color.secondary.opacity(0.4)`.
+    private var dragHandleColor: Color {
+        theme.colors.feedback.dragHandle?.color ?? Color.secondary.opacity(0.4)
+    }
+
     /// Title alignment from `feedbackTitleTextAlign`: `.center` when set to `"center"`, otherwise `.leading`.
     private var titleTextAlignment: TextAlignment {
         theme.layout.feedbackTitleTextAlign?.lowercased() == "center" ? .center : .leading
@@ -86,12 +116,40 @@ struct FeedbackOverlayView: View {
         titleTextAlignment == .center ? .center : .leading
     }
 
-    var body: some View {
-        if isActionSheet {
-            actionSheetLayout
-        } else {
-            modalLayout
+    /// Title font. Falls back to `.title2.weight(.semibold)` when `feedbackTitleFontSize` is nil.
+    private var titleFont: Font {
+        if let size = theme.layout.feedbackTitleFontSize {
+            return .system(size: size, weight: .semibold)
         }
+        return .title2.weight(.semibold)
+    }
+
+    var body: some View {
+        Group {
+            if isActionSheet {
+                actionSheetLayout
+            } else {
+                modalLayout
+            }
+        }
+        .onAppear(perform: logResolvedFeedbackColors)
+    }
+
+    /// Logs all resolved feedback colors at `.debug` level on appear. Useful for diagnosing legibility when `sheetBackground` is pinned.
+    private func logResolvedFeedbackColors() {
+        let sheetHex = sheetBackgroundColor.toHexString()
+        let titleHex = titleTextColor?.toHexString() ?? "system(.primary)"
+        let questionHex = questionTextColor?.toHexString() ?? "system(.secondary)"
+        let optionsHex = optionsTextColor?.toHexString() ?? "system(.primary)"
+        let checkboxBorderHex = checkboxBorderColor?.toHexString() ?? "system(adaptive)"
+        let notesTextHex = notesTextColor?.toHexString() ?? "system(.secondary)"
+        let dragHandleHex = dragHandleColor.toHexString()
+        let borderHex = borderColor.toHexString()
+        let closeTintHex = closeIconTint.toHexString()
+        Log.debug(
+            label: ConciergeConstants.LOG_TAG,
+            "Feedback colors resolved — colorScheme=\(colorScheme) displayMode=\(isActionSheet ? "action" : "modal") sheetBackground=\(sheetHex) titleText=\(titleHex) questionText=\(questionHex) optionsText=\(optionsHex) checkboxBorder=\(checkboxBorderHex) notesText=\(notesTextHex) dragHandle=\(dragHandleHex) border=\(borderHex) closeIconTint=\(closeTintHex)"
+        )
     }
 
     // MARK: - Modal Layout (centered overlay)
@@ -144,7 +202,7 @@ struct FeedbackOverlayView: View {
                         .frame(height: 44)
                         .contentShape(Rectangle())
                     Capsule()
-                        .fill(Color.secondary.opacity(0.4))
+                        .fill(dragHandleColor)
                         .frame(width: 36, height: 5)
                 }
                 .padding(.top, 10)
@@ -218,17 +276,63 @@ struct FeedbackOverlayView: View {
 
     // MARK: - Shared Content
 
-    private var feedbackContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(titleTextAlignment)
-                .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
+    @ViewBuilder
+    private var notesLabel: some View {
+        if let notesTextColor {
+            Text(theme.text.feedbackDialogNotes)
+                .font(.subheadline)
+                .foregroundStyle(notesTextColor)
+        } else {
+            Text(theme.text.feedbackDialogNotes)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
 
-            Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
+    @ViewBuilder
+    private var notesPlaceholder: some View {
+        if let notesTextColor {
+            Text(theme.text.feedbackDialogNotesPlaceholder)
+                .font(.body)
+                .foregroundStyle(notesTextColor)
+                .padding(.top, 20)
+                .padding(.leading, 18)
+                .allowsHitTesting(false)
+        } else {
+            Text(theme.text.feedbackDialogNotesPlaceholder)
                 .font(.body)
                 .foregroundStyle(.secondary)
+                .padding(.top, 20)
+                .padding(.leading, 18)
+                .allowsHitTesting(false)
+        }
+    }
+
+    private var feedbackContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Group {
+                if let titleTextColor {
+                    Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
+                        .foregroundStyle(titleTextColor)
+                } else {
+                    Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
+                        .foregroundStyle(.primary)
+                }
+            }
+            .font(titleFont)
+            .multilineTextAlignment(titleTextAlignment)
+            .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
+
+            Group {
+                if let questionTextColor {
+                    Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
+                        .foregroundStyle(questionTextColor)
+                } else {
+                    Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.body)
 
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(effectiveOptions, id: \.self) { option in
@@ -241,16 +345,16 @@ struct FeedbackOverlayView: View {
                         ),
                         label: option,
                         accent: theme.colors.primary.primary.color,
-                        cornerRadius: theme.layout.feedbackCheckboxBorderRadius
+                        cornerRadius: theme.layout.feedbackCheckboxBorderRadius,
+                        labelColor: optionsTextColor,
+                        borderColor: checkboxBorderColor
                     )
                 }
             }
 
             if notesEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(theme.text.feedbackDialogNotes)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    notesLabel
                     ZStack(alignment: .topLeading) {
                         TextEditor(text: $notes)
                             .frame(minHeight: 120)
@@ -261,18 +365,13 @@ struct FeedbackOverlayView: View {
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(borderColor)
+                                    .stroke(checkboxBorderColor ?? borderColor)
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .shadow(color: .clear, radius: 0)
 
                         if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Text(theme.text.feedbackDialogNotesPlaceholder)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 20)
-                                .padding(.leading, 18)
-                                .allowsHitTesting(false)
+                            notesPlaceholder
                         }
                     }
                 }

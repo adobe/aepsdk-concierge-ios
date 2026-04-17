@@ -161,6 +161,18 @@ public struct ConciergeFeedbackColors: Codable {
     public var iconButtonBackground: CodableColor
     /// Dialog background fill for the sheet/modal card and notes editor. Defaults to `surface.light`.
     public var sheetBackground: CodableColor?
+    /// Dialog title color. Defaults to system `.primary`; set explicitly when `sheetBackground` is pinned, as `.primary` tracks device interface style, not the themed fill.
+    public var titleText: CodableColor?
+    /// Dialog question text color. Defaults to system `.secondary`.
+    public var questionText: CodableColor?
+    /// Checkbox option label color. Defaults to system `.primary`. Set alongside `titleText` when `sheetBackground` is pinned.
+    public var optionsText: CodableColor?
+    /// Checkbox unchecked outline color. `nil` = adaptive (`white @ 28%` dark, `black @ 35%` light). Set explicitly when `sheetBackground` is pinned.
+    public var checkboxBorder: CodableColor?
+    /// Notes label and placeholder color. Defaults to system `.secondary`. Set explicitly when `sheetBackground` is pinned.
+    public var notesText: CodableColor?
+    /// Action sheet drag handle color. Defaults to `Color.secondary.opacity(0.4)`. Only rendered in `action` display mode.
+    public var dragHandle: CodableColor?
     /// Submit button fill. Defaults to `button.primaryBackground`.
     public var submitButtonFill: CodableColor?
     /// Submit button text color. Defaults to `button.primaryText`.
@@ -176,6 +188,12 @@ public struct ConciergeFeedbackColors: Codable {
         // Default feedback icons render without a background unless explicitly themed.
         iconButtonBackground: CodableColor = CodableColor(Color.clear),
         sheetBackground: CodableColor? = nil,
+        titleText: CodableColor? = nil,
+        questionText: CodableColor? = nil,
+        optionsText: CodableColor? = nil,
+        checkboxBorder: CodableColor? = nil,
+        notesText: CodableColor? = nil,
+        dragHandle: CodableColor? = nil,
         submitButtonFill: CodableColor? = nil,
         submitButtonText: CodableColor? = nil,
         cancelButtonFill: CodableColor? = nil,
@@ -184,6 +202,12 @@ public struct ConciergeFeedbackColors: Codable {
     ) {
         self.iconButtonBackground = iconButtonBackground
         self.sheetBackground = sheetBackground
+        self.titleText = titleText
+        self.questionText = questionText
+        self.optionsText = optionsText
+        self.checkboxBorder = checkboxBorder
+        self.notesText = notesText
+        self.dragHandle = dragHandle
         self.submitButtonFill = submitButtonFill
         self.submitButtonText = submitButtonText
         self.cancelButtonFill = cancelButtonFill
