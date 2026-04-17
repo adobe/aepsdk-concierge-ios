@@ -135,8 +135,6 @@ public struct ConciergeFeedbackBehavior: Codable {
     public var showCloseButton: Bool?
     /// Overrides the Cancel button visibility. `nil` defaults to `true` for `"modal"`, `false` for `"action"`.
     public var showCancelButton: Bool?
-    /// Overrides the notes field visibility for both sentiments. `nil` falls back to per-sentiment `positiveNotesEnabled` / `negativeNotesEnabled`.
-    public var showNotes: Bool?
 
     /// Effective close button visibility: `showCloseButton` when set, otherwise `displayMode == "action"`.
     public var resolvedShowCloseButton: Bool {
@@ -148,35 +146,23 @@ public struct ConciergeFeedbackBehavior: Codable {
         showCancelButton ?? (displayMode == "modal")
     }
 
-    /// Notes field visibility for the given sentiment: `showNotes` when set, otherwise the per-sentiment `fallback` value.
-    public func resolvedShowNotes(for sentiment: FeedbackSentiment, fallback: ConciergeFeedbackStyle) -> Bool {
-        if let override = showNotes { return override }
-        switch sentiment {
-        case .positive: return fallback.positiveNotesEnabled
-        case .negative: return fallback.negativeNotesEnabled
-        }
-    }
-
     private enum CodingKeys: String, CodingKey {
         case displayMode
         case thumbsPlacement
         case showCloseButton
         case showCancelButton
-        case showNotes
     }
 
     public init(
         displayMode: String = "modal",
         thumbsPlacement: ThumbsPlacement = .inline,
         showCloseButton: Bool? = nil,
-        showCancelButton: Bool? = nil,
-        showNotes: Bool? = nil
+        showCancelButton: Bool? = nil
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
         self.showCloseButton = showCloseButton
         self.showCancelButton = showCancelButton
-        self.showNotes = showNotes
     }
 
     public init(from decoder: Decoder) throws {
@@ -185,7 +171,6 @@ public struct ConciergeFeedbackBehavior: Codable {
         thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
         showCloseButton = try container.decodeIfPresent(Bool.self, forKey: .showCloseButton)
         showCancelButton = try container.decodeIfPresent(Bool.self, forKey: .showCancelButton)
-        showNotes = try container.decodeIfPresent(Bool.self, forKey: .showNotes)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -194,7 +179,6 @@ public struct ConciergeFeedbackBehavior: Codable {
         try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
         try container.encodeIfPresent(showCloseButton, forKey: .showCloseButton)
         try container.encodeIfPresent(showCancelButton, forKey: .showCancelButton)
-        try container.encodeIfPresent(showNotes, forKey: .showNotes)
     }
 }
 

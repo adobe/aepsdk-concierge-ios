@@ -86,7 +86,6 @@ public enum CSSKeyMapper {
         "feedback-question-text-color": { cssValue, theme in theme.colors.feedback.questionText = CSSValueConverter.parseColor(cssValue) },
         "feedback-options-text-color": { cssValue, theme in theme.colors.feedback.optionsText = CSSValueConverter.parseColor(cssValue) },
         "feedback-checkbox-border-color": { cssValue, theme in theme.colors.feedback.checkboxBorder = CSSValueConverter.parseColor(cssValue) },
-        "feedback-notes-text-color": { cssValue, theme in theme.colors.feedback.notesText = CSSValueConverter.parseColor(cssValue) },
         "feedback-drag-handle-color": { cssValue, theme in theme.colors.feedback.dragHandle = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Disclaimer

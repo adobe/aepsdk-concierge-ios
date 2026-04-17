@@ -169,8 +169,6 @@ public struct ConciergeFeedbackColors: Codable {
     public var optionsText: CodableColor?
     /// Checkbox unchecked outline color. `nil` = adaptive (`white @ 28%` dark, `black @ 35%` light). Set explicitly when `sheetBackground` is pinned.
     public var checkboxBorder: CodableColor?
-    /// Notes label and placeholder color. Defaults to system `.secondary`. Set explicitly when `sheetBackground` is pinned.
-    public var notesText: CodableColor?
     /// Action sheet drag handle color. Defaults to `Color.secondary.opacity(0.4)`. Only rendered in `action` display mode.
     public var dragHandle: CodableColor?
     /// Submit button fill. Defaults to `button.primaryBackground`.
@@ -192,7 +190,6 @@ public struct ConciergeFeedbackColors: Codable {
         questionText: CodableColor? = nil,
         optionsText: CodableColor? = nil,
         checkboxBorder: CodableColor? = nil,
-        notesText: CodableColor? = nil,
         dragHandle: CodableColor? = nil,
         submitButtonFill: CodableColor? = nil,
         submitButtonText: CodableColor? = nil,
@@ -206,7 +203,6 @@ public struct ConciergeFeedbackColors: Codable {
         self.questionText = questionText
         self.optionsText = optionsText
         self.checkboxBorder = checkboxBorder
-        self.notesText = notesText
         self.dragHandle = dragHandle
         self.submitButtonFill = submitButtonFill
         self.submitButtonText = submitButtonText

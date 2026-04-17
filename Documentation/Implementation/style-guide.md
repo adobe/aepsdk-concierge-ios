@@ -254,7 +254,8 @@ Feature toggles and interaction configuration.
 | `behavior.feedback.thumbsPlacement` | string | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
 | `behavior.feedback.showCloseButton` | boolean\|null | `null` | Toggles the top-right X close affordance in the feedback dialog. When `null`, defaults by `displayMode`: shown for `"action"`, hidden for `"modal"`. Set explicitly to override. |
 | `behavior.feedback.showCancelButton` | boolean\|null | `null` | Toggles the Cancel button in the feedback dialog. When `null`, defaults by `displayMode`: shown for `"modal"`, hidden for `"action"`. Set explicitly to override. Setting both `showCloseButton` and `showCancelButton` to `false` is respected (neither affordance renders); users exit via Submit or, in action mode, via drag-down dismiss. |
-| `behavior.feedback.showNotes` | boolean\|null | `null` | Toggles the free-text notes field in the feedback dialog regardless of sentiment. When `null`, falls back to the per-sentiment `components.feedback.positiveNotesEnabled` / `components.feedback.negativeNotesEnabled` values (default `true` for both). Set to `false` to hide the notes field outright; set to `true` to force it on for both sentiments. |
+
+> Note: the feedback action sheet (`displayMode == "action"`) never renders the free-text notes field. Notes remain available in `displayMode == "modal"` and are gated by the pre-existing per-sentiment `components.feedback.positiveNotesEnabled` / `components.feedback.negativeNotesEnabled` flags.
 
 ### Citations
 
@@ -310,8 +311,7 @@ Feature toggles and interaction configuration.
       "displayMode": "modal",
       "thumbsPlacement": "inline",
       "showCloseButton": null,
-      "showCancelButton": null,
-      "showNotes": null
+      "showCancelButton": null
     },
     "citations": {
       "showLinkIcon": false
@@ -630,12 +630,11 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--feedback-icon-btn-background` | `colors.feedback.iconButtonBackground` | `Color` | `clear` | Feedback button background |
-| `--feedback-sheet-background-color` | `colors.feedback.sheetBackground` | `Color?` | `nil` (falls back to `colors.surface.light`) | Feedback dialog sheet/modal background fill. Drives both the outer sheet/modal card and the notes editor fill so the dialog reads as a single cohesive surface. |
+| `--feedback-sheet-background-color` | `colors.feedback.sheetBackground` | `Color?` | `nil` (falls back to `colors.surface.light`) | Feedback dialog sheet/modal background fill. Drives the outer sheet/modal card and (in modal mode) the notes editor fill so the dialog reads as a single cohesive surface. Note: action-mode (`displayMode == "action"`) never renders the notes section, so the notes editor fill only applies in modal mode. |
 | `--feedback-title-text-color` | `colors.feedback.titleText` | `Color?` | `nil` (falls back to system `.primary`) | Feedback dialog title text color. Set this explicitly whenever `--feedback-sheet-background-color` is pinned to a fixed color; `.primary` adapts to the device's interface style, not the themed sheet fill, which can make the title invisible when the sheet background is forced light/dark. |
 | `--feedback-question-text-color` | `colors.feedback.questionText` | `Color?` | `nil` (falls back to system `.secondary`) | Feedback dialog question text color (e.g. "What went well? Select all that apply.") |
 | `--feedback-options-text-color` | `colors.feedback.optionsText` | `Color?` | `nil` (falls back to system `.primary`) | Feedback dialog checkbox option label color. Set this alongside `--feedback-title-text-color` whenever `--feedback-sheet-background-color` is pinned; same pitfall as the title. |
-| `--feedback-checkbox-border-color` | `colors.feedback.checkboxBorder` | `Color?` | `nil` (adaptive: `white @ 28%` in dark, `black @ 35%` in light) | Feedback checkbox unchecked outline color. Also reused for the notes editor outline so both strokes stay visually cohesive. The adaptive fallback can disappear on a pinned sheet background (e.g. near-white outline on a pinned-white sheet in dark mode), so set this explicitly alongside `--feedback-sheet-background-color`. |
-| `--feedback-notes-text-color` | `colors.feedback.notesText` | `Color?` | `nil` (falls back to system `.secondary`) | Feedback notes field text color; applied to both the "Notes" label and the placeholder shown inside the empty editor. Set this explicitly whenever `--feedback-sheet-background-color` is pinned — the `.secondary` fallback adapts to the device's interface style, not the themed fill, and can become unreadable against a forced-light or forced-dark sheet. Has no visible effect when `behavior.feedback.showNotes` is `false`. |
+| `--feedback-checkbox-border-color` | `colors.feedback.checkboxBorder` | `Color?` | `nil` (adaptive: `white @ 28%` in dark, `black @ 35%` in light) | Feedback checkbox unchecked outline color. Also reused (in modal mode) for the notes editor outline so both strokes stay visually cohesive. The adaptive fallback can disappear on a pinned sheet background (e.g. near-white outline on a pinned-white sheet in dark mode), so set this explicitly alongside `--feedback-sheet-background-color`. |
 | `--feedback-drag-handle-color` | `colors.feedback.dragHandle` | `Color?` | `nil` (falls back to `Color.secondary.opacity(0.4)`) | Action sheet drag handle (capsule) color. Only rendered when `displayMode` resolves to `action`. Set this alongside `--feedback-sheet-background-color` so the handle stays visible against the pinned fill. |
 | `--feedback-submit-button-fill-color` | `colors.feedback.submitButtonFill` | `Color?` | `nil` (falls back to `colors.button.primaryBackground`) | Feedback dialog Submit button fill color |
 | `--feedback-submit-button-text-color` | `colors.feedback.submitButtonText` | `Color?` | `nil` (falls back to `colors.button.primaryText`) | Feedback dialog Submit button text color |
@@ -871,8 +870,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
       "displayMode": "modal",
       "thumbsPlacement": "inline",
       "showCloseButton": null,
-      "showCancelButton": null,
-      "showNotes": null
+      "showCancelButton": null
     },
     "citations": {
       "showLinkIcon": false
@@ -988,7 +986,6 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-question-text-color": "#424242",
     "--feedback-options-text-color": "#131313",
     "--feedback-checkbox-border-color": "#131313",
-    "--feedback-notes-text-color": "#131313",
     "--feedback-drag-handle-color": "#CCCCCC",
     "--feedback-submit-button-fill-color": "#006554",
     "--feedback-submit-button-text-color": "#FFFFFF",
@@ -1114,7 +1111,6 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.feedback.thumbsPlacement` | ✅ | Controls thumbs placement (inline vs below) in SourcesListView |
 | `behavior.feedback.showCloseButton` | ✅ | Toggles the top-right X close affordance in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.feedback.showCancelButton` | ✅ | Toggles the Cancel button in FeedbackOverlayView; defaults by `displayMode` when `null` |
-| `behavior.feedback.showNotes` | ✅ | Overrides the notes field visibility in FeedbackOverlayView; falls back to per-sentiment `components.feedback.*NotesEnabled` when `null` |
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
@@ -1220,8 +1216,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-title-text-color` | ✅ | Used in FeedbackOverlayView title text |
 | `--feedback-question-text-color` | ✅ | Used in FeedbackOverlayView question text |
 | `--feedback-options-text-color` | ✅ | Used in FeedbackOverlayView checkbox option labels |
-| `--feedback-checkbox-border-color` | ✅ | Used in FeedbackOverlayView CheckboxRow unchecked outline + notes editor outline |
-| `--feedback-notes-text-color` | ✅ | Used in FeedbackOverlayView notes label + editor placeholder |
+| `--feedback-checkbox-border-color` | ✅ | Used in FeedbackOverlayView CheckboxRow unchecked outline + (modal) notes editor outline |
 | `--feedback-drag-handle-color` | ✅ | Used in FeedbackOverlayView action-sheet drag handle |
 | `--feedback-submit-button-fill-color` | ✅ | Used in FeedbackOverlayView Submit button |
 | `--feedback-submit-button-text-color` | ✅ | Used in FeedbackOverlayView Submit button |

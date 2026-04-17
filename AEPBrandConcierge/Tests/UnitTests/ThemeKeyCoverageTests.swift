@@ -174,7 +174,6 @@ private extension ThemeKeyCoverageTests {
         "feedback-question-text-color": "colors.feedback.questionText",
         "feedback-options-text-color": "colors.feedback.optionsText",
         "feedback-checkbox-border-color": "colors.feedback.checkboxBorder",
-        "feedback-notes-text-color": "colors.feedback.notesText",
         "feedback-drag-handle-color": "colors.feedback.dragHandle",
 
         // Colors - Disclaimer

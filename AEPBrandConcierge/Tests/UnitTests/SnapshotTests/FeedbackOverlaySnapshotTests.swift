@@ -192,22 +192,6 @@ final class FeedbackOverlaySnapshotTests: XCTestCase {
         )
     }
 
-    /// `behavior.feedback.showNotes = false` hides the notes free-text field for both sentiments.
-    func test_feedbackDialogProbe_showNotesFalse_hidesNotesField() {
-        var probeTheme = ConciergeThemeLoader.default()
-        probeTheme.behavior.feedback = ConciergeFeedbackBehavior(
-            displayMode: "modal",
-            showNotes: false
-        )
-
-        let view = FeedbackOverlayProbeHost(theme: probeTheme)
-
-        assertSnapshot(
-            of: view,
-            as: .image(layout: .fixed(width: 390, height: 700))
-        )
-    }
-
     /// Centered title alignment via `layout.feedbackTitleTextAlign = "center"`.
     func test_feedbackDialogProbe_centeredTitleAlignment() {
         var probeTheme = ConciergeThemeLoader.default()

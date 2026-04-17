@@ -31,15 +31,13 @@ struct FeedbackOverlayView: View {
         }
     }
 
-    /// Notes field visibility: `showNotes` when set, otherwise per-sentiment `components.feedback.*NotesEnabled`.
+    /// Notes field visibility. Never rendered in the action sheet layout; in modal mode falls back
+    /// to the pre-existing per-sentiment `components.feedback.*NotesEnabled` flags.
     private var notesEnabled: Bool {
-        let fallback = theme.components.feedback
-        if let behavior = theme.behavior.feedback {
-            return behavior.resolvedShowNotes(for: sentiment, fallback: fallback)
-        }
+        guard !isActionSheet else { return false }
         switch sentiment {
-        case .positive: return fallback.positiveNotesEnabled
-        case .negative: return fallback.negativeNotesEnabled
+        case .positive: return theme.components.feedback.positiveNotesEnabled
+        case .negative: return theme.components.feedback.negativeNotesEnabled
         }
     }
 
@@ -97,11 +95,6 @@ struct FeedbackOverlayView: View {
         theme.colors.feedback.checkboxBorder?.color
     }
 
-    /// Notes section text color; when nil, label and placeholder fall back to the system `.secondary` style.
-    private var notesTextColor: Color? {
-        theme.colors.feedback.notesText?.color
-    }
-
     /// Action sheet drag handle color; when nil, the view falls back to `Color.secondary.opacity(0.4)`.
     private var dragHandleColor: Color {
         theme.colors.feedback.dragHandle?.color ?? Color.secondary.opacity(0.4)
@@ -142,13 +135,12 @@ struct FeedbackOverlayView: View {
         let questionHex = questionTextColor?.toHexString() ?? "system(.secondary)"
         let optionsHex = optionsTextColor?.toHexString() ?? "system(.primary)"
         let checkboxBorderHex = checkboxBorderColor?.toHexString() ?? "system(adaptive)"
-        let notesTextHex = notesTextColor?.toHexString() ?? "system(.secondary)"
         let dragHandleHex = dragHandleColor.toHexString()
         let borderHex = borderColor.toHexString()
         let closeTintHex = closeIconTint.toHexString()
         Log.debug(
             label: ConciergeConstants.LOG_TAG,
-            "Feedback colors resolved — colorScheme=\(colorScheme) displayMode=\(isActionSheet ? "action" : "modal") sheetBackground=\(sheetHex) titleText=\(titleHex) questionText=\(questionHex) optionsText=\(optionsHex) checkboxBorder=\(checkboxBorderHex) notesText=\(notesTextHex) dragHandle=\(dragHandleHex) border=\(borderHex) closeIconTint=\(closeTintHex)"
+            "Feedback colors resolved — colorScheme=\(colorScheme) displayMode=\(isActionSheet ? "action" : "modal") sheetBackground=\(sheetHex) titleText=\(titleHex) questionText=\(questionHex) optionsText=\(optionsHex) checkboxBorder=\(checkboxBorderHex) dragHandle=\(dragHandleHex) border=\(borderHex) closeIconTint=\(closeTintHex)"
         )
     }
 
@@ -276,38 +268,6 @@ struct FeedbackOverlayView: View {
 
     // MARK: - Shared Content
 
-    @ViewBuilder
-    private var notesLabel: some View {
-        if let notesTextColor {
-            Text(theme.text.feedbackDialogNotes)
-                .font(.subheadline)
-                .foregroundStyle(notesTextColor)
-        } else {
-            Text(theme.text.feedbackDialogNotes)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private var notesPlaceholder: some View {
-        if let notesTextColor {
-            Text(theme.text.feedbackDialogNotesPlaceholder)
-                .font(.body)
-                .foregroundStyle(notesTextColor)
-                .padding(.top, 20)
-                .padding(.leading, 18)
-                .allowsHitTesting(false)
-        } else {
-            Text(theme.text.feedbackDialogNotesPlaceholder)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .padding(.top, 20)
-                .padding(.leading, 18)
-                .allowsHitTesting(false)
-        }
-    }
-
     private var feedbackContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Group {
@@ -354,7 +314,9 @@ struct FeedbackOverlayView: View {
 
             if notesEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    notesLabel
+                    Text(theme.text.feedbackDialogNotes)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     ZStack(alignment: .topLeading) {
                         TextEditor(text: $notes)
                             .frame(minHeight: 120)
@@ -371,7 +333,12 @@ struct FeedbackOverlayView: View {
                             .shadow(color: .clear, radius: 0)
 
                         if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            notesPlaceholder
+                            Text(theme.text.feedbackDialogNotesPlaceholder)
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 20)
+                                .padding(.leading, 18)
+                                .allowsHitTesting(false)
                         }
                     }
                 }

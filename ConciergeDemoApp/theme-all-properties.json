@@ -16,8 +16,7 @@
       "displayMode": "action",
       "thumbsPlacement": "below",
       "showCloseButton": true,
-      "showCancelButton": false,
-      "showNotes": true
+      "showCancelButton": false
     },
     "citations": {
       "showLinkIcon": true
@@ -236,7 +235,6 @@
     "--feedback-question-text-color": "#424242",
     "--feedback-options-text-color": "#131313",
     "--feedback-checkbox-border-color": "#131313",
-    "--feedback-notes-text-color": "#131313",
     "--feedback-drag-handle-color": "#CCCCCC",
     "--feedback-submit-button-fill-color": "#006554",
     "--feedback-submit-button-text-color": "#FFFFFF",
