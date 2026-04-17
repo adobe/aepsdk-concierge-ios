@@ -748,7 +748,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-text-bottom-padding` | `layout.productCardTextBottomPadding` | `CGFloat` | `12` | Bottom padding below the text section |
 | `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
 | `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
-| `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When `nil`, falls back to `chatHistoryPadding`. |
+| `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the scrolling carousel content. Added on top of the column-aligned leading base (derived from `chatHistoryPadding` + `agentTextIndent` when an agent icon is configured) and used directly as the trailing inset. When `nil`, leading stays at the column-aligned base and trailing falls back to `chatHistoryPadding`. The leading inset cannot be reduced below the column-aligned base. |
 
 ### Layout - CTA Button
 
