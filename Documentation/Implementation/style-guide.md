@@ -218,7 +218,7 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.chat.messageAlignment` | string | `"left"` | Message alignment (`"left"`, `"center"`, `"right"`) |
+| `behavior.chat.messageAlignment` | string | `"left"` | Message alignment. Accepts `"left"` / `"leading"` / `"start"`, `"center"` / `"justify"`, `"right"` / `"trailing"` / `"end"` (case-insensitive). Unknown values fall back to `"left"`. |
 | `behavior.chat.messageWidth` | string | `"100%"` | Max message width (e.g., `"100%"`, `"768px"`) |
 | `behavior.chat.userMessageBubbleStyle` | string | `"default"` | User message bubble shape: `"balloon"` for speech-bubble style (squared-off bottom-right corner); any other value uses fully rounded corners |
 
@@ -734,7 +734,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--feedback-cancel-button-border-width` | `layout.feedbackCancelButtonBorderWidth` | `CGFloat` | `1` | Feedback dialog Cancel button border width. Honored whether or not `cancelButtonFill` is set; set to `0` to suppress the stroke. |
 | `--feedback-cancel-button-font-weight` | `layout.feedbackCancelButtonFontWeight` | `FontWeight` | `semibold` | Feedback dialog Cancel button text weight |
 | `--feedback-checkbox-border-radius` | `layout.feedbackCheckboxBorderRadius` | `CGFloat` | `6` | Feedback dialog option checkbox corner radius. |
-| `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `ConciergeTextAlignment?` | `nil` (`.leading`) | Feedback dialog title alignment. Accepts `"leading"` / `"left"`, `"center"`, `"trailing"` / `"right"`, `"justify"` (mapped to `.leading`). Case-insensitive; unknown values fall back to `.leading`. |
+| `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `ConciergeTextAlignment?` | `nil` (`.leading`) | Feedback dialog title alignment. Accepts `"left"` / `"leading"` / `"start"`, `"center"` / `"justify"`, `"right"` / `"trailing"` / `"end"` (case-insensitive). Unknown values fall back to `.leading`. |
 | `--feedback-title-font-size` | `layout.feedbackTitleFontSize` | `CGFloat?` | `nil` (falls back to system `.title2`, ~22pt at default Dynamic Type) | Feedback dialog title font size in points. |
 
 ### Layout - Citations
