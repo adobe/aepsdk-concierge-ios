@@ -489,32 +489,57 @@ final class ThemeCSSConverterTests: XCTestCase {
         XCTAssertEqual(alignment, .center)
     }
     
-    func test_parseTextAlignment_justify_returnsLeading() {
+    func test_parseTextAlignment_justify_returnsCenter() {
         // Given
         let cssValue = "justify"
-        
+
         // When
         let alignment = CSSValueConverter.parseTextAlignment(cssValue)
-        
+
         // Then
-        XCTAssertEqual(alignment, .leading)
+        XCTAssertEqual(alignment, .center)
     }
-    
+
+    func test_parseTextAlignment_leading_returnsLeading() {
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("leading"), .leading)
+    }
+
+    func test_parseTextAlignment_trailing_returnsTrailing() {
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("trailing"), .trailing)
+    }
+
+    func test_parseTextAlignment_start_returnsLeading() {
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("start"), .leading)
+    }
+
+    func test_parseTextAlignment_end_returnsTrailing() {
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("end"), .trailing)
+    }
+
     func test_parseTextAlignment_invalid_returnsLeading() {
         // Given
         let cssValue = "invalid"
-        
+
         // When
         let alignment = CSSValueConverter.parseTextAlignment(cssValue)
-        
+
         // Then
         XCTAssertEqual(alignment, .leading)
     }
-    
+
     func test_parseTextAlignment_caseInsensitive_works() {
         XCTAssertEqual(CSSValueConverter.parseTextAlignment("LEFT"), .leading)
         XCTAssertEqual(CSSValueConverter.parseTextAlignment("RIGHT"), .trailing)
         XCTAssertEqual(CSSValueConverter.parseTextAlignment("CENTER"), .center)
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("Leading"), .leading)
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("TRAILING"), .trailing)
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("Start"), .leading)
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("END"), .trailing)
+    }
+
+    func test_parseTextAlignment_whitespace_isTrimmed() {
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("  center  "), .center)
+        XCTAssertEqual(CSSValueConverter.parseTextAlignment("\tleft\n"), .leading)
     }
     
     // MARK: - parseOrder Tests
