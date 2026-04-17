@@ -115,20 +115,31 @@ public enum ConciergeTextAlignment: String, Codable {
     case center
     case trailing
 
+    /// Parses a text-align string into `ConciergeTextAlignment`. Case-insensitive. Accepts web, Compose,
+    /// and SwiftUI idioms so the same string value can be used across platforms:
+    ///  - `"left"` / `"leading"` / `"start"`  -> `.leading`
+    ///  - `"center"` / `"justify"`            -> `.center`
+    ///  - `"right"` / `"trailing"` / `"end"`  -> `.trailing`
+    /// Unknown values fall back to `.leading` and log a warning.
+    public static func parse(_ value: String) -> ConciergeTextAlignment {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch trimmed {
+        case "left", "leading", "start":
+            return .leading
+        case "right", "trailing", "end":
+            return .trailing
+        case "center", "justify":
+            return .center
+        default:
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Unknown text alignment '\(trimmed)', defaulting to leading.")
+            return .leading
+        }
+    }
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(String.self).lowercased()
-        switch rawValue {
-        case "left":
-            self = .leading
-        case "right":
-            self = .trailing
-        case "center", "justify":
-            self = .center
-        default:
-            Log.warning(label: ConciergeConstants.LOG_TAG, "Unknown message alignment '\(rawValue)', defaulting to leading.")
-            self = .leading
-        }
+        let rawValue = try container.decode(String.self)
+        self = ConciergeTextAlignment.parse(rawValue)
     }
 
     public func encode(to encoder: Encoder) throws {

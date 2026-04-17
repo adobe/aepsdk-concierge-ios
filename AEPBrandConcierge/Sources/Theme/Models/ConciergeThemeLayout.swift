@@ -40,6 +40,16 @@ public struct ConciergeLayout: Codable {
     public var buttonHeightSmall: CGFloat
     public var feedbackContainerGap: CGFloat
     public var feedbackIconButtonSize: CGFloat
+    public var feedbackSubmitButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderWidth: CGFloat
+    public var feedbackSubmitButtonFontWeight: CodableFontWeight
+    public var feedbackCancelButtonFontWeight: CodableFontWeight
+    public var feedbackCheckboxBorderRadius: CGFloat
+    /// Horizontal alignment for the feedback dialog title. `nil` uses `.leading`.
+    public var feedbackTitleTextAlign: ConciergeTextAlignment?
+    /// Dialog title font size in points. Defaults to `.title2` (~22pt at default Dynamic Type).
+    public var feedbackTitleFontSize: CGFloat?
     public var citationsTextFontWeight: CodableFontWeight
     public var citationsDesktopButtonFontSize: CGFloat
     public var disclaimerFontSize: CGFloat
@@ -67,8 +77,9 @@ public struct ConciergeLayout: Codable {
     public var productCardTextBottomPadding: CGFloat
     public var productCardTextHorizontalPadding: CGFloat
     public var productCardCarouselSpacing: CGFloat
-    /// Horizontal padding applied to the carousel container within the chat history.
-    /// When `nil`, falls back to `chatHistoryPadding`.
+    /// Horizontal padding for the scrolling carousel content.
+    /// - Leading: added on top of the column-aligned base (first card cannot move left of the base).
+    /// - Trailing: used directly; when `nil`, falls back to `chatHistoryPadding`.
     public var productCardCarouselHorizontalPadding: CGFloat?
     public var ctaButtonBorderRadius: CGFloat
     public var ctaButtonHorizontalPadding: CGFloat
@@ -125,6 +136,14 @@ public struct ConciergeLayout: Codable {
         buttonHeightSmall: CGFloat = 30,
         feedbackContainerGap: CGFloat = 4,
         feedbackIconButtonSize: CGFloat = 44,
+        feedbackSubmitButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderWidth: CGFloat = 1,
+        feedbackSubmitButtonFontWeight: CodableFontWeight = .semibold,
+        feedbackCancelButtonFontWeight: CodableFontWeight = .semibold,
+        feedbackCheckboxBorderRadius: CGFloat = 6,
+        feedbackTitleTextAlign: ConciergeTextAlignment? = nil,
+        feedbackTitleFontSize: CGFloat? = nil,
         citationsTextFontWeight: CodableFontWeight = .bold,
         citationsDesktopButtonFontSize: CGFloat = 14,
         disclaimerFontSize: CGFloat = 12,
@@ -206,6 +225,14 @@ public struct ConciergeLayout: Codable {
         self.buttonHeightSmall = buttonHeightSmall
         self.feedbackContainerGap = feedbackContainerGap
         self.feedbackIconButtonSize = feedbackIconButtonSize
+        self.feedbackSubmitButtonBorderRadius = feedbackSubmitButtonBorderRadius
+        self.feedbackCancelButtonBorderRadius = feedbackCancelButtonBorderRadius
+        self.feedbackCancelButtonBorderWidth = feedbackCancelButtonBorderWidth
+        self.feedbackSubmitButtonFontWeight = feedbackSubmitButtonFontWeight
+        self.feedbackCancelButtonFontWeight = feedbackCancelButtonFontWeight
+        self.feedbackCheckboxBorderRadius = feedbackCheckboxBorderRadius
+        self.feedbackTitleTextAlign = feedbackTitleTextAlign
+        self.feedbackTitleFontSize = feedbackTitleFontSize
         self.citationsTextFontWeight = citationsTextFontWeight
         self.citationsDesktopButtonFontSize = citationsDesktopButtonFontSize
         self.disclaimerFontSize = disclaimerFontSize

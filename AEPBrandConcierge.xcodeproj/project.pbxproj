@@ -106,6 +106,8 @@
 		4C29834B2F870A430057C927 /* ConciergeChatSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834A2F870A430057C927 /* ConciergeChatSession.swift */; };
 		4C29834D2F870A580057C927 /* ConciergeChatSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */; };
 		4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */; };
+		4C2983512F91D5020057C927 /* FeedbackButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */; };
+		4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
 		4C3A65BD2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */; };
@@ -315,6 +317,8 @@
 		4C29834A2F870A430057C927 /* ConciergeChatSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSession.swift; sourceTree = "<group>"; };
 		4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSessionTests.swift; sourceTree = "<group>"; };
 		4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergePresentationConfigTests.swift; sourceTree = "<group>"; };
+		4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackButtonStyle.swift; sourceTree = "<group>"; };
+		4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeFeedbackBehaviorTests.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
 		4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Microphone_20_N.svg; sourceTree = "<group>"; };
@@ -675,6 +679,7 @@
 		4C2923DD2E7E21F400D2D2C1 /* UnitTests */ = {
 			isa = PBXGroup;
 			children = (
+				4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */,
 				4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */,
 				4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */,
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
@@ -782,6 +787,7 @@
 		4C3D5F9F2E6A6EC500323738 /* Feedback */ = {
 			isa = PBXGroup;
 			children = (
+				4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */,
 				4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */,
 				4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */,
 			);
@@ -1177,6 +1183,7 @@
 				4CB1CF022E98896B00AB3107 /* RemoteImageView.swift in Sources */,
 				4CB1CF042E98896B00AB3107 /* LocalAssetImageView.swift in Sources */,
 				244E69CE2F16A9C300ADF1AA /* String+Formatting.swift in Sources */,
+				4C2983512F91D5020057C927 /* FeedbackButtonStyle.swift in Sources */,
 				4C3D5F9E2E6A69CC00323738 /* FeedbackOverlayView.swift in Sources */,
 				4C5FE32E2EC42C8D004F9286 /* MarkdownTextCoordinator.swift in Sources */,
 				249899922D67C62A0005CBD7 /* CarouselGroupView.swift in Sources */,
@@ -1247,6 +1254,7 @@
 				4C2983492F6CBC1B0057C927 /* ColorExtensionTests.swift in Sources */,
 				4C2923DC2E7E20AB00D2D2C1 /* ConciergeChatViewModelTests.swift in Sources */,
 				4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */,
+				4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */,
 				244E69ED2F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift in Sources */,
 				244E69EE2F22DF8300ADF1AA /* FeedbackOverlaySnapshotTests.swift in Sources */,
 				4CC11B232F5F900100EEF226 /* ProductCardDataTests.swift in Sources */,
@@ -1375,7 +1383,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.4.0;
+				MARKETING_VERSION = 5.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -1416,7 +1424,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.4.0;
+				MARKETING_VERSION = 5.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;

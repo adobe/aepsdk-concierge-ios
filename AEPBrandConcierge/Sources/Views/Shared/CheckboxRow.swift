@@ -11,6 +11,11 @@ struct CheckboxRow: View {
     @Binding var isOn: Bool
     let label: String
     let accent: Color
+    var cornerRadius: CGFloat = 6
+    /// Label text color. Defaults to system `.primary`.
+    var labelColor: Color? = nil
+    /// Checkbox outline border color. `nil` = adaptive default based on `colorScheme`.
+    var borderColor: Color? = nil
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -18,7 +23,7 @@ struct CheckboxRow: View {
         Button(action: { isOn.toggle() }) {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: cornerRadius)
                         .stroke(checkboxBorderColor, lineWidth: 1.25)
                         .frame(width: 20, height: 20)
                     if isOn {
@@ -26,12 +31,12 @@ struct CheckboxRow: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: 20, height: 20)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(accent))
+                            .background(RoundedRectangle(cornerRadius: cornerRadius).fill(accent))
                     }
                 }
                 .frame(width: 44, height: 44)
                 Text(label)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(labelColor ?? Color.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,7 +47,8 @@ struct CheckboxRow: View {
     }
 
     private var checkboxBorderColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.35)
+        if let borderColor { return borderColor }
+        return colorScheme == .dark ? Color.white.opacity(0.28) : Color.black.opacity(0.35)
     }
 }
 
