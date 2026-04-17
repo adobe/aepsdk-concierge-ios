@@ -16,7 +16,8 @@
       "displayMode": "action",
       "thumbsPlacement": "below",
       "showCloseButton": true,
-      "showCancelButton": false
+      "showCancelButton": false,
+      "showNotes": true
     },
     "citations": {
       "showLinkIcon": true
@@ -230,6 +231,7 @@
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-container-gap": "4px",
 
+    "--feedback-sheet-background-color": "#FFFFFF",
     "--feedback-submit-button-fill-color": "#006554",
     "--feedback-submit-button-text-color": "#FFFFFF",
     "--feedback-submit-button-border-radius": "10px",
@@ -240,6 +242,8 @@
     "--feedback-cancel-button-border-width": "1px",
     "--feedback-cancel-button-border-radius": "10px",
     "--feedback-cancel-button-font-weight": "600",
+    "--feedback-checkbox-border-radius": "6px",
+    "--feedback-title-text-align": "leading",
 
     "--multimodal-card-box-shadow": "0px 1px 4px 0 #191F1C1A",
     "--border-radius-card": "16px",

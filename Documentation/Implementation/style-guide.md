@@ -254,6 +254,7 @@ Feature toggles and interaction configuration.
 | `behavior.feedback.thumbsPlacement` | string | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
 | `behavior.feedback.showCloseButton` | boolean\|null | `null` | Toggles the top-right X close affordance in the feedback dialog. When `null`, defaults by `displayMode`: shown for `"action"`, hidden for `"modal"`. Set explicitly to override. |
 | `behavior.feedback.showCancelButton` | boolean\|null | `null` | Toggles the Cancel button in the feedback dialog. When `null`, defaults by `displayMode`: shown for `"modal"`, hidden for `"action"`. Set explicitly to override. Setting both `showCloseButton` and `showCancelButton` to `false` is respected (neither affordance renders); users exit via Submit or, in action mode, via drag-down dismiss. |
+| `behavior.feedback.showNotes` | boolean\|null | `null` | Toggles the free-text notes field in the feedback dialog regardless of sentiment. When `null`, falls back to the per-sentiment `components.feedback.positiveNotesEnabled` / `components.feedback.negativeNotesEnabled` values (default `true` for both). Set to `false` to hide the notes field outright; set to `true` to force it on for both sentiments. |
 
 ### Citations
 
@@ -309,7 +310,8 @@ Feature toggles and interaction configuration.
       "displayMode": "modal",
       "thumbsPlacement": "inline",
       "showCloseButton": null,
-      "showCancelButton": null
+      "showCancelButton": null,
+      "showNotes": null
     },
     "citations": {
       "showLinkIcon": false
@@ -628,6 +630,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--feedback-icon-btn-background` | `colors.feedback.iconButtonBackground` | `Color` | `clear` | Feedback button background |
+| `--feedback-sheet-background-color` | `colors.feedback.sheetBackground` | `Color?` | `nil` (falls back to `colors.surface.light`) | Feedback dialog sheet/modal background fill. Drives both the outer sheet/modal card and the notes editor fill so the dialog reads as a single cohesive surface. |
 | `--feedback-submit-button-fill-color` | `colors.feedback.submitButtonFill` | `Color?` | `nil` (falls back to `colors.button.primaryBackground`) | Feedback dialog Submit button fill color |
 | `--feedback-submit-button-text-color` | `colors.feedback.submitButtonText` | `Color?` | `nil` (falls back to `colors.button.primaryText`) | Feedback dialog Submit button text color |
 | `--feedback-cancel-button-fill-color` | `colors.feedback.cancelButtonFill` | `Color?` | `nil` (transparent fill → outline look; also drives the X icon tint — falls back there to `colors.button.secondaryText`) | Feedback dialog Cancel button fill color. When `nil`, Cancel renders with a transparent background. When set, Cancel renders with that fill. The Cancel border (`cancelButtonBorderColor` + `feedbackCancelButtonBorderWidth`) is always honored — set the border width to `0` to produce a solid, borderless button. Also used as the tint of the X close icon when the close affordance is visible. |
@@ -725,6 +728,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--feedback-cancel-button-border-radius` | `layout.feedbackCancelButtonBorderRadius` | `CGFloat` | `10` | Feedback dialog Cancel button corner radius |
 | `--feedback-cancel-button-border-width` | `layout.feedbackCancelButtonBorderWidth` | `CGFloat` | `1` | Feedback dialog Cancel button border width. Honored whether or not `cancelButtonFill` is set; set to `0` to suppress the stroke. |
 | `--feedback-cancel-button-font-weight` | `layout.feedbackCancelButtonFontWeight` | `FontWeight` | `semibold` | Feedback dialog Cancel button text weight |
+| `--feedback-checkbox-border-radius` | `layout.feedbackCheckboxBorderRadius` | `CGFloat` | `6` | Feedback dialog option checkbox corner radius. |
+| `--feedback-title-text-align` | `layout.feedbackTitleTextAlign` | `String?` | `nil` (leading) | Horizontal alignment for the feedback dialog title text. `"center"` centers the title; any other value (or `nil`) preserves the default leading alignment. Mirrors the `welcome-text-align` precedent. |
 
 ### Layout - Citations
 
@@ -859,7 +864,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
       "displayMode": "modal",
       "thumbsPlacement": "inline",
       "showCloseButton": null,
-      "showCancelButton": null
+      "showCancelButton": null,
+      "showNotes": null
     },
     "citations": {
       "showLinkIcon": false
@@ -970,6 +976,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-container-gap": "4px",
     "--feedback-icon-btn-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
+    "--feedback-sheet-background-color": "#FFFFFF",
     "--feedback-submit-button-fill-color": "#006554",
     "--feedback-submit-button-text-color": "#FFFFFF",
     "--feedback-submit-button-border-radius": "10px",
@@ -980,6 +987,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--feedback-cancel-button-border-width": "1px",
     "--feedback-cancel-button-border-radius": "10px",
     "--feedback-cancel-button-font-weight": "600",
+    "--feedback-checkbox-border-radius": "6px",
+    "--feedback-title-text-align": "leading",
     "--citations-text-font-weight": "700",
     "--citations-desktop-button-font-size": "12px",
     "--product-card-background-color": "#FFFFFF",
@@ -1091,6 +1100,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.feedback.thumbsPlacement` | ✅ | Controls thumbs placement (inline vs below) in SourcesListView |
 | `behavior.feedback.showCloseButton` | ✅ | Toggles the top-right X close affordance in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.feedback.showCancelButton` | ✅ | Toggles the Cancel button in FeedbackOverlayView; defaults by `displayMode` when `null` |
+| `behavior.feedback.showNotes` | ✅ | Overrides the notes field visibility in FeedbackOverlayView; falls back to per-sentiment `components.feedback.*NotesEnabled` when `null` |
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
@@ -1192,6 +1202,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--citations-background-color` | ✅ | Used in MarkdownBlockView |
 | `--citations-text-color` | ✅ | Used in MarkdownBlockView |
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
+| `--feedback-sheet-background-color` | ✅ | Used in FeedbackOverlayView sheet/modal card + notes editor fill |
 | `--feedback-submit-button-fill-color` | ✅ | Used in FeedbackOverlayView Submit button |
 | `--feedback-submit-button-text-color` | ✅ | Used in FeedbackOverlayView Submit button |
 | `--feedback-cancel-button-fill-color` | ✅ | Used in FeedbackOverlayView Cancel button + X close icon tint |
@@ -1258,6 +1269,8 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-cancel-button-border-radius` | ✅ | Used in FeedbackOverlayView Cancel button |
 | `--feedback-cancel-button-border-width` | ✅ | Used in FeedbackOverlayView Cancel button |
 | `--feedback-cancel-button-font-weight` | ✅ | Used in FeedbackOverlayView Cancel button |
+| `--feedback-checkbox-border-radius` | ✅ | Used in FeedbackOverlayView CheckboxRow corner radius |
+| `--feedback-title-text-align` | ✅ | Used in FeedbackOverlayView title alignment |
 | `--citations-text-font-weight` | ✅ | Used in ChatMessageView |
 | `--citations-desktop-button-font-size` | ✅ | Used in ChatMessageView |
 | `--disclaimer-font-size` | ✅ | Used in ComposerDisclaimer via components.disclaimer.fontSize |

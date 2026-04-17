@@ -101,7 +101,56 @@ final class ConciergeFeedbackBehaviorTests: XCTestCase {
 
         XCTAssertNil(decoded.showCloseButton)
         XCTAssertNil(decoded.showCancelButton)
+        XCTAssertNil(decoded.showNotes)
         XCTAssertTrue(decoded.resolvedShowCloseButton)
         XCTAssertFalse(decoded.resolvedShowCancelButton)
+    }
+
+    // MARK: - showNotes resolver
+
+    /// When `showNotes` is nil, fall back to per-sentiment `ConciergeFeedbackStyle` values.
+    func test_resolvedShowNotes_nil_fallsBackToPerSentimentFallback() {
+        let behavior = ConciergeFeedbackBehavior(showNotes: nil)
+        let fallbackBothOn = ConciergeFeedbackStyle(positiveNotesEnabled: true, negativeNotesEnabled: true)
+        let fallbackPositiveOnly = ConciergeFeedbackStyle(positiveNotesEnabled: true, negativeNotesEnabled: false)
+        let fallbackNegativeOnly = ConciergeFeedbackStyle(positiveNotesEnabled: false, negativeNotesEnabled: true)
+
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .positive, fallback: fallbackBothOn))
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .negative, fallback: fallbackBothOn))
+
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .positive, fallback: fallbackPositiveOnly))
+        XCTAssertFalse(behavior.resolvedShowNotes(for: .negative, fallback: fallbackPositiveOnly))
+
+        XCTAssertFalse(behavior.resolvedShowNotes(for: .positive, fallback: fallbackNegativeOnly))
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .negative, fallback: fallbackNegativeOnly))
+    }
+
+    /// When `showNotes` is set, it overrides the per-sentiment fallback for both sentiments.
+    func test_resolvedShowNotes_explicitTrue_overridesFallbackForBothSentiments() {
+        let behavior = ConciergeFeedbackBehavior(showNotes: true)
+        let fallbackBothOff = ConciergeFeedbackStyle(positiveNotesEnabled: false, negativeNotesEnabled: false)
+
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .positive, fallback: fallbackBothOff))
+        XCTAssertTrue(behavior.resolvedShowNotes(for: .negative, fallback: fallbackBothOff))
+    }
+
+    func test_resolvedShowNotes_explicitFalse_overridesFallbackForBothSentiments() {
+        let behavior = ConciergeFeedbackBehavior(showNotes: false)
+        let fallbackBothOn = ConciergeFeedbackStyle(positiveNotesEnabled: true, negativeNotesEnabled: true)
+
+        XCTAssertFalse(behavior.resolvedShowNotes(for: .positive, fallback: fallbackBothOn))
+        XCTAssertFalse(behavior.resolvedShowNotes(for: .negative, fallback: fallbackBothOn))
+    }
+
+    func test_codable_roundTrip_preservesShowNotesOverride() throws {
+        let original = ConciergeFeedbackBehavior(displayMode: "modal", showNotes: false)
+
+        let encoded = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(ConciergeFeedbackBehavior.self, from: encoded)
+
+        XCTAssertEqual(decoded.showNotes, false)
+        let fallback = ConciergeFeedbackStyle(positiveNotesEnabled: true, negativeNotesEnabled: true)
+        XCTAssertFalse(decoded.resolvedShowNotes(for: .positive, fallback: fallback))
+        XCTAssertFalse(decoded.resolvedShowNotes(for: .negative, fallback: fallback))
     }
 }

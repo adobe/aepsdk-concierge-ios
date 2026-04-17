@@ -149,7 +149,69 @@ final class FeedbackOverlaySnapshotTests: XCTestCase {
         probeTheme.layout.feedbackSubmitButtonFontWeight = .black
         probeTheme.layout.feedbackCancelButtonFontWeight = .thin
 
+        // Additional styling controls mixed in so one probe covers the whole surface.
+        probeTheme.colors.feedback.sheetBackground = CodableColor(.orange)
+        probeTheme.layout.feedbackCheckboxBorderRadius = 12
+        probeTheme.layout.feedbackTitleTextAlign = "center"
+
         probeTheme.text.feedbackDialogNotesPlaceholder = "Additional notes placeholder"
+
+        let view = FeedbackOverlayProbeHost(theme: probeTheme)
+
+        assertSnapshot(
+            of: view,
+            as: .image(layout: .fixed(width: 390, height: 700))
+        )
+    }
+
+    // MARK: - Additional styling controls (each isolated)
+
+    /// Feedback sheet background override. Should paint both the modal card and the notes editor.
+    func test_feedbackDialogProbe_customSheetBackground() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.colors.feedback.sheetBackground = CodableColor(.orange)
+
+        let view = FeedbackOverlayProbeHost(theme: probeTheme)
+
+        assertSnapshot(
+            of: view,
+            as: .image(layout: .fixed(width: 390, height: 700))
+        )
+    }
+
+    /// Exaggerated checkbox corner radius — verifies wiring through `CheckboxRow`.
+    func test_feedbackDialogProbe_exaggeratedCheckboxCornerRadius() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.layout.feedbackCheckboxBorderRadius = 12
+
+        let view = FeedbackOverlayProbeHost(theme: probeTheme)
+
+        assertSnapshot(
+            of: view,
+            as: .image(layout: .fixed(width: 390, height: 700))
+        )
+    }
+
+    /// `behavior.feedback.showNotes = false` hides the notes free-text field for both sentiments.
+    func test_feedbackDialogProbe_showNotesFalse_hidesNotesField() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.behavior.feedback = ConciergeFeedbackBehavior(
+            displayMode: "modal",
+            showNotes: false
+        )
+
+        let view = FeedbackOverlayProbeHost(theme: probeTheme)
+
+        assertSnapshot(
+            of: view,
+            as: .image(layout: .fixed(width: 390, height: 700))
+        )
+    }
+
+    /// Centered title alignment via `layout.feedbackTitleTextAlign = "center"`.
+    func test_feedbackDialogProbe_centeredTitleAlignment() {
+        var probeTheme = ConciergeThemeLoader.default()
+        probeTheme.layout.feedbackTitleTextAlign = "center"
 
         let view = FeedbackOverlayProbeHost(theme: probeTheme)
 

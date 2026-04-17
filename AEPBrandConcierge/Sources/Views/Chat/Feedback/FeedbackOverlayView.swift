@@ -31,10 +31,15 @@ struct FeedbackOverlayView: View {
         }
     }
 
+    /// Notes field visibility: `showNotes` when set, otherwise per-sentiment `components.feedback.*NotesEnabled`.
     private var notesEnabled: Bool {
+        let fallback = theme.components.feedback
+        if let behavior = theme.behavior.feedback {
+            return behavior.resolvedShowNotes(for: sentiment, fallback: fallback)
+        }
         switch sentiment {
-        case .positive: return theme.components.feedback.positiveNotesEnabled
-        case .negative: return theme.components.feedback.negativeNotesEnabled
+        case .positive: return fallback.positiveNotesEnabled
+        case .negative: return fallback.negativeNotesEnabled
         }
     }
 
@@ -67,6 +72,20 @@ struct FeedbackOverlayView: View {
         theme.colors.feedback.cancelButtonFill?.color ?? theme.colors.button.secondaryText.color
     }
 
+    /// Sheet/modal background color; also applied to the notes editor fill. Defaults to `surface.light`.
+    private var sheetBackgroundColor: Color {
+        theme.colors.feedback.sheetBackground?.color ?? theme.colors.surface.light.color
+    }
+
+    /// Title alignment from `feedbackTitleTextAlign`: `.center` when set to `"center"`, otherwise `.leading`.
+    private var titleTextAlignment: TextAlignment {
+        theme.layout.feedbackTitleTextAlign?.lowercased() == "center" ? .center : .leading
+    }
+
+    private var titleFrameAlignment: Alignment {
+        titleTextAlignment == .center ? .center : .leading
+    }
+
     var body: some View {
         if isActionSheet {
             actionSheetLayout
@@ -92,7 +111,7 @@ struct FeedbackOverlayView: View {
             .frame(maxWidth: 560)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(theme.colors.surface.light.color)
+                    .fill(sheetBackgroundColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -146,7 +165,7 @@ struct FeedbackOverlayView: View {
             .frame(maxHeight: UIScreen.main.bounds.height * 0.75)
             .background(
                 RoundedCornerShape(radius: 20, corners: [.topLeft, .topRight])
-                    .fill(theme.colors.surface.light.color)
+                    .fill(sheetBackgroundColor)
             )
             .overlay(
                 RoundedCornerShape(radius: 20, corners: [.topLeft, .topRight])
@@ -204,6 +223,8 @@ struct FeedbackOverlayView: View {
             Text(sentiment == .positive ? theme.text.feedbackDialogTitlePositive : theme.text.feedbackDialogTitleNegative)
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.primary)
+                .multilineTextAlignment(titleTextAlignment)
+                .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
 
             Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
                 .font(.body)
@@ -219,7 +240,8 @@ struct FeedbackOverlayView: View {
                             }
                         ),
                         label: option,
-                        accent: theme.colors.primary.primary.color
+                        accent: theme.colors.primary.primary.color,
+                        cornerRadius: theme.layout.feedbackCheckboxBorderRadius
                     )
                 }
             }
@@ -235,7 +257,7 @@ struct FeedbackOverlayView: View {
                             .padding(12)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(theme.colors.surface.light.color)
+                                    .fill(sheetBackgroundColor)
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)

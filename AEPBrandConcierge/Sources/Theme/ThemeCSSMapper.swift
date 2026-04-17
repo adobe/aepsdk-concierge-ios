@@ -81,6 +81,7 @@ public enum CSSKeyMapper {
         "feedback-cancel-button-fill-color": { cssValue, theme in theme.colors.feedback.cancelButtonFill = CSSValueConverter.parseColor(cssValue) },
         "feedback-cancel-button-text-color": { cssValue, theme in theme.colors.feedback.cancelButtonText = CSSValueConverter.parseColor(cssValue) },
         "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorderColor = CSSValueConverter.parseColor(cssValue) },
+        "feedback-sheet-background-color": { cssValue, theme in theme.colors.feedback.sheetBackground = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
@@ -140,6 +141,8 @@ public enum CSSKeyMapper {
         "feedback-cancel-button-border-radius": { cssValue, theme in theme.layout.feedbackCancelButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
         "feedback-cancel-button-border-width": { cssValue, theme in theme.layout.feedbackCancelButtonBorderWidth = CSSValueConverter.parsePxValue(cssValue) ?? 1 },
         "feedback-cancel-button-font-weight": { cssValue, theme in theme.layout.feedbackCancelButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "feedback-checkbox-border-radius": { cssValue, theme in theme.layout.feedbackCheckboxBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 6 },
+        "feedback-title-text-align": { cssValue, theme in theme.layout.feedbackTitleTextAlign = cssValue },
 
         // Layout - Citations
         "citations-text-font-weight": { cssValue, theme in theme.layout.citationsTextFontWeight = CSSValueConverter.parseFontWeight(cssValue) },

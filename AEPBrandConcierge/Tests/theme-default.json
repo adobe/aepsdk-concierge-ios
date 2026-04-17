@@ -34,7 +34,8 @@
       "displayMode": "modal",
       "thumbsPlacement": "inline",
       "showCloseButton": null,
-      "showCancelButton": null
+      "showCancelButton": null,
+      "showNotes": null
     }
   },
   "disclaimer": {
@@ -156,6 +157,7 @@
     "--feedback-icon-btn-hover-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-container-gap": "4px",
+    "--feedback-sheet-background-color": "#FFFFFF",
     "--feedback-submit-button-fill-color": "#3B63FB",
     "--feedback-submit-button-text-color": "#FFFFFF",
     "--feedback-submit-button-border-radius": "10px",
@@ -166,6 +168,8 @@
     "--feedback-cancel-button-border-width": "1px",
     "--feedback-cancel-button-border-radius": "10px",
     "--feedback-cancel-button-font-weight": "600",
+    "--feedback-checkbox-border-radius": "6px",
+    "--feedback-title-text-align": "leading",
     "--multimodal-card-box-shadow": "none",
     "--border-radius-card": "16px",
     "--button-height-s": "30px",

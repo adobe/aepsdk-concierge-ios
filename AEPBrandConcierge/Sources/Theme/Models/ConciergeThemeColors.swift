@@ -159,6 +159,8 @@ public struct ConciergeCitationColors: Codable {
 /// Feedback color tokens
 public struct ConciergeFeedbackColors: Codable {
     public var iconButtonBackground: CodableColor
+    /// Dialog background fill for the sheet/modal card and notes editor. Defaults to `surface.light`.
+    public var sheetBackground: CodableColor?
     /// Submit button fill. Defaults to `button.primaryBackground`.
     public var submitButtonFill: CodableColor?
     /// Submit button text color. Defaults to `button.primaryText`.
@@ -173,6 +175,7 @@ public struct ConciergeFeedbackColors: Codable {
     public init(
         // Default feedback icons render without a background unless explicitly themed.
         iconButtonBackground: CodableColor = CodableColor(Color.clear),
+        sheetBackground: CodableColor? = nil,
         submitButtonFill: CodableColor? = nil,
         submitButtonText: CodableColor? = nil,
         cancelButtonFill: CodableColor? = nil,
@@ -180,6 +183,7 @@ public struct ConciergeFeedbackColors: Codable {
         cancelButtonBorderColor: CodableColor? = nil
     ) {
         self.iconButtonBackground = iconButtonBackground
+        self.sheetBackground = sheetBackground
         self.submitButtonFill = submitButtonFill
         self.submitButtonText = submitButtonText
         self.cancelButtonFill = cancelButtonFill
