@@ -169,23 +169,11 @@ public enum CSSValueConverter {
         }
     }
 
-    /// Parses CSS text alignment string to ConciergeTextAlignment
-    /// Maps "left" -> .leading, "right" -> .trailing for RTL support
+    /// Parses a CSS text-align string to `ConciergeTextAlignment`. Delegates to
+    /// `ConciergeTextAlignment.parse(_:)` so CSS variables and Codable-decoded values share the
+    /// same acceptance set (web, Compose, and SwiftUI idioms).
     public static func parseTextAlignment(_ cssValue: String) -> ConciergeTextAlignment {
-        let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        switch trimmed {
-        case "left":
-            return .leading
-        case "right":
-            return .trailing
-        case "center":
-            return .center
-        case "justify":
-            return .leading // SwiftUI doesn't support justify, fallback to leading
-        default:
-            return .leading
-        }
+        return ConciergeTextAlignment.parse(cssValue)
     }
 
     /// Parses CSS order value (string number) to Int

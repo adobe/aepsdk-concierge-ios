@@ -15,6 +15,8 @@ import Foundation
 
 final class MockSpeechCapturer: SpeechCapturing {
     var responseProcessor: ((String) -> Void)?
+    var audioLevelHandler: ((Float) -> Void)?
+    var silenceHandler: (() -> Void)?
     var available: Bool = true
     var denied: Bool = false
     var neverAsked: Bool = false
@@ -36,6 +38,8 @@ final class MockSpeechCapturer: SpeechCapturing {
             completion()
         }
     }
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {}
+
     func beginCapture() { beginCaptures += 1 }
     func endCapture(completion: @escaping (String?, Error?) -> Void) {
         endCaptures += 1

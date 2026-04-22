@@ -19,9 +19,10 @@ public enum MessageTemplate {
     case basic(isUserMessage: Bool)
     case thumbnail(imageSource: ImageSource, title: String?, text: String)
     case numbered(number: Int?, title: String?, body: String?)
-    case productCarouselCard(imageSource: ImageSource, title: String, destination: URL?)
-    case productCard(imageSource: ImageSource, title: String, body: String, primaryButton: ActionButton? = nil, secondaryButton: ActionButton? = nil)
+    case productCarouselCard(ProductCardData)
+    case productCard(ProductCardData)
     case carouselGroup([Message])
+    case ctaButton(ActionButton)
     case promptSuggestion(text: String)
     case divider
 }

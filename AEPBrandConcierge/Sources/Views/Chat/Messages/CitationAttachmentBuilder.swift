@@ -87,13 +87,19 @@ enum CitationAttachmentBuilder {
         let baselineOffset = (baseFont.capHeight - badgeSize.height) / 2
         attachment.bounds = CGRect(x: 0, y: baselineOffset, width: badgeSize.width, height: badgeSize.height)
 
-        let result = NSMutableAttributedString(attachment: attachment)
+        // Build the badge as its own attributed fragment
+        let badge = NSMutableAttributedString(attachment: attachment)
         if let url = URL(string: marker.source.url) {
-            result.addAttribute(.link, value: url, range: NSRange(location: 0, length: result.length))
+            badge.addAttribute(.link, value: url, range: NSRange(location: 0, length: badge.length))
         }
 
-        // Add a space after the badge to separate it from the next character.
-        result.append(NSAttributedString(string: " "))
+        // Prepend a space so the badge sits slightly away from the preceding word, while keeping 
+        // it flush against any trailing punctuation like periods or commas. 
+        // * ex: `swift.org [1].` rather than `swift.org[1].`
+        // The space is injected here after the markdown parser has already finished 
+        // so it doesn't affect paragraph/block detection.
+        let result = NSMutableAttributedString(string: " ")
+        result.append(badge)
         return result
     }
 

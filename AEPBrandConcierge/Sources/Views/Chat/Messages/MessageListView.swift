@@ -16,9 +16,15 @@ import SwiftUI
 struct MessageListView: View {
     @Environment(\.conciergeTheme) private var theme
 
+    /// Base scroll content padding. Combined with `chatHistoryPadding` to produce the standard
+    /// horizontal inset used by text bubbles, suggestion chips, and non-carousel agent elements.
+    /// Also referenced by `CarouselGroupView` when computing `scrollContentLeadingInset`.
+    static let scrollContentBasePadding: CGFloat = 16
+
     let messages: [Message]
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
+    var scrollToLastOnAppear: Bool = false
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
@@ -28,7 +34,21 @@ struct MessageListView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(messages) { message in
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            // showHeader: insert a "Suggestions" label above the first chip in a group
+                            if isFirstInSuggestionGroup(at: index),
+                               theme.behavior.promptSuggestions?.showHeader == true {
+                                HStack {
+                                    Text(theme.text.suggestionsHeader)
+                                        .font(.system(.subheadline).weight(.semibold))
+                                        .foregroundColor(theme.colors.message.conciergeText.color)
+                                    Spacer()
+                                }
+                                .padding(.leading, horizontalPadding(for: message.template).leading)
+                                .padding(.trailing, horizontalPadding(for: message.template).trailing)
+                                .padding(.bottom, -4)
+                            }
+
                             ChatMessageView(
                                 messageId: message.id,
                                 template: message.template,
@@ -39,6 +59,7 @@ struct MessageListView: View {
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
+                                .padding(horizontalPadding(for: message.template))
                                 .onAppear {
                                     if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
                                         onSpeak(messageBody)
@@ -50,7 +71,6 @@ struct MessageListView: View {
                         Spacer()
                             .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
                     }
-                    .padding(.horizontal)
                     .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
                     .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
@@ -63,6 +83,14 @@ struct MessageListView: View {
                         }
                     }
                 }
+                // When reopening a chat with prior messages, jump to the bottom so the user sees the latest exchange.
+                .onAppear {
+                    if scrollToLastOnAppear, let lastId = messages.last?.id {
+                        DispatchQueue.main.async {
+                            proxy.scrollTo(lastId, anchor: .top)
+                        }
+                    }
+                }
                 .onTapGesture {
                     if isInputFocused {
                         isInputFocused = false
@@ -70,5 +98,59 @@ struct MessageListView: View {
                 }
             }
         }
+    }
+
+    /// Returns the padding insets for a given message template.
+    ///
+    /// - Carousel messages receive zero container padding. The carousel's `ScrollView` spans
+    ///   the full available width so cards are never clipped during horizontal scrolling.
+    ///   `CarouselGroupView` applies the appropriate leading inset inside the scroll content.
+    /// - Agent basic messages with a configured icon use `chatHistoryPadding` as the
+    ///   leading inset only, so the icon sits flush at the history padding boundary.
+    ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
+    /// - Secondary agent-response elements (product cards, CTA buttons, thumbnails, prompt
+    ///   suggestions) with a configured icon are indented by `agentIconSize + agentIconSpacing`
+    ///   so they align with the agent response text.
+    /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
+    private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
+        if case .carouselGroup = template {
+            // Carousel manages its own leading inset inside the ScrollView content
+            // (see CarouselGroupView.scrollContentLeadingInset) so the ScrollView container
+            // spans the full available width, preventing cards from being clipped on scroll.
+            return EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        }
+        if case .basic(let isUserMessage) = template,
+           !isUserMessage,
+           theme.hasAgentIcon {
+            return EdgeInsets(
+                top: 0,
+                leading: theme.layout.chatHistoryPadding,
+                bottom: 0,
+                trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+            )
+        }
+        if theme.hasAgentIcon {
+            switch template {
+            case .promptSuggestion, .productCard, .ctaButton, .thumbnail:
+                return EdgeInsets(
+                    top: 0,
+                    leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
+                    bottom: 0,
+                    trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+                )
+            default:
+                break
+            }
+        }
+        let h = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
+    }
+
+    /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.
+    private func isFirstInSuggestionGroup(at index: Int) -> Bool {
+        guard case .promptSuggestion = messages[index].template else { return false }
+        if index == 0 { return true }
+        if case .promptSuggestion = messages[index - 1].template { return false }
+        return true
     }
 }

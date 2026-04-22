@@ -16,7 +16,7 @@ import Foundation
 enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.0.0"
+    static let EXTENSION_VERSION = "5.5.0"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
 
@@ -173,6 +173,8 @@ enum ConciergeConstants {
     // MARK: - Defaults
 
     enum Defaults {
+        static let TITLE = "Concierge"
+        static let SUBTITLE = "Powered by Adobe"
         static let CONSENT_VALUE = "y"
         static let MESSAGE = "I'm Concierge - your virtual product expert. I'm here to answer any questions you may have about this product. What can I do for you today?"
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"

@@ -28,10 +28,10 @@ struct ConciergeWrapper<Content: View>: View {
         ZStack {
             content
 
-            // View overlay for chat UI (respects safe area by default)
             if stateManager.showingConcierge, let chatView = stateManager.chatView {
                 chatView
                     .conciergeTheme(theme)
+                    .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
                     .transition(.opacity)
                     .zIndex(1)
             }
@@ -62,6 +62,6 @@ struct ConciergeWrapper<Content: View>: View {
     }
 
     private func showConcierge() {
-        Concierge.show(surfaces: Concierge.surfaces)
+        Concierge.reshow()
     }
 }

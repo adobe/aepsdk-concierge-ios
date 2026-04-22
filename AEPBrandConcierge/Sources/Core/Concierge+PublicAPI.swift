@@ -11,7 +11,6 @@
  */
 
 import SwiftUI
-import UIKit
 import AEPCore
 import AEPServices
 
@@ -27,49 +26,14 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil) {
-        // Dispatch event to request state data necessary for displaying the UI
-        let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
-                              type: ConciergeConstants.EventType.concierge,
-                              source: EventSource.requestContent,
-                              data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
+    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
-        MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
-            guard let responseEvent = responseEvent,
-                  let eventData = responseEvent.data,
-                  let config = eventData[ConciergeConstants.EventData.Key.CONFIG] as? ConciergeConfiguration else {
-                Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
-                return
-            }
-
-            if let speechCapturer = speechCapturer {
-                self.speechCapturer = speechCapturer
-            }
-
-            if let textSpeaker = textSpeaker {
-                self.textSpeaker = textSpeaker
-            }
-
-            if let title = title {
-                self.chatTitle = title
-            }
-
-            if let subtitle = subtitle {
-                self.chatSubtitle = subtitle
-            }
-
-            // Construct and present the chat view immediately via the SwiftUI overlay.
-            let view = ChatView(
-                speechCapturer: self.speechCapturer,
-                textSpeaker: self.textSpeaker,
-                title: self.chatTitle,
-                subtitle: self.chatSubtitle,
-                conciergeConfiguration: config,
-                onClose: { Concierge.hide() }
-            )
-            Task { @MainActor in
-                ConciergeOverlayManager.shared.showChat(view)
-            }
+            let session = resolveSession(configuration: config)
+            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
         }
     }
 
@@ -84,21 +48,26 @@ public extension Concierge {
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
     ///   - hideButton: Whether to hide the floating button.
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
     static func wrap<Content: View>(
         _ content: Content,
         surfaces: [String] = [],
         title: String? = nil,
         subtitle: String? = nil,
-        hideButton: Bool = false
+        hideButton: Bool = false,
+        handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
-        if let title = title {
-            self.chatTitle = title
+        // wrap() is called inside a SwiftUI body and re-evaluates on every state change.
+        // Only overwrite values that are explicitly provided to avoid resetting state
+        // set by a prior show() call (e.g. the link interceptor for an active chat session).
+        if let title = title { self.chatTitle = title }
+        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+        if !surfaces.isEmpty { self.surfaces = surfaces }
+        if let handleLink = handleLink {
+            self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
         }
-        if let subtitle = subtitle {
-            self.chatSubtitle = subtitle
-        }
-        self.surfaces = surfaces
         return ConciergeWrapper(content: content, hideButton: hideButton)
     }
 
@@ -128,27 +97,170 @@ public extension Concierge {
     ///   - surfaces: The surfaces to use for the chat experience.
     ///   - title: Optional title displayed in the chat header.
     ///   - subtitle: Optional subtitle displayed under the title.
-    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil) {
-        if let title = title { self.chatTitle = title }
-        if let subtitle = subtitle { self.chatSubtitle = subtitle }
+    ///   - speechCapturer: Optional speech capture implementation to use.
+    ///   - textSpeaker: Optional text-to-speech implementation to use.
+    ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
+    ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
-        // TODO: this needs the same treatement for dispatching an event to retrieve ConciergeConfiguration
-        // as we have in the swiftui version
+            attachConciergeUIKitHost(configuration: config, presentingViewController: presentingViewController)
+        }
+    }
+}
 
-        let hosting = ConciergeHostingController(configuration: ConciergeConfiguration(surfaces: surfaces), title: title, subtitle: subtitle)
+// MARK: - Internal presentation helpers
+
+extension Concierge {
+
+    /// Overwrites the stored presentation properties with the given values.
+    static func applyPresentationConfiguration(
+        title: String?,
+        subtitle: String?,
+        speechCapturer: SpeechCapturing?,
+        textSpeaker: TextSpeaking?,
+        handleLink: ((URL) -> Bool)?
+    ) {
+        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
+        self.chatSubtitle = subtitle
+        self.speechCapturer = speechCapturer
+        self.textSpeaker = textSpeaker
+        self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
+    }
+
+    /// Re-presents the Concierge chat overlay using the currently stored configuration
+    /// (title, subtitle, link interceptor, speech capturer, etc.) without overwriting any values.
+    ///
+    /// Used by the floating button and other internal re-show paths where the customer's
+    /// previously configured values should be preserved.
+    static func reshow() {
+        fetchChatConfiguration(forSurfaces: surfaces) { config in
+            let session = resolveSession(configuration: config)
+            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
+        }
+    }
+}
+
+// MARK: - Shared presentation internals
+
+private extension Concierge {
+
+    /// Dispatches a `SHOW_UI` event to retrieve the `ConciergeConfiguration` needed to present the chat.
+    ///
+    /// The event triggers the extension's `handleShowChatUIRequestEvent`.
+    /// If the response is missing, malformed, or times out (ex: configuration or Edge Identity not yet available),
+    /// the completion is not called and a warning is logged.
+    ///
+    /// - Parameters:
+    ///   - surfaces: The surface identifiers for this chat experience.
+    ///   - completion: Called on the main actor with the resolved configuration. Not called on failure.
+    static func fetchChatConfiguration(
+        forSurfaces surfaces: [String],
+        completion: @escaping @MainActor (ConciergeConfiguration) -> Void
+    ) {
+        let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
+                              type: ConciergeConstants.EventType.concierge,
+                              source: EventSource.requestContent,
+                              data: [ConciergeConstants.EventData.Key.SURFACES: surfaces])
+
+        MobileCore.dispatch(event: showEvent, timeout: ConciergeConstants.DEFAULT_TIMEOUT) { responseEvent in
+            guard let responseEvent = responseEvent,
+                  let eventData = responseEvent.data,
+                  let config = eventData[ConciergeConstants.EventData.Key.CONFIG] as? ConciergeConfiguration else {
+                Log.warning(label: ConciergeConstants.LOG_TAG, "Unable to show chat UI - configuration is not available.")
+                return
+            }
+            Task { @MainActor in
+                completion(config)
+            }
+        }
+    }
+
+    /// Returns the current `ConciergeChatSession` if its service identity (ECID, server, datastream, surfaces),
+    /// title, and subtitle all match the incoming values, and the server session has not expired;
+    /// otherwise creates and stores a new session.
+    ///
+    /// This is the single decision point for chat reuse across both SwiftUI and UIKit presentation paths.
+    /// The `ChatController` inside the returned session retains all messages and the chat
+    /// service from prior interactions when a match is found.
+    ///
+    /// - Parameter configuration: The freshly fetched configuration from the `SHOW_UI` response event.
+    /// - Returns: An existing or newly created session.
+    @MainActor
+    static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
+        let resolvedTitle = chatTitle
+        let resolvedSubtitle = chatSubtitle
+
+        if let existing = currentSession,
+           SessionManager.shared.isSessionActive,
+           existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
+            return existing
+        }
+
+        let session = ConciergeChatSession(
+            configuration: configuration,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle,
+            speechCapturer: speechCapturer,
+            textSpeaker: textSpeaker
+        )
+        currentSession = session
+        return session
+    }
+
+    /// Creates a new `ChatView` bound to the given session's `ChatController`.
+    ///
+    /// The view is lightweight and stateless; all conversation state lives on the controller.
+    ///
+    /// - Parameter session: The session whose controller the view will observe.
+    /// - Returns: A configured `ChatView` ready for embedding in a SwiftUI overlay or UIKit host.
+    @MainActor
+    static func makeChatView(session: ConciergeChatSession) -> ChatView {
+        ChatView(
+            controller: session.controller,
+            title: session.title,
+            subtitle: session.subtitle,
+            onClose: { Concierge.hide() }
+        )
+    }
+
+    /// Embeds the Concierge chat UI as a child view controller of the given `UIViewController`.
+    ///
+    /// If a previous UIKit-hosted chat is still attached, it is removed from the hierarchy first.
+    /// The method resolves or reuses a session, creates a `ChatView`, wraps it in a
+    /// `ConciergeHostingController`, and pins it edge-to-edge within the presenting view controller.
+    ///
+    /// - Parameters:
+    ///   - configuration: The configuration for this chat session.
+    ///   - presentingViewController: The UIKit view controller that will host the chat UI as a child.
+    @MainActor
+    static func attachConciergeUIKitHost(
+        configuration: ConciergeConfiguration,
+        presentingViewController: UIViewController
+    ) {
+        if let previousHosting = presentedUIKitController {
+            previousHosting.willMove(toParent: nil)
+            previousHosting.view.removeFromSuperview()
+            previousHosting.removeFromParent()
+            presentedUIKitController = nil
+        }
+
+        let session = resolveSession(configuration: configuration)
+        let view = makeChatView(session: session)
+
+        let hosting = ConciergeHostingController(chatView: view)
         presentedUIKitController = hosting
 
-        Task { @MainActor in
-            presentingViewController.addChild(hosting)
-            hosting.view.translatesAutoresizingMaskIntoConstraints = false
-            presentingViewController.view.addSubview(hosting.view)
-            NSLayoutConstraint.activate([
-                hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
-                hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
-                hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
-                hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
-            ])
-            hosting.didMove(toParent: presentingViewController)
-        }
+        presentingViewController.addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        presentingViewController.view.addSubview(hosting.view)
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: presentingViewController.view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: presentingViewController.view.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: presentingViewController.view.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
+        ])
+        hosting.didMove(toParent: presentingViewController)
     }
 }

@@ -42,8 +42,20 @@ final class SpeechController {
         capturer?.initialize(responseProcessor: responseProcessor)
     }
 
+    func setAudioLevelHandler(_ handler: ((Float) -> Void)?) {
+        capturer?.audioLevelHandler = handler
+    }
+
+    func setSilenceHandler(_ handler: (() -> Void)?) {
+        capturer?.silenceHandler = handler
+    }
+
     func requestPermissions(completion: @escaping () -> Void) {
         capturer?.requestSpeechAndMicrophonePermissions(completion: completion)
+    }
+
+    func configureSilenceDetection(threshold: Float, duration: TimeInterval) {
+        capturer?.configureSilenceDetection(threshold: threshold, duration: duration)
     }
 
     func beginCapture() {

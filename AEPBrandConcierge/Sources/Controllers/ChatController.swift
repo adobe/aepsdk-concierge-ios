@@ -26,6 +26,7 @@ final class ChatController: ObservableObject {
     @Published var userScrollTick: Int = 0
     @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
+    @Published var audioLevel: Float = 0
 
     // MARK: - Input Controller
 
@@ -43,7 +44,6 @@ final class ChatController: ObservableObject {
 
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
-    private var productCardIndex: Int?
     private var latestPromptSuggestions: [String] = []
 
     // MARK: - Computed Properties
@@ -91,7 +91,18 @@ final class ChatController: ObservableObject {
         inputController.applyTextChange(newText)
     }
 
+    // MARK: - Speech Output
+
+    func speak(_ text: String) {
+        speechController.speak(text)
+    }
+
     // MARK: - Mic Control
+
+    /// Applies voice capture settings from the current theme before recording starts.
+    func applyVoiceInputBehavior(_ input: ConciergeInputBehavior) {
+        speechController.configureSilenceDetection(threshold: input.silenceThreshold, duration: input.silenceDuration)
+    }
 
     func toggleMic(currentSelectionLocation: Int) {
         if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
@@ -148,8 +159,7 @@ final class ChatController: ObservableObject {
                     // After user responds to system prompts, check if permissions were granted
                     if self.speechController.isAvailable {
                         Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
-                        self.inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
-                        self.speechController.beginCapture()
+                        self.beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
                     } else {
                         Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
                         self.showPermissionDialog = true
@@ -168,6 +178,16 @@ final class ChatController: ObservableObject {
         }
 
         // Permissions granted - proceed with recording
+        beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
+    }
+
+    private func beginCaptureSession(currentSelectionLocation: Int) {
+        speechController.setAudioLevelHandler { [weak self] level in
+            self?.audioLevel = level
+        }
+        speechController.setSilenceHandler { [weak self] in
+            self?.completeMic()
+        }
         inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         speechController.beginCapture()
     }
@@ -330,8 +350,10 @@ final class ChatController: ObservableObject {
         let streamingMessageIndex = messages.count
         messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
 
+        // Accumulators are used to handle the progressive building up of response content from the server
+        // and to be able to effectively do a diff of what has already been received and what is new.
         var accumulatedContent = ""
-        var accumulatedProducts: [MultimodalElement] = []
+        var latestElements: [MultimodalElement] = []
 
         chatService.streamChat(query,
             onChunk: { [weak self] payload in
@@ -341,12 +363,9 @@ final class ChatController: ObservableObject {
                     let state = payload.state
 
                     if let response = payload.response {
-                        Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(response.message.count), sources=\(response.sources?.count ?? 0), suggestions=\(response.promptSuggestions?.count ?? 0)")
-
-                        if state == ConciergeConstants.StreamState.COMPLETED,
-                            let data = try? JSONEncoder().encode(response),
-                            let json = String(data: data, encoding: .utf8) {
-                            Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json.prettyPrintedJSON())")
+                        if let data = try? JSONEncoder().encode(response),
+                           let json = String(data: data, encoding: .utf8) {
+                            Log.debug(label: self.LOG_TAG, "SSE chunk (state=\(state ?? "n/a")): \(json.prettyPrintedJSON())")
                         }
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
@@ -381,20 +400,9 @@ final class ChatController: ObservableObject {
                         }
                     }
 
-                    // Handle cards in multimodalElements
+                    // Capture multimodal elements for rendering on completion
                     if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
-                        let newElementIds = Set(elements.map { $0.id })
-                        accumulatedProducts.removeAll { existingElement in
-                            newElementIds.contains(existingElement.id)
-                        }
-
-                        accumulatedProducts.append(contentsOf: elements)
-
-                        if self.productCardIndex == nil {
-                            self.productCardIndex = streamingMessageIndex + 1
-                        }
-
-                        self.renderProductCards(accumulatedProducts)
+                        latestElements = elements
                     }
 
                     // Capture prompt suggestions if present
@@ -439,6 +447,11 @@ final class ChatController: ObservableObject {
                             self.messages[streamingMessageIndex] = current
                         }
 
+                        // Render multimodal elements (cards, CTAs) from the completed response
+                        if !latestElements.isEmpty {
+                            self.renderMultimodalElements(latestElements)
+                        }
+
                         // Append prompt suggestions as their own message bubbles at the end
                         if !self.latestPromptSuggestions.isEmpty {
                             for suggestion in self.latestPromptSuggestions {
@@ -455,52 +468,51 @@ final class ChatController: ObservableObject {
 
     private func clearState() {
         chatState = .idle
-        productCardIndex = nil
         latestSources = []
         latestPromptSuggestions = []
     }
 
-    private func renderProductCards(_ products: [MultimodalElement]) {
-        if products.count == 1, let entityInfo = products.first?.entityInfo {
-            // Show a single product card
-            let cardTitle = entityInfo.productName ?? "No title"
-            let cardText = entityInfo.productDescription ?? "No description"
-            let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-            let primaryButton = entityInfo.primary
-            let secondaryButton = entityInfo.secondary
+    /// Appends multimodal elements to `messages`, respecting their relative order from
+    /// the server. Card-type elements are collapsed into a single card or carousel at
+    /// the position of the first card encountered.
+    private func renderMultimodalElements(_ elements: [MultimodalElement]) {
+        let cardElements = elements.filter { $0.elementType != .ctaButton }
 
-            let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
-                                                   title: cardTitle,
-                                                   body: cardText,
-                                                   primaryButton: primaryButton,
-                                                   secondaryButton: secondaryButton))
-
-            removeProductCard(atIndex: productCardIndex)
-            messages.append(card)
-        } else {
-            // Show a carousel of cards
-            var carouselElements: [Message] = []
-            for product in products {
-                guard let entityInfo = product.entityInfo else { continue }
-                let cardTitle = entityInfo.productName ?? "No title"
-                let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-                let cardClickThroughURL = entityInfo.productPageURL.flatMap { URL(string: $0) }
-
-                let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
-                                                                  title: cardTitle,
-                                                                  destination: cardClickThroughURL))
-
-                carouselElements.append(card)
+        // If any cards exist in the multimodal elements list, 
+        // resolves to either single card or carousel of cards depending on number of card elements
+        let cardMessage: Message? = {
+            if cardElements.count == 1, let card = cardElements.first, let entityInfo = card.entityInfo {
+                let cardData = ProductCardData(entityInfo: entityInfo, element: card)
+                return Message(template: .productCard(cardData))
+            } else if cardElements.count > 1 {
+                var carouselItems: [Message] = []
+                for card in cardElements {
+                    guard let entityInfo = card.entityInfo else { continue }
+                    let cardData = ProductCardData(entityInfo: entityInfo, element: card)
+                    carouselItems.append(Message(template: .productCarouselCard(cardData)))
+                }
+                return Message(template: .carouselGroup(carouselItems))
             }
+            return nil
+        }()
 
-            removeProductCard(atIndex: productCardIndex)
-            messages.append(Message(template: .carouselGroup(carouselElements)))
-        }
-    }
+        var cardElementEmitted = false
 
-    private func removeProductCard(atIndex index: Int?) {
-        if let index = index, index < messages.count {
-            messages.remove(at: index)
+        for element in elements {
+            if element.elementType == .ctaButton {
+                guard let action = element.entityInfo?.primary else {
+                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
+                    continue
+                }
+                messages.append(Message(template: .ctaButton(action)))
+            // If a card element is encountered in the original element ordering, 
+            // append the card message (single or carousel) if it exists and set the flag to true
+            } else if !cardElementEmitted {
+                if let cardMessage = cardMessage {
+                    messages.append(cardMessage)
+                }
+                cardElementEmitted = true
+            }
         }
     }
 }

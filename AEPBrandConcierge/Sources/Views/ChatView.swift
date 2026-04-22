@@ -15,7 +15,7 @@ import AEPCore
 import AEPServices
 
 /// Main chat view presenting the Concierge conversation interface.
-public struct ChatView: View {
+struct ChatView: View {
     private let LOG_TAG = "ChatView"
 
     // MARK: - Environment
@@ -26,7 +26,7 @@ public struct ChatView: View {
 
     // MARK: - State
 
-    @StateObject private var controller: ChatController
+    @ObservedObject private var controller: ChatController
     @ObservedObject private var inputController: InputController
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
@@ -40,77 +40,44 @@ public struct ChatView: View {
 
     // MARK: - Dependencies and Configuration
 
-    private let textSpeaker: TextSpeaking?
     private let onClose: (() -> Void)?
     private let titleText: String
     private let subtitleText: String?
-    private var conciergeConfiguration: ConciergeConfiguration
 
     // MARK: - UI
 
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .heavy)
 
-    private var globalLineSpacing: CGFloat {
-        let multiplier = theme.typography.lineHeight
-        guard multiplier.isFinite, multiplier > 0 else {
-            return 0
-        }
-
-        let fontSize = theme.typography.fontSize
-        let baseFont: UIFont = {
-            if theme.typography.fontFamily.isEmpty {
-                return UIFont.systemFont(ofSize: fontSize)
-            }
-            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-        }()
-
-        let targetLineHeight = fontSize * multiplier
-        let additionalSpacing = targetLineHeight - baseFont.lineHeight
-        return max(0, additionalSpacing)
-    }
-
     // MARK: - Initializers
 
-    public init(
-        speechCapturer: SpeechCapturing? = nil,
-        textSpeaker: TextSpeaking? = nil,
-        title: String = "Concierge",
-        subtitle: String? = "Powered by Adobe",
-        conciergeConfiguration: ConciergeConfiguration,
+    init(
+        controller: ChatController,
+        title: String = ConciergeConstants.Defaults.TITLE,
+        subtitle: String? = ConciergeConstants.Defaults.SUBTITLE,
         onClose: (() -> Void)? = nil
     ) {
-        self.textSpeaker = textSpeaker
         self.titleText = title
         self.subtitleText = subtitle
         self.onClose = onClose
-        self.conciergeConfiguration = conciergeConfiguration
-
-        let chatController = ChatController(
-            configuration: conciergeConfiguration,
-            speechCapturer: speechCapturer ?? SpeechCapturer(),
-            speaker: textSpeaker
-        )
-        _controller = StateObject(wrappedValue: chatController)
-        _inputController = ObservedObject(wrappedValue: chatController.inputController)
+        self._controller = ObservedObject(wrappedValue: controller)
+        self._inputController = ObservedObject(wrappedValue: controller.inputController)
     }
 
     // Internal use only for previews
     init(messages: [Message]) {
-        self.textSpeaker = nil
-        self.titleText = "Concierge"
-        self.subtitleText = "Powered by Adobe"
+        self.titleText = ConciergeConstants.Defaults.TITLE
+        self.subtitleText = ConciergeConstants.Defaults.SUBTITLE
         self.onClose = nil
-        self.conciergeConfiguration = ConciergeConfiguration()
 
         let chatController = ChatController(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         chatController.messages = messages
-        _controller = StateObject(wrappedValue: chatController)
-        _inputController = ObservedObject(wrappedValue: chatController.inputController)
+        self._controller = ObservedObject(wrappedValue: chatController)
+        self._inputController = ObservedObject(wrappedValue: chatController.inputController)
     }
 
     // MARK: - Body
 
-    public var body: some View {
+    var body: some View {
         ZStack(alignment: .bottom) {
             // Full background color ignoring safe area (dynamic for light/dark)
             theme.colors.surface.mainContainerBackground.color
@@ -132,18 +99,18 @@ public struct ChatView: View {
                 messages: displayMessages,
                 userScrollTick: controller.userScrollTick,
                 userMessageToScrollId: controller.userMessageToScrollId,
+                scrollToLastOnAppear: controller.hasUserSentMessage,
                 isInputFocused: $isInputFocused
             ) { text in
-                textSpeaker?.utter(text: text)
+                controller.speak(text)
             } onSuggestionTap: { suggestion in
-                isInputFocused = true
                 controller.applyTextChange(suggestion)
-                selectedTextRange = NSRange(location: suggestion.utf16.count, length: 0)
+                controller.sendMessage(isUser: true)
             }
-                .padding(.horizontal, theme.layout.chatHistoryPadding)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .conciergePlaceholderConfig(
             ConciergeResponsePlaceholderConfig(
@@ -186,6 +153,7 @@ public struct ChatView: View {
                 composerEditable: controller.chatState != .processing,
                 micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
                 sendEnabled: inputController.data.canSend,
+                audioLevel: controller.audioLevel,
                 onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
                 onCancel: {
@@ -219,17 +187,21 @@ public struct ChatView: View {
             }
         })
         // Overlay after layout to avoid affecting layout metrics
-        .overlay(alignment: .center) {
+        .overlay {
             if showFeedbackOverlay {
                 FeedbackOverlayView(
                     sentiment: feedbackSentiment,
-                    onCancel: { showFeedbackOverlay = false },
+                    onCancel: { withAnimation { showFeedbackOverlay = false } },
                     onSubmit: { payload in
                         controller.sendFeedbackFor(messageId: feedbackMessageId, with: payload)
-                        showFeedbackOverlay = false
+                        withAnimation { showFeedbackOverlay = false }
                     }
                 )
-                .transition(.opacity)
+                .transition(
+                    theme.behavior.feedback?.displayMode == "action"
+                        ? .move(edge: .bottom).combined(with: .opacity)
+                        : .opacity
+                )
                 .zIndex(1000)
             }
         }
@@ -242,7 +214,9 @@ public struct ChatView: View {
                     .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(theme.colors.message.conciergeBackground.color.opacity(0.96))
+                            .fill(
+                                theme.components.chatMessage.conciergeBackground.color.opacity(0.96)
+                            )
                     )
                     .padding(.top, 12)
                     .padding(.horizontal, 16)
@@ -307,7 +281,6 @@ public struct ChatView: View {
                 ? .system(size: theme.typography.fontSize)
                 : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
         )
-        .lineSpacing(globalLineSpacing)
     }
 
     // MARK: - Actions
@@ -319,9 +292,12 @@ public struct ChatView: View {
     }
 
     private func handleMicTap() {
+        controller.applyVoiceInputBehavior(theme.behavior.input)
         if controller.isRecording {
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
+            // Dismiss keyboard before starting recording
+            isInputFocused = false
             hapticFeedback.impactOccurred()
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }
@@ -355,16 +331,30 @@ public struct ChatView: View {
         var messages = [
             Message(template: .divider),
             Message(template: .carouselGroup([
-                Message(template: .productCarouselCard(
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 1",
-                    destination: URL(string: "https://adobe.com")!
-                )),
-                Message(template: .productCarouselCard(
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                ))),
+                Message(template: .productCarouselCard(ProductCardData(
                     imageSource: .remote(URL(string: "https://i.ibb.co/0X8R3TG/Messages-24.png")!),
                     title: "Product 2",
-                    destination: URL(string: "https://adobe.com")!
-                ))
+                    subtitle: nil,
+                    price: nil,
+                    badge: nil,
+                    destinationURL: URL(string: "https://adobe.com")!,
+                    primaryButton: nil,
+                    secondaryButton: nil,
+                    imageWidth: nil,
+                    imageHeight: nil
+                )))
             ])),
             Message(template: .divider)
         ]

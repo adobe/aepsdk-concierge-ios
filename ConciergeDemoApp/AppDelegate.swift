@@ -24,7 +24,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let extensions = [
             AEPEdgeIdentity.Identity.self,
             Edge.self,
-            Consent.self,
             Concierge.self
         ]
 

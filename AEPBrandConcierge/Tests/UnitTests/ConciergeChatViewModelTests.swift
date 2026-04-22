@@ -260,6 +260,285 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertFalse(controller.isRecording)
     }
     
+    // MARK: - Product Card Rendering Tests
+
+    func test_streaming_singleProduct_appendsProductCardMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Widget Pro",
+                productDescription: "A versatile tool",
+                description: nil,
+                productPageURL: "https://example.com/products/widget-pro",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/widget-pro.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: ActionButton(text: "Buy", url: "https://example.com/buy"),
+                secondary: nil,
+                productPrice: "$9.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here's a product:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [element],
+                message: "Here's a product:"
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me a product")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Messages: [user, agent text, product card]
+        XCTAssertGreaterThanOrEqual(controller.messages.count, 3)
+
+        let productMessage = controller.messages.last { message in
+            if case .productCard = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(productMessage, "Expected a .productCard message in the message list")
+    }
+
+    func test_streaming_multipleProducts_appendsCarouselGroupMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element1 = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Widget Pro",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://example.com/products/widget-pro",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/widget-pro.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+        let element2 = MultimodalElement(
+            id: "prod-2",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Gadget Basic",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://example.com/products/gadget-basic",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/gadget-basic.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here are some products:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [element1, element2],
+                message: "Here are some products:"
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me products")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Expect a carouselGroup message containing the product carousel cards
+        let carouselMessage = controller.messages.last { message in
+            if case .carouselGroup = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(carouselMessage, "Expected a .carouselGroup message in the message list")
+
+        if case .carouselGroup(let items) = carouselMessage?.template {
+            XCTAssertEqual(items.count, 2)
+            if case .productCarouselCard(let cardData) = items[0].template {
+                XCTAssertEqual(cardData.title, "Widget Pro")
+            } else {
+                XCTFail("Expected first carousel item to be .productCarouselCard")
+            }
+            if case .productCarouselCard(let cardData) = items[1].template {
+                XCTAssertEqual(cardData.title, "Gadget Basic")
+            } else {
+                XCTFail("Expected second carousel item to be .productCarouselCard")
+            }
+        } else {
+            XCTFail("Expected .carouselGroup template")
+        }
+    }
+
+    // MARK: - CTA Button Rendering Tests
+
+    func test_streaming_singleCtaButton_appendsCtaButtonMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let ctaElement = MultimodalElement(
+            id: "cta-live-chat",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Chat now", url: "https://example.com/live-chat")
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Let me connect you."),
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: [ctaElement], message: "Let me connect you.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("help")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        let ctaMessage = controller.messages.first { message in
+            if case .ctaButton = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(ctaMessage, "Expected a .ctaButton message in the message list")
+
+        if case .ctaButton(let action) = ctaMessage?.template {
+            XCTAssertEqual(action.text, "Chat now")
+            XCTAssertEqual(action.url, "https://example.com/live-chat")
+        }
+    }
+
+    func test_streaming_ctaWithMissingPrimary_isSkipped() {
+        // Given — CTA element with no primary action should be silently skipped
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let ctaWithNoPrimary = MultimodalElement(id: "cta-broken", type: "ctaButton", entityInfo: nil)
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here you go."),
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: [ctaWithNoPrimary], message: "Here you go.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("test")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        let ctaMessage = controller.messages.first { message in
+            if case .ctaButton = message.template { return true }
+            return false
+        }
+        XCTAssertNil(ctaMessage, "CTA with missing primary should not produce a message")
+    }
+
+    // MARK: - Interleaved Element Ordering Tests
+
+    func test_streaming_interleavedCtaAndCards_respectsRelativeOrder() {
+        // Given — [CTA, card, card, CTA, card] should produce [ctaButton, carousel(3), ctaButton]
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+
+        let cta1 = MultimodalElement(
+            id: "cta-1",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Chat with an agent", url: "https://example.com/chat")
+        )
+        let card1 = makeProductElement(id: "prod-1", name: "Product A", price: "$99.99")
+        let card2 = makeProductElement(id: "prod-2", name: "Product B", price: "$129.99")
+        let cta2 = MultimodalElement(
+            id: "cta-2",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Find a store", url: "https://example.com/stores")
+        )
+        let card3 = makeProductElement(id: "prod-3", name: "Product C", price: "$149.99")
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here are some options."),
+            makePayloadWithElements(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [cta1, card1, card2, cta2, card3],
+                message: "Here are some options."
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me products")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        // Messages: [user, agent text, cta1, carousel, cta2]
+        XCTAssertEqual(controller.messages.count, 5, "Expected 5 messages: user, agent text, CTA, carousel, CTA")
+
+        // messages[0] = user message
+        // messages[1] = agent text
+        // messages[2] = first CTA
+        if case .ctaButton(let action) = controller.messages[2].template {
+            XCTAssertEqual(action.text, "Chat with an agent")
+        } else {
+            XCTFail("Expected messages[2] to be .ctaButton, got \(controller.messages[2].template)")
+        }
+
+        // messages[3] = carousel with 3 cards
+        if case .carouselGroup(let items) = controller.messages[3].template {
+            XCTAssertEqual(items.count, 3)
+            if case .productCarouselCard(let cardData) = items[0].template {
+                XCTAssertEqual(cardData.title, "Product A")
+            } else {
+                XCTFail("Expected first carousel item to be .productCarouselCard")
+            }
+            if case .productCarouselCard(let cardData) = items[2].template {
+                XCTAssertEqual(cardData.title, "Product C")
+            } else {
+                XCTFail("Expected third carousel item to be .productCarouselCard")
+            }
+        } else {
+            XCTFail("Expected messages[3] to be .carouselGroup, got \(controller.messages[3].template)")
+        }
+
+        // messages[4] = second CTA
+        if case .ctaButton(let action) = controller.messages[4].template {
+            XCTAssertEqual(action.text, "Find a store")
+        } else {
+            XCTFail("Expected messages[4] to be .ctaButton, got \(controller.messages[4].template)")
+        }
+    }
+
     // MARK: - Helpers
     private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil) -> ChatController {
         ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
@@ -279,6 +558,53 @@ final class ChatControllerTests: XCTestCase {
             key: nil,
             value: nil,
             maxAge: nil
+        )
+    }
+
+    private func makePayloadWithProducts(state: String, elements: [MultimodalElement], message: String? = nil) -> ConversationPayload {
+        makePayloadWithElements(state: state, elements: elements, message: message)
+    }
+
+    private func makePayloadWithElements(state: String, elements: [MultimodalElement], message: String? = nil) -> ConversationPayload {
+        let multimodal = MultimodalElements(elements: elements)
+        let response = ConversationResponse(
+            message: message ?? "",
+            promptSuggestions: nil,
+            multimodalElements: multimodal,
+            sources: nil,
+            state: nil
+        )
+        return ConversationPayload(
+            conversationId: nil,
+            interactionId: nil,
+            request: nil,
+            response: response,
+            state: state,
+            key: nil,
+            value: nil,
+            maxAge: nil
+        )
+    }
+
+    private func makeCtaEntityInfo(text: String, url: String) -> EntityInfo {
+        EntityInfo(
+            productName: nil, productDescription: nil, description: nil, productPageURL: nil,
+            details: nil, learningResource: nil, productImageURL: nil, backgroundColor: nil,
+            logo: nil, primary: ActionButton(text: text, url: url),
+            secondary: nil, productPrice: nil, productWasPrice: nil, productBadge: nil
+        )
+    }
+
+    private func makeProductElement(id: String, name: String, price: String) -> MultimodalElement {
+        MultimodalElement(
+            id: id,
+            entityInfo: EntityInfo(
+                productName: name, productDescription: nil, description: nil,
+                productPageURL: "https://example.com/p/\(id)", details: nil, learningResource: nil,
+                productImageURL: "https://example.com/img/\(id).png",
+                backgroundColor: nil, logo: nil, primary: nil,
+                secondary: nil, productPrice: price, productWasPrice: nil, productBadge: nil
+            )
         )
     }
 
