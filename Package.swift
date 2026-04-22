@@ -23,7 +23,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/adobe/aepsdk-core-ios.git", .upToNextMajor(from: "5.7.0")),
-        .package(url: "https://github.com/adobe/aepsdk-edge-ios.git", .upToNextMajor(from: "5.0.3")),
         .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0"))
     ],
     targets: [
@@ -31,7 +30,6 @@ let package = Package(
             dependencies: [
                 .product(name: "AEPCore", package: "aepsdk-core-ios"),
                 .product(name: "AEPServices", package: "aepsdk-core-ios"),
-                .product(name: "AEPEdge", package: "aepsdk-edge-ios"),
                 .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios")
             ],
             path: "AEPBrandConcierge/Sources",
