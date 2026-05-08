@@ -19,14 +19,22 @@
     },
     "chat": {
       "messageAlignment": "left",
-      "messageWidth": "100%"
+      "messageWidth": "100%",
+      "userMessageBubbleStyle": "balloon"
     },
     "privacyNotice": {
       "title": "Privacy Notice",
       "text": "Privacy notice text."
     },
     "productCard": {
-      "cardStyle": "productDetail"
+      "cardStyle": "productDetail",
+      "cardsAlignment": "center"
+    },
+    "feedback": {
+      "displayMode": "modal",
+      "thumbsPlacement": "inline",
+      "showCloseButton": null,
+      "showCancelButton": null
     }
   },
   "disclaimer": {
@@ -148,6 +156,24 @@
     "--feedback-icon-btn-hover-background": "#FFFFFF",
     "--feedback-icon-btn-size-desktop": "32px",
     "--feedback-container-gap": "4px",
+    "--feedback-sheet-background-color": "#FFFFFF",
+    "--feedback-title-text-color": "#131313",
+    "--feedback-question-text-color": "#424242",
+    "--feedback-options-text-color": "#131313",
+    "--feedback-checkbox-border-color": "#131313",
+    "--feedback-drag-handle-color": "#CCCCCC",
+    "--feedback-submit-button-fill-color": "#3B63FB",
+    "--feedback-submit-button-text-color": "#FFFFFF",
+    "--feedback-submit-button-border-radius": "10px",
+    "--feedback-submit-button-font-weight": "600",
+    "--feedback-cancel-button-fill-color": "#FFFFFF",
+    "--feedback-cancel-button-text-color": "#2C2C2C",
+    "--feedback-cancel-button-border-color": "#2C2C2C",
+    "--feedback-cancel-button-border-width": "1px",
+    "--feedback-cancel-button-border-radius": "10px",
+    "--feedback-cancel-button-font-weight": "600",
+    "--feedback-checkbox-border-radius": "6px",
+    "--feedback-title-font-size": "22px",
     "--multimodal-card-box-shadow": "none",
     "--border-radius-card": "16px",
     "--button-height-s": "30px",
@@ -196,6 +222,15 @@
     "--cta-button-vertical-padding": "12px",
     "--cta-button-font-size": "14px",
     "--cta-button-font-weight": "400",
-    "--cta-button-icon-size": "16px"
+    "--cta-button-icon-size": "16px",
+    "--agent-icon-size": "39px",
+    "--agent-icon-spacing": "12px",
+    "--thinking-dot-color": "#007BFF",
+    "--thinking-dot-size": "8px",
+    "--thinking-dot-spacing": "8px",
+    "--thinking-bubble-border-radius": "8px",
+    "--thinking-bubble-padding-horizontal": "16px",
+    "--thinking-bubble-padding-vertical": "8px",
+    "--thinking-dot-vertical-alignment": "center"
   }
 }

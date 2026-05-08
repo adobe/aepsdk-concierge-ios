@@ -110,6 +110,19 @@ public struct ConciergeWelcomeCardBehavior: Codable {
     }
 }
 
+/// Where feedback thumbs are placed relative to the sources list.
+public enum ThumbsPlacement: String, Codable {
+    /// Thumbs sit inline in the sources header row (default).
+    case inline = "inline"
+    /// Thumbs appear in a dedicated row below the expanded sources list.
+    case below = "below"
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = ThumbsPlacement(rawValue: raw.lowercased()) ?? .inline
+    }
+}
+
 /// Feedback behavior configuration
 /// To-do: update vars to enums or bools where applicable
 public struct ConciergeFeedbackBehavior: Codable {
@@ -117,31 +130,55 @@ public struct ConciergeFeedbackBehavior: Codable {
     /// - `"modal"` — centered dialog with blurred backdrop (`FeedbackOverlayView` modal layout).
     /// - `"action"` — action sheet-style layout with drag affordance.
     public var displayMode: String
-    public var thumbsPlacement: String
+    public var thumbsPlacement: ThumbsPlacement
+    /// Overrides the close (X) button visibility. `nil` defaults to `true` for `"action"`, `false` for `"modal"`.
+    public var showCloseButton: Bool?
+    /// Overrides the Cancel button visibility. `nil` defaults to `true` for `"modal"`, `false` for `"action"`.
+    public var showCancelButton: Bool?
+
+    /// Effective close button visibility: `showCloseButton` when set, otherwise `displayMode == "action"`.
+    public var resolvedShowCloseButton: Bool {
+        showCloseButton ?? (displayMode == "action")
+    }
+
+    /// Effective Cancel button visibility: `showCancelButton` when set, otherwise `displayMode == "modal"`.
+    public var resolvedShowCancelButton: Bool {
+        showCancelButton ?? (displayMode == "modal")
+    }
 
     private enum CodingKeys: String, CodingKey {
         case displayMode
         case thumbsPlacement
+        case showCloseButton
+        case showCancelButton
     }
 
     public init(
         displayMode: String = "modal",
-        thumbsPlacement: String = "inline"
+        thumbsPlacement: ThumbsPlacement = .inline,
+        showCloseButton: Bool? = nil,
+        showCancelButton: Bool? = nil
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
+        self.showCloseButton = showCloseButton
+        self.showCancelButton = showCancelButton
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         displayMode = try container.decodeIfPresent(String.self, forKey: .displayMode) ?? "modal"
-        thumbsPlacement = try container.decodeIfPresent(String.self, forKey: .thumbsPlacement) ?? "inline"
+        thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
+        showCloseButton = try container.decodeIfPresent(Bool.self, forKey: .showCloseButton)
+        showCancelButton = try container.decodeIfPresent(Bool.self, forKey: .showCancelButton)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(displayMode, forKey: .displayMode)
         try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
+        try container.encodeIfPresent(showCloseButton, forKey: .showCloseButton)
+        try container.encodeIfPresent(showCancelButton, forKey: .showCancelButton)
     }
 }
 
@@ -163,22 +200,39 @@ public struct ConciergeIconConfig: Codable {
     }
 }
 
+/// Shape style for the user message bubble.
+public enum UserMessageBubbleStyle: String, Codable {
+    /// Fully rounded corners on all sides (default).
+    case `default` = "default"
+    /// Speech-bubble style with a squared-off bottom-right corner.
+    case balloon = "balloon"
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = UserMessageBubbleStyle(rawValue: raw.lowercased()) ?? .default
+    }
+}
+
 /// Chat behavior configuration
 public struct ConciergeChatBehavior: Codable {
     public var messageAlignment: ConciergeTextAlignment
     public var messageWidth: CGFloat? // nil = no max width, value = max width in points
+    public var userMessageBubbleStyle: UserMessageBubbleStyle
 
     private enum CodingKeys: String, CodingKey {
         case messageAlignment
         case messageWidth
+        case userMessageBubbleStyle
     }
 
     public init(
         messageAlignment: ConciergeTextAlignment = .leading,
-        messageWidth: CGFloat? = nil
+        messageWidth: CGFloat? = nil,
+        userMessageBubbleStyle: UserMessageBubbleStyle = .default
     ) {
         self.messageAlignment = messageAlignment
         self.messageWidth = messageWidth
+        self.userMessageBubbleStyle = userMessageBubbleStyle
     }
 
     public init(from decoder: Decoder) throws {
@@ -192,6 +246,8 @@ public struct ConciergeChatBehavior: Codable {
         } else {
             messageWidth = nil
         }
+
+        userMessageBubbleStyle = try container.decodeIfPresent(UserMessageBubbleStyle.self, forKey: .userMessageBubbleStyle) ?? .default
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -199,6 +255,9 @@ public struct ConciergeChatBehavior: Codable {
         try container.encode(messageAlignment, forKey: .messageAlignment)
         if let width = messageWidth {
             try container.encode(width, forKey: .messageWidth)
+        }
+        if userMessageBubbleStyle != .default {
+            try container.encode(userMessageBubbleStyle, forKey: .userMessageBubbleStyle)
         }
     }
 }
@@ -219,12 +278,71 @@ public enum CarouselStyle: String, Codable {
     case scroll
 }
 
+/// Horizontal alignment of product cards within their container.
+public enum CardsAlignment: String, Codable {
+    case start
+    case center
+    case end
+}
+
 /// Product card behavior configuration
 public struct ConciergeProductCardBehavior: Codable {
     public var cardStyle: ProductCardStyle
+    /// Horizontal alignment of product cards within their container. Default is `.center`.
+    public var cardsAlignment: CardsAlignment
 
-    public init(cardStyle: ProductCardStyle = .actionButton) {
+    public init(
+        cardStyle: ProductCardStyle = .actionButton,
+        cardsAlignment: CardsAlignment = .center
+    ) {
         self.cardStyle = cardStyle
+        self.cardsAlignment = cardsAlignment
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cardStyle = try container.decodeIfPresent(ProductCardStyle.self, forKey: .cardStyle) ?? .actionButton
+        cardsAlignment = try container.decodeIfPresent(CardsAlignment.self, forKey: .cardsAlignment) ?? .center
+    }
+}
+
+/// Prompt suggestions behavior configuration
+public struct ConciergePromptSuggestionsBehavior: Codable {
+    /// Max lines of text per chip before ellipsis. Default: `1`.
+    public var itemMaxLines: Int
+    /// Show a customizable "Suggestions" header label above the chips. Default: `false`.
+    public var showHeader: Bool
+    /// Align chips to the inner content edge of the bot message bubble. Default: `false`.
+    public var alignToMessage: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case itemMaxLines
+        case showHeader
+        case alignToMessage
+    }
+
+    public init(
+        itemMaxLines: Int = 1,
+        showHeader: Bool = false,
+        alignToMessage: Bool = false
+    ) {
+        self.itemMaxLines = itemMaxLines
+        self.showHeader = showHeader
+        self.alignToMessage = alignToMessage
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        itemMaxLines = try container.decodeIfPresent(Int.self, forKey: .itemMaxLines) ?? 1
+        showHeader = try container.decodeIfPresent(Bool.self, forKey: .showHeader) ?? false
+        alignToMessage = try container.decodeIfPresent(Bool.self, forKey: .alignToMessage) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(itemMaxLines, forKey: .itemMaxLines)
+        try container.encode(showHeader, forKey: .showHeader)
+        try container.encode(alignToMessage, forKey: .alignToMessage)
     }
 }
 
@@ -252,6 +370,7 @@ public struct ConciergeBehaviorConfig: Codable {
     public var welcomeCard: ConciergeWelcomeCardBehavior?
     public var feedback: ConciergeFeedbackBehavior?
     public var citations: ConciergeCitationsBehavior?
+    public var promptSuggestions: ConciergePromptSuggestionsBehavior?
 
     private enum CodingKeys: String, CodingKey {
         case multimodalCarousel
@@ -262,6 +381,7 @@ public struct ConciergeBehaviorConfig: Codable {
         case welcomeCard
         case feedback
         case citations
+        case promptSuggestions
     }
 
     public init(
@@ -272,7 +392,8 @@ public struct ConciergeBehaviorConfig: Codable {
         productCard: ConciergeProductCardBehavior = ConciergeProductCardBehavior(),
         welcomeCard: ConciergeWelcomeCardBehavior? = nil,
         feedback: ConciergeFeedbackBehavior? = nil,
-        citations: ConciergeCitationsBehavior? = nil
+        citations: ConciergeCitationsBehavior? = nil,
+        promptSuggestions: ConciergePromptSuggestionsBehavior? = nil
     ) {
         self.multimodalCarousel = multimodalCarousel
         self.input = input
@@ -282,6 +403,7 @@ public struct ConciergeBehaviorConfig: Codable {
         self.welcomeCard = welcomeCard
         self.feedback = feedback
         self.citations = citations
+        self.promptSuggestions = promptSuggestions
     }
 
     public init(from decoder: Decoder) throws {
@@ -300,6 +422,7 @@ public struct ConciergeBehaviorConfig: Codable {
         welcomeCard = try container.decodeIfPresent(ConciergeWelcomeCardBehavior.self, forKey: .welcomeCard)
         feedback = try container.decodeIfPresent(ConciergeFeedbackBehavior.self, forKey: .feedback)
         citations = try container.decodeIfPresent(ConciergeCitationsBehavior.self, forKey: .citations)
+        promptSuggestions = try container.decodeIfPresent(ConciergePromptSuggestionsBehavior.self, forKey: .promptSuggestions)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -312,5 +435,6 @@ public struct ConciergeBehaviorConfig: Codable {
         try container.encodeIfPresent(welcomeCard, forKey: .welcomeCard)
         try container.encodeIfPresent(feedback, forKey: .feedback)
         try container.encodeIfPresent(citations, forKey: .citations)
+        try container.encodeIfPresent(promptSuggestions, forKey: .promptSuggestions)
     }
 }
