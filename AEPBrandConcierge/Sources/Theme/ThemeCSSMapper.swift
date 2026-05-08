@@ -29,6 +29,7 @@ public enum CSSKeyMapper {
         // Colors - Primary
         "color-primary": { cssValue, theme in theme.colors.primary.primary = CSSValueConverter.parseColor(cssValue) },
         "color-text": { cssValue, theme in theme.colors.primary.text = CSSValueConverter.parseColor(cssValue) },
+        "color-container": { cssValue, theme in theme.colors.primary.container = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Surface
         "main-container-background": { cssValue, theme in theme.colors.surface.mainContainerBackground = CSSValueConverter.parseColor(cssValue) },
@@ -75,6 +76,17 @@ public enum CSSKeyMapper {
 
         // Colors - Feedback
         "feedback-icon-btn-background": { cssValue, theme in theme.colors.feedback.iconButtonBackground = CSSValueConverter.parseColor(cssValue) },
+        "feedback-submit-button-fill-color": { cssValue, theme in theme.colors.feedback.submitButtonFill = CSSValueConverter.parseColor(cssValue) },
+        "feedback-submit-button-text-color": { cssValue, theme in theme.colors.feedback.submitButtonText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-fill-color": { cssValue, theme in theme.colors.feedback.cancelButtonFill = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-text-color": { cssValue, theme in theme.colors.feedback.cancelButtonText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-cancel-button-border-color": { cssValue, theme in theme.colors.feedback.cancelButtonBorder = CSSValueConverter.parseColor(cssValue) },
+        "feedback-sheet-background-color": { cssValue, theme in theme.colors.feedback.sheetBackground = CSSValueConverter.parseColor(cssValue) },
+        "feedback-title-text-color": { cssValue, theme in theme.colors.feedback.titleText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-question-text-color": { cssValue, theme in theme.colors.feedback.questionText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-options-text-color": { cssValue, theme in theme.colors.feedback.optionsText = CSSValueConverter.parseColor(cssValue) },
+        "feedback-checkbox-border-color": { cssValue, theme in theme.colors.feedback.checkboxBorder = CSSValueConverter.parseColor(cssValue) },
+        "feedback-drag-handle-color": { cssValue, theme in theme.colors.feedback.dragHandle = CSSValueConverter.parseColor(cssValue) },
 
         // Colors - Disclaimer
         "disclaimer-color": { cssValue, theme in
@@ -129,6 +141,14 @@ public enum CSSKeyMapper {
 
         // Layout - Feedback
         "feedback-container-gap": { cssValue, theme in theme.layout.feedbackContainerGap = CSSValueConverter.parsePxValue(cssValue) ?? 4 },
+        "feedback-submit-button-border-radius": { cssValue, theme in theme.layout.feedbackSubmitButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
+        "feedback-submit-button-font-weight": { cssValue, theme in theme.layout.feedbackSubmitButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "feedback-cancel-button-border-radius": { cssValue, theme in theme.layout.feedbackCancelButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 10 },
+        "feedback-cancel-button-border-width": { cssValue, theme in theme.layout.feedbackCancelButtonBorderWidth = CSSValueConverter.parsePxValue(cssValue) ?? 1 },
+        "feedback-cancel-button-font-weight": { cssValue, theme in theme.layout.feedbackCancelButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "feedback-checkbox-border-radius": { cssValue, theme in theme.layout.feedbackCheckboxBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 6 },
+        "feedback-title-text-align": { cssValue, theme in theme.layout.feedbackTitleTextAlign = CSSValueConverter.parseTextAlignment(cssValue) },
+        "feedback-title-font-size": { cssValue, theme in theme.layout.feedbackTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Citations
         "citations-text-font-weight": { cssValue, theme in theme.layout.citationsTextFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
@@ -192,6 +212,11 @@ public enum CSSKeyMapper {
         "cta-button-font-size": { cssValue, theme in theme.layout.ctaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
         "cta-button-font-weight": { cssValue, theme in theme.layout.ctaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
         "cta-button-icon-size": { cssValue, theme in theme.layout.ctaButtonIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+
+        // Layout - Agent Icon
+        "agent-icon-size": { cssValue, theme in theme.layout.agentIconSize = CSSValueConverter.parsePxValue(cssValue) ?? 39 },
+        "agent-icon-spacing": { cssValue, theme in theme.layout.agentIconSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+
         // Colors - Input Icons
         "input-send-icon-color": { cssValue, theme in theme.colors.input.sendIconColor = CSSValueConverter.parseColor(cssValue) },
         "input-send-arrow-icon-color": { cssValue, theme in theme.colors.input.sendArrowIconColor = CSSValueConverter.parseColor(cssValue) },
@@ -202,6 +227,11 @@ public enum CSSKeyMapper {
         // Colors - Welcome Prompts
         "welcome-prompt-background-color": { cssValue, theme in theme.colors.welcomePrompt.backgroundColor = CSSValueConverter.parseColor(cssValue) },
         "welcome-prompt-text-color": { cssValue, theme in theme.colors.welcomePrompt.textColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": { cssValue, theme in theme.colors.promptSuggestion.backgroundColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-text-color": { cssValue, theme in theme.colors.promptSuggestion.textColor = CSSValueConverter.parseColor(cssValue) },
+        "suggestion-item-border-radius": { cssValue, theme in theme.layout.suggestionItemBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
 
         // Layout - Welcome Screen
         "header-title-font-size": { cssValue, theme in theme.layout.headerTitleFontSize = CSSValueConverter.parsePxValue(cssValue) },
@@ -214,6 +244,21 @@ public enum CSSKeyMapper {
         "welcome-prompts-top-spacing": { cssValue, theme in theme.layout.welcomePromptsTopSpacing = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-padding": { cssValue, theme in theme.layout.welcomePromptPadding = CSSValueConverter.parsePxValue(cssValue) },
         "welcome-prompt-corner-radius": { cssValue, theme in theme.layout.welcomePromptCornerRadius = CSSValueConverter.parsePxValue(cssValue) },
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": { cssValue, theme in theme.colors.thinking.dotColor = CSSValueConverter.parseColor(cssValue) },
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": { cssValue, theme in theme.layout.thinkingDotSize = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-spacing": { cssValue, theme in theme.layout.thinkingDotSpacing = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-border-radius": { cssValue, theme in theme.layout.thinkingBubbleBorderRadius = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-horizontal": { cssValue, theme in theme.layout.thinkingBubblePaddingHorizontal = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-bubble-padding-vertical": { cssValue, theme in theme.layout.thinkingBubblePaddingVertical = CSSValueConverter.parsePxValue(cssValue) },
+        "thinking-dot-vertical-alignment": { cssValue, theme in
+            theme.layout.thinkingDotVerticalAlignment = ThinkingDotVerticalAlignment(
+                rawValue: cssValue.lowercased().trimmingCharacters(in: .whitespaces)
+            )
+        },
     ]
 
     /// Returns the normalized CSS keys (without the leading `--`) that are supported by iOS.

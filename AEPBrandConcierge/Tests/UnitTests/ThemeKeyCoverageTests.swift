@@ -164,6 +164,17 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Feedback
         "feedback-icon-btn-background": "colors.feedback.iconButtonBackground",
+        "feedback-submit-button-fill-color": "colors.feedback.submitButtonFill",
+        "feedback-submit-button-text-color": "colors.feedback.submitButtonText",
+        "feedback-cancel-button-fill-color": "colors.feedback.cancelButtonFill",
+        "feedback-cancel-button-text-color": "colors.feedback.cancelButtonText",
+        "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorder",
+        "feedback-sheet-background-color": "colors.feedback.sheetBackground",
+        "feedback-title-text-color": "colors.feedback.titleText",
+        "feedback-question-text-color": "colors.feedback.questionText",
+        "feedback-options-text-color": "colors.feedback.optionsText",
+        "feedback-checkbox-border-color": "colors.feedback.checkboxBorder",
+        "feedback-drag-handle-color": "colors.feedback.dragHandle",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",
@@ -200,6 +211,14 @@ private extension ThemeKeyCoverageTests {
 
         // Layout - Feedback
         "feedback-container-gap": "layout.feedbackContainerGap",
+        "feedback-submit-button-border-radius": "layout.feedbackSubmitButtonBorderRadius",
+        "feedback-submit-button-font-weight": "layout.feedbackSubmitButtonFontWeight",
+        "feedback-cancel-button-border-radius": "layout.feedbackCancelButtonBorderRadius",
+        "feedback-cancel-button-border-width": "layout.feedbackCancelButtonBorderWidth",
+        "feedback-cancel-button-font-weight": "layout.feedbackCancelButtonFontWeight",
+        "feedback-checkbox-border-radius": "layout.feedbackCheckboxBorderRadius",
+        "feedback-title-text-align": "layout.feedbackTitleTextAlign",
+        "feedback-title-font-size": "layout.feedbackTitleFontSize",
 
         // Layout - Citations
         "citations-text-font-weight": "layout.citationsTextFontWeight",
@@ -260,6 +279,10 @@ private extension ThemeKeyCoverageTests {
         "cta-button-font-weight": "layout.ctaButtonFontWeight",
         "cta-button-icon-size": "layout.ctaButtonIconSize",
 
+        // Layout - Agent Icon
+        "agent-icon-size": "layout.agentIconSize",
+        "agent-icon-spacing": "layout.agentIconSpacing",
+
         // Colors - Input Icons
         "input-send-icon-color": "colors.input.sendIconColor",
         "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",
@@ -270,6 +293,13 @@ private extension ThemeKeyCoverageTests {
         // Colors - Welcome Prompts
         "welcome-prompt-background-color": "colors.welcomePrompt.backgroundColor",
         "welcome-prompt-text-color": "colors.welcomePrompt.textColor",
+
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": "colors.promptSuggestion.backgroundColor",
+        "suggestion-text-color": "colors.promptSuggestion.textColor",
+
+        // Colors - Container
+        "color-container": "colors.primary.container",
 
         // Layout - Welcome Screen
         "header-title-font-size": "layout.headerTitleFontSize",
@@ -282,6 +312,20 @@ private extension ThemeKeyCoverageTests {
         "welcome-prompts-top-spacing": "layout.welcomePromptsTopSpacing",
         "welcome-prompt-padding": "layout.welcomePromptPadding",
         "welcome-prompt-corner-radius": "layout.welcomePromptCornerRadius",
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": "colors.thinking.dotColor",
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": "layout.thinkingDotSize",
+        "thinking-dot-spacing": "layout.thinkingDotSpacing",
+        "thinking-bubble-border-radius": "layout.thinkingBubbleBorderRadius",
+        "thinking-bubble-padding-horizontal": "layout.thinkingBubblePaddingHorizontal",
+        "thinking-bubble-padding-vertical": "layout.thinkingBubblePaddingVertical",
+        "thinking-dot-vertical-alignment": "layout.thinkingDotVerticalAlignment",
+
+        // Layout - Prompt Suggestions
+        "suggestion-item-border-radius": "layout.suggestionItemBorderRadius",
     ]
 
     // MARK: - Theme token model reflection
