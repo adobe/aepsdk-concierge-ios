@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		0F1601702FADCF690032EFD0 /* theme-dsg.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F16016F2FADCF690032EFD0 /* theme-dsg.json */; };
+		0F1601732FADD64E0032EFD0 /* LinkHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1601712FADD63D0032EFD0 /* LinkHint.swift */; };
 		24037ABB2EF3645E00FF4031 /* InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB82EF3645E00FF4031 /* InputController.swift */; };
 		24037ABC2EF3645E00FF4031 /* ChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB72EF3645E00FF4031 /* ChatController.swift */; };
 		24037ABD2EF3645E00FF4031 /* SpeechController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB92EF3645E00FF4031 /* SpeechController.swift */; };
@@ -227,6 +229,8 @@
 
 /* Begin PBXFileReference section */
 		0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
+		0F16016F2FADCF690032EFD0 /* theme-dsg.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-dsg.json"; sourceTree = "<group>"; };
+		0F1601712FADD63D0032EFD0 /* LinkHint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkHint.swift; sourceTree = "<group>"; };
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
 		24037AB72EF3645E00FF4031 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -482,6 +486,7 @@
 			children = (
 				24037AD12EF364B000FF4031 /* ConciergeError.swift */,
 				24037AD22EF364B000FF4031 /* ConversationHandle.swift */,
+				0F1601712FADD63D0032EFD0 /* LinkHint.swift */,
 				24037AD32EF364B000FF4031 /* ConversationPayload.swift */,
 				24037AD42EF364B000FF4031 /* ConversationResponse.swift */,
 				24037AD52EF364B000FF4031 /* Source.swift */,
@@ -580,6 +585,7 @@
 				4C2923DE2E7E221900D2D2C1 /* TestHelpers */,
 				4C2923DD2E7E21F400D2D2C1 /* UnitTests */,
 				4CDB0DD52EC84A64000B85D0 /* theme-default.json */,
+				0F16016F2FADCF690032EFD0 /* theme-dsg.json */,
 				244E6A082F2825DB00ADF1AA /* UnitTests.xctestplan */,
 			);
 			path = Tests;
@@ -1026,6 +1032,7 @@
 				4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */,
 				4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */,
 				4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */,
+				0F1601702FADCF690032EFD0 /* theme-dsg.json in Resources */,
 				249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */,
 				249899B42D67CCE30005CBD7 /* Assets.xcassets in Resources */,
 			);
@@ -1192,6 +1199,7 @@
 				24037AD72EF364B000FF4031 /* Source.swift in Sources */,
 				24037AD82EF364B000FF4031 /* FeedbackPayload.swift in Sources */,
 				24037AD92EF364B000FF4031 /* FeedbackSentiment.swift in Sources */,
+				0F1601732FADD64E0032EFD0 /* LinkHint.swift in Sources */,
 				24037ADA2EF364B000FF4031 /* ConversationPayload.swift in Sources */,
 				4CC11B1C2F592F3B00EEF226 /* ProductDetailCardView.swift in Sources */,
 				24037ADB2EF364B000FF4031 /* ConversationHandle.swift in Sources */,
