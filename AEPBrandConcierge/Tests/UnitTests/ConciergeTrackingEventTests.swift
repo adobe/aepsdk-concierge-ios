@@ -157,4 +157,67 @@ final class ConciergeTrackingEventTests: XCTestCase {
         )
         XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.ERROR_MESSAGE] as? String, "Server was unreachable.")
     }
+
+    // MARK: - chatOpened
+
+    func test_chatOpened_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.chatOpened(epochTime: 1234567890000).toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.CHAT_OPENED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.CHAT_OPENED
+        )
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64, 1234567890000)
+        XCTAssertEqual(event.data?.count, 2)
+    }
+
+    // MARK: - chatClosed
+
+    func test_chatClosed_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.chatClosed(epochTime: 1234567890000, durationMillis: 30000).toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.CHAT_CLOSED
+        )
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64, 1234567890000)
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.DURATION_MILLIS] as? Int64, 30000)
+        XCTAssertEqual(event.data?.count, 3)
+    }
+
+    // MARK: - welcomePromptSuggestionClicked
+
+    func test_welcomePromptSuggestionClicked_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.welcomePromptSuggestionClicked(suggestion: "Tell me about Creative Cloud").toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.WELCOME_PROMPT_SUGGESTION_CLICKED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.WELCOME_PROMPT_SUGGESTION_CLICKED
+        )
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.SUGGESTION] as? String, "Tell me about Creative Cloud")
+    }
+
+    // MARK: - micButtonClicked
+
+    func test_micButtonClicked_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.micButtonClicked.toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.MIC_BUTTON_CLICKED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.MIC_BUTTON_CLICKED
+        )
+        XCTAssertEqual(event.data?.count, 1)
+    }
+
+    // MARK: - disclaimerLinkClicked
+
+    func test_disclaimerLinkClicked_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.disclaimerLinkClicked(url: "https://adobe.com/privacy").toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.DISCLAIMER_LINK_CLICKED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.DISCLAIMER_LINK_CLICKED
+        )
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.URL] as? String, "https://adobe.com/privacy")
+    }
 }

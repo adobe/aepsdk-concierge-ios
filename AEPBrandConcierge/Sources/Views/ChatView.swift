@@ -123,6 +123,11 @@ public struct ChatView: View {
                 isInputFocused = true
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
+            } onWelcomePromptSuggestionTap: { suggestion in
+                controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
+                isInputFocused = true
+                controller.applyTextChange(suggestion)
+                controller.sendMessage(isUser: true)
             }
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
@@ -181,7 +186,8 @@ public struct ChatView: View {
                     controller.completeMic()
                     hapticFeedback.impactOccurred()
                 },
-                onSend: sendTapped
+                onSend: sendTapped,
+                onLinkTap: { url in controller.trackDisclaimerLinkClicked(url: url) }
             )
         }
         .conciergeCardTapHandler(ConciergeCardTapHandler { cardData in
@@ -189,7 +195,11 @@ public struct ChatView: View {
         })
         .onAppear {
             hapticFeedback.prepare()
+            controller.trackChatOpened()
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
+        }
+        .onDisappear {
+            controller.trackChatClosed()
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in
@@ -314,6 +324,7 @@ public struct ChatView: View {
         if controller.isRecording {
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
+            controller.trackMicButtonClicked()
             // Dismiss keyboard before starting recording
             isInputFocused = false
             hapticFeedback.impactOccurred()

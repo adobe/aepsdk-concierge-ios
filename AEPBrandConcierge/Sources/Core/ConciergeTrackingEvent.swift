@@ -22,13 +22,18 @@ import Foundation
 ///    - Each case maps to a web client event type (see `ConciergeConstants.TrackingEventSubtype`)
 enum ConciergeTrackingEvent {
     case sessionInitialized
+    case chatOpened(epochTime: Int64)
+    case chatClosed(epochTime: Int64, durationMillis: Int64)
     case querySubmitted(query: String)
     case promptSuggestionClicked(suggestion: String)
+    case welcomePromptSuggestionClicked(suggestion: String)
     case cardClicked(element: [String: Any])
+    case micButtonClicked
     case responseStarted(conversationId: String, interactionId: String)
     case responseCompleted(conversationId: String, interactionId: String)
     case cardsRendered(displayMode: String, elements: [[String: Any]])
     case feedbackSubmitted(conversationId: String, interactionId: String, feedbackType: String, selectedOptions: [String], notes: String)
+    case disclaimerLinkClicked(url: String)
     case errorOccurred(errorMessage: String)
 
     /// Builds an `AEPCore.Event` for dispatch to the Event Hub.
@@ -45,12 +50,20 @@ enum ConciergeTrackingEvent {
         switch self {
         case .sessionInitialized:
             return ConciergeConstants.TrackingEvent.Name.SESSION_INITIALIZED
+        case .chatOpened:
+            return ConciergeConstants.TrackingEvent.Name.CHAT_OPENED
+        case .chatClosed:
+            return ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED
         case .querySubmitted:
             return ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED
         case .promptSuggestionClicked:
             return ConciergeConstants.TrackingEvent.Name.PROMPT_SUGGESTION_CLICKED
+        case .welcomePromptSuggestionClicked:
+            return ConciergeConstants.TrackingEvent.Name.WELCOME_PROMPT_SUGGESTION_CLICKED
         case .cardClicked:
             return ConciergeConstants.TrackingEvent.Name.CARD_CLICKED
+        case .micButtonClicked:
+            return ConciergeConstants.TrackingEvent.Name.MIC_BUTTON_CLICKED
         case .responseStarted:
             return ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED
         case .responseCompleted:
@@ -59,6 +72,8 @@ enum ConciergeTrackingEvent {
             return ConciergeConstants.TrackingEvent.Name.CARDS_RENDERED
         case .feedbackSubmitted:
             return ConciergeConstants.TrackingEvent.Name.FEEDBACK_SUBMITTED
+        case .disclaimerLinkClicked:
+            return ConciergeConstants.TrackingEvent.Name.DISCLAIMER_LINK_CLICKED
         case .errorOccurred:
             return ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED
         }
@@ -68,12 +83,20 @@ enum ConciergeTrackingEvent {
         switch self {
         case .sessionInitialized:
             return ConciergeConstants.TrackingEvent.XDMType.SESSION_INITIALIZED
+        case .chatOpened:
+            return ConciergeConstants.TrackingEvent.XDMType.CHAT_OPENED
+        case .chatClosed:
+            return ConciergeConstants.TrackingEvent.XDMType.CHAT_CLOSED
         case .querySubmitted:
             return ConciergeConstants.TrackingEvent.XDMType.QUERY_SUBMITTED
         case .promptSuggestionClicked:
             return ConciergeConstants.TrackingEvent.XDMType.PROMPT_SUGGESTION_CLICKED
+        case .welcomePromptSuggestionClicked:
+            return ConciergeConstants.TrackingEvent.XDMType.WELCOME_PROMPT_SUGGESTION_CLICKED
         case .cardClicked:
             return ConciergeConstants.TrackingEvent.XDMType.CARD_CLICKED
+        case .micButtonClicked:
+            return ConciergeConstants.TrackingEvent.XDMType.MIC_BUTTON_CLICKED
         case .responseStarted:
             return ConciergeConstants.TrackingEvent.XDMType.RESPONSE_STARTED
         case .responseCompleted:
@@ -82,6 +105,8 @@ enum ConciergeTrackingEvent {
             return ConciergeConstants.TrackingEvent.XDMType.CARDS_RENDERED
         case .feedbackSubmitted:
             return ConciergeConstants.TrackingEvent.XDMType.FEEDBACK_SUBMITTED
+        case .disclaimerLinkClicked:
+            return ConciergeConstants.TrackingEvent.XDMType.DISCLAIMER_LINK_CLICKED
         case .errorOccurred:
             return ConciergeConstants.TrackingEvent.XDMType.ERROR_OCCURRED
         }
@@ -98,14 +123,25 @@ enum ConciergeTrackingEvent {
         case .sessionInitialized:
             break
 
+        case .chatOpened(let epochTime):
+            data[Key.EPOCH_TIME] = epochTime
+
+        case .chatClosed(let epochTime, let durationMillis):
+            data[Key.EPOCH_TIME] = epochTime
+            data[Key.DURATION_MILLIS] = durationMillis
+
         case .querySubmitted(let query):
             data[Key.QUERY] = query
 
-        case .promptSuggestionClicked(let suggestion):
+        case .promptSuggestionClicked(let suggestion),
+             .welcomePromptSuggestionClicked(let suggestion):
             data[Key.SUGGESTION] = suggestion
 
         case .cardClicked(let element):
             data[Key.ELEMENT] = element
+
+        case .micButtonClicked:
+            break
 
         case .responseStarted(let conversationId, let interactionId),
              .responseCompleted(let conversationId, let interactionId):
@@ -122,6 +158,9 @@ enum ConciergeTrackingEvent {
             data[Key.FEEDBACK_TYPE] = feedbackType
             data[Key.SELECTED_OPTIONS] = selectedOptions
             data[Key.NOTES] = notes
+
+        case .disclaimerLinkClicked(let url):
+            data[Key.URL] = url
 
         case .errorOccurred(let errorMessage):
             data[Key.ERROR_MESSAGE] = errorMessage
