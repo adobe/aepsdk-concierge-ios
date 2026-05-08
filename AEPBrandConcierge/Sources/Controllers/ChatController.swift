@@ -402,7 +402,7 @@ final class ChatController: ObservableObject {
 
     private func dispatchTrackingEvent(_ trackingEvent: ConciergeTrackingEvent) {
         let event = trackingEvent.toEvent()
-        Log.debug(label: LOG_TAG, "Dispatching tracking event: \(event.name)")
+        Log.debug(label: LOG_TAG, "Dispatching tracking event - name: \(event.name), type: \(event.type), source: \(event.source), data: \(event.data ?? [:])")
         dispatch?(event)
     }
 
