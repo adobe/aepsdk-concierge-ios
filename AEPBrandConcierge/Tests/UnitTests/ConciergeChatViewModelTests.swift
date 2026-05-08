@@ -735,6 +735,112 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(controller.chatState == .idle || controller.chatState == .error(.networkFailure))
     }
 
+    func test_trackChatOpened_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 1)
+        let epochTime = openedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64
+        XCTAssertNotNil(epochTime)
+        XCTAssertGreaterThan(epochTime ?? 0, 0)
+    }
+
+    func test_trackChatClosed_dispatches_event_with_duration() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatClosed()
+
+        let closedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED }
+        XCTAssertEqual(closedEvents.count, 1)
+        let epochTime = closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64
+        let durationMillis = closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.DURATION_MILLIS] as? Int64
+        XCTAssertNotNil(epochTime)
+        XCTAssertGreaterThan(epochTime ?? 0, 0)
+        XCTAssertGreaterThanOrEqual(durationMillis ?? -1, 0)
+    }
+
+    func test_trackChatOpened_called_twice_only_dispatches_once() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 1, "Repeated trackChatOpened calls must be ignored while a session is open")
+    }
+
+    func test_trackChatClosed_without_prior_open_dispatches_zero_duration() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatClosed()
+
+        let closedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED }
+        XCTAssertEqual(closedEvents.count, 1)
+        XCTAssertEqual(closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.DURATION_MILLIS] as? Int64, 0)
+    }
+
+    func test_trackChatOpened_after_close_starts_new_session() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatClosed()
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 2, "A new open after a close should dispatch a second chatOpened event")
+    }
+
+    func test_trackWelcomePromptSuggestionClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackWelcomePromptSuggestionClicked(suggestion: "I want to edit photos")
+
+        let events = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.WELCOME_PROMPT_SUGGESTION_CLICKED }
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.SUGGESTION] as? String, "I want to edit photos")
+    }
+
+    func test_trackDisclaimerLinkClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackDisclaimerLinkClicked(url: URL(string: "https://example.com/terms")!)
+
+        let events = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.DISCLAIMER_LINK_CLICKED }
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.URL] as? String, "https://example.com/terms")
+    }
+
     // MARK: - Helpers
     private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil, dispatch: ((_ event: Event) -> Void)? = nil) -> ChatController {
         ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker(), dispatch: dispatch)

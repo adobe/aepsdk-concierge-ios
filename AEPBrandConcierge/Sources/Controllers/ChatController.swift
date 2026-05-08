@@ -357,14 +357,21 @@ final class ChatController: ObservableObject {
     // MARK: - Tracking
 
     func trackChatOpened() {
-        chatOpenTime = Date()
-        let epochTime = Int64(Date().timeIntervalSince1970 * 1000)
+        guard chatOpenTime == nil else { return }
+        let now = Date()
+        chatOpenTime = now
+        let epochTime = Int64(now.timeIntervalSince1970 * 1000)
         dispatchTrackingEvent(.chatOpened(epochTime: epochTime))
     }
 
     func trackChatClosed() {
-        let epochTime = Int64(Date().timeIntervalSince1970 * 1000)
-        let durationMillis = chatOpenTime.map { Int64(Date().timeIntervalSince($0) * 1000) } ?? 0
+        if chatOpenTime == nil {
+            Log.warning(label: LOG_TAG, "trackChatClosed called without a prior trackChatOpened — durationMillis will be 0")
+        }
+        let now = Date()
+        let epochTime = Int64(now.timeIntervalSince1970 * 1000)
+        let durationMillis = chatOpenTime.map { Int64(now.timeIntervalSince($0) * 1000) } ?? 0
+        chatOpenTime = nil
         dispatchTrackingEvent(.chatClosed(epochTime: epochTime, durationMillis: durationMillis))
     }
 
