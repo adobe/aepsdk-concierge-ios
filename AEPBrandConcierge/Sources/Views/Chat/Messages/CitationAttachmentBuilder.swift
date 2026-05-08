@@ -103,6 +103,114 @@ enum CitationAttachmentBuilder {
         return result
     }
 
+    /// Scans the attributed string for `.link` attribute ranges and appends a small icon attachment
+    /// immediately after each one. The icon is selected per-link via `iconResolver`, which maps a
+    /// URL to an asset name and SF Symbol fallback. Citation badge attachments (which also carry
+    /// `.link`) are skipped because they are already tappable visual indicators.
+    ///
+    /// - Parameters:
+    ///   - attributed: The attributed string to process.
+    ///   - baseFont: The surrounding font, used to baseline-align the icon.
+    ///   - color: The tint color applied to every icon.
+    ///   - iconSize: Render size of the icon in points.
+    ///   - spacing: Horizontal gap in points between the link text and the icon.
+    ///     When `nil` a Unicode thin space character is used.
+    ///   - baselineAdjust: Additional vertical offset on top of the automatic cap-height alignment.
+    ///     Positive values shift the icon up; negative values shift it down.
+    ///   - iconResolver: A closure that maps each link URL to `(assetName, sfSymbol, image)`.
+    ///     When `image` is non-nil it is used directly, bypassing the asset catalog lookup.
+    ///     Otherwise `assetName` is tried via `BrandIcon.resolvedUIImage`; if absent or empty the
+    ///     SF Symbol is used as the final fallback.
+    /// - Returns: A new attributed string with icon attachments appended after each link run.
+    static func appendLinkIcons(
+        to attributed: NSAttributedString,
+        baseFont: UIFont,
+        color: UIColor,
+        iconSize: CGFloat = 10,
+        spacing: CGFloat? = nil,
+        baselineAdjust: CGFloat = 0,
+        iconResolver: (URL) -> (assetName: String, sfSymbol: String, image: UIImage?)
+    ) -> NSAttributedString {
+        let mutable = NSMutableAttributedString(attributedString: attributed)
+
+        // Collect (range, url) pairs in reverse order so insertions don't shift earlier indices.
+        var linkEntries: [(NSRange, URL)] = []
+        mutable.enumerateAttribute(.link, in: NSRange(location: 0, length: mutable.length)) { value, range, _ in
+            guard let url = value as? URL else { return }
+            // Skip NSTextAttachment characters (citation badges) — they are already tappable.
+            let isAttachment = mutable.attribute(.attachment, at: range.location, effectiveRange: nil) != nil
+            if !isAttachment {
+                linkEntries.append((range, url))
+            }
+        }
+
+        for (range, url) in linkEntries.reversed() {
+            let (assetName, sfSymbol, overrideImage) = iconResolver(url)
+            let icon = makeLinkIconAttachment(
+                assetName: assetName,
+                sfSymbol: sfSymbol,
+                overrideImage: overrideImage,
+                baseFont: baseFont,
+                color: color,
+                iconSize: iconSize,
+                spacing: spacing,
+                baselineAdjust: baselineAdjust
+            )
+            mutable.insert(icon, at: range.upperBound)
+        }
+
+        return mutable
+    }
+
+    /// Produces a small icon attachment sized and baseline-aligned to sit inline with text.
+    /// Resolution priority: `overrideImage` → named asset (via `BrandIcon.resolvedUIImage`) → SF Symbol.
+    ///
+    /// - Parameters:
+    ///   - assetName: Named image asset to try. Pass an empty string to skip straight to the SF Symbol.
+    ///   - sfSymbol: SF Symbol name used when neither `overrideImage` nor the named asset is available.
+    ///   - overrideImage: A `UIImage` that, when non-nil, is used directly without any catalog lookup.
+    ///   - baseFont: The surrounding font used for baseline alignment.
+    ///   - color: The tint color to apply to the icon.
+    ///   - iconSize: Render size in points.
+    ///   - spacing: Horizontal gap before the icon in points. When `nil` a thin space character is used.
+    ///   - baselineAdjust: Additional vertical nudge on top of the auto cap-height alignment.
+    /// - Returns: An attributed string containing a space/gap and the icon attachment.
+    private static func makeLinkIconAttachment(
+        assetName: String,
+        sfSymbol: String,
+        overrideImage: UIImage? = nil,
+        baseFont: UIFont,
+        color: UIColor,
+        iconSize: CGFloat,
+        spacing: CGFloat?,
+        baselineAdjust: CGFloat
+    ) -> NSAttributedString {
+        let resolvedBase = overrideImage
+            ?? BrandIcon.resolvedUIImage(assetName: assetName, systemName: sfSymbol, pointSize: iconSize)
+            ?? UIImage()
+        let image = resolvedBase.withTintColor(color, renderingMode: .alwaysOriginal)
+
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        let autoBaseline = (baseFont.capHeight - iconSize) / 2
+        attachment.bounds = CGRect(x: 0, y: autoBaseline + baselineAdjust, width: iconSize, height: iconSize)
+
+        let result = NSMutableAttributedString()
+        if let spacingPt = spacing {
+            // A zero-height NSTextAttachment with a fixed width acts as a reliable horizontal
+            // spacer — UITextView's layout manager always honours attachment bounds exactly,
+            // unlike kern on invisible Unicode characters which can be ignored.
+            let spacer = NSTextAttachment()
+            spacer.image = nil
+            spacer.bounds = CGRect(x: 0, y: 0, width: spacingPt, height: 0)
+            result.append(NSAttributedString(attachment: spacer))
+        } else {
+            result.append(NSAttributedString(string: "\u{2009}")) // thin space (~2 pt)
+        }
+        result.append(NSAttributedString(attachment: attachment))
+        return result
+    }
+
     /// Draws a pill shaped badge containing the provided text.
     ///
     /// - Parameters:

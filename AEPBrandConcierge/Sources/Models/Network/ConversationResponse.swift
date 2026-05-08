@@ -18,6 +18,7 @@ public struct ConversationResponse: Codable {
     public let promptSuggestions: [String]?
     public let multimodalElements: MultimodalElements?
     public let sources: [Source]?
+    public let linkHints: [LinkHint]?
     public let state: String?
 }
 

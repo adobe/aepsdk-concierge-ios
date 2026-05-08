@@ -20,21 +20,23 @@ public struct Message: Identifiable {
     var shouldSpeakMessage = false
     var messageBody: String?
     var sources: [Source]?
+    var linkHints: [LinkHint]?
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
 
     public static let divider = Message(template: .divider)
 
     var chatMessageView: ChatMessageView {
-        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, onSuggestionTap: nil)
+        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, linkHints: linkHints, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, onSuggestionTap: nil)
     }
 
-    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, payload: ConversationPayload? = nil) {
+    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, payload: ConversationPayload? = nil) {
         self.template = template
         self.payload = payload
         self.shouldSpeakMessage = shouldSpeakMessage
         self.messageBody = messageBody
         self.sources = sources
+        self.linkHints = linkHints
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
     }

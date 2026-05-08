@@ -44,6 +44,7 @@ final class ChatController: ObservableObject {
 
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
+    private var latestLinkHints: [LinkHint] = []
     private var latestPromptSuggestions: [String] = []
 
     // MARK: - Computed Properties
@@ -414,6 +415,11 @@ final class ChatController: ObservableObject {
                     if let sources = payload.response?.sources {
                         self.latestSources = sources
                     }
+
+                    // Capture link hints from payload as they arrive (used on completion)
+                    if let hints = payload.response?.linkHints, !hints.isEmpty {
+                        self.latestLinkHints = hints
+                    }
                 }
             },
             onComplete: { [weak self] error in
@@ -444,6 +450,10 @@ final class ChatController: ObservableObject {
                                 Log.trace(label: self.LOG_TAG, "Using sources: count=\(self.latestSources.count)")
                                 current.sources = self.latestSources
                             }
+                            if !self.latestLinkHints.isEmpty {
+                                Log.trace(label: self.LOG_TAG, "Using linkHints: count=\(self.latestLinkHints.count)")
+                                current.linkHints = self.latestLinkHints
+                            }
                             self.messages[streamingMessageIndex] = current
                         }
 
@@ -469,6 +479,7 @@ final class ChatController: ObservableObject {
     private func clearState() {
         chatState = .idle
         latestSources = []
+        latestLinkHints = []
         latestPromptSuggestions = []
     }
 
