@@ -46,6 +46,7 @@ final class ChatController: ObservableObject {
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
     private var latestPromptSuggestions: [String] = []
+    private var chatOpenTime: Date?
 
     // MARK: - Computed Properties
 
@@ -349,8 +350,32 @@ final class ChatController: ObservableObject {
 
     // MARK: - Tracking
 
+    func trackChatOpened() {
+        chatOpenTime = Date()
+        let epochTime = Int64(Date().timeIntervalSince1970 * 1000)
+        dispatchTrackingEvent(.chatOpened(epochTime: epochTime))
+    }
+
+    func trackChatClosed() {
+        let epochTime = Int64(Date().timeIntervalSince1970 * 1000)
+        let durationMillis = chatOpenTime.map { Int64(Date().timeIntervalSince($0) * 1000) } ?? 0
+        dispatchTrackingEvent(.chatClosed(epochTime: epochTime, durationMillis: durationMillis))
+    }
+
     func trackPromptSuggestionClicked(suggestion: String) {
         dispatchTrackingEvent(.promptSuggestionClicked(suggestion: suggestion))
+    }
+
+    func trackWelcomePromptSuggestionClicked(suggestion: String) {
+        dispatchTrackingEvent(.welcomePromptSuggestionClicked(suggestion: suggestion))
+    }
+
+    func trackMicButtonClicked() {
+        dispatchTrackingEvent(.micButtonClicked)
+    }
+
+    func trackDisclaimerLinkClicked(url: URL) {
+        dispatchTrackingEvent(.disclaimerLinkClicked(url: url.absoluteString))
     }
 
     func trackCardClicked(cardData: ProductCardData) {

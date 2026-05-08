@@ -26,6 +26,7 @@ struct MessageListView: View {
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
+    var onWelcomePromptSuggestionTap: ((String) -> Void)?
 
     var body: some View {
         GeometryReader { geometry in
@@ -40,7 +41,8 @@ struct MessageListView: View {
                                 sources: message.sources,
                                 promptSuggestions: message.promptSuggestions,
                                 feedbackSentiment: message.feedbackSentiment,
-                                onSuggestionTap: onSuggestionTap
+                                onSuggestionTap: onSuggestionTap,
+                                onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap
                             )
                                 .id(message.id)
                                 .padding(.horizontal, horizontalPadding(for: message.template))
