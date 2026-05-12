@@ -110,12 +110,14 @@ public struct ConciergeWelcomeCardBehavior: Codable {
     }
 }
 
-/// Where feedback thumbs are placed relative to the sources list.
+/// Where feedback thumbs appear for an eligible agent message (`behavior.feedback.thumbsPlacement`).
+/// - `inline`: In the sources header row; falls back to standalone when there are no sources.
+/// - `below`: Below the expanded source rows with a label; falls back to standalone without sources.
+/// - `standalone`: Always a separate block below the bubble, regardless of sources.
 public enum ThumbsPlacement: String, Codable {
-    /// Thumbs sit inline in the sources header row (default).
     case inline = "inline"
-    /// Thumbs appear in a dedicated row below the expanded sources list.
     case below = "below"
+    case standalone = "standalone"
 
     public init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
