@@ -320,4 +320,95 @@ final class ConversationResponseDecodingTests: XCTestCase {
     func test_elementType_init_rawType_unrecognized() {
         XCTAssertEqual(MultimodalElementType(rawType: "video"), .unknown("video"))
     }
+
+    // MARK: - ConversationFeedbackInfo decoding
+
+    func test_feedbackInfo_eligibleTrue_decodes() throws {
+        let json = #"{"eligible": true}"#.data(using: .utf8)!
+
+        let info = try JSONDecoder().decode(ConversationFeedbackInfo.self, from: json)
+
+        XCTAssertTrue(info.eligible)
+    }
+
+    func test_feedbackInfo_eligibleFalse_decodes() throws {
+        let json = #"{"eligible": false}"#.data(using: .utf8)!
+
+        let info = try JSONDecoder().decode(ConversationFeedbackInfo.self, from: json)
+
+        XCTAssertFalse(info.eligible)
+    }
+
+    func test_feedbackInfo_missingEligible_defaultsToFalse() throws {
+        let json = "{}".data(using: .utf8)!
+
+        let info = try JSONDecoder().decode(ConversationFeedbackInfo.self, from: json)
+
+        XCTAssertFalse(info.eligible)
+    }
+
+    func test_feedbackInfo_encodeDecodeRoundtrip_preservesEligible() throws {
+        let original = ConversationFeedbackInfo(eligible: true)
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(ConversationFeedbackInfo.self, from: data)
+
+        XCTAssertTrue(decoded.eligible)
+    }
+
+    // MARK: - ConversationResponse.feedback decoding
+
+    func test_conversationResponse_withFeedbackEligibleTrue_decodes() throws {
+        let json = """
+        {
+            "message": "Hi there",
+            "feedback": { "eligible": true }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        XCTAssertEqual(response.message, "Hi there")
+        XCTAssertEqual(response.feedback?.eligible, true)
+    }
+
+    func test_conversationResponse_missingFeedback_decodesAsNil() throws {
+        let json = """
+        {
+            "message": "Hi there"
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        XCTAssertNil(response.feedback)
+    }
+
+    /// Consumer-side default: when the server omits `feedback` entirely, callers should treat
+    /// the message as not eligible for feedback (`response.feedback?.eligible ?? false == false`).
+    func test_conversationResponse_missingFeedback_consumerDefaultsToFalse() throws {
+        let json = """
+        {
+            "message": "Hi there"
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        XCTAssertFalse(response.feedback?.eligible ?? false)
+    }
+
+    func test_conversationResponse_withFeedbackEmptyObject_eligibleDefaultsToFalse() throws {
+        let json = """
+        {
+            "message": "Hi there",
+            "feedback": {}
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        XCTAssertNotNil(response.feedback)
+        XCTAssertEqual(response.feedback?.eligible, false)
+    }
 }
