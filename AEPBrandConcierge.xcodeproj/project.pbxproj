@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		0F1601752FAF7FA80032EFD0 /* MessageFeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1601742FAF7FA80032EFD0 /* MessageFeedbackView.swift */; };
+		0F1601772FAF805C0032EFD0 /* theme-dsg.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F1601762FAF805C0032EFD0 /* theme-dsg.json */; };
 		24037ABB2EF3645E00FF4031 /* InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB82EF3645E00FF4031 /* InputController.swift */; };
 		24037ABC2EF3645E00FF4031 /* ChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB72EF3645E00FF4031 /* ChatController.swift */; };
 		24037ABD2EF3645E00FF4031 /* SpeechController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB92EF3645E00FF4031 /* SpeechController.swift */; };
@@ -227,6 +229,8 @@
 
 /* Begin PBXFileReference section */
 		0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
+		0F1601742FAF7FA80032EFD0 /* MessageFeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFeedbackView.swift; sourceTree = "<group>"; };
+		0F1601762FAF805C0032EFD0 /* theme-dsg.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-dsg.json"; sourceTree = "<group>"; };
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
 		24037AB72EF3645E00FF4031 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -661,6 +665,7 @@
 				2483A3D42D77CE9B004E6CDC /* Info.plist */,
 				249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */,
 				4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */,
+				0F1601762FAF805C0032EFD0 /* theme-dsg.json */,
 				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
 				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
 			);
@@ -788,6 +793,7 @@
 			isa = PBXGroup;
 			children = (
 				4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */,
+				0F1601742FAF7FA80032EFD0 /* MessageFeedbackView.swift */,
 				4C3D5F9D2E6A69CC00323738 /* FeedbackOverlayView.swift */,
 				4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */,
 			);
@@ -1026,6 +1032,7 @@
 				4C95303E2E4BE8FD00772695 /* S2_Icon_ClockPending_20_N.svg in Resources */,
 				4C9530742E4BE8FD00772695 /* S2_Icon_Close_20_N.svg in Resources */,
 				4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */,
+				0F1601772FAF805C0032EFD0 /* theme-dsg.json in Resources */,
 				249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */,
 				249899B42D67CCE30005CBD7 /* Assets.xcassets in Resources */,
 			);
@@ -1203,6 +1210,7 @@
 				24037AE02EF364B000FF4031 /* CitationMarker.swift in Sources */,
 				24037AE12EF364B000FF4031 /* ConciergeError.swift in Sources */,
 				24CAB3A62F45085400CEE013 /* View+WebViewPresenter.swift in Sources */,
+				0F1601752FAF7FA80032EFD0 /* MessageFeedbackView.swift in Sources */,
 				4C29834B2F870A430057C927 /* ConciergeChatSession.swift in Sources */,
 				24037AE22EF364B000FF4031 /* ConversationResponse.swift in Sources */,
 				24037AE32EF364B000FF4031 /* MessageTemplate.swift in Sources */,

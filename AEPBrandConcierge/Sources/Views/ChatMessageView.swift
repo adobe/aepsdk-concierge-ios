@@ -27,6 +27,9 @@ struct ChatMessageView: View {
     var sources: [Source]?
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
+    /// Whether the message is eligible to display the feedback affordance. Drives the
+    /// inclusion of `MessageFeedbackView` below the bubble; defaults to `false`.
+    var feedbackEligible: Bool = false
     var onSuggestionTap: ((String) -> Void)?
 
     /// Extra line spacing derived from the theme's body line-height multiplier.
@@ -47,13 +50,14 @@ struct ChatMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
+        self.feedbackEligible = feedbackEligible
         self.onSuggestionTap = onSuggestionTap
     }
 
@@ -265,10 +269,22 @@ struct ChatMessageView: View {
                                 }
                             }
 
-                            // Sources sit directly below the bubble inside the same VStack,
-                            // so they share the bubble's exact width with no extra padding needed.
                             if !isUserMessage, !displayedSources.isEmpty {
-                                SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
+                                SourcesListView(
+                                    sources: displayedSources,
+                                    feedbackEligible: feedbackEligible,
+                                    feedbackSentiment: feedbackSentiment,
+                                    messageId: messageId
+                                )
+                            }
+
+                            if !isUserMessage, feedbackEligible,
+                               resolvedFeedbackPlacement == .standalone || displayedSources.isEmpty {
+                                MessageFeedbackView(
+                                    feedbackSentiment: feedbackSentiment,
+                                    messageId: messageId
+                                )
+                                .padding(.top, 8)
                             }
                         }
                     }
@@ -557,6 +573,10 @@ private extension ChatMessageView {
             return behaviorWidth
         }
         return theme.layout.messageMaxWidth
+    }
+
+    var resolvedFeedbackPlacement: ThumbsPlacement {
+        theme.behavior.feedback?.thumbsPlacement ?? .inline
     }
 
     func handleLinkTap(_ url: URL) {
