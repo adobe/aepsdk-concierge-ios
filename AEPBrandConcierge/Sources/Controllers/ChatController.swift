@@ -444,6 +444,7 @@ final class ChatController: ObservableObject {
                                 Log.trace(label: self.LOG_TAG, "Using sources: count=\(self.latestSources.count)")
                                 current.sources = self.latestSources
                             }
+                            current.feedbackEligible = current.payload?.response?.feedback?.eligible ?? false
                             self.messages[streamingMessageIndex] = current
                         }
 

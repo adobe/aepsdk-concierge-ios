@@ -22,14 +22,15 @@ public struct Message: Identifiable {
     var sources: [Source]?
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
+    var feedbackEligible: Bool = false
 
     public static let divider = Message(template: .divider)
 
     var chatMessageView: ChatMessageView {
-        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, onSuggestionTap: nil)
+        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, feedbackEligible: feedbackEligible, onSuggestionTap: nil)
     }
 
-    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, payload: ConversationPayload? = nil) {
+    public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, payload: ConversationPayload? = nil) {
         self.template = template
         self.payload = payload
         self.shouldSpeakMessage = shouldSpeakMessage
@@ -37,5 +38,6 @@ public struct Message: Identifiable {
         self.sources = sources
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
+        self.feedbackEligible = feedbackEligible
     }
 }
