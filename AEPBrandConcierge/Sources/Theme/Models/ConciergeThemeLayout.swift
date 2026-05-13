@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// Vertical alignment of the dots row within the thinking bubble.
 public enum ThinkingDotVerticalAlignment: String, Codable {
@@ -310,5 +311,87 @@ public struct ConciergeTypography: Codable {
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.fontWeight = fontWeight
+    }
+}
+
+// MARK: - Font helpers
+
+extension ConciergeTypography {
+    /// Returns a SwiftUI `Font` at a fixed point size, using the theme font family when set.
+    /// Uses `UIFontDescriptor` family + weight matching so the correct font face
+    /// (e.g. Raleway-SemiBold) is loaded directly — avoids SwiftUI weight-synthesis warnings.
+    func font(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        guard !fontFamily.isEmpty else {
+            return .system(size: size, weight: weight)
+        }
+        return Font(UIFont.fromFamily(fontFamily, size: size, weight: weight.uiWeight))
+    }
+
+    /// Returns a SwiftUI `Font` scaled to a semantic text style, using the theme font family when set.
+    func font(textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        guard !fontFamily.isEmpty else {
+            return .system(textStyle).weight(weight)
+        }
+        let size = UIFont.preferredFont(forTextStyle: textStyle.uiTextStyle).pointSize
+        return Font(UIFont.fromFamily(fontFamily, size: size, weight: weight.uiWeight))
+    }
+
+    /// Returns a `UIFont` at a fixed point size, using the theme font family when set.
+    func uiFont(size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+        guard !fontFamily.isEmpty else {
+            return UIFont.systemFont(ofSize: size, weight: weight)
+        }
+        return UIFont.fromFamily(fontFamily, size: size, weight: weight)
+    }
+}
+
+// MARK: - Private helpers
+
+private extension UIFont {
+    /// Resolves a font from a family name + weight using `UIFontDescriptor` trait matching,
+    /// so the correct named face (e.g. Raleway-SemiBold) is loaded without SwiftUI trying
+    /// to synthesize a weight variant from a single face.
+    static func fromFamily(_ family: String, size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let traits: [UIFontDescriptor.TraitKey: Any] = [.weight: weight.rawValue]
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .family: family,
+            .traits: traits
+        ])
+        return UIFont(descriptor: descriptor, size: size)
+    }
+}
+
+private extension Font.TextStyle {
+    var uiTextStyle: UIFont.TextStyle {
+        switch self {
+        case .largeTitle: return .largeTitle
+        case .title: return .title1
+        case .title2: return .title2
+        case .title3: return .title3
+        case .headline: return .headline
+        case .subheadline: return .subheadline
+        case .body: return .body
+        case .callout: return .callout
+        case .footnote: return .footnote
+        case .caption: return .caption1
+        case .caption2: return .caption2
+        @unknown default: return .body
+        }
+    }
+}
+
+private extension Font.Weight {
+    var uiWeight: UIFont.Weight {
+        switch self {
+        case .ultraLight: return .ultraLight
+        case .thin:       return .thin
+        case .light:      return .light
+        case .medium:     return .medium
+        case .semibold:   return .semibold
+        case .bold:       return .bold
+        case .heavy:      return .heavy
+        case .black:      return .black
+        default:          return .regular
+        }
     }
 }

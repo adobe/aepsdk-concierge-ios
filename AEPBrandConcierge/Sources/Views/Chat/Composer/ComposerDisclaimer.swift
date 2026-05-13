@@ -18,7 +18,7 @@ struct ComposerDisclaimer: View {
 
     var body: some View {
         Text(attributedDisclaimerText)
-            .font(.system(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUIFontWeight()))
+            .font(theme.typography.font(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUIFontWeight()))
             .fixedSize(horizontal: false, vertical: true)
     }
 

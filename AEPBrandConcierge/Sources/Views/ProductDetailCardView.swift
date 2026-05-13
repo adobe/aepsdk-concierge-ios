@@ -137,8 +137,7 @@ private extension ProductDetailCardView {
     var productCardTitleSubtitleBlock: some View {
         VStack(alignment: .leading, spacing: theme.layout.productCardTextSpacing) {
             Text(data.title)
-                .font(.system(size: theme.layout.productCardTitleFontSize))
-                .fontWeight(theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight())
+                .font(theme.typography.font(size: theme.layout.productCardTitleFontSize, weight: theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight()))
                 .foregroundColor(theme.colors.productCard.titleColor.color)
                 .lineSpacing(productCardExtraLineSpacing(
                     fontSize: theme.layout.productCardTitleFontSize,
@@ -150,8 +149,7 @@ private extension ProductDetailCardView {
 
             if let subtitle = data.subtitle, !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(.system(size: theme.layout.productCardSubtitleFontSize))
-                    .fontWeight(theme.layout.productCardSubtitleFontWeight.toSwiftUIFontWeight())
+                    .font(theme.typography.font(size: theme.layout.productCardSubtitleFontSize, weight: theme.layout.productCardSubtitleFontWeight.toSwiftUIFontWeight()))
                     .foregroundColor(theme.colors.productCard.subtitleColor.color)
                     .kerning(ProductDetailCardDimensions.subtitleLetterSpacing)
                     .lineSpacing(productCardExtraLineSpacing(
@@ -170,8 +168,7 @@ private extension ProductDetailCardView {
         if let price = data.price, !price.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 Text(price)
-                    .font(.system(size: theme.layout.productCardPriceFontSize))
-                    .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
+                    .font(theme.typography.font(size: theme.layout.productCardPriceFontSize, weight: theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight()))
                     .foregroundColor(theme.colors.productCard.priceColor.color)
                     .kerning(ProductDetailCardDimensions.priceLetterSpacing)
                     .lineSpacing(productCardExtraLineSpacing(
@@ -180,8 +177,7 @@ private extension ProductDetailCardView {
                     ))
 
                 Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
-                    .font(.system(size: theme.layout.productCardWasPriceFontSize))
-                    .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                    .font(theme.typography.font(size: theme.layout.productCardWasPriceFontSize, weight: theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight()))
                     .foregroundColor(theme.colors.productCard.wasPriceColor.color)
                     .kerning(ProductDetailCardDimensions.priceLetterSpacing)
                     .lineSpacing(productCardExtraLineSpacing(
@@ -207,8 +203,7 @@ private extension ProductDetailCardView {
 
     func badgeView(text: String) -> some View {
         Text(text)
-            .font(.system(size: theme.layout.productCardBadgeFontSize))
-            .fontWeight(theme.layout.productCardBadgeFontWeight.toSwiftUIFontWeight())
+            .font(theme.typography.font(size: theme.layout.productCardBadgeFontSize, weight: theme.layout.productCardBadgeFontWeight.toSwiftUIFontWeight()))
             .foregroundColor(theme.colors.productCard.badgeTextColor.color)
             .lineLimit(1)
             .truncationMode(.tail)

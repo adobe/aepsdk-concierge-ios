@@ -133,13 +133,6 @@ struct ComposerEditingView: View {
 
 private extension ComposerEditingView {
     var resolvedInputFont: UIFont {
-        let fontSize = theme.layout.inputFontSize
-        if theme.typography.fontFamily.isEmpty {
-            return UIFont.systemFont(ofSize: fontSize, weight: theme.typography.fontWeight.toUIFontWeight())
-        }
-
-        // If the font is not available at runtime, fall back to the system font.
-        return UIFont(name: theme.typography.fontFamily, size: fontSize)
-            ?? UIFont.systemFont(ofSize: fontSize, weight: theme.typography.fontWeight.toUIFontWeight())
+        theme.typography.uiFont(size: theme.layout.inputFontSize, weight: theme.typography.fontWeight.toUIFontWeight())
     }
 }

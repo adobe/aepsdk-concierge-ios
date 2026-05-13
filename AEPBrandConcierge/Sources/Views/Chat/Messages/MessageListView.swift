@@ -40,7 +40,7 @@ struct MessageListView: View {
                                theme.behavior.promptSuggestions?.showHeader == true {
                                 HStack {
                                     Text(theme.text.suggestionsHeader)
-                                        .font(.system(.subheadline).weight(.semibold))
+                                        .font(theme.typography.font(textStyle: .subheadline, weight: .semibold))
                                         .foregroundColor(theme.colors.message.conciergeText.color)
                                     Spacer()
                                 }

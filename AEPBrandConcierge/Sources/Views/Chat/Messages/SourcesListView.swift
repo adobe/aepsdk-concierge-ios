@@ -77,7 +77,7 @@ public struct SourcesListView: View {
                         .opacity(sourceLinksVisible ? 1 : 0)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(theme.text.feedbackHelpfulLabel)
-                            .font(.footnote.weight(.semibold))
+                            .font(theme.typography.font(textStyle: .footnote, weight: .semibold))
                             .foregroundStyle(theme.colors.message.conciergeText.color)
                         feedbackButtons
                     }
@@ -169,7 +169,7 @@ public struct SourcesListView: View {
                     chevronImage
                         .foregroundStyle(theme.colors.message.conciergeText.color)
                     Text(theme.text.sourcesLabel)
-                        .font(.subheadline.weight(.semibold))
+                        .font(theme.typography.font(textStyle: .subheadline, weight: .semibold))
                         .foregroundStyle(theme.colors.message.conciergeText.color)
                     Spacer()
                     if showFeedbackInSourcesView, thumbsInline {

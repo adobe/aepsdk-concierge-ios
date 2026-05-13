@@ -25,7 +25,7 @@ struct SourceRowView: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(ordinal)
-                .font(.caption.weight(.semibold))
+                .font(theme.typography.font(textStyle: .caption, weight: .semibold))
                 .foregroundStyle(theme.colors.message.conciergeText.color.opacity(0.8))
                 .frame(minWidth: 18, alignment: .leading)
 
@@ -33,7 +33,7 @@ struct SourceRowView: View {
                 Button(action: { handleLinkTap(link) }) {
                     HStack(spacing: 4) {
                         Text(title)
-                            .font(.footnote)
+                            .font(theme.typography.font(textStyle: .footnote))
                             .underline()
                             .foregroundStyle(theme.colors.message.conciergeLink.color)
                             .lineLimit(1)
@@ -50,7 +50,7 @@ struct SourceRowView: View {
                 .accessibilityHint("Opens link")
             } else {
                 Text(title)
-                    .font(.footnote)
+                    .font(theme.typography.font(textStyle: .footnote))
                     .foregroundStyle(theme.colors.message.conciergeLink.color)
                     .lineLimit(1)
                     .truncationMode(.middle)

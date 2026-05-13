@@ -26,7 +26,7 @@ struct CtaButtonView: View {
             Button(action: handleTap) {
                 HStack(spacing: 8) {
                     Text(action.text)
-                        .font(.system(size: theme.layout.ctaButtonFontSize, weight: theme.layout.ctaButtonFontWeight.toSwiftUIFontWeight()))
+                        .font(theme.typography.font(size: theme.layout.ctaButtonFontSize, weight: theme.layout.ctaButtonFontWeight.toSwiftUIFontWeight()))
                         .foregroundColor(theme.colors.ctaButton.text.color)
 
                     Image(systemName: "arrow.up.forward.app")
