@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
 struct ChatTopBar: View {
@@ -26,17 +27,65 @@ struct ChatTopBar: View {
 
     @State private var showSourcesToggle: Bool = true
 
-    /// Resolved title, preferring theme text over the initializer value.
+    /// Resolved title, preferring theme header over the initializer value.
     private var resolvedTitle: String {
-        let themeTitle = theme.text.headerTitle
+        let themeTitle = theme.header.title
         return themeTitle.isEmpty ? title : themeTitle
     }
 
-    /// Resolved subtitle, preferring theme text over the initializer value.
+    /// Resolved subtitle, preferring theme header over the initializer value.
     private var resolvedSubtitle: String? {
-        let themeSub = theme.text.headerSubtitle
+        let themeSub = theme.header.subtitle
         if !themeSub.isEmpty { return themeSub }
         return subtitle
+    }
+
+    /// Resolved header image from the theme's `header.image` local asset path.
+    /// Returns nil when the key is absent or the asset cannot be found.
+    private var resolvedHeaderImage: UIImage? {
+        let path = theme.header.image
+        guard !path.isEmpty else { return nil }
+        if let image = UIImage(named: path) { return image }
+        for ext in ["png", "jpg", "jpeg", "webp", "heic", "gif"] {
+            if let filePath = Bundle.main.path(forResource: path, ofType: ext),
+               let image = UIImage(contentsOfFile: filePath) { return image }
+        }
+        return nil
+    }
+
+    private var hasTitle: Bool { !resolvedTitle.isEmpty }
+
+    private var hasSubtitle: Bool {
+        guard let sub = resolvedSubtitle else { return false }
+        return !sub.isEmpty
+    }
+
+    @ViewBuilder
+    private var headerImageView: some View {
+        if let image = resolvedHeaderImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 32)
+        }
+    }
+
+    @ViewBuilder
+    private var headerTextView: some View {
+        if hasTitle || hasSubtitle {
+            VStack(alignment: .leading, spacing: 2) {
+                if hasTitle {
+                    Text(resolvedTitle)
+                        .font(titleFont)
+                        .foregroundColor(theme.colors.primary.text.color)
+                }
+                if hasSubtitle, let sub = resolvedSubtitle {
+                    Text(sub)
+                        .font(.system(.footnote))
+                        .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+                }
+            }
+        }
     }
 
     private var closeButtonAlignedStart: Bool {
@@ -57,14 +106,15 @@ struct ChatTopBar: View {
                     closeButton
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(resolvedTitle)
-                        .font(titleFont)
-                        .foregroundColor(theme.colors.primary.text.color)
-                    if let sub = resolvedSubtitle, !sub.isEmpty {
-                        Text(sub)
-                            .font(.system(.footnote))
-                            .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+                HStack(spacing: 10) {
+                    if theme.header.imagePosition != "trailing" {
+                        headerImageView
+                    }
+
+                    headerTextView
+
+                    if theme.header.imagePosition == "trailing" {
+                        headerImageView
                     }
                 }
 

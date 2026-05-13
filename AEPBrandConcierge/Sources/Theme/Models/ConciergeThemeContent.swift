@@ -50,6 +50,34 @@ public struct ConciergeWelcomeExample: Codable {
     }
 }
 
+/// Header configuration (title, subtitle, image, image position)
+public struct ConciergeHeaderConfig: Codable {
+    public var title: String
+    public var subtitle: String
+    public var image: String
+    public var imagePosition: String
+
+    public init(
+        title: String = "",
+        subtitle: String = "",
+        image: String = "",
+        imagePosition: String = "leading"
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.image = image
+        self.imagePosition = imagePosition
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
+        image = try container.decodeIfPresent(String.self, forKey: .image) ?? ""
+        imagePosition = try container.decodeIfPresent(String.self, forKey: .imagePosition) ?? "leading"
+    }
+}
+
 /// Text content and copy configuration (localizable strings)
 /// Maps from web config "text" object with dot-notation keys (ex: "welcome.heading")
 public struct ConciergeCopy: Codable {
@@ -77,8 +105,6 @@ public struct ConciergeCopy: Codable {
     public var feedbackToastSuccess: String
     public var feedbackThumbsUpAria: String
     public var feedbackThumbsDownAria: String
-    public var headerTitle: String
-    public var headerSubtitle: String
     public var sourcesLabel: String
     public var feedbackHelpfulLabel: String
     public var suggestionsHeader: String
@@ -108,8 +134,6 @@ public struct ConciergeCopy: Codable {
         case feedbackToastSuccess = "feedback.toast.success"
         case feedbackThumbsUpAria = "feedback.thumbsUp.aria"
         case feedbackThumbsDownAria = "feedback.thumbsDown.aria"
-        case headerTitle = "header.title"
-        case headerSubtitle = "header.subtitle"
         case sourcesLabel = "sourcesLabel"
         case feedbackHelpfulLabel = "feedbackHelpfulLabel"
         case suggestionsHeader = "suggestions.header"
@@ -140,8 +164,6 @@ public struct ConciergeCopy: Codable {
         feedbackToastSuccess: String = "Thank you for the feedback.",
         feedbackThumbsUpAria: String = "Thumbs up",
         feedbackThumbsDownAria: String = "Thumbs down",
-        headerTitle: String = "",
-        headerSubtitle: String = "",
         sourcesLabel: String = "Sources",
         feedbackHelpfulLabel: String = "Was this helpful?",
         suggestionsHeader: String = "Suggestions"
@@ -170,8 +192,6 @@ public struct ConciergeCopy: Codable {
         self.feedbackToastSuccess = feedbackToastSuccess
         self.feedbackThumbsUpAria = feedbackThumbsUpAria
         self.feedbackThumbsDownAria = feedbackThumbsDownAria
-        self.headerTitle = headerTitle
-        self.headerSubtitle = headerSubtitle
         self.sourcesLabel = sourcesLabel
         self.feedbackHelpfulLabel = feedbackHelpfulLabel
         self.suggestionsHeader = suggestionsHeader
@@ -204,8 +224,6 @@ public struct ConciergeCopy: Codable {
         feedbackToastSuccess = try container.decodeIfPresent(String.self, forKey: .feedbackToastSuccess) ?? "Thank you for the feedback."
         feedbackThumbsUpAria = try container.decodeIfPresent(String.self, forKey: .feedbackThumbsUpAria) ?? "Thumbs up"
         feedbackThumbsDownAria = try container.decodeIfPresent(String.self, forKey: .feedbackThumbsDownAria) ?? "Thumbs down"
-        headerTitle = try container.decodeIfPresent(String.self, forKey: .headerTitle) ?? ""
-        headerSubtitle = try container.decodeIfPresent(String.self, forKey: .headerSubtitle) ?? ""
         sourcesLabel = try container.decodeIfPresent(String.self, forKey: .sourcesLabel) ?? "Sources"
         feedbackHelpfulLabel = try container.decodeIfPresent(String.self, forKey: .feedbackHelpfulLabel) ?? "Was this helpful?"
         suggestionsHeader = try container.decodeIfPresent(String.self, forKey: .suggestionsHeader) ?? "Suggestions"
