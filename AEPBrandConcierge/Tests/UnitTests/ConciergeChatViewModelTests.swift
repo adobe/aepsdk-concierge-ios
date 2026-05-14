@@ -641,6 +641,30 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(elements?.count, 2)
     }
 
+    func test_streaming_cards_only_dispatches_paired_responseStarted_and_responseCompleted() {
+        // Mirrors the Android `cards-only response still fires paired responseStarted and
+        // responseCompleted` test. Server returns no text — only multimodal cards — across
+        // every chunk. The responseStarted/responseCompleted pair must remain intact.
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element = makeProductElement(id: "prod-1", name: "Widget Pro", price: "$9.99")
+        fakeService.plannedChunks = [
+            makePayloadWithProducts(state: ConciergeConstants.StreamState.COMPLETED, elements: [element], message: nil)
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("show cards")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        let startedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }.count
+        let completedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }.count
+        XCTAssertEqual(startedCount, 1, "responseStarted should fire even when message is empty but cards are present")
+        XCTAssertEqual(completedCount, 1, "responseCompleted should remain paired with responseStarted")
+    }
+
     func test_trackPromptSuggestionClicked_dispatches_event() {
         var dispatchedEvents: [Event] = []
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
@@ -770,7 +794,7 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(durationMillis ?? -1, 0)
     }
 
-    func test_trackChatOpened_called_twice_only_dispatches_once() {
+    func test_trackChatOpened_called_twice_dispatches_twice() {
         var dispatchedEvents: [Event] = []
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
@@ -781,7 +805,7 @@ final class ChatControllerTests: XCTestCase {
         controller.trackChatOpened()
 
         let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
-        XCTAssertEqual(openedEvents.count, 1, "Repeated trackChatOpened calls must be ignored while a session is open")
+        XCTAssertEqual(openedEvents.count, 2, "Each trackChatOpened call dispatches an event and resets the open timer")
     }
 
     func test_trackChatClosed_without_prior_open_dispatches_zero_duration() {

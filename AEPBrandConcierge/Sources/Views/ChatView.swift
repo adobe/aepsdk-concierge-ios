@@ -105,12 +105,10 @@ struct ChatView: View {
                 controller.speak(text)
             } onSuggestionTap: { suggestion in
                 controller.trackPromptSuggestionClicked(suggestion: suggestion)
-                isInputFocused = true
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
             } onWelcomePromptSuggestionTap: { suggestion in
                 controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
-                isInputFocused = true
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
             }
