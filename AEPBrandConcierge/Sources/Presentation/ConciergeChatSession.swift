@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPCore
 import Foundation
 
 /// Owns a `ChatController` independently of the SwiftUI view graph so chat
@@ -26,7 +27,8 @@ final class ConciergeChatSession {
         title: String,
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
-        textSpeaker: TextSpeaking?
+        textSpeaker: TextSpeaking?,
+        dispatch: ((_ event: Event) -> Void)? = nil
     ) {
         self.configuration = configuration
         self.title = title
@@ -34,7 +36,8 @@ final class ConciergeChatSession {
         self.controller = ChatController(
             configuration: configuration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
-            speaker: textSpeaker
+            speaker: textSpeaker,
+            dispatch: dispatch
         )
     }
 

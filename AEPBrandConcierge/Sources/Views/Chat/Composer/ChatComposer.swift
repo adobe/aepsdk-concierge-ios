@@ -33,6 +33,7 @@ struct ChatComposer: View {
     let onCancel: () -> Void
     let onComplete: () -> Void
     let onSend: () -> Void
+    var onLinkTap: ((URL) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -86,7 +87,7 @@ struct ChatComposer: View {
 
             }
 
-            ComposerDisclaimer()
+            ComposerDisclaimer(onLinkTap: onLinkTap)
                 .padding(.horizontal, 4)
         }
         .padding(.horizontal)

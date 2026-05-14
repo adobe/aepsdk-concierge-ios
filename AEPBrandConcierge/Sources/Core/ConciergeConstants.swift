@@ -180,6 +180,64 @@ enum ConciergeConstants {
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
 
+    // MARK: - Tracking Events
+
+    enum TrackingEvent {
+        enum Name {
+            static let SESSION_INITIALIZED = "Brand Concierge Session Initialized"
+            static let CHAT_OPENED = "Brand Concierge Chat Opened"
+            static let CHAT_CLOSED = "Brand Concierge Chat Closed"
+            static let QUERY_SUBMITTED = "Brand Concierge Query Submitted"
+            static let PROMPT_SUGGESTION_CLICKED = "Brand Concierge Prompt Suggestion Clicked"
+            static let WELCOME_PROMPT_SUGGESTION_CLICKED = "Brand Concierge Welcome Prompt Suggestion Clicked"
+            static let CARD_CLICKED = "Brand Concierge Card Clicked"
+            static let MIC_BUTTON_CLICKED = "Brand Concierge Mic Button Clicked"
+            static let RESPONSE_STARTED = "Brand Concierge Response Started"
+            static let RESPONSE_COMPLETED = "Brand Concierge Response Completed"
+            static let CARDS_RENDERED = "Brand Concierge Cards Rendered"
+            static let FEEDBACK_SUBMITTED = "Brand Concierge Feedback Submitted"
+            static let DISCLAIMER_LINK_CLICKED = "Brand Concierge Disclaimer Link Clicked"
+            static let ERROR_OCCURRED = "Brand Concierge Error Occurred"
+        }
+
+        enum XDMType {
+            static let SESSION_INITIALIZED = "session:initialized"
+            static let CHAT_OPENED = "chat:opened"
+            static let CHAT_CLOSED = "chat:closed"
+            static let QUERY_SUBMITTED = "query:submitted"
+            static let PROMPT_SUGGESTION_CLICKED = "promptSuggestion:clicked"
+            static let WELCOME_PROMPT_SUGGESTION_CLICKED = "welcomePromptSuggestion:clicked"
+            static let CARD_CLICKED = "card:clicked"
+            static let MIC_BUTTON_CLICKED = "micButton:clicked"
+            static let RESPONSE_STARTED = "response:started"
+            static let RESPONSE_COMPLETED = "response:completed"
+            static let CARDS_RENDERED = "cards:rendered"
+            static let FEEDBACK_SUBMITTED = "feedback:submitted"
+            static let DISCLAIMER_LINK_CLICKED = "disclaimerLink:clicked"
+            static let ERROR_OCCURRED = "error:occurred"
+        }
+
+        enum EventData {
+            enum Key {
+                static let EVENT_TYPE = "concierge.eventType"
+                static let EPOCH_TIME = "epochTime"
+                static let DURATION_MILLIS = "durationMillis"
+                static let QUERY = "query"
+                static let SUGGESTION = "suggestion"
+                static let ELEMENT = "element"
+                static let ELEMENTS = "elements"
+                static let DISPLAY_MODE = "displayMode"
+                static let CONVERSATION_ID = "conversationId"
+                static let INTERACTION_ID = "interactionId"
+                static let FEEDBACK_TYPE = "feedbackType"
+                static let SELECTED_OPTIONS = "selectedOptions"
+                static let NOTES = "notes"
+                static let URL = "url"
+                static let ERROR_MESSAGE = "errorMessage"
+            }
+        }
+    }
+
     // MARK: - Session Management
 
     enum Session {
