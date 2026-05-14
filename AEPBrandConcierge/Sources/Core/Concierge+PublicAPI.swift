@@ -122,7 +122,7 @@ extension Concierge {
         textSpeaker: TextSpeaking?,
         handleLink: ((URL) -> Bool)?
     ) {
-        self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
+        self.chatTitle = title
         self.chatSubtitle = subtitle
         self.speechCapturer = speechCapturer
         self.textSpeaker = textSpeaker

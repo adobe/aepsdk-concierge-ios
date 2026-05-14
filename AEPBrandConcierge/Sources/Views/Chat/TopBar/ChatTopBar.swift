@@ -19,7 +19,7 @@ struct ChatTopBar: View {
 
     @Binding var showAgentSend: Bool
 
-    let title: String
+    let title: String?
     let subtitle: String?
 
     let onToggleMode: (Bool) -> Void
@@ -28,9 +28,10 @@ struct ChatTopBar: View {
     @State private var showSourcesToggle: Bool = true
 
     /// Resolved title, preferring theme header over the initializer value.
-    private var resolvedTitle: String {
+    private var resolvedTitle: String? {
         let themeTitle = theme.header.title
-        return themeTitle.isEmpty ? title : themeTitle
+        if !themeTitle.isEmpty { return themeTitle }
+        return title
     }
 
     /// Resolved subtitle, preferring theme header over the initializer value.
@@ -53,7 +54,10 @@ struct ChatTopBar: View {
         return nil
     }
 
-    private var hasTitle: Bool { !resolvedTitle.isEmpty }
+    private var hasTitle: Bool {
+        guard let title = resolvedTitle else { return false }
+        return !title.isEmpty
+    }
 
     private var hasSubtitle: Bool {
         guard let sub = resolvedSubtitle else { return false }
@@ -74,8 +78,8 @@ struct ChatTopBar: View {
     private var headerTextView: some View {
         if hasTitle || hasSubtitle {
             VStack(alignment: .leading, spacing: 2) {
-                if hasTitle {
-                    Text(resolvedTitle)
+                if hasTitle, let title = resolvedTitle {
+                    Text(title)
                         .font(titleFont)
                         .foregroundColor(theme.colors.primary.text.color)
                 }

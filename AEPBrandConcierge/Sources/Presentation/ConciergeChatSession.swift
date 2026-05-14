@@ -18,12 +18,12 @@ import Foundation
 final class ConciergeChatSession {
     let controller: ChatController
     let configuration: ConciergeConfiguration
-    let title: String
+    let title: String?
     let subtitle: String?
 
     init(
         configuration: ConciergeConfiguration,
-        title: String,
+        title: String?,
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?
@@ -38,7 +38,7 @@ final class ConciergeChatSession {
         )
     }
 
-    func matches(configuration: ConciergeConfiguration, title: String, subtitle: String?) -> Bool {
+    func matches(configuration: ConciergeConfiguration, title: String?, subtitle: String?) -> Bool {
         self.title == title
             && self.subtitle == subtitle
             && self.configuration.hasSameChatServiceIdentity(as: configuration)
