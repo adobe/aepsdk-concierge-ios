@@ -278,11 +278,7 @@ final class ChatController: ObservableObject {
         }
 
         dispatchTrackingEvent(.sessionInitialized)
-
-        
     }
-
-
 
     // MARK: - Feedback
 
@@ -357,7 +353,6 @@ final class ChatController: ObservableObject {
     // MARK: - Tracking
 
     func trackChatOpened() {
-        guard chatOpenTime == nil else { return }
         let now = Date()
         chatOpenTime = now
         let epochTime = Int64(now.timeIntervalSince1970 * 1000)
@@ -365,9 +360,6 @@ final class ChatController: ObservableObject {
     }
 
     func trackChatClosed() {
-        if chatOpenTime == nil {
-            Log.warning(label: LOG_TAG, "trackChatClosed called without a prior trackChatOpened — durationMillis will be 0")
-        }
         let now = Date()
         let epochTime = Int64(now.timeIntervalSince1970 * 1000)
         let durationMillis = chatOpenTime.map { Int64(now.timeIntervalSince($0) * 1000) } ?? 0
@@ -442,16 +434,24 @@ final class ChatController: ObservableObject {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
                     }
 
+                    // Dispatch responseStarted exactly once per turn, on the first chunk that
+                    // carries any user-visible content (text OR multimodal elements). Mirrors
+                    // the Android `hasVisibleContent` gate so cards-only responses still produce
+                    // a paired responseStarted/responseCompleted, and pure heartbeat chunks
+                    // (response present but empty) do not.
+                    let chunkMessage = payload.response?.message ?? ""
+                    let chunkElements = payload.response?.multimodalElements?.elements ?? []
+                    let hasVisibleContent = !chunkMessage.isEmpty || !chunkElements.isEmpty
+                    if hasVisibleContent && !responseStartedDispatched {
+                        responseStartedDispatched = true
+                        self.dispatchTrackingEvent(.responseStarted(
+                            conversationId: payload.conversationId ?? "unknown",
+                            interactionId: payload.interactionId ?? "unknown"
+                        ))
+                    }
+
                     // Handle messages
                     if let message = payload.response?.message {
-                        if !responseStartedDispatched {
-                            responseStartedDispatched = true
-                            self.dispatchTrackingEvent(.responseStarted(
-                                conversationId: payload.conversationId ?? "",
-                                interactionId: payload.interactionId ?? ""
-                            ))
-                        }
-
                         if state == ConciergeConstants.StreamState.IN_PROGRESS {
                             accumulatedContent += message
                             Log.trace(label: self.LOG_TAG, "SSE chunk (len=\(message.count)): \"\(message)\"")
@@ -507,7 +507,8 @@ final class ChatController: ObservableObject {
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
-                    } else if accumulatedContent.isEmpty {
+                    } else if accumulatedContent.isEmpty && latestElements.isEmpty {
+                        // Genuinely empty response — no text and no multimodal elements.
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
@@ -529,9 +530,14 @@ final class ChatController: ObservableObject {
                             completedPayload = current.payload
                         }
 
+                        guard let completedPayload else {
+                            Log.warning(label: self.LOG_TAG, "responseCompleted skipped: streaming message index out of bounds")
+                            self.clearState()
+                            return
+                        }
                         self.dispatchTrackingEvent(.responseCompleted(
-                            conversationId: completedPayload?.conversationId ?? "",
-                            interactionId: completedPayload?.interactionId ?? ""
+                            conversationId: completedPayload.conversationId ?? "unknown",
+                            interactionId: completedPayload.interactionId ?? "unknown"
                         ))
 
                         // Render multimodal elements (cards, CTAs) from the completed response
@@ -600,18 +606,17 @@ final class ChatController: ObservableObject {
             }
         }
 
-        if !cardElements.isEmpty {
-            let displayMode = cardElements.count == 1 ? "single" : "carousel"
-            let elementDicts: [[String: Any]] = cardElements.compactMap { element in
-                guard let entityInfo = element.entityInfo else { return nil }
-                var dict: [String: Any] = [:]
-                if let name = entityInfo.productName { dict["productName"] = name }
-                if let url = entityInfo.productPageURL { dict["productPageURL"] = url }
-                if let price = entityInfo.productPrice { dict["productPrice"] = price }
-                return dict
-            }
-            dispatchTrackingEvent(.cardsRendered(displayMode: displayMode, elements: elementDicts))
+        let elementDicts: [[String: Any]] = cardElements.compactMap { element in
+            guard let entityInfo = element.entityInfo else { return nil }
+            var dict: [String: Any] = [:]
+            if let name = entityInfo.productName { dict["productName"] = name }
+            if let url = entityInfo.productPageURL { dict["productPageURL"] = url }
+            if let price = entityInfo.productPrice { dict["productPrice"] = price }
+            return dict
         }
+        guard !elementDicts.isEmpty else { return }
+        let displayMode = elementDicts.count == 1 ? "single" : "carousel"
+        dispatchTrackingEvent(.cardsRendered(displayMode: displayMode, elements: elementDicts))
     }
 }
 
