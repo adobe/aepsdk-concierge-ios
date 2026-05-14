@@ -37,6 +37,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             ])
         }
 
+        ConciergeTracker.start()
+
         return true
     }
 }
