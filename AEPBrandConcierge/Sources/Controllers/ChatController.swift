@@ -445,6 +445,7 @@ final class ChatController: ObservableObject {
                                 current.sources = self.latestSources
                             }
                             current.feedbackEligible = current.payload?.response?.feedback?.eligible ?? false
+                            current.isStreamComplete = true
                             self.messages[streamingMessageIndex] = current
                         }
 
