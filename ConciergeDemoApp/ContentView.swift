@@ -22,6 +22,7 @@ struct ContentView: View {
         case defaultTheme = "theme-default"
         case allProperties = "theme-all-properties"
         case demoTheme = "themeDemo"
+        case demoDSG = "theme-dsg"
 
         var id: String { rawValue }
 
@@ -33,6 +34,8 @@ struct ContentView: View {
                 return "All Props"
             case .demoTheme:
                 return "Demo"
+            case .demoDSG:
+                return "Demo DSG"
             }
         }
     }
@@ -43,7 +46,7 @@ struct ContentView: View {
 
     @ObservedObject var deepLinkState: DeepLinkState
 
-    @State private var selectedThemeFile: DemoThemeFile = .defaultTheme
+    @State private var selectedThemeFile: DemoThemeFile = .demoDSG
     @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
     @State private var themeLoadStatusText: String = ""
     @State private var interceptedLinkURL: URL?

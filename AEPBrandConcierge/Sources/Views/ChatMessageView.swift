@@ -25,6 +25,7 @@ struct ChatMessageView: View {
     let template: MessageTemplate
     var messageBody: String?
     var sources: [Source]?
+    var linkHints: [LinkHint]?
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
     /// Whether the message is eligible to display the feedback affordance. Drives the
@@ -53,11 +54,12 @@ struct ChatMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
+        self.linkHints = linkHints
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
         self.feedbackEligible = feedbackEligible
@@ -225,6 +227,11 @@ struct ChatMessageView: View {
                                                 weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
                                             )
                                         ),
+                                        linkIconResolver: resolvedLinkIconResolver,
+                                        linkIconColor: UIColor(theme.behavior.citations?.linkIconStyle?.color?.color ?? theme.colors.message.conciergeLink.color),
+                                        linkIconSize: theme.behavior.citations?.linkIconStyle?.size ?? 10,
+                                        linkIconSpacing: theme.behavior.citations?.linkIconStyle?.spacing,
+                                        linkIconBaselineAdjust: theme.behavior.citations?.linkIconStyle?.baselineAdjust ?? 0,
                                         onOpenLink: { url in
                                             handleLinkTap(url)
                                         }
@@ -563,6 +570,30 @@ private extension ChatMessageView {
 // MARK: - Helpers
 
 private extension ChatMessageView {
+    /// Builds a link icon resolver closure from the message's `linkHints` and the theme's
+    /// `citations` icon config. Returns `nil` when `showLinkIcon` is disabled.
+    ///
+    /// The closure maps each link URL to `(assetName, sfSymbol)`:
+    /// - A hint with `kind == "phone"` uses `citations.phoneIcon` / `"phone"`.
+    /// - A hint with `kind == "store"` uses `citations.storeIcon` / `"storefront"`.
+    /// - All other links (including those without a hint) use `citations.defaultLinkIcon` / `"arrow.up.forward.app"`.
+    var resolvedLinkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))? {
+        guard theme.behavior.citations?.showLinkIcon == true else { return nil }
+        let citations = theme.behavior.citations
+        let hints = linkHints ?? []
+        return { url in
+            let hint = hints.first { $0.href == url.absoluteString }
+            switch hint?.kind {
+            case "phone":
+                return (citations?.phoneIcon ?? "", "phone", nil)
+            case "store":
+                return (citations?.storeIcon ?? "", "storefront", nil)
+            default:
+                return (citations?.defaultLinkIcon ?? "", "arrow.up.forward.app", nil)
+            }
+        }
+    }
+
     var resolvedAgentFont: UIFont {
         let fontSize = theme.typography.fontSize
         if theme.typography.fontFamily.isEmpty {

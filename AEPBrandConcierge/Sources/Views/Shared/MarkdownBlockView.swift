@@ -22,6 +22,19 @@ struct MarkdownBlockView: View {
     var spacing: CGFloat = 8
     var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
+    /// When non-nil, a small icon is appended after every inline hyperlink in the rendered text.
+    /// The closure maps each link URL to `(assetName, sfSymbol, image)`.
+    /// Resolution priority: `image` (when non-nil) → named asset → SF Symbol fallback.
+    var linkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))?
+    /// Tint color applied to link icons. Only used when `linkIconResolver` is non-nil.
+    var linkIconColor: UIColor = .link
+    /// Render size of link icons in points. Defaults to `10`.
+    var linkIconSize: CGFloat = 10
+    /// Horizontal gap in points between the link text and the icon.
+    /// When `nil` a Unicode thin space is used.
+    var linkIconSpacing: CGFloat? = nil
+    /// Additional vertical offset from the automatic cap-height baseline alignment.
+    var linkIconBaselineAdjust: CGFloat = 0
     var onOpenLink: ((URL) -> Void)?
 
     var body: some View {
@@ -79,12 +92,23 @@ struct MarkdownBlockView: View {
     private func transformBlock(_ block: MarkdownRenderer.MarkdownBlock) -> MarkdownRenderer.MarkdownBlock {
         switch block {
         case .text(let ns):
-            let replaced = CitationAttachmentBuilder.replaceTokens(
+            var replaced = CitationAttachmentBuilder.replaceTokens(
                 in: ns,
                 markers: citationMarkers,
                 baseFont: baseFont,
                 style: citationStyle
             )
+            if let resolver = linkIconResolver {
+                replaced = CitationAttachmentBuilder.appendLinkIcons(
+                    to: replaced,
+                    baseFont: baseFont,
+                    color: linkIconColor,
+                    iconSize: linkIconSize,
+                    spacing: linkIconSpacing,
+                    baselineAdjust: linkIconBaselineAdjust,
+                    iconResolver: resolver
+                )
+            }
             return .text(replaced)
         case .code(let ns):
             let replaced = CitationAttachmentBuilder.replaceTokens(
