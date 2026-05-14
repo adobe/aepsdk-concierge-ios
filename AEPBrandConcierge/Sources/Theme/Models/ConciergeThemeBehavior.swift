@@ -192,12 +192,56 @@ public struct ConciergeFeedbackBehavior: Codable {
     }
 }
 
+/// Visual styling applied to inline link icons.
+public struct ConciergeLinkIconStyle: Codable {
+    /// Render size of the icon in points. Defaults to `10`.
+    public var size: CGFloat?
+    /// Horizontal gap in points between the link text and the icon.
+    /// Defaults to a Unicode thin space (~2 pt) when absent.
+    public var spacing: CGFloat?
+    /// Additional vertical offset on top of the automatic cap-height baseline alignment.
+    /// Positive values shift the icon up; negative values shift it down. Defaults to `0`.
+    public var baselineAdjust: CGFloat?
+    /// Tint color applied to the icon. When absent falls back to `colors.message.conciergeLink`.
+    public var color: CodableColor?
+
+    public init(
+        size: CGFloat? = nil,
+        spacing: CGFloat? = nil,
+        baselineAdjust: CGFloat? = nil,
+        color: CodableColor? = nil
+    ) {
+        self.size = size
+        self.spacing = spacing
+        self.baselineAdjust = baselineAdjust
+        self.color = color
+    }
+}
+
 /// Citations behavior configuration
 public struct ConciergeCitationsBehavior: Codable {
     public var showLinkIcon: Bool
+    /// Asset name for the icon shown next to `"phone"` kind links. Falls back to the `phone` SF Symbol.
+    public var phoneIcon: String?
+    /// Asset name for the icon shown next to `"store"` kind links. Falls back to the `storefront` SF Symbol.
+    public var storeIcon: String?
+    /// Asset name for the icon shown next to links with an unrecognised kind. Falls back to the `arrow.up.forward.app` SF Symbol.
+    public var defaultLinkIcon: String?
+    /// Visual styling (size, spacing, baseline, color) for inline link icons.
+    public var linkIconStyle: ConciergeLinkIconStyle?
 
-    public init(showLinkIcon: Bool = false) {
+    public init(
+        showLinkIcon: Bool = false,
+        phoneIcon: String? = nil,
+        storeIcon: String? = nil,
+        defaultLinkIcon: String? = nil,
+        linkIconStyle: ConciergeLinkIconStyle? = nil
+    ) {
         self.showLinkIcon = showLinkIcon
+        self.phoneIcon = phoneIcon
+        self.storeIcon = storeIcon
+        self.defaultLinkIcon = defaultLinkIcon
+        self.linkIconStyle = linkIconStyle
     }
 }
 

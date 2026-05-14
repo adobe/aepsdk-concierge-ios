@@ -54,6 +54,7 @@ struct MessageListView: View {
                                 template: message.template,
                                 messageBody: message.messageBody,
                                 sources: message.sources,
+                                linkHints: message.linkHints,
                                 promptSuggestions: message.promptSuggestions,
                                 feedbackSentiment: message.feedbackSentiment,
                                 feedbackEligible: message.feedbackEligible,
