@@ -203,7 +203,8 @@ private extension Concierge {
             title: resolvedTitle,
             subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,
-            textSpeaker: textSpeaker
+            textSpeaker: textSpeaker,
+            dispatch: { event in MobileCore.dispatch(event: event) }
         )
         currentSession = session
         return session
