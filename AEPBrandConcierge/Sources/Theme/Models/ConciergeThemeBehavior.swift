@@ -137,6 +137,9 @@ public struct ConciergeFeedbackBehavior: Codable {
     public var showCloseButton: Bool?
     /// Overrides the Cancel button visibility. `nil` defaults to `true` for `"modal"`, `false` for `"action"`.
     public var showCancelButton: Bool?
+    /// When `true`, feedback thumbs are shown on every agent message regardless of the
+    /// `feedback.eligible` flag returned by the server. Defaults to `false` when absent.
+    public var alwaysDisplay: Bool?
 
     /// Effective close button visibility: `showCloseButton` when set, otherwise `displayMode == "action"`.
     public var resolvedShowCloseButton: Bool {
@@ -153,18 +156,21 @@ public struct ConciergeFeedbackBehavior: Codable {
         case thumbsPlacement
         case showCloseButton
         case showCancelButton
+        case alwaysDisplay
     }
 
     public init(
         displayMode: String = "modal",
         thumbsPlacement: ThumbsPlacement = .inline,
         showCloseButton: Bool? = nil,
-        showCancelButton: Bool? = nil
+        showCancelButton: Bool? = nil,
+        alwaysDisplay: Bool? = nil
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
         self.showCloseButton = showCloseButton
         self.showCancelButton = showCancelButton
+        self.alwaysDisplay = alwaysDisplay
     }
 
     public init(from decoder: Decoder) throws {
@@ -173,6 +179,7 @@ public struct ConciergeFeedbackBehavior: Codable {
         thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
         showCloseButton = try container.decodeIfPresent(Bool.self, forKey: .showCloseButton)
         showCancelButton = try container.decodeIfPresent(Bool.self, forKey: .showCancelButton)
+        alwaysDisplay = try container.decodeIfPresent(Bool.self, forKey: .alwaysDisplay)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -181,6 +188,7 @@ public struct ConciergeFeedbackBehavior: Codable {
         try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
         try container.encodeIfPresent(showCloseButton, forKey: .showCloseButton)
         try container.encodeIfPresent(showCancelButton, forKey: .showCancelButton)
+        try container.encodeIfPresent(alwaysDisplay, forKey: .alwaysDisplay)
     }
 }
 

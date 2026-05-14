@@ -23,6 +23,7 @@ public struct Message: Identifiable {
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
     var feedbackEligible: Bool = false
+    var isStreamComplete: Bool = false
 
     public static let divider = Message(template: .divider)
 

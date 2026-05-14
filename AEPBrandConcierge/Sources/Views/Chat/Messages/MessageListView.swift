@@ -57,6 +57,7 @@ struct MessageListView: View {
                                 promptSuggestions: message.promptSuggestions,
                                 feedbackSentiment: message.feedbackSentiment,
                                 feedbackEligible: message.feedbackEligible,
+                                isStreamComplete: message.isStreamComplete,
                                 onSuggestionTap: onSuggestionTap
                             )
                                 .id(message.id)
