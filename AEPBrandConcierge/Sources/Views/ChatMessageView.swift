@@ -20,6 +20,7 @@ struct ChatMessageView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeCardTapHandler) private var cardTapHandler
 
     let messageId: UUID?
     let template: MessageTemplate
@@ -31,6 +32,7 @@ struct ChatMessageView: View {
     /// inclusion of `MessageFeedbackView` below the bubble; defaults to `false`.
     var feedbackEligible: Bool = false
     var onSuggestionTap: ((String) -> Void)?
+    var onWelcomePromptSuggestionTap: ((String) -> Void)?
 
     /// Extra line spacing derived from the theme's body line-height multiplier.
     /// Scoped to `.basic` message bubbles so it doesn't bleed into other components like cards, badges, etc.
@@ -50,7 +52,7 @@ struct ChatMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, onSuggestionTap: ((String) -> Void)? = nil, onWelcomePromptSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
@@ -59,6 +61,7 @@ struct ChatMessageView: View {
         self.feedbackSentiment = feedbackSentiment
         self.feedbackEligible = feedbackEligible
         self.onSuggestionTap = onSuggestionTap
+        self.onWelcomePromptSuggestionTap = onWelcomePromptSuggestionTap
     }
 
     var body: some View {
@@ -94,7 +97,7 @@ struct ChatMessageView: View {
             let promptBgColor = theme.colors.welcomePrompt.backgroundColor?.color ?? background
             let promptTextColor = theme.colors.welcomePrompt.textColor?.color ?? theme.colors.primary.text.color
 
-            Button(action: { onSuggestionTap?(text) }) {
+            Button(action: { onWelcomePromptSuggestionTap?(text) }) {
                 if promptFullWidth {
                     HStack(spacing: 0) {
                         // Only render image block when a valid source is available
@@ -441,6 +444,7 @@ struct ChatMessageView: View {
 private extension ChatMessageView {
     func actionButtonCarouselCard(data: ProductCardData) -> some View {
         Button(action: {
+            cardTapHandler.cardTapped(data)
             if let destination = data.destinationURL {
                 handleLinkTap(destination)
             }

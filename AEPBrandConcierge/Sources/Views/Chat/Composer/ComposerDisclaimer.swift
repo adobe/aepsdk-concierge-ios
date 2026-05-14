@@ -16,10 +16,16 @@ import SwiftUI
 struct ComposerDisclaimer: View {
     @Environment(\.conciergeTheme) private var theme
 
+    var onLinkTap: ((URL) -> Void)?
+
     var body: some View {
         Text(attributedDisclaimerText)
             .font(.system(size: theme.components.disclaimer.fontSize, weight: theme.components.disclaimer.fontWeight.toSwiftUIFontWeight()))
             .fixedSize(horizontal: false, vertical: true)
+            .environment(\.openURL, OpenURLAction { url in
+                onLinkTap?(url)
+                return .systemAction
+            })
     }
 
     private var attributedDisclaimerText: AttributedString {
