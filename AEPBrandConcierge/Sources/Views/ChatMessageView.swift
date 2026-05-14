@@ -30,6 +30,9 @@ struct ChatMessageView: View {
     /// Whether the message is eligible to display the feedback affordance. Drives the
     /// inclusion of `MessageFeedbackView` below the bubble; defaults to `false`.
     var feedbackEligible: Bool = false
+    /// Whether the SSE stream for this message has fully completed. Required to gate
+    /// `alwaysDisplay` so feedback is not shown while streaming is still in progress.
+    var isStreamComplete: Bool = false
     var onSuggestionTap: ((String) -> Void)?
 
     /// Extra line spacing derived from the theme's body line-height multiplier.
@@ -50,7 +53,7 @@ struct ChatMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
@@ -58,6 +61,7 @@ struct ChatMessageView: View {
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
         self.feedbackEligible = feedbackEligible
+        self.isStreamComplete = isStreamComplete
         self.onSuggestionTap = onSuggestionTap
     }
 
@@ -272,14 +276,14 @@ struct ChatMessageView: View {
                             if !isUserMessage, !displayedSources.isEmpty {
                                 SourcesListView(
                                     sources: displayedSources,
-                                    feedbackEligible: feedbackEligible,
+                                    feedbackEligible: effectiveFeedbackEligible,
                                     feedbackSentiment: feedbackSentiment,
                                     messageId: messageId
                                 )
                             }
 
-                            if !isUserMessage, feedbackEligible,
-                               resolvedFeedbackPlacement == .standalone || displayedSources.isEmpty {
+                            if !isUserMessage, effectiveFeedbackEligible,
+                               resolvedFeedbackPlacement == .standalone {
                                 MessageFeedbackView(
                                     feedbackSentiment: feedbackSentiment,
                                     messageId: messageId
@@ -577,6 +581,12 @@ private extension ChatMessageView {
 
     var resolvedFeedbackPlacement: ThumbsPlacement {
         theme.behavior.feedback?.thumbsPlacement ?? .inline
+    }
+
+    /// `true` when the server marks this message eligible, or when the theme sets `alwaysDisplay: true`
+    /// and the SSE stream has fully completed.
+    var effectiveFeedbackEligible: Bool {
+        feedbackEligible || (isStreamComplete && theme.behavior.feedback?.alwaysDisplay == true)
     }
 
     func handleLinkTap(_ url: URL) {
