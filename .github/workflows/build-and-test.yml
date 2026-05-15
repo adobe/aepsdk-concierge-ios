@@ -20,7 +20,7 @@ jobs:
     with:
       runner-image: 'macos-15'
       ios-device-names: '["iPhone 16"]'
-      ios-versions: '["18.5"]'
+      ios-versions: '["18.4"]'
       run-test-ios-unit: true
       run-build-xcframework-and-app: true
       enable-codecov: true
