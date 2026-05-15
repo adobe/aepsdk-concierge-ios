@@ -110,12 +110,14 @@ public struct ConciergeWelcomeCardBehavior: Codable {
     }
 }
 
-/// Where feedback thumbs are placed relative to the sources list.
+/// Where feedback thumbs appear for an eligible agent message (`behavior.feedback.thumbsPlacement`).
+/// - `inline`: In the sources header row; falls back to standalone when there are no sources.
+/// - `below`: Below the expanded source rows with a label; falls back to standalone without sources.
+/// - `standalone`: Always a separate block below the bubble, regardless of sources.
 public enum ThumbsPlacement: String, Codable {
-    /// Thumbs sit inline in the sources header row (default).
     case inline = "inline"
-    /// Thumbs appear in a dedicated row below the expanded sources list.
     case below = "below"
+    case standalone = "standalone"
 
     public init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
@@ -135,6 +137,9 @@ public struct ConciergeFeedbackBehavior: Codable {
     public var showCloseButton: Bool?
     /// Overrides the Cancel button visibility. `nil` defaults to `true` for `"modal"`, `false` for `"action"`.
     public var showCancelButton: Bool?
+    /// When `true`, feedback thumbs are shown on every agent message regardless of the
+    /// `feedback.eligible` flag returned by the server. Defaults to `false` when absent.
+    public var alwaysDisplay: Bool?
 
     /// Effective close button visibility: `showCloseButton` when set, otherwise `displayMode == "action"`.
     public var resolvedShowCloseButton: Bool {
@@ -151,18 +156,21 @@ public struct ConciergeFeedbackBehavior: Codable {
         case thumbsPlacement
         case showCloseButton
         case showCancelButton
+        case alwaysDisplay
     }
 
     public init(
         displayMode: String = "modal",
         thumbsPlacement: ThumbsPlacement = .inline,
         showCloseButton: Bool? = nil,
-        showCancelButton: Bool? = nil
+        showCancelButton: Bool? = nil,
+        alwaysDisplay: Bool? = nil
     ) {
         self.displayMode = displayMode
         self.thumbsPlacement = thumbsPlacement
         self.showCloseButton = showCloseButton
         self.showCancelButton = showCancelButton
+        self.alwaysDisplay = alwaysDisplay
     }
 
     public init(from decoder: Decoder) throws {
@@ -171,6 +179,7 @@ public struct ConciergeFeedbackBehavior: Codable {
         thumbsPlacement = try container.decodeIfPresent(ThumbsPlacement.self, forKey: .thumbsPlacement) ?? .inline
         showCloseButton = try container.decodeIfPresent(Bool.self, forKey: .showCloseButton)
         showCancelButton = try container.decodeIfPresent(Bool.self, forKey: .showCancelButton)
+        alwaysDisplay = try container.decodeIfPresent(Bool.self, forKey: .alwaysDisplay)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -179,15 +188,60 @@ public struct ConciergeFeedbackBehavior: Codable {
         try container.encode(thumbsPlacement, forKey: .thumbsPlacement)
         try container.encodeIfPresent(showCloseButton, forKey: .showCloseButton)
         try container.encodeIfPresent(showCancelButton, forKey: .showCancelButton)
+        try container.encodeIfPresent(alwaysDisplay, forKey: .alwaysDisplay)
+    }
+}
+
+/// Visual styling applied to inline link icons.
+public struct ConciergeLinkIconStyle: Codable {
+    /// Render size of the icon in points. Defaults to `10`.
+    public var size: CGFloat?
+    /// Horizontal gap in points between the link text and the icon.
+    /// Defaults to a Unicode thin space (~2 pt) when absent.
+    public var spacing: CGFloat?
+    /// Additional vertical offset on top of the automatic cap-height baseline alignment.
+    /// Positive values shift the icon up; negative values shift it down. Defaults to `0`.
+    public var baselineAdjust: CGFloat?
+    /// Tint color applied to the icon. When absent falls back to `colors.message.conciergeLink`.
+    public var color: CodableColor?
+
+    public init(
+        size: CGFloat? = nil,
+        spacing: CGFloat? = nil,
+        baselineAdjust: CGFloat? = nil,
+        color: CodableColor? = nil
+    ) {
+        self.size = size
+        self.spacing = spacing
+        self.baselineAdjust = baselineAdjust
+        self.color = color
     }
 }
 
 /// Citations behavior configuration
 public struct ConciergeCitationsBehavior: Codable {
     public var showLinkIcon: Bool
+    /// Asset name for the icon shown next to `"phone"` kind links. Falls back to the `phone` SF Symbol.
+    public var phoneIcon: String?
+    /// Asset name for the icon shown next to `"store"` kind links. Falls back to the `storefront` SF Symbol.
+    public var storeIcon: String?
+    /// Asset name for the icon shown next to links with an unrecognised kind. Falls back to the `arrow.up.forward.app` SF Symbol.
+    public var defaultLinkIcon: String?
+    /// Visual styling (size, spacing, baseline, color) for inline link icons.
+    public var linkIconStyle: ConciergeLinkIconStyle?
 
-    public init(showLinkIcon: Bool = false) {
+    public init(
+        showLinkIcon: Bool = false,
+        phoneIcon: String? = nil,
+        storeIcon: String? = nil,
+        defaultLinkIcon: String? = nil,
+        linkIconStyle: ConciergeLinkIconStyle? = nil
+    ) {
         self.showLinkIcon = showLinkIcon
+        self.phoneIcon = phoneIcon
+        self.storeIcon = storeIcon
+        self.defaultLinkIcon = defaultLinkIcon
+        self.linkIconStyle = linkIconStyle
     }
 }
 

@@ -24,4 +24,23 @@ struct BrandIcon: View {
             Image(systemName: systemName).renderingMode(.template)
         }
     }
+
+    /// Returns a `UIImage` using the same asset-catalog → SF Symbol priority as the SwiftUI view.
+    /// Pass a non-nil `pointSize` to apply a `UIImage.SymbolConfiguration` to the SF Symbol fallback.
+    ///
+    /// - Parameters:
+    ///   - assetName: Named asset to try first. An empty string skips straight to the SF Symbol.
+    ///   - systemName: SF Symbol name used when the named asset is absent.
+    ///   - pointSize: Point size applied to the SF Symbol configuration. Ignored for named assets.
+    /// - Returns: The resolved `UIImage`, or `nil` if neither source produces an image.
+    static func resolvedUIImage(assetName: String, systemName: String, pointSize: CGFloat? = nil) -> UIImage? {
+        if !assetName.isEmpty, let asset = UIImage(named: assetName) {
+            return asset
+        }
+        if let pointSize {
+            let config = UIImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
+            return UIImage(systemName: systemName, withConfiguration: config)
+        }
+        return UIImage(systemName: systemName)
+    }
 }
