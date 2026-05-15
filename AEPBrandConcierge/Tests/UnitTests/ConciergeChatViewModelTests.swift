@@ -546,7 +546,7 @@ final class ChatControllerTests: XCTestCase {
 
     private func makePayload(state: String, message: String? = nil, sources: [Source]? = nil) -> ConversationPayload {
         let response: ConversationResponse? = message != nil || sources != nil
-            ? ConversationResponse(message: message ?? "", promptSuggestions: nil, multimodalElements: nil, sources: sources, state: nil, feedback: nil)
+            ? ConversationResponse(message: message ?? "", promptSuggestions: nil, multimodalElements: nil, sources: sources, linkHints: nil, state: nil, feedback: nil)
             : nil
 
         return ConversationPayload(
@@ -572,6 +572,7 @@ final class ChatControllerTests: XCTestCase {
             promptSuggestions: nil,
             multimodalElements: multimodal,
             sources: nil,
+            linkHints: nil,
             state: nil,
             feedback: nil
         )
