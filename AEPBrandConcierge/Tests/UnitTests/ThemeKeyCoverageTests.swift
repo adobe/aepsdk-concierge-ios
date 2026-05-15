@@ -164,6 +164,17 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Feedback
         "feedback-icon-btn-background": "colors.feedback.iconButtonBackground",
+        "feedback-submit-button-fill-color": "colors.feedback.submitButtonFill",
+        "feedback-submit-button-text-color": "colors.feedback.submitButtonText",
+        "feedback-cancel-button-fill-color": "colors.feedback.cancelButtonFill",
+        "feedback-cancel-button-text-color": "colors.feedback.cancelButtonText",
+        "feedback-cancel-button-border-color": "colors.feedback.cancelButtonBorder",
+        "feedback-sheet-background-color": "colors.feedback.sheetBackground",
+        "feedback-title-text-color": "colors.feedback.titleText",
+        "feedback-question-text-color": "colors.feedback.questionText",
+        "feedback-options-text-color": "colors.feedback.optionsText",
+        "feedback-checkbox-border-color": "colors.feedback.checkboxBorder",
+        "feedback-drag-handle-color": "colors.feedback.dragHandle",
 
         // Colors - Disclaimer
         "disclaimer-color": "colors.disclaimer",
@@ -200,6 +211,14 @@ private extension ThemeKeyCoverageTests {
 
         // Layout - Feedback
         "feedback-container-gap": "layout.feedbackContainerGap",
+        "feedback-submit-button-border-radius": "layout.feedbackSubmitButtonBorderRadius",
+        "feedback-submit-button-font-weight": "layout.feedbackSubmitButtonFontWeight",
+        "feedback-cancel-button-border-radius": "layout.feedbackCancelButtonBorderRadius",
+        "feedback-cancel-button-border-width": "layout.feedbackCancelButtonBorderWidth",
+        "feedback-cancel-button-font-weight": "layout.feedbackCancelButtonFontWeight",
+        "feedback-checkbox-border-radius": "layout.feedbackCheckboxBorderRadius",
+        "feedback-title-text-align": "layout.feedbackTitleTextAlign",
+        "feedback-title-font-size": "layout.feedbackTitleFontSize",
 
         // Layout - Citations
         "citations-text-font-weight": "layout.citationsTextFontWeight",
@@ -216,7 +235,97 @@ private extension ThemeKeyCoverageTests {
         // Layout - Feedback
         "feedback-icon-btn-size-desktop": "layout.feedbackIconButtonSize",
 
-        // Components - Top Bar
+        // Colors - Product Card
+        "product-card-background-color": "colors.productCard.backgroundColor",
+        "product-card-title-color": "colors.productCard.titleColor",
+        "product-card-subtitle-color": "colors.productCard.subtitleColor",
+        "product-card-price-color": "colors.productCard.priceColor",
+        "product-card-was-price-color": "colors.productCard.wasPriceColor",
+        "product-card-badge-text-color": "colors.productCard.badgeTextColor",
+        "product-card-badge-background-color": "colors.productCard.badgeBackgroundColor",
+        "product-card-outline-color": "colors.productCard.outlineColor",
+
+        // Layout - Product Card
+        "product-card-title-font-size": "layout.productCardTitleFontSize",
+        "product-card-title-font-weight": "layout.productCardTitleFontWeight",
+        "product-card-subtitle-font-size": "layout.productCardSubtitleFontSize",
+        "product-card-subtitle-font-weight": "layout.productCardSubtitleFontWeight",
+        "product-card-price-font-size": "layout.productCardPriceFontSize",
+        "product-card-price-font-weight": "layout.productCardPriceFontWeight",
+        "product-card-badge-font-size": "layout.productCardBadgeFontSize",
+        "product-card-badge-font-weight": "layout.productCardBadgeFontWeight",
+        "product-card-was-price-text-prefix": "layout.productCardWasPriceTextPrefix",
+        "product-card-was-price-font-size": "layout.productCardWasPriceFontSize",
+        "product-card-was-price-font-weight": "layout.productCardWasPriceFontWeight",
+        "product-card-width": "layout.productCardWidth",
+        "product-card-height": "layout.productCardHeight",
+        "product-card-text-spacing": "layout.productCardTextSpacing",
+        "product-card-text-top-padding": "layout.productCardTextTopPadding",
+        "product-card-text-bottom-padding": "layout.productCardTextBottomPadding",
+        "product-card-text-horizontal-padding": "layout.productCardTextHorizontalPadding",
+        "product-card-carousel-spacing": "layout.productCardCarouselSpacing",
+        "product-card-carousel-horizontal-padding": "layout.productCardCarouselHorizontalPadding",
+
+        // Colors - CTA Button
+        "cta-button-background-color": "colors.ctaButton.background",
+        "cta-button-text-color": "colors.ctaButton.text",
+        "cta-button-icon-color": "colors.ctaButton.iconColor",
+
+        // Layout - CTA Button
+        "cta-button-border-radius": "layout.ctaButtonBorderRadius",
+        "cta-button-horizontal-padding": "layout.ctaButtonHorizontalPadding",
+        "cta-button-vertical-padding": "layout.ctaButtonVerticalPadding",
+        "cta-button-font-size": "layout.ctaButtonFontSize",
+        "cta-button-font-weight": "layout.ctaButtonFontWeight",
+        "cta-button-icon-size": "layout.ctaButtonIconSize",
+
+        // Layout - Agent Icon
+        "agent-icon-size": "layout.agentIconSize",
+        "agent-icon-spacing": "layout.agentIconSpacing",
+
+        // Colors - Input Icons
+        "input-send-icon-color": "colors.input.sendIconColor",
+        "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",
+        "input-send-arrow-background-color": "colors.input.sendArrowBackgroundColor",
+        "input-mic-icon-color": "colors.input.micIconColor",
+        "input-mic-recording-icon-color": "colors.input.micRecordingIconColor",
+
+        // Colors - Welcome Prompts
+        "welcome-prompt-background-color": "colors.welcomePrompt.backgroundColor",
+        "welcome-prompt-text-color": "colors.welcomePrompt.textColor",
+
+        // Colors - Prompt Suggestions
+        "suggestion-background-color": "colors.promptSuggestion.backgroundColor",
+        "suggestion-text-color": "colors.promptSuggestion.textColor",
+
+        // Colors - Container
+        "color-container": "colors.primary.container",
+
+        // Layout - Welcome Screen
+        "header-title-font-size": "layout.headerTitleFontSize",
+        "welcome-title-font-size": "layout.welcomeTitleFontSize",
+        "welcome-text-align": "layout.welcomeTextAlign",
+        "welcome-content-padding": "layout.welcomeContentPadding",
+        "welcome-prompt-image-size": "layout.welcomePromptImageSize",
+        "welcome-prompt-spacing": "layout.welcomePromptSpacing",
+        "welcome-title-bottom-spacing": "layout.welcomeTitleBottomSpacing",
+        "welcome-prompts-top-spacing": "layout.welcomePromptsTopSpacing",
+        "welcome-prompt-padding": "layout.welcomePromptPadding",
+        "welcome-prompt-corner-radius": "layout.welcomePromptCornerRadius",
+
+        // Colors - Thinking Animation
+        "thinking-dot-color": "colors.thinking.dotColor",
+
+        // Layout - Thinking Animation
+        "thinking-dot-size": "layout.thinkingDotSize",
+        "thinking-dot-spacing": "layout.thinkingDotSpacing",
+        "thinking-bubble-border-radius": "layout.thinkingBubbleBorderRadius",
+        "thinking-bubble-padding-horizontal": "layout.thinkingBubblePaddingHorizontal",
+        "thinking-bubble-padding-vertical": "layout.thinkingBubblePaddingVertical",
+        "thinking-dot-vertical-alignment": "layout.thinkingDotVerticalAlignment",
+
+        // Layout - Prompt Suggestions
+        "suggestion-item-border-radius": "layout.suggestionItemBorderRadius",
     ]
 
     // MARK: - Theme token model reflection
@@ -287,6 +396,13 @@ private extension ThemeKeyCoverageTests {
         if path == "colors.surface.light" || path == "colors.surface.dark" {
             return true
         }
+
+        // Welcome prompt colors are optional and covered by CSS mappings (nil by default).
+        // Input icon colors are optional (nil by default), covered by CSS mappings.
+        // These are reported as leaf optionals that don't have values at init.
+
+        // Welcome screen layout tokens are optional (nil by default).
+        // They are covered by CSS key mappings but default to nil.
 
         // Components are derived from canonical tokens on iOS. We intentionally do not require CSS coverage
         // for component style fields because they are not the source of truth.

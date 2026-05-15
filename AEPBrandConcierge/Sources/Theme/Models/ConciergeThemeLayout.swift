@@ -12,6 +12,13 @@
 
 import SwiftUI
 
+/// Vertical alignment of the dots row within the thinking bubble.
+public enum ThinkingDotVerticalAlignment: String, Codable {
+    case top
+    case center
+    case bottom
+}
+
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
     public var inputHeight: CGFloat
@@ -33,6 +40,16 @@ public struct ConciergeLayout: Codable {
     public var buttonHeightSmall: CGFloat
     public var feedbackContainerGap: CGFloat
     public var feedbackIconButtonSize: CGFloat
+    public var feedbackSubmitButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderRadius: CGFloat
+    public var feedbackCancelButtonBorderWidth: CGFloat
+    public var feedbackSubmitButtonFontWeight: CodableFontWeight
+    public var feedbackCancelButtonFontWeight: CodableFontWeight
+    public var feedbackCheckboxBorderRadius: CGFloat
+    /// Horizontal alignment for the feedback dialog title. `nil` uses `.leading`.
+    public var feedbackTitleTextAlign: ConciergeTextAlignment?
+    /// Dialog title font size in points. Defaults to `.title2` (~22pt at default Dynamic Type).
+    public var feedbackTitleFontSize: CGFloat?
     public var citationsTextFontWeight: CodableFontWeight
     public var citationsDesktopButtonFontSize: CGFloat
     public var disclaimerFontSize: CGFloat
@@ -42,6 +59,60 @@ public struct ConciergeLayout: Codable {
     public var multimodalCardBoxShadow: ConciergeShadow
     public var welcomeInputOrder: Int
     public var welcomeCardsOrder: Int
+    public var productCardTitleFontSize: CGFloat
+    public var productCardTitleFontWeight: CodableFontWeight
+    public var productCardSubtitleFontSize: CGFloat
+    public var productCardSubtitleFontWeight: CodableFontWeight
+    public var productCardPriceFontSize: CGFloat
+    public var productCardPriceFontWeight: CodableFontWeight
+    public var productCardBadgeFontSize: CGFloat
+    public var productCardBadgeFontWeight: CodableFontWeight
+    public var productCardWasPriceTextPrefix: String
+    public var productCardWasPriceFontSize: CGFloat
+    public var productCardWasPriceFontWeight: CodableFontWeight
+    public var productCardWidth: CGFloat
+    public var productCardHeight: CGFloat
+    public var productCardTextSpacing: CGFloat
+    public var productCardTextTopPadding: CGFloat
+    public var productCardTextBottomPadding: CGFloat
+    public var productCardTextHorizontalPadding: CGFloat
+    public var productCardCarouselSpacing: CGFloat
+    /// Horizontal padding for the scrolling carousel content.
+    /// - Leading: added on top of the column-aligned base (first card cannot move left of the base).
+    /// - Trailing: used directly; when `nil`, falls back to `chatHistoryPadding`.
+    public var productCardCarouselHorizontalPadding: CGFloat?
+    public var ctaButtonBorderRadius: CGFloat
+    public var ctaButtonHorizontalPadding: CGFloat
+    public var ctaButtonVerticalPadding: CGFloat
+    public var ctaButtonFontSize: CGFloat
+    public var ctaButtonFontWeight: CodableFontWeight
+    public var ctaButtonIconSize: CGFloat
+    public var agentIconSize: CGFloat
+    public var agentIconSpacing: CGFloat
+    /// Total horizontal space occupied by the agent icon column (size + trailing spacing).
+    /// Use this to align sibling elements with the start of the agent response text.
+    public var agentTextIndent: CGFloat { agentIconSize + agentIconSpacing }
+
+    // Welcome screen layout
+    public var headerTitleFontSize: CGFloat?
+    public var welcomeTitleFontSize: CGFloat?
+    public var welcomeTextAlign: String?
+    public var welcomeContentPadding: CGFloat?
+    public var welcomePromptImageSize: CGFloat?
+    public var welcomePromptSpacing: CGFloat?
+    public var welcomeTitleBottomSpacing: CGFloat?
+    public var welcomePromptsTopSpacing: CGFloat?
+    public var welcomePromptPadding: CGFloat?
+    public var welcomePromptCornerRadius: CGFloat?
+    public var suggestionItemBorderRadius: CGFloat?
+
+    // Thinking animation layout
+    public var thinkingDotSize: CGFloat?
+    public var thinkingDotSpacing: CGFloat?
+    public var thinkingBubbleBorderRadius: CGFloat?
+    public var thinkingBubblePaddingHorizontal: CGFloat?
+    public var thinkingBubblePaddingVertical: CGFloat?
+    public var thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment?
 
     public init(
         inputHeight: CGFloat = 52,
@@ -65,6 +136,14 @@ public struct ConciergeLayout: Codable {
         buttonHeightSmall: CGFloat = 30,
         feedbackContainerGap: CGFloat = 4,
         feedbackIconButtonSize: CGFloat = 44,
+        feedbackSubmitButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderRadius: CGFloat = 10,
+        feedbackCancelButtonBorderWidth: CGFloat = 1,
+        feedbackSubmitButtonFontWeight: CodableFontWeight = .semibold,
+        feedbackCancelButtonFontWeight: CodableFontWeight = .semibold,
+        feedbackCheckboxBorderRadius: CGFloat = 6,
+        feedbackTitleTextAlign: ConciergeTextAlignment? = nil,
+        feedbackTitleFontSize: CGFloat? = nil,
         citationsTextFontWeight: CodableFontWeight = .bold,
         citationsDesktopButtonFontSize: CGFloat = 14,
         disclaimerFontSize: CGFloat = 12,
@@ -75,13 +154,57 @@ public struct ConciergeLayout: Codable {
         // Default matches the current product carousel card drop shadow.
         multimodalCardBoxShadow: ConciergeShadow = ConciergeShadow(
             offsetX: 0,
-            offsetY: 2,
-            blurRadius: 8,
+            offsetY: 1,
+            blurRadius: 3,
             spreadRadius: 0,
-            color: CodableColor(Color.black.opacity(0.08))
+            color: CodableColor(Color.black.opacity(0.2))
         ),
         welcomeInputOrder: Int = 3,
-        welcomeCardsOrder: Int = 2
+        welcomeCardsOrder: Int = 2,
+        productCardTitleFontSize: CGFloat = 14,
+        productCardTitleFontWeight: CodableFontWeight = .bold,
+        productCardSubtitleFontSize: CGFloat = 12,
+        productCardSubtitleFontWeight: CodableFontWeight = .regular,
+        productCardPriceFontSize: CGFloat = 14,
+        productCardPriceFontWeight: CodableFontWeight = .light,
+        productCardBadgeFontSize: CGFloat = 12,
+        productCardBadgeFontWeight: CodableFontWeight = .semibold,
+        productCardWasPriceTextPrefix: String = "was ",
+        productCardWasPriceFontSize: CGFloat = 12,
+        productCardWasPriceFontWeight: CodableFontWeight = .regular,
+        productCardWidth: CGFloat = 250,
+        productCardHeight: CGFloat = 300,
+        productCardTextSpacing: CGFloat = 8,
+        productCardTextTopPadding: CGFloat = 20,
+        productCardTextBottomPadding: CGFloat = 12,
+        productCardTextHorizontalPadding: CGFloat = 12,
+        productCardCarouselSpacing: CGFloat = 12,
+        productCardCarouselHorizontalPadding: CGFloat? = nil,
+        ctaButtonBorderRadius: CGFloat = 99,
+        ctaButtonHorizontalPadding: CGFloat = 16,
+        ctaButtonVerticalPadding: CGFloat = 12,
+        ctaButtonFontSize: CGFloat = 14,
+        ctaButtonFontWeight: CodableFontWeight = .regular,
+        ctaButtonIconSize: CGFloat = 16,
+        agentIconSize: CGFloat = 39,
+        agentIconSpacing: CGFloat = 12,
+        headerTitleFontSize: CGFloat? = nil,
+        welcomeTitleFontSize: CGFloat? = nil,
+        welcomeTextAlign: String? = nil,
+        welcomeContentPadding: CGFloat? = nil,
+        welcomePromptImageSize: CGFloat? = nil,
+        welcomePromptSpacing: CGFloat? = nil,
+        welcomeTitleBottomSpacing: CGFloat? = nil,
+        welcomePromptsTopSpacing: CGFloat? = nil,
+        welcomePromptPadding: CGFloat? = nil,
+        welcomePromptCornerRadius: CGFloat? = nil,
+        thinkingDotSize: CGFloat? = nil,
+        thinkingDotSpacing: CGFloat? = nil,
+        thinkingBubbleBorderRadius: CGFloat? = nil,
+        thinkingBubblePaddingHorizontal: CGFloat? = nil,
+        thinkingBubblePaddingVertical: CGFloat? = nil,
+        thinkingDotVerticalAlignment: ThinkingDotVerticalAlignment? = nil,
+        suggestionItemBorderRadius: CGFloat? = nil
     ) {
         self.inputHeight = inputHeight
         self.inputBorderRadius = inputBorderRadius
@@ -102,6 +225,14 @@ public struct ConciergeLayout: Codable {
         self.buttonHeightSmall = buttonHeightSmall
         self.feedbackContainerGap = feedbackContainerGap
         self.feedbackIconButtonSize = feedbackIconButtonSize
+        self.feedbackSubmitButtonBorderRadius = feedbackSubmitButtonBorderRadius
+        self.feedbackCancelButtonBorderRadius = feedbackCancelButtonBorderRadius
+        self.feedbackCancelButtonBorderWidth = feedbackCancelButtonBorderWidth
+        self.feedbackSubmitButtonFontWeight = feedbackSubmitButtonFontWeight
+        self.feedbackCancelButtonFontWeight = feedbackCancelButtonFontWeight
+        self.feedbackCheckboxBorderRadius = feedbackCheckboxBorderRadius
+        self.feedbackTitleTextAlign = feedbackTitleTextAlign
+        self.feedbackTitleFontSize = feedbackTitleFontSize
         self.citationsTextFontWeight = citationsTextFontWeight
         self.citationsDesktopButtonFontSize = citationsDesktopButtonFontSize
         self.disclaimerFontSize = disclaimerFontSize
@@ -111,6 +242,50 @@ public struct ConciergeLayout: Codable {
         self.multimodalCardBoxShadow = multimodalCardBoxShadow
         self.welcomeInputOrder = welcomeInputOrder
         self.welcomeCardsOrder = welcomeCardsOrder
+        self.productCardTitleFontSize = productCardTitleFontSize
+        self.productCardTitleFontWeight = productCardTitleFontWeight
+        self.productCardSubtitleFontSize = productCardSubtitleFontSize
+        self.productCardSubtitleFontWeight = productCardSubtitleFontWeight
+        self.productCardPriceFontSize = productCardPriceFontSize
+        self.productCardPriceFontWeight = productCardPriceFontWeight
+        self.productCardBadgeFontSize = productCardBadgeFontSize
+        self.productCardBadgeFontWeight = productCardBadgeFontWeight
+        self.productCardWasPriceTextPrefix = productCardWasPriceTextPrefix
+        self.productCardWasPriceFontSize = productCardWasPriceFontSize
+        self.productCardWasPriceFontWeight = productCardWasPriceFontWeight
+        self.productCardWidth = productCardWidth
+        self.productCardHeight = productCardHeight
+        self.productCardTextSpacing = productCardTextSpacing
+        self.productCardTextTopPadding = productCardTextTopPadding
+        self.productCardTextBottomPadding = productCardTextBottomPadding
+        self.productCardTextHorizontalPadding = productCardTextHorizontalPadding
+        self.productCardCarouselSpacing = productCardCarouselSpacing
+        self.productCardCarouselHorizontalPadding = productCardCarouselHorizontalPadding
+        self.ctaButtonBorderRadius = ctaButtonBorderRadius
+        self.ctaButtonHorizontalPadding = ctaButtonHorizontalPadding
+        self.ctaButtonVerticalPadding = ctaButtonVerticalPadding
+        self.ctaButtonFontSize = ctaButtonFontSize
+        self.ctaButtonFontWeight = ctaButtonFontWeight
+        self.ctaButtonIconSize = ctaButtonIconSize
+        self.agentIconSize = agentIconSize
+        self.agentIconSpacing = agentIconSpacing
+        self.headerTitleFontSize = headerTitleFontSize
+        self.welcomeTitleFontSize = welcomeTitleFontSize
+        self.welcomeTextAlign = welcomeTextAlign
+        self.welcomeContentPadding = welcomeContentPadding
+        self.welcomePromptImageSize = welcomePromptImageSize
+        self.welcomePromptSpacing = welcomePromptSpacing
+        self.welcomeTitleBottomSpacing = welcomeTitleBottomSpacing
+        self.welcomePromptsTopSpacing = welcomePromptsTopSpacing
+        self.welcomePromptPadding = welcomePromptPadding
+        self.welcomePromptCornerRadius = welcomePromptCornerRadius
+        self.thinkingDotSize = thinkingDotSize
+        self.thinkingDotSpacing = thinkingDotSpacing
+        self.thinkingBubbleBorderRadius = thinkingBubbleBorderRadius
+        self.thinkingBubblePaddingHorizontal = thinkingBubblePaddingHorizontal
+        self.thinkingBubblePaddingVertical = thinkingBubblePaddingVertical
+        self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
+        self.suggestionItemBorderRadius = suggestionItemBorderRadius
     }
 }
 

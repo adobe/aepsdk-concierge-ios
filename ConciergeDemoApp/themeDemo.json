@@ -7,7 +7,11 @@
   },
   "behavior": {
     "multimodalCarousel": {
-      "cardClickAction": "openLink"
+      "cardClickAction": "openLink",
+      "carouselStyle": "scroll"
+    },
+    "citations": {
+      "showLinkIcon": true
     },
     "input": {
       "enableVoiceInput": true,

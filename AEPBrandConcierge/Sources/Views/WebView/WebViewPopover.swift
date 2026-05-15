@@ -270,15 +270,19 @@ struct ConciergeWebView: UIViewRepresentable {
                 decisionHandler(.allow)
                 return
             }
+            let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
             
-            // If it's a deep link, let the system handle it via the callback
-            if ConciergeLinkHandler.isDeepLink(requestURL) {
+            if ConciergeLinkHandler.isWebLink(requestURL) {
+                // Update currentURLString before the navigation starts so that
+                // updateUIView won't see a stale value and force reload the original URL.
+                if isMainFrame {
+                    parent.currentURLString = requestURL.absoluteString
+                }
+                decisionHandler(.allow)
+            } else {
                 parent.onOpenDeepLink?(requestURL)
                 decisionHandler(.cancel)
-                return
             }
-            
-            decisionHandler(.allow)
         }
     }
 }

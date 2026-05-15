@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPCore
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -260,16 +261,647 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertFalse(controller.isRecording)
     }
     
-    // MARK: - Helpers
-    private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil) -> ChatController {
-        ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker())
+    // MARK: - Product Card Rendering Tests
+
+    func test_streaming_singleProduct_appendsProductCardMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Widget Pro",
+                productDescription: "A versatile tool",
+                description: nil,
+                productPageURL: "https://example.com/products/widget-pro",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/widget-pro.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: ActionButton(text: "Buy", url: "https://example.com/buy"),
+                secondary: nil,
+                productPrice: "$9.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here's a product:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [element],
+                message: "Here's a product:"
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me a product")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Messages: [user, agent text, product card]
+        XCTAssertGreaterThanOrEqual(controller.messages.count, 3)
+
+        let productMessage = controller.messages.last { message in
+            if case .productCard = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(productMessage, "Expected a .productCard message in the message list")
     }
 
-    private func makePayload(state: String, message: String? = nil, sources: [Source]? = nil) -> ConversationPayload {
+    func test_streaming_multipleProducts_appendsCarouselGroupMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element1 = MultimodalElement(
+            id: "prod-1",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Widget Pro",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://example.com/products/widget-pro",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/widget-pro.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+        let element2 = MultimodalElement(
+            id: "prod-2",
+            type: "product",
+            thumbnailWidth: 150,
+            thumbnailHeight: 150,
+            entityInfo: EntityInfo(
+                productName: "Gadget Basic",
+                productDescription: nil,
+                description: nil,
+                productPageURL: "https://example.com/products/gadget-basic",
+                details: nil,
+                learningResource: nil,
+                productImageURL: "https://example.com/images/gadget-basic.png",
+                backgroundColor: nil,
+                logo: nil,
+                primary: nil,
+                secondary: nil,
+                productPrice: "$22.99",
+                productWasPrice: nil,
+                productBadge: nil
+            )
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here are some products:"),
+            makePayloadWithProducts(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [element1, element2],
+                message: "Here are some products:"
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me products")
+        controller.sendMessage(isUser: true)
+
+        // Then — wait for streaming to complete
+        spinUntil(controller.chatState == .idle)
+
+        // Expect a carouselGroup message containing the product carousel cards
+        let carouselMessage = controller.messages.last { message in
+            if case .carouselGroup = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(carouselMessage, "Expected a .carouselGroup message in the message list")
+
+        if case .carouselGroup(let items) = carouselMessage?.template {
+            XCTAssertEqual(items.count, 2)
+            if case .productCarouselCard(let cardData) = items[0].template {
+                XCTAssertEqual(cardData.title, "Widget Pro")
+            } else {
+                XCTFail("Expected first carousel item to be .productCarouselCard")
+            }
+            if case .productCarouselCard(let cardData) = items[1].template {
+                XCTAssertEqual(cardData.title, "Gadget Basic")
+            } else {
+                XCTFail("Expected second carousel item to be .productCarouselCard")
+            }
+        } else {
+            XCTFail("Expected .carouselGroup template")
+        }
+    }
+
+    // MARK: - CTA Button Rendering Tests
+
+    func test_streaming_singleCtaButton_appendsCtaButtonMessage() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let ctaElement = MultimodalElement(
+            id: "cta-live-chat",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Chat now", url: "https://example.com/live-chat")
+        )
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Let me connect you."),
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: [ctaElement], message: "Let me connect you.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("help")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        let ctaMessage = controller.messages.first { message in
+            if case .ctaButton = message.template { return true }
+            return false
+        }
+        XCTAssertNotNil(ctaMessage, "Expected a .ctaButton message in the message list")
+
+        if case .ctaButton(let action) = ctaMessage?.template {
+            XCTAssertEqual(action.text, "Chat now")
+            XCTAssertEqual(action.url, "https://example.com/live-chat")
+        }
+    }
+
+    func test_streaming_ctaWithMissingPrimary_isSkipped() {
+        // Given — CTA element with no primary action should be silently skipped
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let ctaWithNoPrimary = MultimodalElement(id: "cta-broken", type: "ctaButton", entityInfo: nil)
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here you go."),
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: [ctaWithNoPrimary], message: "Here you go.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("test")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        let ctaMessage = controller.messages.first { message in
+            if case .ctaButton = message.template { return true }
+            return false
+        }
+        XCTAssertNil(ctaMessage, "CTA with missing primary should not produce a message")
+    }
+
+    // MARK: - Interleaved Element Ordering Tests
+
+    func test_streaming_interleavedCtaAndCards_respectsRelativeOrder() {
+        // Given — [CTA, card, card, CTA, card] should produce [ctaButton, carousel(3), ctaButton]
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+
+        let cta1 = MultimodalElement(
+            id: "cta-1",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Chat with an agent", url: "https://example.com/chat")
+        )
+        let card1 = makeProductElement(id: "prod-1", name: "Product A", price: "$99.99")
+        let card2 = makeProductElement(id: "prod-2", name: "Product B", price: "$129.99")
+        let cta2 = MultimodalElement(
+            id: "cta-2",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Find a store", url: "https://example.com/stores")
+        )
+        let card3 = makeProductElement(id: "prod-3", name: "Product C", price: "$149.99")
+
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Here are some options."),
+            makePayloadWithElements(
+                state: ConciergeConstants.StreamState.COMPLETED,
+                elements: [cta1, card1, card2, cta2, card3],
+                message: "Here are some options."
+            )
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("show me products")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+
+        // Messages: [user, agent text, cta1, carousel, cta2]
+        XCTAssertEqual(controller.messages.count, 5, "Expected 5 messages: user, agent text, CTA, carousel, CTA")
+
+        // messages[0] = user message
+        // messages[1] = agent text
+        // messages[2] = first CTA
+        if case .ctaButton(let action) = controller.messages[2].template {
+            XCTAssertEqual(action.text, "Chat with an agent")
+        } else {
+            XCTFail("Expected messages[2] to be .ctaButton, got \(controller.messages[2].template)")
+        }
+
+        // messages[3] = carousel with 3 cards
+        if case .carouselGroup(let items) = controller.messages[3].template {
+            XCTAssertEqual(items.count, 3)
+            if case .productCarouselCard(let cardData) = items[0].template {
+                XCTAssertEqual(cardData.title, "Product A")
+            } else {
+                XCTFail("Expected first carousel item to be .productCarouselCard")
+            }
+            if case .productCarouselCard(let cardData) = items[2].template {
+                XCTAssertEqual(cardData.title, "Product C")
+            } else {
+                XCTFail("Expected third carousel item to be .productCarouselCard")
+            }
+        } else {
+            XCTFail("Expected messages[3] to be .carouselGroup, got \(controller.messages[3].template)")
+        }
+
+        // messages[4] = second CTA
+        if case .ctaButton(let action) = controller.messages[4].template {
+            XCTAssertEqual(action.text, "Find a store")
+        } else {
+            XCTFail("Expected messages[4] to be .ctaButton, got \(controller.messages[4].template)")
+        }
+    }
+
+    // MARK: - Tracking Event Dispatch Tests
+
+    func test_sendMessage_dispatches_querySubmitted_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("What tools do you offer?")
+        controller.sendMessage(isUser: true)
+
+        let queryEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        XCTAssertEqual(queryEvents.count, 1)
+        XCTAssertEqual(queryEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.QUERY] as? String, "What tools do you offer?")
+    }
+
+    func test_streaming_dispatches_responseStarted_and_responseCompleted_events() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Hello", conversationId: "conv-1", interactionId: "int-1"),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Hello world", conversationId: "conv-1", interactionId: "int-1")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        let startedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }
+        let completedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }
+        XCTAssertEqual(startedEvents.count, 1, "Expected exactly one response:started event")
+        XCTAssertEqual(completedEvents.count, 1, "Expected exactly one response:completed event")
+        XCTAssertEqual(startedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.CONVERSATION_ID] as? String, "conv-1")
+    }
+
+    func test_streaming_dispatches_responseStarted_only_once_for_multiple_chunks() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Chunk 1"),
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: " Chunk 2"),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Chunk 1 Chunk 2")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("test")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        let startedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }
+        XCTAssertEqual(startedEvents.count, 1, "response:started should fire only once per response")
+    }
+
+    func test_streaming_error_dispatches_errorOccurred_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        fakeService.plannedChunks = []
+        fakeService.plannedError = .unreachable
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .error(.networkFailure))
+
+        let errorEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED }
+        XCTAssertEqual(errorEvents.count, 1)
+        XCTAssertNotNil(errorEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.ERROR_MESSAGE] as? String)
+    }
+
+    func test_streaming_products_dispatches_cardsRendered_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element1 = makeProductElement(id: "prod-1", name: "Widget Pro", price: "$9.99")
+        let element2 = makeProductElement(id: "prod-2", name: "Gadget Basic", price: "$19.99")
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Products:"),
+            makePayloadWithProducts(state: ConciergeConstants.StreamState.COMPLETED, elements: [element1, element2], message: "Products:")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("show products")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        let renderedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CARDS_RENDERED }
+        XCTAssertEqual(renderedEvents.count, 1)
+        XCTAssertEqual(renderedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.DISPLAY_MODE] as? String, "carousel")
+        let elements = renderedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.ELEMENTS] as? [[String: Any]]
+        XCTAssertEqual(elements?.count, 2)
+    }
+
+    func test_streaming_cards_only_dispatches_paired_responseStarted_and_responseCompleted() {
+        // Mirrors the Android `cards-only response still fires paired responseStarted and
+        // responseCompleted` test. Server returns no text — only multimodal cards — across
+        // every chunk. The responseStarted/responseCompleted pair must remain intact.
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let element = makeProductElement(id: "prod-1", name: "Widget Pro", price: "$9.99")
+        fakeService.plannedChunks = [
+            makePayloadWithProducts(state: ConciergeConstants.StreamState.COMPLETED, elements: [element], message: nil)
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("show cards")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        let startedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }.count
+        let completedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }.count
+        XCTAssertEqual(startedCount, 1, "responseStarted should fire even when message is empty but cards are present")
+        XCTAssertEqual(completedCount, 1, "responseCompleted should remain paired with responseStarted")
+    }
+
+    func test_trackPromptSuggestionClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackPromptSuggestionClicked(suggestion: "Tell me about Photoshop")
+
+        let suggestionEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.PROMPT_SUGGESTION_CLICKED }
+        XCTAssertEqual(suggestionEvents.count, 1)
+        XCTAssertEqual(suggestionEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.SUGGESTION] as? String, "Tell me about Photoshop")
+    }
+
+    func test_trackCardClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        let cardData = ProductCardData(
+            imageSource: .remote(nil),
+            title: "Widget Pro",
+            subtitle: "A versatile tool",
+            price: "$9.99",
+            badge: "Popular",
+            destinationURL: URL(string: "https://example.com/widget"),
+            primaryButton: nil,
+            secondaryButton: nil,
+            imageWidth: nil,
+            imageHeight: nil
+        )
+        controller.trackCardClicked(cardData: cardData)
+
+        let cardEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CARD_CLICKED }
+        XCTAssertEqual(cardEvents.count, 1)
+        let element = cardEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.ELEMENT] as? [String: Any]
+        XCTAssertEqual(element?["productName"] as? String, "Widget Pro")
+        XCTAssertEqual(element?["productPageURL"] as? String, "https://example.com/widget")
+        XCTAssertEqual(element?["productPrice"] as? String, "$9.99")
+    }
+
+    func test_successive_conversations_dispatch_independent_tracking_events() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "First", conversationId: "conv-1", interactionId: "int-1"),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "First response", conversationId: "conv-1", interactionId: "int-1")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        // First conversation turn
+        controller.applyTextChange("first question")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        // Set up second turn
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Second", conversationId: "conv-1", interactionId: "int-2"),
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Second response", conversationId: "conv-1", interactionId: "int-2")
+        ]
+        fakeService.plannedError = nil
+
+        // Second conversation turn
+        controller.applyTextChange("second question")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        // Each turn should produce its own query:submitted, response:started, response:completed
+        let queryEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        let startedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }
+        let completedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }
+
+        XCTAssertEqual(queryEvents.count, 2, "Each turn should dispatch query:submitted")
+        XCTAssertEqual(startedEvents.count, 2, "Each turn should dispatch response:started")
+        XCTAssertEqual(completedEvents.count, 2, "Each turn should dispatch response:completed")
+
+        XCTAssertEqual(queryEvents[0].data?[ConciergeConstants.TrackingEvent.EventData.Key.QUERY] as? String, "first question")
+        XCTAssertEqual(queryEvents[1].data?[ConciergeConstants.TrackingEvent.EventData.Key.QUERY] as? String, "second question")
+        XCTAssertEqual(startedEvents[1].data?[ConciergeConstants.TrackingEvent.EventData.Key.INTERACTION_ID] as? String, "int-2")
+    }
+
+    func test_no_dispatch_closure_does_not_crash() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle || controller.chatState == .error(.networkFailure))
+    }
+
+    func test_trackChatOpened_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 1)
+        let epochTime = openedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64
+        XCTAssertNotNil(epochTime)
+        XCTAssertGreaterThan(epochTime ?? 0, 0)
+    }
+
+    func test_trackChatClosed_dispatches_event_with_duration() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatClosed()
+
+        let closedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED }
+        XCTAssertEqual(closedEvents.count, 1)
+        let epochTime = closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.EPOCH_TIME] as? Int64
+        let durationMillis = closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.DURATION_MILLIS] as? Int64
+        XCTAssertNotNil(epochTime)
+        XCTAssertGreaterThan(epochTime ?? 0, 0)
+        XCTAssertGreaterThanOrEqual(durationMillis ?? -1, 0)
+    }
+
+    func test_trackChatOpened_called_twice_dispatches_twice() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 2, "Each trackChatOpened call dispatches an event and resets the open timer")
+    }
+
+    func test_trackChatClosed_without_prior_open_dispatches_zero_duration() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatClosed()
+
+        let closedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_CLOSED }
+        XCTAssertEqual(closedEvents.count, 1)
+        XCTAssertEqual(closedEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.DURATION_MILLIS] as? Int64, 0)
+    }
+
+    func test_trackChatOpened_after_close_starts_new_session() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackChatOpened()
+        controller.trackChatClosed()
+        controller.trackChatOpened()
+
+        let openedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.CHAT_OPENED }
+        XCTAssertEqual(openedEvents.count, 2, "A new open after a close should dispatch a second chatOpened event")
+    }
+
+    func test_trackWelcomePromptSuggestionClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackWelcomePromptSuggestionClicked(suggestion: "I want to edit photos")
+
+        let events = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.WELCOME_PROMPT_SUGGESTION_CLICKED }
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.SUGGESTION] as? String, "I want to edit photos")
+    }
+
+    func test_trackDisclaimerLinkClicked_dispatches_event() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.trackDisclaimerLinkClicked(url: URL(string: "https://example.com/terms")!)
+
+        let events = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.DISCLAIMER_LINK_CLICKED }
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.URL] as? String, "https://example.com/terms")
+    }
+
+    // MARK: - Helpers
+    private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil, dispatch: ((_ event: Event) -> Void)? = nil) -> ChatController {
+        ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker(), dispatch: dispatch)
+    }
+
+    private func makePayload(state: String, message: String? = nil, sources: [Source]? = nil, conversationId: String? = nil, interactionId: String? = nil) -> ConversationPayload {
         let response: ConversationResponse? = message != nil || sources != nil
-            ? ConversationResponse(message: message ?? "", promptSuggestions: nil, multimodalElements: nil, sources: sources, state: nil)
+            ? ConversationResponse(message: message ?? "", promptSuggestions: nil, multimodalElements: nil, sources: sources, linkHints: nil, state: nil, feedback: nil)
             : nil
 
+        return ConversationPayload(
+            conversationId: conversationId,
+            interactionId: interactionId,
+            request: nil,
+            response: response,
+            state: state,
+            key: nil,
+            value: nil,
+            maxAge: nil
+        )
+    }
+
+    private func makePayloadWithProducts(state: String, elements: [MultimodalElement], message: String? = nil) -> ConversationPayload {
+        makePayloadWithElements(state: state, elements: elements, message: message)
+    }
+
+    private func makePayloadWithElements(state: String, elements: [MultimodalElement], message: String? = nil) -> ConversationPayload {
+        let multimodal = MultimodalElements(elements: elements)
+        let response = ConversationResponse(
+            message: message ?? "",
+            promptSuggestions: nil,
+            multimodalElements: multimodal,
+            sources: nil,
+            linkHints: nil,
+            state: nil,
+            feedback: nil
+        )
         return ConversationPayload(
             conversationId: nil,
             interactionId: nil,
@@ -279,6 +911,28 @@ final class ChatControllerTests: XCTestCase {
             key: nil,
             value: nil,
             maxAge: nil
+        )
+    }
+
+    private func makeCtaEntityInfo(text: String, url: String) -> EntityInfo {
+        EntityInfo(
+            productName: nil, productDescription: nil, description: nil, productPageURL: nil,
+            details: nil, learningResource: nil, productImageURL: nil, backgroundColor: nil,
+            logo: nil, primary: ActionButton(text: text, url: url),
+            secondary: nil, productPrice: nil, productWasPrice: nil, productBadge: nil
+        )
+    }
+
+    private func makeProductElement(id: String, name: String, price: String) -> MultimodalElement {
+        MultimodalElement(
+            id: id,
+            entityInfo: EntityInfo(
+                productName: name, productDescription: nil, description: nil,
+                productPageURL: "https://example.com/p/\(id)", details: nil, learningResource: nil,
+                productImageURL: "https://example.com/img/\(id).png",
+                backgroundColor: nil, logo: nil, primary: nil,
+                secondary: nil, productPrice: price, productWasPrice: nil, productBadge: nil
+            )
         )
     }
 

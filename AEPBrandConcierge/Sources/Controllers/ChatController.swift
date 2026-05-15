@@ -26,6 +26,7 @@ final class ChatController: ObservableObject {
     @Published var userScrollTick: Int = 0
     @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
+    @Published var audioLevel: Float = 0
 
     // MARK: - Input Controller
 
@@ -40,11 +41,13 @@ final class ChatController: ObservableObject {
     private let chatService: ConciergeChatService
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
+    private let dispatch: ((_ event: Event) -> Void)?
 
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
-    private var productCardIndex: Int?
+    private var latestLinkHints: [LinkHint] = []
     private var latestPromptSuggestions: [String] = []
+    private var chatOpenTime: Date?
 
     // MARK: - Computed Properties
 
@@ -66,20 +69,22 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil) {
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.dispatch = dispatch
 
         configureSpeech()
     }
 
     #if DEBUG
     // Internal for testing only
-    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?) {
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil) {
         self.configuration = configuration
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.dispatch = dispatch
 
         configureSpeech()
     }
@@ -91,7 +96,18 @@ final class ChatController: ObservableObject {
         inputController.applyTextChange(newText)
     }
 
+    // MARK: - Speech Output
+
+    func speak(_ text: String) {
+        speechController.speak(text)
+    }
+
     // MARK: - Mic Control
+
+    /// Applies voice capture settings from the current theme before recording starts.
+    func applyVoiceInputBehavior(_ input: ConciergeInputBehavior) {
+        speechController.configureSilenceDetection(threshold: input.silenceThreshold, duration: input.silenceDuration)
+    }
 
     func toggleMic(currentSelectionLocation: Int) {
         if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
@@ -148,8 +164,7 @@ final class ChatController: ObservableObject {
                     // After user responds to system prompts, check if permissions were granted
                     if self.speechController.isAvailable {
                         Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
-                        self.inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
-                        self.speechController.beginCapture()
+                        self.beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
                     } else {
                         Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
                         self.showPermissionDialog = true
@@ -168,6 +183,16 @@ final class ChatController: ObservableObject {
         }
 
         // Permissions granted - proceed with recording
+        beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
+    }
+
+    private func beginCaptureSession(currentSelectionLocation: Int) {
+        speechController.setAudioLevelHandler { [weak self] level in
+            self?.audioLevel = level
+        }
+        speechController.setSilenceHandler { [weak self] in
+            self?.completeMic()
+        }
         inputController.apply(.startMic(currentSelectionLocation: currentSelectionLocation))
         speechController.beginCapture()
     }
@@ -213,6 +238,7 @@ final class ChatController: ObservableObject {
         }
 
         if isUser {
+            dispatchTrackingEvent(.querySubmitted(query: text))
             chatState = .processing
             streamAgentResponse(for: text)
         } else {
@@ -250,8 +276,9 @@ final class ChatController: ObservableObject {
                 )
                 messages.append(message)
             }
-            return
         }
+
+        dispatchTrackingEvent(.sessionInitialized)
     }
 
     // MARK: - Feedback
@@ -314,6 +341,62 @@ final class ChatController: ObservableObject {
         ]
 
         chatService.sendFeedback(data: feedbackEventData)
+
+        dispatchTrackingEvent(.feedbackSubmitted(
+            conversationId: messagePayload.conversationId ?? "unknown",
+            interactionId: messagePayload.interactionId ?? "unknown",
+            feedbackType: feedbackPayload.sentiment == .positive ? "positive" : "negative",
+            selectedOptions: feedbackPayload.selectedOptions,
+            notes: feedbackPayload.notes
+        ))
+    }
+
+    // MARK: - Tracking
+
+    func trackChatOpened() {
+        let now = Date()
+        chatOpenTime = now
+        let epochTime = Int64(now.timeIntervalSince1970 * 1000)
+        dispatchTrackingEvent(.chatOpened(epochTime: epochTime))
+    }
+
+    func trackChatClosed() {
+        let now = Date()
+        let epochTime = Int64(now.timeIntervalSince1970 * 1000)
+        let durationMillis = chatOpenTime.map { Int64(now.timeIntervalSince($0) * 1000) } ?? 0
+        chatOpenTime = nil
+        dispatchTrackingEvent(.chatClosed(epochTime: epochTime, durationMillis: durationMillis))
+    }
+
+    func trackPromptSuggestionClicked(suggestion: String) {
+        dispatchTrackingEvent(.promptSuggestionClicked(suggestion: suggestion))
+    }
+
+    func trackWelcomePromptSuggestionClicked(suggestion: String) {
+        dispatchTrackingEvent(.welcomePromptSuggestionClicked(suggestion: suggestion))
+    }
+
+    func trackMicButtonClicked() {
+        dispatchTrackingEvent(.micButtonClicked)
+    }
+
+    func trackDisclaimerLinkClicked(url: URL) {
+        dispatchTrackingEvent(.disclaimerLinkClicked(url: url.absoluteString))
+    }
+
+    func trackCardClicked(cardData: ProductCardData) {
+        var element: [String: Any] = ["productName": cardData.title]
+        if let subtitle = cardData.subtitle { element["productDescription"] = subtitle }
+        if let url = cardData.destinationURL?.absoluteString { element["productPageURL"] = url }
+        if let price = cardData.price { element["productPrice"] = price }
+        if let badge = cardData.badge { element["productBadge"] = badge }
+        dispatchTrackingEvent(.cardClicked(element: element))
+    }
+
+    private func dispatchTrackingEvent(_ trackingEvent: ConciergeTrackingEvent) {
+        let event = trackingEvent.toEvent()
+        Log.debug(label: LOG_TAG, "Dispatching tracking event - name: \(event.name), type: \(event.type), source: \(event.source), data: \(event.data ?? [:])")
+        dispatch?(event)
     }
 
     // MARK: - Private Methods
@@ -330,8 +413,11 @@ final class ChatController: ObservableObject {
         let streamingMessageIndex = messages.count
         messages.append(Message(template: .basic(isUserMessage: false), messageBody: ""))
 
+        // Accumulators are used to handle the progressive building up of response content from the server
+        // and to be able to effectively do a diff of what has already been received and what is new.
         var accumulatedContent = ""
-        var accumulatedProducts: [MultimodalElement] = []
+        var latestElements: [MultimodalElement] = []
+        var responseStartedDispatched = false
 
         chatService.streamChat(query,
             onChunk: { [weak self] payload in
@@ -341,15 +427,28 @@ final class ChatController: ObservableObject {
                     let state = payload.state
 
                     if let response = payload.response {
-                        Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a"), textLen=\(response.message.count), sources=\(response.sources?.count ?? 0), suggestions=\(response.promptSuggestions?.count ?? 0)")
-
-                        if state == ConciergeConstants.StreamState.COMPLETED,
-                            let data = try? JSONEncoder().encode(response),
-                            let json = String(data: data, encoding: .utf8) {
-                            Log.debug(label: self.LOG_TAG, "SSE final response JSON: \(json.prettyPrintedJSON())")
+                        if let data = try? JSONEncoder().encode(response),
+                           let json = String(data: data, encoding: .utf8) {
+                            Log.debug(label: self.LOG_TAG, "SSE chunk (state=\(state ?? "n/a")): \(json.prettyPrintedJSON())")
                         }
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
+                    }
+
+                    // Dispatch responseStarted exactly once per turn, on the first chunk that
+                    // carries any user-visible content (text OR multimodal elements). Mirrors
+                    // the Android `hasVisibleContent` gate so cards-only responses still produce
+                    // a paired responseStarted/responseCompleted, and pure heartbeat chunks
+                    // (response present but empty) do not.
+                    let chunkMessage = payload.response?.message ?? ""
+                    let chunkElements = payload.response?.multimodalElements?.elements ?? []
+                    let hasVisibleContent = !chunkMessage.isEmpty || !chunkElements.isEmpty
+                    if hasVisibleContent && !responseStartedDispatched {
+                        responseStartedDispatched = true
+                        self.dispatchTrackingEvent(.responseStarted(
+                            conversationId: payload.conversationId ?? "unknown",
+                            interactionId: payload.interactionId ?? "unknown"
+                        ))
                     }
 
                     // Handle messages
@@ -381,20 +480,9 @@ final class ChatController: ObservableObject {
                         }
                     }
 
-                    // Handle cards in multimodalElements
+                    // Capture multimodal elements for rendering on completion
                     if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
-                        let newElementIds = Set(elements.map { $0.id })
-                        accumulatedProducts.removeAll { existingElement in
-                            newElementIds.contains(existingElement.id)
-                        }
-
-                        accumulatedProducts.append(contentsOf: elements)
-
-                        if self.productCardIndex == nil {
-                            self.productCardIndex = streamingMessageIndex + 1
-                        }
-
-                        self.renderProductCards(accumulatedProducts)
+                        latestElements = elements
                     }
 
                     // Capture prompt suggestions if present
@@ -406,6 +494,11 @@ final class ChatController: ObservableObject {
                     if let sources = payload.response?.sources {
                         self.latestSources = sources
                     }
+
+                    // Capture link hints from payload as they arrive (used on completion)
+                    if let hints = payload.response?.linkHints, !hints.isEmpty {
+                        self.latestLinkHints = hints
+                    }
                 }
             },
             onComplete: { [weak self] error in
@@ -414,12 +507,14 @@ final class ChatController: ObservableObject {
 
                     if let error = error {
                         Log.error(label: self.LOG_TAG, "Streaming error: \(error)")
+                        self.dispatchTrackingEvent(.errorOccurred(errorMessage: error.localizedDescription))
                         self.chatState = .error(.networkFailure)
 
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
-                    } else if accumulatedContent.isEmpty {
+                    } else if accumulatedContent.isEmpty && latestElements.isEmpty {
+                        // Genuinely empty response — no text and no multimodal elements.
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
@@ -428,6 +523,7 @@ final class ChatController: ObservableObject {
 
                         self.clearState()
                     } else {
+                        var completedPayload: ConversationPayload?
                         if streamingMessageIndex < self.messages.count {
                             var current = self.messages[streamingMessageIndex]
                             current.messageBody = accumulatedContent
@@ -436,7 +532,29 @@ final class ChatController: ObservableObject {
                                 Log.trace(label: self.LOG_TAG, "Using sources: count=\(self.latestSources.count)")
                                 current.sources = self.latestSources
                             }
+                            if !self.latestLinkHints.isEmpty {
+                                Log.trace(label: self.LOG_TAG, "Using linkHints: count=\(self.latestLinkHints.count)")
+                                current.linkHints = self.latestLinkHints
+                            }
+                            current.feedbackEligible = current.payload?.response?.feedback?.eligible ?? false
+                            current.isStreamComplete = true
                             self.messages[streamingMessageIndex] = current
+                            completedPayload = current.payload
+                        }
+
+                        guard let completedPayload else {
+                            Log.warning(label: self.LOG_TAG, "responseCompleted skipped: streaming message index out of bounds")
+                            self.clearState()
+                            return
+                        }
+                        self.dispatchTrackingEvent(.responseCompleted(
+                            conversationId: completedPayload.conversationId ?? "unknown",
+                            interactionId: completedPayload.interactionId ?? "unknown"
+                        ))
+
+                        // Render multimodal elements (cards, CTAs) from the completed response
+                        if !latestElements.isEmpty {
+                            self.renderMultimodalElements(latestElements)
                         }
 
                         // Append prompt suggestions as their own message bubbles at the end
@@ -455,53 +573,63 @@ final class ChatController: ObservableObject {
 
     private func clearState() {
         chatState = .idle
-        productCardIndex = nil
         latestSources = []
+        latestLinkHints = []
         latestPromptSuggestions = []
     }
 
-    private func renderProductCards(_ products: [MultimodalElement]) {
-        if products.count == 1, let entityInfo = products.first?.entityInfo {
-            // Show a single product card
-            let cardTitle = entityInfo.productName ?? "No title"
-            let cardText = entityInfo.productDescription ?? "No description"
-            let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-            let primaryButton = entityInfo.primary
-            let secondaryButton = entityInfo.secondary
+    /// Appends multimodal elements to `messages`, respecting their relative order from
+    /// the server. Card-type elements are collapsed into a single card or carousel at
+    /// the position of the first card encountered.
+    private func renderMultimodalElements(_ elements: [MultimodalElement]) {
+        let cardElements = elements.filter { $0.elementType != .ctaButton }
 
-            let card = Message(template: .productCard(imageSource: .remote(cardImageUrl),
-                                                   title: cardTitle,
-                                                   body: cardText,
-                                                   primaryButton: primaryButton,
-                                                   secondaryButton: secondaryButton))
-
-            removeProductCard(atIndex: productCardIndex)
-            messages.append(card)
-        } else {
-            // Show a carousel of cards
-            var carouselElements: [Message] = []
-            for product in products {
-                guard let entityInfo = product.entityInfo else { continue }
-                let cardTitle = entityInfo.productName ?? "No title"
-                let cardImageUrl = entityInfo.productImageURL.flatMap { URL(string: $0) }
-                let cardClickThroughURL = entityInfo.productPageURL.flatMap { URL(string: $0) }
-
-                let card = Message(template: .productCarouselCard(imageSource: .remote(cardImageUrl),
-                                                                  title: cardTitle,
-                                                                  destination: cardClickThroughURL))
-
-                carouselElements.append(card)
+        // If any cards exist in the multimodal elements list, 
+        // resolves to either single card or carousel of cards depending on number of card elements
+        let cardMessage: Message? = {
+            if cardElements.count == 1, let card = cardElements.first, let entityInfo = card.entityInfo {
+                let cardData = ProductCardData(entityInfo: entityInfo, element: card)
+                return Message(template: .productCard(cardData))
+            } else if cardElements.count > 1 {
+                var carouselItems: [Message] = []
+                for card in cardElements {
+                    guard let entityInfo = card.entityInfo else { continue }
+                    let cardData = ProductCardData(entityInfo: entityInfo, element: card)
+                    carouselItems.append(Message(template: .productCarouselCard(cardData)))
+                }
+                return Message(template: .carouselGroup(carouselItems))
             }
+            return nil
+        }()
 
-            removeProductCard(atIndex: productCardIndex)
-            messages.append(Message(template: .carouselGroup(carouselElements)))
-        }
-    }
+        var cardElementEmitted = false
 
-    private func removeProductCard(atIndex index: Int?) {
-        if let index = index, index < messages.count {
-            messages.remove(at: index)
+        for element in elements {
+            if element.elementType == .ctaButton {
+                guard let action = element.entityInfo?.primary else {
+                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
+                    continue
+                }
+                messages.append(Message(template: .ctaButton(action)))
+            } else if !cardElementEmitted {
+                if let cardMessage = cardMessage {
+                    messages.append(cardMessage)
+                }
+                cardElementEmitted = true
+            }
         }
+
+        let elementDicts: [[String: Any]] = cardElements.compactMap { element in
+            guard let entityInfo = element.entityInfo else { return nil }
+            var dict: [String: Any] = [:]
+            if let name = entityInfo.productName { dict["productName"] = name }
+            if let url = entityInfo.productPageURL { dict["productPageURL"] = url }
+            if let price = entityInfo.productPrice { dict["productPrice"] = price }
+            return dict
+        }
+        guard !elementDicts.isEmpty else { return }
+        let displayMode = elementDicts.count == 1 ? "single" : "carousel"
+        dispatchTrackingEvent(.cardsRendered(displayMode: displayMode, elements: elementDicts))
     }
 }
 

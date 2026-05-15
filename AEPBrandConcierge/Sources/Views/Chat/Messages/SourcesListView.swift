@@ -8,34 +8,39 @@
  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
  OF ANY KIND, either express or implied. See the License for the specific language
  governing permissions and limitations under the License.
- */
+*/
 
 import SwiftUI
 
-/// A collapsible list of sources.
+/// A collapsible list of citation sources for an agent message.
+/// When `feedbackEligible` is `true`, feedback thumbs are placed according to `behavior.feedback.thumbsPlacement`.
 public struct SourcesListView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.conciergeFeedbackPresenter) private var feedbackPresenter
 
     public let sources: [Source]
     private let initiallyExpanded: Bool
+    public let feedbackEligible: Bool
     public let feedbackSentiment: FeedbackSentiment?
     public let messageId: UUID?
 
     @State private var isExpanded: Bool = false
+    @State private var sourceLinksVisible: Bool = false
 
-    /// Creates a new Sources list view.
-    /// - Parameters:
-    ///   - sources: The list of sources to display. If empty, the view renders nothing.
-    ///   - initiallyExpanded: Whether the list starts expanded.
-    ///   - feedbackSentiment: The feedback sentiment that was submitted for this message, if any.
-    ///   - messageId: The ID of the message this sources list belongs to.
-    public init(sources: [Source], initiallyExpanded: Bool = false, feedbackSentiment: FeedbackSentiment? = nil, messageId: UUID? = nil) {
+    public init(
+        sources: [Source],
+        initiallyExpanded: Bool = false,
+        feedbackEligible: Bool = false,
+        feedbackSentiment: FeedbackSentiment? = nil,
+        messageId: UUID? = nil
+    ) {
         self.sources = sources
         self.initiallyExpanded = initiallyExpanded
+        self.feedbackEligible = feedbackEligible
         self.feedbackSentiment = feedbackSentiment
         self.messageId = messageId
         self._isExpanded = State(initialValue: initiallyExpanded)
+        self._sourceLinksVisible = State(initialValue: initiallyExpanded)
     }
 
     public var body: some View {
@@ -56,12 +61,33 @@ public struct SourcesListView: View {
             }
         }
         .background(backgroundShape)
+        .clipped()
     }
 
     private var expandedContent: some View {
         VStack(spacing: 0) {
             Divider().background(Color.black.opacity(0.08))
-            sourceRows
+            if thumbsInline {
+                sourceRows
+            } else {
+                sourceRows
+                    .opacity(sourceLinksVisible ? 1 : 0)
+                if showFeedbackInSourcesView {
+                    Divider().background(Color.black.opacity(0.08))
+                        .opacity(sourceLinksVisible ? 1 : 0)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(theme.text.feedbackHelpfulLabel)
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(theme.colors.message.conciergeText.color)
+                        feedbackButtons
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 44)
+                    .padding(.trailing, 12)
+                    .padding(.vertical, 10)
+                    .opacity(sourceLinksVisible ? 1 : 0)
+                }
+            }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
@@ -97,71 +123,101 @@ public struct SourcesListView: View {
 
     private var backgroundShape: some View {
         RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.bottomLeft, .bottomRight])
-            .fill(theme.colors.message.conciergeBackground.color)
+            .fill(theme.components.chatMessage.conciergeBackground.color)
+    }
+
+    private var resolvedThumbsPlacement: ThumbsPlacement {
+        theme.behavior.feedback?.thumbsPlacement ?? .inline
+    }
+
+    private var thumbsInline: Bool {
+        resolvedThumbsPlacement == .inline
+    }
+
+    /// `false` when placement is `.standalone` — feedback is delegated to `MessageFeedbackView`.
+    private var showFeedbackInSourcesView: Bool {
+        feedbackEligible && resolvedThumbsPlacement != .standalone
     }
 
     private var header: some View {
-        Button(action: {
-            withAnimation(.easeInOut) {
-                isExpanded.toggle()
-            }
-        }) {
-            HStack(spacing: 8) {
-                chevronImage
-                    .foregroundStyle(theme.colors.message.conciergeText.color)
-                Text("Sources")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.colors.message.conciergeText.color)
-                Spacer()
-                // Feedback buttons
-                HStack(spacing: theme.layout.feedbackContainerGap) {
-                    let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
-
-                    FeedbackIconButton(
-                        iconButtonSize: iconButtonSize,
-                        foregroundColor: thumbUpColor,
-                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
-                        isDisabled: feedbackSentiment != nil,
-                        accessibilityLabel: theme.text.feedbackThumbsUpAria,
-                        action: {
-                        feedbackPresenter.present(.positive, messageId)
-                        },
-                        label: {
-                            thumbUpImage
+        VStack(spacing: 0) {
+            Button(action: {
+                if isExpanded {
+                    sourceLinksVisible = false
+                    withAnimation(.easeInOut) {
+                        isExpanded = false
+                    }
+                } else {
+                    withAnimation(.easeInOut) {
+                        isExpanded = true
+                    }
+                    if !thumbsInline && showFeedbackInSourcesView {
+                        // Defer fade-in until expand animation completes (~0.35 s).
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            if isExpanded {
+                                withAnimation(.easeIn(duration: 0.2)) {
+                                    sourceLinksVisible = true
+                                }
+                            }
                         }
-                    )
-
-                    FeedbackIconButton(
-                        iconButtonSize: iconButtonSize,
-                        foregroundColor: thumbDownColor,
-                        normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
-                        activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
-                        isDisabled: feedbackSentiment != nil,
-                        accessibilityLabel: theme.text.feedbackThumbsDownAria,
-                        action: {
-                        feedbackPresenter.present(.negative, messageId)
-                        },
-                        label: {
-                            thumbDownImage
-                        }
-                    )
+                    } else {
+                        sourceLinksVisible = true
+                    }
                 }
+            }) {
+                HStack(spacing: 8) {
+                    chevronImage
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    Text(theme.text.sourcesLabel)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.colors.message.conciergeText.color)
+                    Spacer()
+                    if showFeedbackInSourcesView, thumbsInline {
+                        feedbackButtons
+                    }
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .contentShape(Rectangle())
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
         .accessibilityIdentifier("AgentSourcesListView.Header")
+    }
+
+    private var feedbackButtons: some View {
+        HStack(spacing: theme.layout.feedbackContainerGap) {
+            let iconButtonSize = theme.components.feedback.iconButtonSizeDesktop
+
+            FeedbackIconButton(
+                iconButtonSize: iconButtonSize,
+                foregroundColor: thumbUpColor,
+                normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
+                isDisabled: feedbackSentiment != nil,
+                accessibilityLabel: theme.text.feedbackThumbsUpAria,
+                action: { feedbackPresenter.present(.positive, messageId) },
+                label: { thumbUpImage }
+            )
+
+            FeedbackIconButton(
+                iconButtonSize: iconButtonSize,
+                foregroundColor: thumbDownColor,
+                normalBackgroundColor: theme.colors.feedback.iconButtonBackground.color,
+                activeBackgroundColor: theme.colors.feedback.iconButtonBackground.color.opacity(0.85),
+                isDisabled: feedbackSentiment != nil,
+                accessibilityLabel: theme.text.feedbackThumbsDownAria,
+                action: { feedbackPresenter.present(.negative, messageId) },
+                label: { thumbDownImage }
+            )
+        }
     }
 
     @ViewBuilder
     var chevronImage: some View {
         let assetName = isExpanded ? "S2_Icon_ChevronDown_20_N" : "S2_Icon_ChevronRight_20_N"
         if let uiImage = UIImage(named: assetName) {
-            Image(uiImage: uiImage)
-                .renderingMode(.template)
+            Image(uiImage: uiImage).renderingMode(.template)
         } else {
             Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
         }
@@ -201,13 +257,26 @@ public struct SourcesListView: View {
 }
 
 // MARK: - Previews
-#Preview("Expanded") {
+#Preview("Expanded — no feedback") {
     SourcesListView(
         sources: [
             Source(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
             Source(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
         ],
         initiallyExpanded: true
+    )
+    .padding()
+    .background(Color(UIColor.systemBackground))
+}
+
+#Preview("Expanded — feedback eligible (inline)") {
+    SourcesListView(
+        sources: [
+            Source(url: "https://example.com/articles/1", title: "Article of first source", startIndex: 1, endIndex: 2, citationNumber: 1),
+            Source(url: "https://example.com/articles/2", title: "Second source found here", startIndex: 1, endIndex: 2, citationNumber: 2)
+        ],
+        initiallyExpanded: true,
+        feedbackEligible: true
     )
     .padding()
     .background(Color(UIColor.systemBackground))

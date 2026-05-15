@@ -96,7 +96,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#121212")
+        XCTAssertEqual(theme.colors.primary.text.color.toHexString(), "#131313")
     }
     
     func test_mainContainerBackground_mapsToSurface() {
@@ -135,7 +135,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.button.primaryBackground.color.toHexString(), "#3A62FB")
+        XCTAssertEqual(theme.colors.button.primaryBackground.color.toHexString(), "#3B63FB")
     }
     
     func test_inputBackground_mapsToInputColors() {
@@ -161,7 +161,7 @@ final class ThemeCSSMapperTests: XCTestCase {
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
         
         // Then
-        XCTAssertEqual(theme.colors.disclaimer.color.toHexString(), "#4A4A4A")
+        XCTAssertEqual(theme.colors.disclaimer.color.toHexString(), "#4B4B4B")
     }
     
     // MARK: - Layout Mapping Tests
@@ -360,7 +360,622 @@ final class ThemeCSSMapperTests: XCTestCase {
         
         // Then
         XCTAssertNotNil(theme.colors.input.outline)
-        XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4A74FF")
+        XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4B75FF")
+    }
+
+    // MARK: - Product Card Color Mapping Tests
+
+    func test_productCardBackgroundColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-background-color", cssValue: "#F5F5F5", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.backgroundColor!.color.toHexString(), "#F5F5F5")
+    }
+
+    func test_productCardTitleColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-color", cssValue: "#292929", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.titleColor.color.toHexString(), "#292929")
+    }
+
+    func test_productCardSubtitleColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-color", cssValue: "#6E6E6E", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.subtitleColor.color.toHexString(), "#6E6E6E")
+    }
+
+    func test_productCardPriceColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-color", cssValue: "#000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.priceColor.color.toHexString(), "#000000")
+    }
+
+    func test_productCardWasPriceColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-color", cssValue: "#6E6E6E", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.wasPriceColor.color.toHexString(), "#6E6E6E")
+    }
+
+    func test_productCardBadgeTextColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-text-color", cssValue: "#FFFFFF", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.badgeTextColor.color.toHexString(), "#FFFFFF")
+    }
+
+    func test_productCardBadgeBackgroundColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-background-color", cssValue: "#000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.badgeBackgroundColor.color.toHexString(), "#000000")
+    }
+
+    func test_productCardOutlineColor_mapsToProductCardColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-outline-color", cssValue: "#00000000", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#00000000")
+    }
+
+    // MARK: - Product Card Layout Mapping Tests
+
+    func test_productCardTitleFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-font-size", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleFontSize, 16)
+    }
+
+    func test_productCardTitleFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-font-weight", cssValue: "700", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleFontWeight, .bold)
+    }
+
+    func test_productCardSubtitleFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-font-size", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardSubtitleFontSize, 14)
+    }
+
+    func test_productCardSubtitleFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-subtitle-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardSubtitleFontWeight, .regular)
+    }
+
+    func test_productCardPriceFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-font-size", cssValue: "18px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardPriceFontSize, 18)
+    }
+
+    func test_productCardPriceFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-font-weight", cssValue: "300", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardPriceFontWeight, .light)
+    }
+
+    func test_productCardBadgeFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-font-size", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardBadgeFontSize, 10)
+    }
+
+    func test_productCardBadgeFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-badge-font-weight", cssValue: "600", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardBadgeFontWeight, .semibold)
+    }
+
+    func test_productCardWasPriceTextPrefix_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-text-prefix", cssValue: "Previously ", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceTextPrefix, "Previously ")
+    }
+
+    func test_productCardWasPriceFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-font-size", cssValue: "11px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceFontSize, 11)
+    }
+
+    func test_productCardWasPriceFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-was-price-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWasPriceFontWeight, .regular)
+    }
+
+    func test_productCardWidth_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-width", cssValue: "220px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardWidth, 220)
+    }
+
+    func test_productCardHeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-height", cssValue: "350px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardHeight, 350)
+    }
+
+    func test_productCardTextSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-spacing", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextSpacing, 10)
+    }
+
+    func test_productCardTextTopPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-top-padding", cssValue: "24px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextTopPadding, 24)
+    }
+
+    func test_productCardTextBottomPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-bottom-padding", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextBottomPadding, 14)
+    }
+
+    func test_productCardTextHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-text-horizontal-padding", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTextHorizontalPadding, 16)
+    }
+
+    func test_productCardCarouselSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-carousel-spacing", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCarouselSpacing, 16)
+    }
+
+    func test_productCardCarouselHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-carousel-horizontal-padding", cssValue: "8px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
+    }
+
+    // MARK: - CTA Button Color Mapping Tests
+
+    func test_ctaButtonBackgroundColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-background-color", cssValue: "#EDEDED", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.background.color.toHexString(), "#EDEDED")
+    }
+
+    func test_ctaButtonTextColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-text-color", cssValue: "#191F1C", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.text.color.toHexString(), "#191F1C")
+    }
+
+    func test_ctaButtonIconColor_mapsToCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-icon-color", cssValue: "#161313", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.ctaButton.iconColor.color.toHexString(), "#161313")
+    }
+
+    // MARK: - CTA Button Layout Mapping Tests
+
+    func test_ctaButtonBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-border-radius", cssValue: "99px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonBorderRadius, 99)
+    }
+
+    func test_ctaButtonHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-horizontal-padding", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonHorizontalPadding, 16)
+    }
+
+    func test_ctaButtonVerticalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-vertical-padding", cssValue: "12px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonVerticalPadding, 12)
+    }
+
+    func test_ctaButtonFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-font-size", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonFontSize, 14)
+    }
+
+    func test_ctaButtonFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-font-weight", cssValue: "400", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonFontWeight, .regular)
+    }
+
+    func test_ctaButtonIconSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "cta-button-icon-size", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.ctaButtonIconSize, 16)
+    }
+
+    // MARK: - Agent Icon Layout Mapping Tests
+
+    func test_agentIconSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "agent-icon-size", cssValue: "44px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSize, CGFloat(44))
+    }
+
+    func test_agentIconSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "agent-icon-spacing", cssValue: "8px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.agentIconSpacing, CGFloat(8))
+    }
+
+    // MARK: - Prompt Suggestions CSS Key Tests
+
+    func test_colorContainer_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "color-container", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.primary.container)
+        XCTAssertEqual(theme.colors.primary.container?.color.toHexString(), "#F0F0F0")
+    }
+
+    func test_suggestionBackgroundColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "suggestion-background-color", cssValue: "#F0F0F0", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.backgroundColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.backgroundColor?.color.toHexString(), "#F0F0F0")
+    }
+
+    func test_suggestionTextColor_mapsToColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "suggestion-text-color", cssValue: "#131313", to: &theme)
+
+        // Then
+        XCTAssertNotNil(theme.colors.promptSuggestion.textColor)
+        XCTAssertEqual(theme.colors.promptSuggestion.textColor?.color.toHexString(), "#131313")
+    }
+
+    func test_suggestionItemBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "suggestion-item-border-radius", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.suggestionItemBorderRadius, 10)
+    }
+
+    // MARK: - Thinking Animation Color Mapping Tests
+
+    func test_thinkingDotColor_mapsToThinkingColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-color", cssValue: "#006554", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#006554")
+    }
+
+    func test_thinkingDotColor_doesNotAffectOtherColors() {
+        // Given
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "color-primary", cssValue: "#007BFF", to: &theme)
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-color", cssValue: "#006554", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.primary.primary.color.toHexString(), "#007BFF")
+        XCTAssertEqual(theme.colors.thinking.dotColor?.color.toHexString(), "#006554")
+    }
+
+    // MARK: - Thinking Animation Layout Mapping Tests
+
+    func test_thinkingDotSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-size", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSize, 10)
+    }
+
+    func test_thinkingDotSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-spacing", cssValue: "6px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotSpacing, 6)
+    }
+
+    func test_thinkingBubbleBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-border-radius", cssValue: "16px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubbleBorderRadius, 16)
+    }
+
+    func test_thinkingBubblePaddingHorizontal_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-padding-horizontal", cssValue: "14px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingHorizontal, 14)
+    }
+
+    func test_thinkingBubblePaddingVertical_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-bubble-padding-vertical", cssValue: "12px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingBubblePaddingVertical, 12)
+    }
+
+    func test_thinkingDotVerticalAlignment_center_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "center", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .center)
+    }
+
+    func test_thinkingDotVerticalAlignment_top_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "top", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .top)
+    }
+
+    func test_thinkingDotVerticalAlignment_bottom_mapsToEnum() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "bottom", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .bottom)
+    }
+
+    func test_thinkingDotVerticalAlignment_uppercased_isCaseInsensitive() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "TOP", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.thinkingDotVerticalAlignment, .top)
+    }
+
+    func test_thinkingDotVerticalAlignment_invalid_mapsToNil() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "thinking-dot-vertical-alignment", cssValue: "left", to: &theme)
+
+        // Then
+        XCTAssertNil(theme.layout.thinkingDotVerticalAlignment)
     }
 }
 

@@ -18,7 +18,28 @@ public struct ConversationResponse: Codable {
     public let promptSuggestions: [String]?
     public let multimodalElements: MultimodalElements?
     public let sources: [Source]?
+    public let linkHints: [LinkHint]?
     public let state: String?
+    public let feedback: ConversationFeedbackInfo?
+}
+
+/// Feedback metadata returned with an agent response.
+public struct ConversationFeedbackInfo: Codable {
+    /// Whether this message is eligible for end-user feedback. Defaults to `false` when absent.
+    public let eligible: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case eligible
+    }
+
+    public init(eligible: Bool = false) {
+        self.eligible = eligible
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        eligible = try container.decodeIfPresent(Bool.self, forKey: .eligible) ?? false
+    }
 }
 
 /// Container for multimodal content elements.
@@ -60,6 +81,23 @@ public struct MultimodalElements: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(type, forKey: .type)
         try container.encode(elements, forKey: .elements)
+    }
+}
+
+/// The resolved rendering category of a multimodal element.
+/// Derived from the raw `type` string on `MultimodalElement`.
+enum MultimodalElementType: Equatable {
+    /// A call to action button
+    case ctaButton
+    /// An unknown or unspecified element type.
+    /// The associated value holds the raw type string received from the server (if it exists).
+    case unknown(String?)
+
+    init(rawType: String?) {
+        switch rawType {
+        case "ctaButton": self = .ctaButton
+        default: self = .unknown(rawType)
+        }
     }
 }
 
@@ -116,6 +154,11 @@ public struct MultimodalElement: Codable {
         try container.encodeIfPresent(thumbnailHeight, forKey: .thumbnail_height)
         try container.encodeIfPresent(entityInfo, forKey: .entity_info)
     }
+
+    /// The resolved element type derived from the raw `type` string.
+    var elementType: MultimodalElementType {
+        MultimodalElementType(rawType: type)
+    }
 }
 
 /// Entity information for product cards.
@@ -131,9 +174,13 @@ public struct EntityInfo: Codable {
     public let logo: String?
     public let primary: ActionButton?
     public let secondary: ActionButton?
+    public let productPrice: String?
+    public let productWasPrice: String?
+    public let productBadge: String?
 }
 
-/// Button action configuration.
+/// A labeled link used for element actions.
+/// Used as the primary/secondary action on product cards, and as the payload for `ctaButton` multimodal elements.
 public struct ActionButton: Codable {
     public let text: String
     public let url: String

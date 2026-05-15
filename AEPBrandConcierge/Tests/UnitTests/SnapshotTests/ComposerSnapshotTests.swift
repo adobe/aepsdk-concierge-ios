@@ -80,6 +80,7 @@ private struct ComposerProbeHost: View {
                 composerEditable: true,
                 micEnabled: true,
                 sendEnabled: true,
+                audioLevel: 0,
                 onEditingChanged: { _ in },
                 onMicTap: {},
                 onCancel: {},
