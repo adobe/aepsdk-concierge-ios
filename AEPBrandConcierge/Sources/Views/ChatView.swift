@@ -104,6 +104,11 @@ struct ChatView: View {
             ) { text in
                 controller.speak(text)
             } onSuggestionTap: { suggestion in
+                controller.trackPromptSuggestionClicked(suggestion: suggestion)
+                controller.applyTextChange(suggestion)
+                controller.sendMessage(isUser: true)
+            } onWelcomePromptSuggestionTap: { suggestion in
+                controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
             }
@@ -164,12 +169,20 @@ struct ChatView: View {
                     controller.completeMic()
                     hapticFeedback.impactOccurred()
                 },
-                onSend: sendTapped
+                onSend: sendTapped,
+                onLinkTap: { url in controller.trackDisclaimerLinkClicked(url: url) }
             )
         }
+        .conciergeCardTapHandler(ConciergeCardTapHandler { cardData in
+            controller.trackCardClicked(cardData: cardData)
+        })
         .onAppear {
             hapticFeedback.prepare()
+            controller.trackChatOpened()
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
+        }
+        .onDisappear {
+            controller.trackChatClosed()
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in
@@ -296,6 +309,7 @@ struct ChatView: View {
         if controller.isRecording {
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         } else {
+            controller.trackMicButtonClicked()
             // Dismiss keyboard before starting recording
             isInputFocused = false
             hapticFeedback.impactOccurred()

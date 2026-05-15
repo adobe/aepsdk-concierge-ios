@@ -13,7 +13,11 @@
 import Foundation
 
 /// Central constants for the Concierge SDK.
-enum ConciergeConstants {
+///
+/// The enum itself and the nested namespaces consumer apps need to register listeners
+/// and parse notification events (`EventType`, `ChatInteraction`, `TrackingEvent.XDMType`,
+/// `TrackingEvent.EventData.Key`) are `public`. Everything else is `internal`.
+public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
     static let EXTENSION_VERSION = "5.5.0"
@@ -22,40 +26,46 @@ enum ConciergeConstants {
 
     // MARK: - HTTP
 
-    enum ContentTypes {
+    internal enum ContentTypes {
         static let APPLICATION_JSON = "application/json"
     }
 
-    enum AcceptTypes {
+    internal enum AcceptTypes {
         static let TEXT_EVENT_STREAM = "text/event-stream"
     }
 
-    enum HTTPMethods {
+    internal enum HTTPMethods {
         static let POST = "POST"
     }
 
-    enum HeaderFields {
+    internal enum HeaderFields {
         static let CONTENT_TYPE = "Content-Type"
         static let ACCEPT = "Accept"
     }
 
     // MARK: - SDK Events
 
-    enum EventType {
-        static let concierge = "com.adobe.eventType.concierge"
+    public enum EventType {
+        public static let concierge = "com.adobe.eventType.concierge"
     }
 
-    enum ConciergeSchemas {
+    /// Values stored under `TrackingEvent.EventData.Key.FEEDBACK_TYPE` for `feedback:submitted` events.
+    public enum ChatInteraction {
+        public static let POSITIVE = "positive"
+        public static let NEGATIVE = "negative"
+    }
+
+    internal enum ConciergeSchemas {
         static let JSON_CONTENT = "https://ns.adobe.com/concierge/json-content"
     }
 
-    enum EventName {
+    internal enum EventName {
         static let SHOW_UI = "Show Brand Concierge UI - Request"
         static let SHOW_UI_RESPONSE = "Show Brand Concierge UI - Response"
         static let FEEDBACK = "Brand Concierge - Chat Feedback"
     }
 
-    enum EventData {
+    internal enum EventData {
         enum Key {
             static let CONFIG = "config"
             static let SURFACES = "surfaces"
@@ -64,19 +74,19 @@ enum ConciergeConstants {
 
     // MARK: - Server-Sent Events
 
-    enum SSE {
+    internal enum SSE {
         // Intentionally including the space - used to identify data in SSE responses
         static let DATA_PREFIX = "data: "
     }
 
-    enum StreamState {
+    internal enum StreamState {
         static let IN_PROGRESS = "in-progress"
         static let COMPLETED = "completed"
     }
 
     // MARK: - Network Requests
 
-    enum Request {
+    internal enum Request {
         static let READ_TIMEOUT = 15.0
         static let HTTPS = "https://"
 
@@ -138,14 +148,14 @@ enum ConciergeConstants {
 
     // MARK: - Feedback
 
-    enum FeedbackSentimentValue {
+    internal enum FeedbackSentimentValue {
         static let THUMBS_DOWN = "Thumbs Down"
         static let THUMBS_UP = "Thumbs Up"
     }
 
     // MARK: - Shared State
 
-    enum SharedState {
+    internal enum SharedState {
         enum Configuration {
             static let NAME = "com.adobe.module.configuration"
 
@@ -172,7 +182,7 @@ enum ConciergeConstants {
 
     // MARK: - Defaults
 
-    enum Defaults {
+    internal enum Defaults {
         static let TITLE = "Concierge"
         static let SUBTITLE = "Powered by Adobe"
         static let CONSENT_VALUE = "y"
@@ -180,9 +190,67 @@ enum ConciergeConstants {
         static let MESSAGE_IMAGE = "https://i.ibb.co/0X8R3TG/Messages-24.png"
     }
 
+    // MARK: - Tracking Events
+
+    public enum TrackingEvent {
+        internal enum Name {
+            static let SESSION_INITIALIZED = "Brand Concierge Session Initialized"
+            static let CHAT_OPENED = "Brand Concierge Chat Opened"
+            static let CHAT_CLOSED = "Brand Concierge Chat Closed"
+            static let QUERY_SUBMITTED = "Brand Concierge Query Submitted"
+            static let PROMPT_SUGGESTION_CLICKED = "Brand Concierge Prompt Suggestion Clicked"
+            static let WELCOME_PROMPT_SUGGESTION_CLICKED = "Brand Concierge Welcome Prompt Suggestion Clicked"
+            static let CARD_CLICKED = "Brand Concierge Card Clicked"
+            static let MIC_BUTTON_CLICKED = "Brand Concierge Mic Button Clicked"
+            static let RESPONSE_STARTED = "Brand Concierge Response Started"
+            static let RESPONSE_COMPLETED = "Brand Concierge Response Completed"
+            static let CARDS_RENDERED = "Brand Concierge Cards Rendered"
+            static let FEEDBACK_SUBMITTED = "Brand Concierge Feedback Submitted"
+            static let DISCLAIMER_LINK_CLICKED = "Brand Concierge Disclaimer Link Clicked"
+            static let ERROR_OCCURRED = "Brand Concierge Error Occurred"
+        }
+
+        public enum XDMType {
+            public static let SESSION_INITIALIZED = "session:initialized"
+            public static let CHAT_OPENED = "chat:opened"
+            public static let CHAT_CLOSED = "chat:closed"
+            public static let QUERY_SUBMITTED = "query:submitted"
+            public static let PROMPT_SUGGESTION_CLICKED = "promptSuggestion:clicked"
+            public static let WELCOME_PROMPT_SUGGESTION_CLICKED = "welcomePromptSuggestion:clicked"
+            public static let CARD_CLICKED = "card:clicked"
+            public static let MIC_BUTTON_CLICKED = "micButton:clicked"
+            public static let RESPONSE_STARTED = "response:started"
+            public static let RESPONSE_COMPLETED = "response:completed"
+            public static let CARDS_RENDERED = "cards:rendered"
+            public static let FEEDBACK_SUBMITTED = "feedback:submitted"
+            public static let DISCLAIMER_LINK_CLICKED = "disclaimerLink:clicked"
+            public static let ERROR_OCCURRED = "error:occurred"
+        }
+
+        public enum EventData {
+            public enum Key {
+                public static let EVENT_TYPE = "concierge.eventType"
+                public static let EPOCH_TIME = "epochTime"
+                public static let DURATION_MILLIS = "durationMillis"
+                public static let QUERY = "query"
+                public static let SUGGESTION = "suggestion"
+                public static let ELEMENT = "element"
+                public static let ELEMENTS = "elements"
+                public static let DISPLAY_MODE = "displayMode"
+                public static let CONVERSATION_ID = "conversationId"
+                public static let INTERACTION_ID = "interactionId"
+                public static let FEEDBACK_TYPE = "feedbackType"
+                public static let SELECTED_OPTIONS = "selectedOptions"
+                public static let NOTES = "notes"
+                public static let URL = "url"
+                public static let ERROR_MESSAGE = "errorMessage"
+            }
+        }
+    }
+
     // MARK: - Session Management
 
-    enum Session {
+    internal enum Session {
         static let DATA_STORE_NAME = "AEPBrandConcierge.Session"
         static let TTL_SECONDS: TimeInterval = 30 * 60 // 30 minutes
 
