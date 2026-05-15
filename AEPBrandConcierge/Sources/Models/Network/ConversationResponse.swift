@@ -18,7 +18,28 @@ public struct ConversationResponse: Codable {
     public let promptSuggestions: [String]?
     public let multimodalElements: MultimodalElements?
     public let sources: [Source]?
+    public let linkHints: [LinkHint]?
     public let state: String?
+    public let feedback: ConversationFeedbackInfo?
+}
+
+/// Feedback metadata returned with an agent response.
+public struct ConversationFeedbackInfo: Codable {
+    /// Whether this message is eligible for end-user feedback. Defaults to `false` when absent.
+    public let eligible: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case eligible
+    }
+
+    public init(eligible: Bool = false) {
+        self.eligible = eligible
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        eligible = try container.decodeIfPresent(Bool.self, forKey: .eligible) ?? false
+    }
 }
 
 /// Container for multimodal content elements.

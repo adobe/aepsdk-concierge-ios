@@ -43,7 +43,7 @@ struct ContentView: View {
 
     @ObservedObject var deepLinkState: DeepLinkState
 
-    @State private var selectedThemeFile: DemoThemeFile = .defaultTheme
+    @State private var selectedThemeFile: DemoThemeFile = .demoTheme
     @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
     @State private var themeLoadStatusText: String = ""
     @State private var interceptedLinkURL: URL?

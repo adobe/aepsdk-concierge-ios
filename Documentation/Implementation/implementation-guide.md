@@ -22,7 +22,6 @@ Internally, `Concierge.show(...)` dispatches an event in the Adobe Experience Pl
 The host app needs these AEP modules available and registered:
 
 - **AEPCore** (MobileCore, Configuration shared state comes from `configureWith(appId:)`)
-- **AEPEdge**
 - **AEPEdgeIdentity**
 - **AEPBrandConcierge**
 
@@ -43,17 +42,18 @@ The SDK handles permission requests internally when the user taps the microphone
 
 ## Installation
 
-Add Brand Concierge alongside the other AEP SDK extensions using either Swift Package Manager or CocoaPods.
+Add Brand Concierge alongside the other AEP SDK extensions using Swift Package Manager, CocoaPods, or by adding the XCFramework directly.
 
 ### Swift Package Manager
 
-Add the package to the app's `Package.swift`:
+To add the package from Xcode, select **File -> Add Package Dependencies…** and enter `https://github.com/adobe/aepsdk-concierge-ios.git`.
+
+To add it via a `Package.swift` file instead, add the package to your dependencies:
 
 ```swift
 dependencies: [
     .package(url: "https://github.com/adobe/aepsdk-concierge-ios.git", .upToNextMajor(from: "5.0.0")),
     .package(url: "https://github.com/adobe/aepsdk-core-ios.git", .upToNextMajor(from: "5.7.0")),
-    .package(url: "https://github.com/adobe/aepsdk-edge-ios.git", .upToNextMajor(from: "5.0.3")),
     .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0"))
 ]
 ```
@@ -63,11 +63,8 @@ Then add the products to the target's dependencies:
 ```swift
 .product(name: "AEPBrandConcierge", package: "aepsdk-concierge-ios"),
 .product(name: "AEPCore", package: "aepsdk-core-ios"),
-.product(name: "AEPEdge", package: "aepsdk-edge-ios"),
 .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios"),
 ```
-
-Alternatively, add the package in Xcode via **File -> Add Package Dependencies…** using `https://github.com/adobe/aepsdk-concierge-ios.git`.
 
 ### CocoaPods
 
@@ -76,35 +73,67 @@ Add the following to the app's `Podfile`:
 ```ruby
 pod 'AEPBrandConcierge', '~> 5.0'
 pod 'AEPCore', '~> 5.7'
-pod 'AEPEdge', '~> 5.0'
 pod 'AEPEdgeIdentity', '~> 5.0'
 ```
 
 Then run `pod install`.
 
+### Binaries
+
+To add the XCFramework directly, run the following from the repository root:
+
+```bash
+make archive
+```
+
+This generates `AEPBrandConcierge.xcframework` under the `build` folder. Drag and drop it into your app target in Xcode.
+
 ---
 
 ## Configuration
 
-### Step 1: Set up the Adobe Experience Platform Mobile SDK
+### Step 1: Register the Brand Concierge extension
 
-Follow the [Adobe Experience Platform Mobile SDK getting started guide](https://developer.adobe.com/client-sdks/home/getting-started/) to set up the base SDK integration used by Concierge.
+Import the required frameworks and register the extensions in `application(_:didFinishLaunchingWithOptions:)` in your `AppDelegate`:
 
-The required extensions are:
+```swift
+import AEPBrandConcierge
+import AEPCore
+import AEPEdgeIdentity
+import UIKit
 
-- AEPCore
-- AEPEdge
-- AEPEdgeIdentity
-- AEPBrandConcierge
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        let extensions = [
+            Concierge.self,
+            Identity.self
+        ]
 
-### Step 2: Validate the Brand Concierge configuration keys exist
+        MobileCore.registerExtensions(extensions) {
+            MobileCore.configureWith(appId: "YOUR_APP_ID")
+        }
 
-Setting the Mobile SDK log level to trace (`MobileCore.setLogLevel(.trace)`) causes extension shared states to be logged, making it possible to confirm in the app logs that they are being set with the expected values.
+        return true
+    }
+}
+```
+
+Replace `YOUR_APP_ID` with your mobile property App ID from Adobe Data Collection. For full setup instructions see the [Adobe Experience Platform Mobile SDK getting started guide](https://developer.adobe.com/client-sdks/home/getting-started/).
+
+### Step 2: Validate the Brand Concierge configuration keys
+
+If you set the Adobe Experience Platform SDK log level to trace:
+
+```swift
+MobileCore.setLogLevel(.trace)
+```
+
+you can then inspect the app logs to confirm that extension shared states are being set with the expected values.
 
 Brand Concierge expects the following keys to be present in the Configuration shared state:
 
 - **`concierge.server`**: String (server host or base domain used by Concierge requests)
-- **`concierge.configId`**: String (datastream id)
+- **`concierge.configId`**: String (datastream ID)
 
 ECID is read from Edge Identity shared state. Surfaces are not a Configuration key; they are supplied per session via the `surfaces:` parameter on `Concierge.wrap(...)`, `Concierge.show(...)`, or `Concierge.present(on:...)`.
 
@@ -187,7 +216,7 @@ Button("Chat") {
 
 ### Option B - Floating button (built in)
 
-Use this for a drop in entry point.
+Use this for a drop-in entry point.
 
 ```swift
 Concierge.wrap(AppRootView(), surfaces: ["my-surface"]) // hideButton defaults to false
@@ -233,6 +262,12 @@ Concierge.hide()
 
 ## Link Handling
 
+### Universal links
+
+To have the SDK open http/https URLs natively in the host app instead of the in-app WebView, configure [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains) for the app and host an `apple-app-site-association` file on the associated domain. When the domain is verified, tapping a link for that domain in the chat will navigate within the app instead of the WebView.
+
+Alternatively, use the `handleLink` callback to intercept specific domains and handle them with custom navigation logic without requiring domain verification.
+
 ### Default behavior
 
 When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHandler` using the following flow:
@@ -240,7 +275,7 @@ When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHan
 1. **Custom scheme URLs** (e.g. `myapp://`, `mailto:`, `tel:`) — opened immediately via the system (deep link).
 2. **http/https URLs** — the system is first asked to open the URL as a universal link. If the host app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), the app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay.
 
-**Default link handling flow:** host `handleLink` callback (if provided) -> deep link / universal link check -> WebView overlay.
+**Default link handling flow:** `handleLink` callback (if provided) -> deep link / universal link check -> WebView overlay.
 
 ### Custom link handling
 
@@ -301,12 +336,6 @@ Concierge.present(
 ```
 
 When `handleLink` returns `true`, the SDK does not open the WebView overlay or perform any further link routing. When it returns `false` or is not provided, the SDK uses the default flow (deep link check -> universal link check -> WebView overlay).
-
-### Universal links
-
-To have the SDK open http/https URLs natively in the host app instead of the in-app WebView, configure [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains) for the app and host an `apple-app-site-association` file on the associated domain. When the domain is verified, tapping a link for that domain in the chat will navigate within the app instead of the WebView.
-
-Alternatively, use the `handleLink` callback to intercept specific domains and handle them with custom navigation logic without requiring domain verification.
 
 ### In-app WebView overlay link handling
 

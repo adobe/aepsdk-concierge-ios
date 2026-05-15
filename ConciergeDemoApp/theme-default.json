@@ -9,6 +9,9 @@
     "multimodalCarousel": {
       "cardClickAction": "openLink"
     },
+    "citations": {
+      "showLinkIcon": true
+    },
     "input": {
       "enableVoiceInput": true,
       "disableMultiline": false,

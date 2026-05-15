@@ -25,8 +25,15 @@ struct ChatMessageView: View {
     let template: MessageTemplate
     var messageBody: String?
     var sources: [Source]?
+    var linkHints: [LinkHint]?
     var promptSuggestions: [String]?
     var feedbackSentiment: FeedbackSentiment?
+    /// Whether the message is eligible to display the feedback affordance. Drives the
+    /// inclusion of `MessageFeedbackView` below the bubble; defaults to `false`.
+    var feedbackEligible: Bool = false
+    /// Whether the SSE stream for this message has fully completed. Required to gate
+    /// `alwaysDisplay` so feedback is not shown while streaming is still in progress.
+    var isStreamComplete: Bool = false
     var onSuggestionTap: ((String) -> Void)?
 
     /// Extra line spacing derived from the theme's body line-height multiplier.
@@ -47,13 +54,16 @@ struct ChatMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, onSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
         self.sources = sources
+        self.linkHints = linkHints
         self.promptSuggestions = promptSuggestions
         self.feedbackSentiment = feedbackSentiment
+        self.feedbackEligible = feedbackEligible
+        self.isStreamComplete = isStreamComplete
         self.onSuggestionTap = onSuggestionTap
     }
 
@@ -217,6 +227,11 @@ struct ChatMessageView: View {
                                                 weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
                                             )
                                         ),
+                                        linkIconResolver: resolvedLinkIconResolver,
+                                        linkIconColor: UIColor(theme.behavior.citations?.linkIconStyle?.color?.color ?? theme.colors.message.conciergeLink.color),
+                                        linkIconSize: theme.behavior.citations?.linkIconStyle?.size ?? 10,
+                                        linkIconSpacing: theme.behavior.citations?.linkIconStyle?.spacing,
+                                        linkIconBaselineAdjust: theme.behavior.citations?.linkIconStyle?.baselineAdjust ?? 0,
                                         onOpenLink: { url in
                                             handleLinkTap(url)
                                         }
@@ -265,10 +280,22 @@ struct ChatMessageView: View {
                                 }
                             }
 
-                            // Sources sit directly below the bubble inside the same VStack,
-                            // so they share the bubble's exact width with no extra padding needed.
                             if !isUserMessage, !displayedSources.isEmpty {
-                                SourcesListView(sources: displayedSources, feedbackSentiment: feedbackSentiment, messageId: messageId)
+                                SourcesListView(
+                                    sources: displayedSources,
+                                    feedbackEligible: effectiveFeedbackEligible,
+                                    feedbackSentiment: feedbackSentiment,
+                                    messageId: messageId
+                                )
+                            }
+
+                            if !isUserMessage, effectiveFeedbackEligible,
+                               resolvedFeedbackPlacement == .standalone {
+                                MessageFeedbackView(
+                                    feedbackSentiment: feedbackSentiment,
+                                    messageId: messageId
+                                )
+                                .padding(.top, 8)
                             }
                         }
                     }
@@ -543,6 +570,30 @@ private extension ChatMessageView {
 // MARK: - Helpers
 
 private extension ChatMessageView {
+    /// Builds a link icon resolver closure from the message's `linkHints` and the theme's
+    /// `citations` icon config. Returns `nil` when `showLinkIcon` is disabled.
+    ///
+    /// The closure maps each link URL to `(assetName, sfSymbol)`:
+    /// - A hint with `kind == "phone"` uses `citations.phoneIcon` / `"phone"`.
+    /// - A hint with `kind == "store"` uses `citations.storeIcon` / `"storefront"`.
+    /// - All other links (including those without a hint) use `citations.defaultLinkIcon` / `"arrow.up.forward.app"`.
+    var resolvedLinkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))? {
+        guard theme.behavior.citations?.showLinkIcon == true else { return nil }
+        let citations = theme.behavior.citations
+        let hints = linkHints ?? []
+        return { url in
+            let hint = hints.first { $0.href == url.absoluteString }
+            switch hint?.kind {
+            case "phone":
+                return (citations?.phoneIcon ?? "", "phone", nil)
+            case "store":
+                return (citations?.storeIcon ?? "", "storefront", nil)
+            default:
+                return (citations?.defaultLinkIcon ?? "", "arrow.up.forward.app", nil)
+            }
+        }
+    }
+
     var resolvedAgentFont: UIFont {
         let fontSize = theme.typography.fontSize
         if theme.typography.fontFamily.isEmpty {
@@ -557,6 +608,16 @@ private extension ChatMessageView {
             return behaviorWidth
         }
         return theme.layout.messageMaxWidth
+    }
+
+    var resolvedFeedbackPlacement: ThumbsPlacement {
+        theme.behavior.feedback?.thumbsPlacement ?? .inline
+    }
+
+    /// `true` when the server marks this message eligible, or when the theme sets `alwaysDisplay: true`
+    /// and the SSE stream has fully completed.
+    var effectiveFeedbackEligible: Bool {
+        feedbackEligible || (isStreamComplete && theme.behavior.feedback?.alwaysDisplay == true)
     }
 
     func handleLinkTap(_ url: URL) {

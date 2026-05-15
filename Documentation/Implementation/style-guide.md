@@ -455,7 +455,7 @@ List-based configuration for examples and feedback options.
 
 ### Welcome Examples
 
-> It is recommended to have no more than four items in your provided welcome examples.
+> You shouldn't have more than four items in your welcome examples.
 >
 > Always test your values on device to ensure the UI looks as desired.
 
@@ -468,7 +468,7 @@ List-based configuration for examples and feedback options.
 
 ### Feedback Options
 
-> It is recommended to have no more than five options available for feedback. 
+> You shouldn't have more than five options available for feedback.
 >
 > Always test your values on device to ensure the UI looks as desired.
 
@@ -698,6 +698,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-border-radius` | `layout.messageBorderRadius` | `CGFloat` | `10` | Message bubble corner radius |
 | `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding |
 | `--message-max-width` | `layout.messageMaxWidth` | `CGFloat?` | `nil` | Max message width |
+| `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. When set, product cards and prompt suggestion chips are automatically offset to align with the agent message text column. |
+| `--agent-icon-spacing` | `layout.agentIconSpacing` | `CGFloat` | `12` | Horizontal gap in points between the agent icon and the message bubble. Contributes to the text column offset applied to product cards and prompt suggestion chips. |
 
 ### Layout - Chat
 
@@ -1108,7 +1110,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.promptSuggestions.alignToMessage` | ✅ | Controls horizontal alignment of chip group in MessageListView |
 | `behavior.feedback.displayMode` | ✅ | Controls feedback presentation: `"modal"` (centered) vs `"action"` (action sheet) in FeedbackOverlayView |
 | `behavior.feedback.thumbsPlacement` | ✅ | Controls thumbs placement (inline vs below) in SourcesListView |
-| `behavior.feedback.showCloseButton` | ✅ | Toggles the top-right X close affordance in FeedbackOverlayView; defaults by `displayMode` when `null` |
+| `behavior.feedback.showCloseButton` | ✅ | Toggles the top-right X close button in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.feedback.showCancelButton` | ✅ | Toggles the Cancel button in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
