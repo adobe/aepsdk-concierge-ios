@@ -120,9 +120,9 @@ struct FeedbackOverlayView: View {
     /// Title font. Falls back to `.title2.weight(.semibold)` when `feedbackTitleFontSize` is nil.
     private var titleFont: Font {
         if let size = theme.layout.feedbackTitleFontSize {
-            return .system(size: size, weight: .semibold)
+            return theme.typography.font(size: size, weight: .semibold)
         }
-        return .title2.weight(.semibold)
+        return theme.typography.font(textStyle: .title2, weight: .semibold)
     }
 
     var body: some View {
@@ -225,7 +225,7 @@ struct FeedbackOverlayView: View {
     private var closeButton: some View {
         Button(action: onCancel) {
             Image(systemName: "xmark")
-                .font(.system(size: 15, weight: .semibold))
+                .font(theme.typography.font(size: 15, weight: .semibold))
                 .foregroundStyle(closeIconTint)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
@@ -266,7 +266,7 @@ struct FeedbackOverlayView: View {
                 .frame(maxWidth: .infinity, alignment: titleFrameAlignment)
 
             Text(sentiment == .positive ? theme.text.feedbackDialogQuestionPositive : theme.text.feedbackDialogQuestionNegative)
-                .font(.body)
+                .font(theme.typography.font(textStyle: .body))
                 .foregroundStyle(questionTextColor ?? Color.secondary)
 
             VStack(alignment: .leading, spacing: 12) {
@@ -290,7 +290,7 @@ struct FeedbackOverlayView: View {
             if notesEnabled {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(theme.text.feedbackDialogNotes)
-                        .font(.subheadline)
+                        .font(theme.typography.font(textStyle: .subheadline))
                         .foregroundStyle(.secondary)
                     ZStack(alignment: .topLeading) {
                         TextEditor(text: $notes)
@@ -309,7 +309,7 @@ struct FeedbackOverlayView: View {
 
                         if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             Text(theme.text.feedbackDialogNotesPlaceholder)
-                                .font(.body)
+                                .font(theme.typography.font(textStyle: .body))
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 20)
                                 .padding(.leading, 18)
@@ -326,7 +326,7 @@ struct FeedbackOverlayView: View {
             if resolvedShowCancelButton {
                 Button(action: onCancel) {
                     Text(theme.text.feedbackDialogCancel)
-                        .font(.body.weight(theme.layout.feedbackCancelButtonFontWeight.toSwiftUIFontWeight()))
+                        .font(theme.typography.font(textStyle: .body, weight: theme.layout.feedbackCancelButtonFontWeight.toSwiftUIFontWeight()))
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
@@ -344,7 +344,7 @@ struct FeedbackOverlayView: View {
                 onSubmit(payload)
             }) {
                 Text(theme.text.feedbackDialogSubmit)
-                    .font(.body.weight(theme.layout.feedbackSubmitButtonFontWeight.toSwiftUIFontWeight()))
+                    .font(theme.typography.font(textStyle: .body, weight: theme.layout.feedbackSubmitButtonFontWeight.toSwiftUIFontWeight()))
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
             }

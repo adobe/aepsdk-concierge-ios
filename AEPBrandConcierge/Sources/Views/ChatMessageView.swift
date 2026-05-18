@@ -38,12 +38,7 @@ struct ChatMessageView: View {
         guard multiplier.isFinite, multiplier > 0 else { return 0 }
 
         let fontSize = theme.typography.fontSize
-        let baseFont: UIFont = {
-            if theme.typography.fontFamily.isEmpty {
-                return UIFont.systemFont(ofSize: fontSize)
-            }
-            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-        }()
+        let baseFont = theme.typography.uiFont(size: fontSize)
 
         let targetLineHeight = fontSize * multiplier
         return max(0, targetLineHeight - baseFont.lineHeight)
@@ -70,12 +65,12 @@ struct ChatMessageView: View {
 
             VStack(alignment: welcomeAlign == .center ? .center : .leading, spacing: titleBottomSpacing) {
                 Text(title)
-                    .font(.system(size: titleFontSize, design: .rounded).weight(.semibold))
+                    .font(theme.typography.font(size: titleFontSize, weight: .semibold))
                     .foregroundColor(theme.colors.primary.text.color)
                     .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
                 Text(body)
-                    .font(.system(.body, design: .rounded))
+                    .font(theme.typography.font(textStyle: .body))
                     .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                     .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
@@ -112,7 +107,7 @@ struct ChatMessageView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(text)
-                                .font(.system(.body))
+                                .font(theme.typography.font(textStyle: .body))
                                 .foregroundColor(promptTextColor)
                                 .multilineTextAlignment(.leading)
                                 .lineLimit(promptMaxLines)
@@ -132,7 +127,7 @@ struct ChatMessageView: View {
                             .font(.system(size: 14))
                             .foregroundColor(promptTextColor)
                         Text(text)
-                            .font(.system(.subheadline))
+                            .font(theme.typography.font(textStyle: .subheadline))
                             .foregroundColor(promptTextColor)
                             .lineLimit(promptMaxLines)
                     }
@@ -215,8 +210,8 @@ struct ChatMessageView: View {
                                         citationStyle: .init(
                                             backgroundColor: UIColor(theme.colors.citation.background.color),
                                             textColor: UIColor(theme.colors.citation.text.color),
-                                            font: UIFont.systemFont(
-                                                ofSize: theme.layout.citationsDesktopButtonFontSize,
+                                            font: theme.typography.uiFont(
+                                                size: theme.layout.citationsDesktopButtonFontSize,
                                                 weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
                                             )
                                         ),
@@ -297,8 +292,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
-                                .font(.system(.headline, design: .rounded))
-                                .bold()
+                                .font(theme.typography.font(textStyle: .headline, weight: .bold))
                                 .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
@@ -326,8 +320,7 @@ struct ChatMessageView: View {
                                 .frame(width: 32, height: 32)
 
                             Text("\(number)")
-                                .font(.system(.body, design: .rounded))
-                                .bold()
+                                .font(theme.typography.font(textStyle: .body, weight: .bold))
                                 .foregroundColor(theme.colors.primary.text.color)
                         }
                     }
@@ -335,8 +328,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
-                                .font(.system(.headline, design: .rounded))
-                                .bold()
+                                .font(theme.typography.font(textStyle: .headline, weight: .bold))
                                 .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
                         }
@@ -405,7 +397,7 @@ struct ChatMessageView: View {
                             .imageScale(.small)
                             .foregroundColor(suggestionTextColor)
                         Text(text)
-                            .font(.system(.subheadline))
+                            .font(theme.typography.font(textStyle: .subheadline))
                             .foregroundColor(suggestionTextColor)
                             .lineLimit(suggestionMaxLines)
                     }
@@ -446,8 +438,7 @@ private extension ChatMessageView {
                 }
 
                 Text(data.title)
-                    .font(.system(.subheadline, design: .rounded))
-                    .fontWeight(.semibold)
+                    .font(theme.typography.font(textStyle: .subheadline, weight: .semibold))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
@@ -486,14 +477,13 @@ private extension ChatMessageView {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(data.title)
-                    .font(.system(.headline, design: .rounded))
-                    .bold()
+                    .font(theme.typography.font(textStyle: .headline, weight: .bold))
                     .foregroundColor(theme.colors.primary.text.color)
                     .textSelection(.enabled)
 
                 if let subtitle = data.subtitle {
                     Text(subtitle)
-                        .font(.system(.subheadline))
+                        .font(theme.typography.font(textStyle: .subheadline))
                         .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                         .textSelection(.enabled)
                 }
@@ -548,12 +538,7 @@ private extension ChatMessageView {
 
 private extension ChatMessageView {
     var resolvedAgentFont: UIFont {
-        let fontSize = theme.typography.fontSize
-        if theme.typography.fontFamily.isEmpty {
-            return UIFont.systemFont(ofSize: fontSize)
-        }
-        return UIFont(name: theme.typography.fontFamily, size: fontSize)
-            ?? UIFont.systemFont(ofSize: fontSize)
+        theme.typography.uiFont(size: theme.typography.fontSize)
     }
 
     var resolvedMessageMaxWidth: CGFloat? {

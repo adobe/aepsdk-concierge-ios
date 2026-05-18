@@ -159,6 +159,8 @@ public struct ConciergeTheme: Codable {
                 for cssKey in themeContainer.allKeys {
                     if let cssValue = try? themeContainer.decode(String.self, forKey: cssKey) {
                         CSSKeyMapper.apply(cssKey: cssKey.stringValue, cssValue: cssValue, to: &self)
+                    } else if let objectValue = try? themeContainer.decode([String: String].self, forKey: cssKey) {
+                        CSSKeyMapper.apply(cssKey: cssKey.stringValue, objectValue: objectValue, to: &self)
                     }
                 }
             }

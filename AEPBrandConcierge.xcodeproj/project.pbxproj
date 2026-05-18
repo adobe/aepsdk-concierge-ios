@@ -147,6 +147,21 @@
 		4CC11B2C2F68FAD300EEF226 /* LinkHandlingTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B2B2F68FAD300EEF226 /* LinkHandlingTestView.swift */; };
 		4CC11B302F69312B00EEF226 /* LinkTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC11B2F2F69312B00EEF226 /* LinkTestView.swift */; };
 		4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB42EC6E887000B85D0 /* theme-default.json */; };
+		51B3A5920001000000000001 /* ConciergeFontResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B3A5920001000000000002 /* ConciergeFontResolver.swift */; };
+		51B3A5920002000000000001 /* ConciergeFontFamilySpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B3A5920002000000000002 /* ConciergeFontFamilySpec.swift */; };
+		51B3A5920003000000000001 /* ConciergeTypography+Font.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B3A5920003000000000002 /* ConciergeTypography+Font.swift */; };
+		51B3A5920004000000000001 /* UIFont+FontFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B3A5920004000000000002 /* UIFont+FontFamily.swift */; };
+		51B3A5920005000000000001 /* Font+UIKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B3A5920005000000000002 /* Font+UIKit.swift */; };
+		51B3A592000A000000000001 /* theme-dsg.json in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000A000000000002 /* theme-dsg.json */; };
+		51B3A592000F000000000001 /* Raleway-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000010 /* Raleway-Bold.ttf */; };
+		51B3A592000F000000000002 /* Raleway-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000011 /* Raleway-ExtraBold.ttf */; };
+		51B3A592000F000000000003 /* Raleway-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000012 /* Raleway-ExtraLight.ttf */; };
+		51B3A592000F000000000004 /* Raleway-Heavy.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000013 /* Raleway-Heavy.ttf */; };
+		51B3A592000F000000000005 /* Raleway-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000014 /* Raleway-Light.ttf */; };
+		51B3A592000F000000000006 /* Raleway-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000015 /* Raleway-Medium.ttf */; };
+		51B3A592000F000000000007 /* Raleway-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000016 /* Raleway-Regular.ttf */; };
+		51B3A592000F000000000008 /* Raleway-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000017 /* Raleway-SemiBold.ttf */; };
+		51B3A592000F000000000009 /* Raleway-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 51B3A592000F000000000018 /* Raleway-Thin.ttf */; };
 		4CDB0DBD2EC82C6B000B85D0 /* ThemeCSSConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */; };
 		4CDB0DBE2EC82C6B000B85D0 /* ThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DBB2EC82C6B000B85D0 /* ThemeTypes.swift */; };
 		4CDB0DBF2EC82C6B000B85D0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDB0DB62EC82C6B000B85D0 /* Theme.swift */; };
@@ -362,6 +377,21 @@
 		4CC11B2F2F69312B00EEF226 /* LinkTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkTestView.swift; sourceTree = "<group>"; };
 		4CDB0DB42EC6E887000B85D0 /* theme-default.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-default.json"; sourceTree = "<group>"; };
 		4CDB0DB62EC82C6B000B85D0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		51B3A5920001000000000002 /* ConciergeFontResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeFontResolver.swift; sourceTree = "<group>"; };
+		51B3A5920002000000000002 /* ConciergeFontFamilySpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeFontFamilySpec.swift; sourceTree = "<group>"; };
+		51B3A5920003000000000002 /* ConciergeTypography+Font.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConciergeTypography+Font.swift"; sourceTree = "<group>"; };
+		51B3A5920004000000000002 /* UIFont+FontFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+FontFamily.swift"; sourceTree = "<group>"; };
+		51B3A5920005000000000002 /* Font+UIKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+UIKit.swift"; sourceTree = "<group>"; };
+		51B3A592000F000000000010 /* Raleway-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Bold.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000011 /* Raleway-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-ExtraBold.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000012 /* Raleway-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-ExtraLight.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000013 /* Raleway-Heavy.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Heavy.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000014 /* Raleway-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Light.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000015 /* Raleway-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Medium.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000016 /* Raleway-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Regular.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000017 /* Raleway-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-SemiBold.ttf"; sourceTree = "<group>"; };
+		51B3A592000F000000000018 /* Raleway-Thin.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Raleway-Thin.ttf"; sourceTree = "<group>"; };
+		51B3A592000A000000000002 /* theme-dsg.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "theme-dsg.json"; sourceTree = "<group>"; };
 		4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSConverter.swift; sourceTree = "<group>"; };
 		4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCSSMapper.swift; sourceTree = "<group>"; };
 		4CDB0DBA2EC82C6B000B85D0 /* ThemeLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeLoader.swift; sourceTree = "<group>"; };
@@ -607,6 +637,8 @@
 			children = (
 				249899822D67C5F90005CBD7 /* Color+Extensions.swift */,
 				243868C02EB1758E004BF9C0 /* Event+Concierge.swift */,
+				51B3A5920005000000000002 /* Font+UIKit.swift */,
+				51B3A5920004000000000002 /* UIFont+FontFamily.swift */,
 				4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */,
 				243868C22EB17B0B004BF9C0 /* SharedStateResult+Concierge.swift */,
 				244E69CD2F16A9BC00ADF1AA /* String+Formatting.swift */,
@@ -667,8 +699,10 @@
 				249899AD2D67CCE30005CBD7 /* Assets.xcassets */,
 				2483A3D42D77CE9B004E6CDC /* Info.plist */,
 				249899B72D67CF0E0005CBD7 /* LaunchScreen.storyboard */,
+				51B3A592000F000000000020 /* Fonts */,
 				4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */,
 				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
+				51B3A592000A000000000002 /* theme-dsg.json */,
 				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
 			);
 			path = ConciergeDemoApp;
@@ -828,6 +862,8 @@
 			isa = PBXGroup;
 			children = (
 				4CF60BD82EF37A1E008CE4F0 /* Models */,
+				51B3A5920001000000000002 /* ConciergeFontResolver.swift */,
+				51B3A5920003000000000002 /* ConciergeTypography+Font.swift */,
 				4CDB0DB62EC82C6B000B85D0 /* Theme.swift */,
 				4CDB0DB82EC82C6B000B85D0 /* ThemeCSSConverter.swift */,
 				4CDB0DB92EC82C6B000B85D0 /* ThemeCSSMapper.swift */,
@@ -845,6 +881,7 @@
 				4CF60BD12EF37A1E008CE4F0 /* ConciergeThemeBehavior.swift */,
 				4CF60BD22EF37A1E008CE4F0 /* ConciergeThemeColors.swift */,
 				4CF60BD32EF37A1E008CE4F0 /* ConciergeThemeContent.swift */,
+				51B3A5920002000000000002 /* ConciergeFontFamilySpec.swift */,
 				4CF60BD42EF37A1E008CE4F0 /* ConciergeThemeLayout.swift */,
 				4CF60BD52EF37A1E008CE4F0 /* ConciergeThemeMetadata.swift */,
 				4CF60BD62EF37A1E008CE4F0 /* ConciergeThemeStyles.swift */,
@@ -876,6 +913,22 @@
 				C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		51B3A592000F000000000020 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				51B3A592000F000000000010 /* Raleway-Bold.ttf */,
+				51B3A592000F000000000011 /* Raleway-ExtraBold.ttf */,
+				51B3A592000F000000000012 /* Raleway-ExtraLight.ttf */,
+				51B3A592000F000000000013 /* Raleway-Heavy.ttf */,
+				51B3A592000F000000000014 /* Raleway-Light.ttf */,
+				51B3A592000F000000000015 /* Raleway-Medium.ttf */,
+				51B3A592000F000000000016 /* Raleway-Regular.ttf */,
+				51B3A592000F000000000017 /* Raleway-SemiBold.ttf */,
+				51B3A592000F000000000018 /* Raleway-Thin.ttf */,
+			);
+			path = "Resources/Fonts";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1037,6 +1090,16 @@
 				4CDB0DB52EC6E887000B85D0 /* theme-default.json in Resources */,
 				249899BE2D67CF0E0005CBD7 /* LaunchScreen.storyboard in Resources */,
 				249899B42D67CCE30005CBD7 /* Assets.xcassets in Resources */,
+					51B3A592000A000000000001 /* theme-dsg.json in Resources */,
+					51B3A592000F000000000001 /* Raleway-Bold.ttf in Resources */,
+					51B3A592000F000000000002 /* Raleway-ExtraBold.ttf in Resources */,
+					51B3A592000F000000000003 /* Raleway-ExtraLight.ttf in Resources */,
+					51B3A592000F000000000004 /* Raleway-Heavy.ttf in Resources */,
+					51B3A592000F000000000005 /* Raleway-Light.ttf in Resources */,
+					51B3A592000F000000000006 /* Raleway-Medium.ttf in Resources */,
+					51B3A592000F000000000007 /* Raleway-Regular.ttf in Resources */,
+					51B3A592000F000000000008 /* Raleway-SemiBold.ttf in Resources */,
+					51B3A592000F000000000009 /* Raleway-Thin.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1229,6 +1292,11 @@
 				24037ABB2EF3645E00FF4031 /* InputController.swift in Sources */,
 				24037ABC2EF3645E00FF4031 /* ChatController.swift in Sources */,
 				24037ABD2EF3645E00FF4031 /* SpeechController.swift in Sources */,
+				51B3A5920001000000000001 /* ConciergeFontResolver.swift in Sources */,
+				51B3A5920002000000000001 /* ConciergeFontFamilySpec.swift in Sources */,
+				51B3A5920003000000000001 /* ConciergeTypography+Font.swift in Sources */,
+				51B3A5920004000000000001 /* UIFont+FontFamily.swift in Sources */,
+				51B3A5920005000000000001 /* Font+UIKit.swift in Sources */,
 				4CDB0DBF2EC82C6B000B85D0 /* Theme.swift in Sources */,
 				4CDB0DC02EC82C6B000B85D0 /* ThemeCSSMapper.swift in Sources */,
 				4CDB0DC12EC82C6B000B85D0 /* ThemeLoader.swift in Sources */,

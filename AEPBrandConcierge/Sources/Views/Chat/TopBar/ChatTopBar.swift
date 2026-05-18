@@ -45,9 +45,9 @@ struct ChatTopBar: View {
 
     private var titleFont: Font {
         if let size = theme.layout.headerTitleFontSize {
-            return .system(size: size, design: .rounded).weight(.semibold)
+            return theme.typography.font(size: size, weight: .semibold)
         }
-        return .system(.title3, design: .rounded).weight(.semibold)
+        return theme.typography.font(textStyle: .title3, weight: .semibold)
     }
 
     var body: some View {
@@ -63,7 +63,7 @@ struct ChatTopBar: View {
                         .foregroundColor(theme.colors.primary.text.color)
                     if let sub = resolvedSubtitle, !sub.isEmpty {
                         Text(sub)
-                            .font(.system(.footnote))
+                            .font(theme.typography.font(textStyle: .footnote))
                             .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                     }
                 }

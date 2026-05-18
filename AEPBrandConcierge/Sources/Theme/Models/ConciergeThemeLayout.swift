@@ -291,15 +291,15 @@ public struct ConciergeLayout: Codable {
 
 /// Typography configuration (font families, sizes, line heights, weights)
 public struct ConciergeTypography: Codable {
-    /// Font family name (ex: "MarkerFelt-Thin")
-    /// Expects a single font name. If empty or not provided, uses system font.
     public var fontFamily: String
+    public var fontFamilySpec: ConciergeFontFamilySpec?
     public var fontSize: CGFloat
     public var lineHeight: CGFloat
     public var fontWeight: CodableFontWeight
 
     public init(
         fontFamily: String = "",
+        fontFamilySpec: ConciergeFontFamilySpec? = nil,
         fontSize: CGFloat = 16,
         // Interpreted as a multiplier (ex: 1.25 means 125% line height).
         // Default is 1.0 to match typical system typography unless a theme explicitly overrides it.
@@ -307,6 +307,7 @@ public struct ConciergeTypography: Codable {
         fontWeight: CodableFontWeight = .regular
     ) {
         self.fontFamily = fontFamily
+        self.fontFamilySpec = fontFamilySpec
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.fontWeight = fontWeight

@@ -23,7 +23,11 @@ public enum CSSKeyMapper {
     /// Mapping from CSS variable name (without --) to direct assignment function
     private static let cssToAssignmentMap: [String: Assignment] = [
         // Typography
-        "font-family": { cssValue, theme in theme.typography.fontFamily = CSSValueConverter.parseFontFamily(cssValue) },
+        "font-family": { cssValue, theme in
+            let parsed = CSSValueConverter.parseFontFamily(cssValue)
+            theme.typography.fontFamily = parsed
+            theme.typography.fontFamilySpec = ConciergeFontFamilySpec(regular: parsed)
+        },
         "line-height-body": { cssValue, theme in theme.typography.lineHeight = CSSValueConverter.parseLineHeight(cssValue) },
 
         // Colors - Primary
@@ -277,6 +281,27 @@ public enum CSSKeyMapper {
             assignment(cssValue, &theme)
         } else {
             Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
+        }
+    }
+
+    /// Applies an object-valued CSS key (e.g. `--font-family` with per-weight slots) to the theme.
+    public static func apply(cssKey: String, objectValue: [String: String], to theme: inout ConciergeTheme) {
+        let normalizedKey = cssKey.hasPrefix("--") ? String(cssKey.dropFirst(2)) : cssKey
+
+        switch normalizedKey {
+        case "font-family":
+            let spec = ConciergeFontFamilySpec(
+                thin: objectValue["thin"],
+                light: objectValue["light"],
+                regular: objectValue["regular"],
+                italic: objectValue["italic"],
+                bold: objectValue["bold"],
+                black: objectValue["black"]
+            )
+            theme.typography.fontFamilySpec = spec
+            theme.typography.fontFamily = spec.regular ?? ""
+        default:
+            Log.debug(label: ConciergeConstants.LOG_TAG, "Object-valued CSS key '\(normalizedKey)' has no handler, ignored.")
         }
     }
 }

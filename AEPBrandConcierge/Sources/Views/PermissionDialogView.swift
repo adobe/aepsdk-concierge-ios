@@ -32,11 +32,11 @@ struct PermissionDialogView: View {
         VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Microphone and Speech Recognition Required")
-                        .font(.title3.weight(.semibold))
+                        .font(theme.typography.font(textStyle: .title3, weight: .semibold))
                         .foregroundStyle(.primary)
 
                     Text("To use speech to text, please enable microphone access and speech recognition in Settings.")
-                        .font(.body)
+                        .font(theme.typography.font(textStyle: .body))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -45,7 +45,7 @@ struct PermissionDialogView: View {
                 HStack(spacing: 12) {
                     Button(action: onCancel) {
                         Text("Cancel")
-                            .font(.body.weight(.semibold))
+                            .font(theme.typography.font(textStyle: .body, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }
@@ -58,7 +58,7 @@ struct PermissionDialogView: View {
 
                     Button(action: onOpenSettings) {
                         Text("Open Settings")
-                            .font(.body.weight(.semibold))
+                            .font(theme.typography.font(textStyle: .body, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                     }

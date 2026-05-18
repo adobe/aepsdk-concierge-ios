@@ -81,7 +81,7 @@ struct CarouselGroupView: View {
             HStack(spacing: 16) {
                 Button(action: { currentIndex = max(0, currentIndex - 1) }) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(theme.typography.font(size: 14, weight: .semibold))
                 }
                 .buttonStyle(.plain)
                 .disabled(currentIndex <= 0)
@@ -91,7 +91,7 @@ struct CarouselGroupView: View {
 
                 Button(action: { currentIndex = min(items.count - 1, currentIndex + 1) }) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(theme.typography.font(size: 14, weight: .semibold))
                 }
                 .buttonStyle(.plain)
                 .disabled(currentIndex >= items.count - 1)
