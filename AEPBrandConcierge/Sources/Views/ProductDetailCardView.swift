@@ -43,7 +43,7 @@ struct ProductDetailCardView: View {
 
     let data: ProductCardData
     let cardWidth: CGFloat
-    var cardHeight: CGFloat?
+    var cardHeight: CGFloat? = nil
 
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
@@ -51,7 +51,8 @@ struct ProductDetailCardView: View {
             textSection
         }
         .padding(ProductDetailCardDimensions.contentPadding)
-        .frame(width: cardWidth, height: cardHeight)
+        .frame(width: cardWidth)
+        .frame(maxHeight: cardHeight)
         .clipped()
         .background(
             theme.colors.productCard.backgroundColor?.color
@@ -203,7 +204,7 @@ private extension ProductDetailCardView {
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
-        .frame(width: innerContentWidth, height: textSectionHeight, alignment: .topLeading)
+        .frame(width: innerContentWidth, alignment: .topLeading)
     }
 
     func badgeView(text: String) -> some View {
@@ -254,12 +255,6 @@ private extension ProductDetailCardView {
         }
 
         return CGSize(width: width, height: height)
-    }
-
-    var textSectionHeight: CGFloat? {
-        guard let cardHeight = cardHeight else { return nil }
-        let paddedHeight = cardHeight - 2 * ProductDetailCardDimensions.contentPadding
-        return paddedHeight - imageSlotSize.height
     }
 
     func productCardExtraLineSpacing(fontSize: CGFloat, lineHeight: CGFloat) -> CGFloat {
