@@ -289,11 +289,7 @@ struct ChatView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .font(
-            theme.typography.fontFamily.isEmpty
-                ? .system(size: theme.typography.fontSize)
-                : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
-        )
+        .font(theme.typography.font(size: theme.typography.fontSize))
     }
 
     // MARK: - Actions
