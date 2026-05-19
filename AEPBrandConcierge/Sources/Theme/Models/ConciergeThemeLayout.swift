@@ -291,12 +291,69 @@ public struct ConciergeLayout: Codable {
 
 /// Typography configuration (font families, sizes, line heights, weights)
 public struct ConciergeTypography: Codable {
-    /// Font family name (ex: "MarkerFelt-Thin")
-    /// Expects a single font name. If empty or not provided, uses system font.
+    /// Font family value from the theme JSON.
+    /// Can be a system design keyword ("default", "rounded", "serif", "monospaced"),
+    /// a custom font name (e.g. "Raleway-Regular"), or empty for system default.
     public var fontFamily: String
     public var fontSize: CGFloat
     public var lineHeight: CGFloat
     public var fontWeight: CodableFontWeight
+
+    private static let systemDesignKeywords: Set<String> = ["default", "rounded", "serif", "monospaced"]
+
+    /// Whether fontFamily is a system design keyword or empty (i.e. not a custom font name).
+    var isSystemFont: Bool {
+        fontFamily.isEmpty || Self.systemDesignKeywords.contains(fontFamily.lowercased())
+    }
+
+    /// The resolved `Font.Design` from the fontFamily value.
+    var fontDesign: Font.Design {
+        switch fontFamily.lowercased() {
+        case "rounded":    return .rounded
+        case "serif":      return .serif
+        case "monospaced": return .monospaced
+        default:           return .default
+        }
+    }
+
+    /// The resolved `UIFontDescriptor.SystemDesign` from the fontFamily value.
+    var uiFontDesign: UIFontDescriptor.SystemDesign {
+        switch fontFamily.lowercased() {
+        case "rounded":    return .rounded
+        case "serif":      return .serif
+        case "monospaced": return .monospaced
+        default:           return .default
+        }
+    }
+
+    /// Returns a SwiftUI `Font` at the given size and weight, respecting the fontFamily setting.
+    func font(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        if isSystemFont {
+            return .system(size: size, design: fontDesign).weight(weight)
+        }
+        return Font(uiFont(size: size, weight: weight.uiFontWeight))
+    }
+
+    /// Returns a SwiftUI `Font` for a semantic text style, respecting the fontFamily setting.
+    func font(textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        if isSystemFont {
+            return .system(textStyle, design: fontDesign).weight(weight)
+        }
+        let size = UIFont.preferredFont(forTextStyle: textStyle.uiTextStyle).pointSize
+        return Font(uiFont(size: size, weight: weight.uiFontWeight))
+    }
+
+    /// Returns a `UIFont` at the given size and weight, respecting the fontFamily setting.
+    func uiFont(size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+        if isSystemFont {
+            let base = UIFont.systemFont(ofSize: size, weight: weight)
+            if let descriptor = base.fontDescriptor.withDesign(uiFontDesign) {
+                return UIFont(descriptor: descriptor, size: size)
+            }
+            return base
+        }
+        return UIFont(name: fontFamily, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
+    }
 
     public init(
         fontFamily: String = "",

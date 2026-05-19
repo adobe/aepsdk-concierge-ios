@@ -30,8 +30,7 @@ struct ButtonView: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(.subheadline, design: .rounded))
-                .fontWeight(.medium)
+                .font(theme.typography.font(textStyle: .subheadline, weight: .medium))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .frame(minHeight: theme.layout.buttonHeightSmall)
