@@ -41,7 +41,7 @@ struct ChatView: View {
     // MARK: - Dependencies and Configuration
 
     private let onClose: (() -> Void)?
-    private let titleText: String?
+    private let titleText: String
     private let subtitleText: String?
 
     // MARK: - UI
@@ -52,8 +52,8 @@ struct ChatView: View {
 
     init(
         controller: ChatController,
-        title: String? = nil,
-        subtitle: String? = nil,
+        title: String = ConciergeConstants.Defaults.TITLE,
+        subtitle: String? = ConciergeConstants.Defaults.SUBTITLE,
         onClose: (() -> Void)? = nil
     ) {
         self.titleText = title
@@ -65,8 +65,8 @@ struct ChatView: View {
 
     // Internal use only for previews
     init(messages: [Message]) {
-        self.titleText = nil
-        self.subtitleText = nil
+        self.titleText = ConciergeConstants.Defaults.TITLE
+        self.subtitleText = ConciergeConstants.Defaults.SUBTITLE
         self.onClose = nil
 
         let chatController = ChatController(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)

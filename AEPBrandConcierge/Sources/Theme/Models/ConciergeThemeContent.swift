@@ -50,23 +50,27 @@ public struct ConciergeWelcomeExample: Codable {
     }
 }
 
-/// Header configuration (title, subtitle, image, image position)
+/// Header configuration (title, subtitle, image, layout type)
+///
+/// `layoutType` controls which elements are rendered in the header bar:
+/// - `"imageOnly"` — show only the header image; title and subtitle are hidden even if provided.
+/// - `"textOnly"` (default) — show only the title/subtitle; the image is hidden even if provided.
 public struct ConciergeHeaderConfig: Codable {
     public var title: String
     public var subtitle: String
     public var image: String
-    public var imagePosition: String
+    public var layoutType: String
 
     public init(
         title: String = "",
         subtitle: String = "",
         image: String = "",
-        imagePosition: String = "leading"
+        layoutType: String = "textOnly"
     ) {
         self.title = title
         self.subtitle = subtitle
         self.image = image
-        self.imagePosition = imagePosition
+        self.layoutType = layoutType
     }
 
     public init(from decoder: Decoder) throws {
@@ -74,7 +78,7 @@ public struct ConciergeHeaderConfig: Codable {
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
         image = try container.decodeIfPresent(String.self, forKey: .image) ?? ""
-        imagePosition = try container.decodeIfPresent(String.self, forKey: .imagePosition) ?? "leading"
+        layoutType = try container.decodeIfPresent(String.self, forKey: .layoutType) ?? "textOnly"
     }
 }
 

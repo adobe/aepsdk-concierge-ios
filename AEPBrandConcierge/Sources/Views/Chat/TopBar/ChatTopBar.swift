@@ -19,7 +19,7 @@ struct ChatTopBar: View {
 
     @Binding var showAgentSend: Bool
 
-    let title: String?
+    let title: String
     let subtitle: String?
 
     let onToggleMode: (Bool) -> Void
@@ -28,10 +28,9 @@ struct ChatTopBar: View {
     @State private var showSourcesToggle: Bool = true
 
     /// Resolved title, preferring theme header over the initializer value.
-    private var resolvedTitle: String? {
+    private var resolvedTitle: String {
         let themeTitle = theme.header.title
-        if !themeTitle.isEmpty { return themeTitle }
-        return title
+        return themeTitle.isEmpty ? title : themeTitle
     }
 
     /// Resolved subtitle, preferring theme header over the initializer value.
@@ -54,10 +53,7 @@ struct ChatTopBar: View {
         return nil
     }
 
-    private var hasTitle: Bool {
-        guard let title = resolvedTitle else { return false }
-        return !title.isEmpty
-    }
+    private var hasTitle: Bool { !resolvedTitle.isEmpty }
 
     private var hasSubtitle: Bool {
         guard let sub = resolvedSubtitle else { return false }
@@ -78,8 +74,8 @@ struct ChatTopBar: View {
     private var headerTextView: some View {
         if hasTitle || hasSubtitle {
             VStack(alignment: .leading, spacing: 2) {
-                if hasTitle, let title = resolvedTitle {
-                    Text(title)
+                if hasTitle {
+                    Text(resolvedTitle)
                         .font(titleFont)
                         .foregroundColor(theme.colors.primary.text.color)
                 }
@@ -111,14 +107,12 @@ struct ChatTopBar: View {
                 }
 
                 HStack(spacing: 10) {
-                    if theme.header.imagePosition != "trailing" {
+                    if theme.header.layoutType.lowercased() != "textonly" {
                         headerImageView
                     }
 
-                    headerTextView
-
-                    if theme.header.imagePosition == "trailing" {
-                        headerImageView
+                    if theme.header.layoutType.lowercased() != "imageonly" {
+                        headerTextView
                     }
                 }
 
