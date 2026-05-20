@@ -76,7 +76,7 @@ struct ChatTopBar: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(maxHeight: 32)
+                .frame(maxHeight: 48)
         }
     }
 
@@ -133,7 +133,7 @@ struct ChatTopBar: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
 
             Divider()
         }
