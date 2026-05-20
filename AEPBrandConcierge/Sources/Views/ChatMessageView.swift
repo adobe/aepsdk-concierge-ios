@@ -38,24 +38,6 @@ struct ChatMessageView: View {
     var onSuggestionTap: ((String) -> Void)?
     var onWelcomePromptSuggestionTap: ((String) -> Void)?
 
-    /// Extra line spacing derived from the theme's body line-height multiplier.
-    /// Scoped to `.basic` message bubbles so it doesn't bleed into other components like cards, badges, etc.
-    private var messageLineSpacing: CGFloat {
-        let multiplier = theme.typography.lineHeight
-        guard multiplier.isFinite, multiplier > 0 else { return 0 }
-
-        let fontSize = theme.typography.fontSize
-        let baseFont: UIFont = {
-            if theme.typography.fontFamily.isEmpty {
-                return UIFont.systemFont(ofSize: fontSize)
-            }
-            return UIFont(name: theme.typography.fontFamily, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-        }()
-
-        let targetLineHeight = fontSize * multiplier
-        return max(0, targetLineHeight - baseFont.lineHeight)
-    }
-
     init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil, onWelcomePromptSuggestionTap: ((String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
@@ -171,141 +153,16 @@ struct ChatMessageView: View {
                 .padding(.horizontal)
 
         case .basic(let isUserMessage):
-            // Thinking state: agent message with no content yet — show compact placeholder bubble.
-            let isThinking = !isUserMessage && (messageBody?.isEmpty ?? true)
-            let rawSources = sources ?? []
-            // Attempt to decorate the message so citation markers can be injected into the markdown rendering logic.
-            // If decoration fails (ex: no sources or empty body), fall back to rendering the original message and
-            // show the sources untouched.
-            let decoration: CitationDecoration? = {
-                guard !isUserMessage, let body = messageBody, !body.isEmpty else { return nil }
-                return CitationRenderer.decorate(markdown: body, sources: rawSources)
-            }()
-            let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")
-            let markers = decoration?.markers ?? []
-            let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
-
-            let alignment: HorizontalAlignment = theme.behavior.chat.messageAlignment == .center ? .center : .leading
-            let conciergeBackgroundColor = theme.components.chatMessage.conciergeBackground.color
-
-            let agentIconPath = theme.assets.icons.company
-            let showAgentIcon = !isUserMessage && theme.hasAgentIcon
-
-            VStack(alignment: alignment, spacing: 0) {
-                // Top-align so the agent icon stays pinned to the first line of text,
-                // rather than drifting to the bottom when multi-line bubbles expand.
-                // Use center alignment during the thinking state so the icon is vertically
-                // centered next to the compact placeholder bubble instead of hanging below it.
-                HStack(alignment: isThinking ? .center : .top) {
-                    if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
-
-                    if showAgentIcon {
-                        LocalAssetImageView(iconPath: agentIconPath, size: theme.layout.agentIconSize)
-                            .padding(.trailing, theme.layout.agentIconSpacing)
-                    }
-
-                    if isThinking {
-                        // Compact self-contained bubble — no outer padding, background, or width fill.
-                        ConciergeResponsePlaceholderView()
-                    } else {
-                        // Wrap bubble + sources in a shared VStack so both views are offered
-                        // identical width, keeping their backgrounds flush at the right edge.
-                        VStack(alignment: .leading, spacing: 0) {
-                            Group {
-                                // User text
-                                if isUserMessage {
-                                    Text(messageBody ?? "")
-                                // Agent — Markdown renderer (messageBody is non-empty when not thinking).
-                                } else {
-                                    MarkdownBlockView(
-                                        markdown: annotatedBody,
-                                        textColor: UIColor(theme.colors.message.conciergeText.color),
-                                        baseFont: resolvedAgentFont,
-                                        citationMarkers: markers,
-                                        citationStyle: .init(
-                                            backgroundColor: UIColor(theme.colors.citation.background.color),
-                                            textColor: UIColor(theme.colors.citation.text.color),
-                                            font: UIFont.systemFont(
-                                                ofSize: theme.layout.citationsDesktopButtonFontSize,
-                                                weight: theme.layout.citationsTextFontWeight.toUIFontWeight()
-                                            )
-                                        ),
-                                        linkIconResolver: resolvedLinkIconResolver,
-                                        linkIconColor: UIColor(theme.behavior.citations?.linkIconStyle?.color?.color ?? theme.colors.message.conciergeLink.color),
-                                        linkIconSize: theme.behavior.citations?.linkIconStyle?.size ?? 10,
-                                        linkIconSpacing: theme.behavior.citations?.linkIconStyle?.spacing,
-                                        linkIconBaselineAdjust: theme.behavior.citations?.linkIconStyle?.baselineAdjust ?? 0,
-                                        onOpenLink: { url in
-                                            handleLinkTap(url)
-                                        }
-                                    )
-                                }
-                            }
-                            .lineSpacing(messageLineSpacing)
-                            // In icon layout mode the icon itself provides the visual leading/trailing
-                            // offset, so suppress horizontal message padding to avoid double-indenting.
-                            .padding(showAgentIcon
-                                ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
-                                : theme.layout.messagePadding.edgeInsets)
-                            // Allow themes to cap bubble width (nil means unconstrained).
-                            .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
-                            .textSelection(.enabled)
-                            .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
-                            .background(
-                                Group {
-                                    if isUserMessage {
-                                        if theme.behavior.chat.userMessageBubbleStyle == .balloon {
-                                            RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight, .bottomLeft])
-                                                .fill(theme.colors.message.userBackground.color)
-                                        } else {
-                                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                                .fill(theme.colors.message.userBackground.color)
-                                        }
-                                    } else {
-                                        if !displayedSources.isEmpty {
-                                            RoundedCornerShape(radius: theme.layout.messageBorderRadius, corners: [.topLeft, .topRight])
-                                                .fill(conciergeBackgroundColor)
-                                        } else {
-                                            RoundedRectangle(cornerRadius: theme.layout.messageBorderRadius, style: .continuous)
-                                                .fill(conciergeBackgroundColor)
-                                        }
-                                    }
-                                }
-                            )
-                            .compositingGroup()
-                            .contextMenu {
-                                Button(action: {
-                                    let source = messageBody ?? ""
-                                    // Copy raw markdown (preserve markers)
-                                    UIPasteboard.general.string = source
-                                }) {
-                                    Label("Copy", systemImage: "doc.on.doc")
-                                }
-                            }
-
-                            if !isUserMessage, !displayedSources.isEmpty {
-                                SourcesListView(
-                                    sources: displayedSources,
-                                    feedbackEligible: effectiveFeedbackEligible,
-                                    feedbackSentiment: feedbackSentiment,
-                                    messageId: messageId
-                                )
-                            }
-
-                            if !isUserMessage, effectiveFeedbackEligible,
-                               resolvedFeedbackPlacement == .standalone {
-                                MessageFeedbackView(
-                                    feedbackSentiment: feedbackSentiment,
-                                    messageId: messageId
-                                )
-                                .padding(.top, 8)
-                            }
-                        }
-                    }
-
-                    if !isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
-                }
-            }
+            BasicMessageView(
+                isUserMessage: isUserMessage,
+                messageBody: messageBody,
+                sources: sources,
+                linkHints: linkHints,
+                feedbackSentiment: feedbackSentiment,
+                feedbackEligible: effectiveFeedbackEligible,
+                messageId: messageId,
+                onLinkTap: { handleLinkTap($0) }
+            )
 
         case .thumbnail(let imageSource, let title, let text):
             HStack {
@@ -574,50 +431,6 @@ private extension ChatMessageView {
 // MARK: - Helpers
 
 private extension ChatMessageView {
-    /// Builds a link icon resolver closure from the message's `linkHints` and the theme's
-    /// `citations` icon config. Returns `nil` when `showLinkIcon` is disabled.
-    ///
-    /// The closure maps each link URL to `(assetName, sfSymbol)`:
-    /// - A hint with `kind == "phone"` uses `citations.phoneIcon` / `"phone"`.
-    /// - A hint with `kind == "store"` uses `citations.storeIcon` / `"storefront"`.
-    /// - All other links (including those without a hint) use `citations.defaultLinkIcon` / `"arrow.up.forward.app"`.
-    var resolvedLinkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))? {
-        guard theme.behavior.citations?.showLinkIcon == true else { return nil }
-        let citations = theme.behavior.citations
-        let hints = linkHints ?? []
-        return { url in
-            let hint = hints.first { $0.href == url.absoluteString }
-            switch hint?.kind {
-            case "phone":
-                return (citations?.phoneIcon ?? "", "phone", nil)
-            case "store":
-                return (citations?.storeIcon ?? "", "storefront", nil)
-            default:
-                return (citations?.defaultLinkIcon ?? "", "arrow.up.forward.app", nil)
-            }
-        }
-    }
-
-    var resolvedAgentFont: UIFont {
-        let fontSize = theme.typography.fontSize
-        if theme.typography.fontFamily.isEmpty {
-            return UIFont.systemFont(ofSize: fontSize)
-        }
-        return UIFont(name: theme.typography.fontFamily, size: fontSize)
-            ?? UIFont.systemFont(ofSize: fontSize)
-    }
-
-    var resolvedMessageMaxWidth: CGFloat? {
-        if let behaviorWidth = theme.behavior.chat.messageWidth, behaviorWidth > 1 {
-            return behaviorWidth
-        }
-        return theme.layout.messageMaxWidth
-    }
-
-    var resolvedFeedbackPlacement: ThumbsPlacement {
-        theme.behavior.feedback?.thumbsPlacement ?? .inline
-    }
-
     /// `true` when the server marks this message eligible, or when the theme sets `alwaysDisplay: true`
     /// and the SSE stream has fully completed.
     var effectiveFeedbackEligible: Bool {
