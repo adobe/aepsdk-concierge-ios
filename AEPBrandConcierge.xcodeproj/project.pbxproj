@@ -98,6 +98,7 @@
 		24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A32F4506C500CEE013 /* ConciergeLinkHandlerTests.swift */; };
 		24CAB3A62F45085400CEE013 /* View+WebViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A52F45083A00CEE013 /* View+WebViewPresenter.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
+		3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
 		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
 		4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */; };
@@ -316,6 +317,7 @@
 		24CC5AB62F11CF2800484C0B /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		2A8803C559E307362EE94BF3 /* Pods-AEPBrandConciergeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConciergeTests.release.xcconfig"; path = "Target Support Files/Pods-AEPBrandConciergeTests/Pods-AEPBrandConciergeTests.release.xcconfig"; sourceTree = "<group>"; };
 		49180BEE1E2A4439AC75F403 /* ConciergeCardTapHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeCardTapHandler.swift; sourceTree = "<group>"; };
+		AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicMessageView.swift; sourceTree = "<group>"; };
 		4C1738102E67C590003E88AF /* SourcesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListView.swift; sourceTree = "<group>"; };
 		4C1738142E67D59D003E88AF /* SourceRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceRowView.swift; sourceTree = "<group>"; };
 		4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputReducerTests.swift; sourceTree = "<group>"; };
@@ -751,6 +753,7 @@
 		4C3A65C62E55272300EEEF3B /* Messages */ = {
 			isa = PBXGroup;
 			children = (
+				AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */,
 				4C5FE3252EBD9D2F004F9286 /* CitationAttachmentBuilder.swift */,
 				4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */,
 				4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */,
@@ -1172,6 +1175,7 @@
 				4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */,
 				4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */,
 				243868C12EB17592004BF9C0 /* Event+Concierge.swift in Sources */,
+				3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */,
 				4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */,
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,

@@ -45,9 +45,9 @@ struct ChatTopBar: View {
 
     private var titleFont: Font {
         if let size = theme.layout.headerTitleFontSize {
-            return .system(size: size, design: .rounded).weight(.semibold)
+            return .system(size: size).weight(.semibold)
         }
-        return .system(.title3, design: .rounded).weight(.semibold)
+        return .system(.title3).weight(.semibold)
     }
 
     var body: some View {
