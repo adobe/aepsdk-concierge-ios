@@ -52,8 +52,7 @@ struct ProductDetailCardView: View {
         }
         .padding(ProductDetailCardDimensions.contentPadding)
         .frame(width: cardWidth)
-        .frame(maxHeight: cardHeight)
-        .clipped()
+        .frame(minHeight: cardHeight)
         .background(
             theme.colors.productCard.backgroundColor?.color
                 ?? theme.colors.primary.container?.color
@@ -181,16 +180,17 @@ private extension ProductDetailCardView {
                         lineHeight: ProductDetailCardDimensions.priceLineHeight
                     ))
 
-                Text("\(theme.layout.productCardWasPriceTextPrefix)\(data.wasPrice ?? "")")
-                    .font(.system(size: theme.layout.productCardWasPriceFontSize))
-                    .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
-                    .foregroundColor(theme.colors.productCard.wasPriceColor.color)
-                    .kerning(ProductDetailCardDimensions.priceLetterSpacing)
-                    .lineSpacing(productCardExtraLineSpacing(
-                        fontSize: theme.layout.productCardWasPriceFontSize,
-                        lineHeight: ProductDetailCardDimensions.wasPriceLineHeight
-                    ))
-                    .opacity(data.wasPrice.map { !$0.isEmpty } ?? false ? 1 : 0)
+                if let wasPrice = data.wasPrice, !wasPrice.isEmpty {
+                    Text("\(theme.layout.productCardWasPriceTextPrefix)\(wasPrice)")
+                        .font(.system(size: theme.layout.productCardWasPriceFontSize))
+                        .fontWeight(theme.layout.productCardWasPriceFontWeight.toSwiftUIFontWeight())
+                        .foregroundColor(theme.colors.productCard.wasPriceColor.color)
+                        .kerning(ProductDetailCardDimensions.priceLetterSpacing)
+                        .lineSpacing(productCardExtraLineSpacing(
+                            fontSize: theme.layout.productCardWasPriceFontSize,
+                            lineHeight: ProductDetailCardDimensions.wasPriceLineHeight
+                        ))
+                }
             }
         }
     }
@@ -345,6 +345,20 @@ private enum PreviewData {
     private static let videoImageURL = URL(string: "https://main--milo--adobecom.aem.page/drafts/methomas/assets/media_16c2ca834ea8f2977296082ae6f55f305a96674ac.png")
     // swiftlint:enable line_length
 
+    static let allFields = ProductCardData(
+        imageSource: .remote(templatesImageURL),
+        title: "The North Face Men's Evolution Short-Sleeve Tee",
+        subtitle: "Lightweight everyday tee with UPF 30 sun protection",
+        price: "$18.97–$35.00",
+        wasPrice: "$45.00",
+        badge: "New Color",
+        destinationURL: URL(string: "https://example.com/all-fields"),
+        primaryButton: nil,
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
     static let exploreTemplates = ProductCardData(
         imageSource: .remote(templatesImageURL),
         title: "Explore Templates",
@@ -487,6 +501,16 @@ private enum PreviewData {
             MeasuredCardView(data: PreviewData.photoEnhancement, cardWidth: 222)
             MeasuredCardView(data: PreviewData.pdfEditor, cardWidth: 222)
             MeasuredCardView(data: PreviewData.videoClipper, cardWidth: 222)
+        }
+        .padding()
+    }
+    .conciergeTheme(ConciergeTheme())
+}
+
+#Preview("All Fields") {
+    ScrollView {
+        VStack(spacing: 16) {
+            ProductDetailCardView(data: PreviewData.allFields, cardWidth: 222)
         }
         .padding()
     }
