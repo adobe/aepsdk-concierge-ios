@@ -50,22 +50,27 @@ public struct ConciergeWelcomeExample: Codable {
     }
 }
 
-/// Header configuration (title, subtitle, image, layout type)
+/// Layout mode for the header bar.
 ///
-/// `layoutType` controls which elements are rendered in the header bar:
-/// - `"imageOnly"` — show only the header image; title and subtitle are hidden even if provided.
-/// - `"textOnly"` (default) — show only the title/subtitle; the image is hidden even if provided.
+/// - `textOnly` (default) — show only the title/subtitle; the image is hidden even if provided.
+/// - `imageOnly` — show only the header image; title and subtitle are hidden even if provided.
+public enum HeaderLayoutType: String, Codable {
+    case textOnly
+    case imageOnly
+}
+
+/// Header configuration (title, subtitle, image, layout type)
 public struct ConciergeHeaderConfig: Codable {
     public var title: String
     public var subtitle: String
     public var image: String
-    public var layoutType: String
+    public var layoutType: HeaderLayoutType
 
     public init(
         title: String = "",
         subtitle: String = "",
         image: String = "",
-        layoutType: String = "textOnly"
+        layoutType: HeaderLayoutType = .textOnly
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -78,7 +83,13 @@ public struct ConciergeHeaderConfig: Codable {
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
         image = try container.decodeIfPresent(String.self, forKey: .image) ?? ""
-        layoutType = try container.decodeIfPresent(String.self, forKey: .layoutType) ?? "textOnly"
+        // Decode as string first for case-insensitive matching, then fall back to .textOnly
+        if let raw = try container.decodeIfPresent(String.self, forKey: .layoutType),
+           let type = HeaderLayoutType(rawValue: raw) {
+            layoutType = type
+        } else {
+            layoutType = .textOnly
+        }
     }
 }
 

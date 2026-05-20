@@ -13,6 +13,16 @@
 import SwiftUI
 import UIKit
 
+/// Supported image file extensions for header image asset lookup.
+private enum SupportedImageExtension: String, CaseIterable {
+    case png
+    case jpg
+    case jpeg
+    case webp
+    case heic
+    case gif
+}
+
 /// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
 struct ChatTopBar: View {
     @Environment(\.conciergeTheme) private var theme
@@ -46,8 +56,8 @@ struct ChatTopBar: View {
         let path = theme.header.image
         guard !path.isEmpty else { return nil }
         if let image = UIImage(named: path) { return image }
-        for ext in ["png", "jpg", "jpeg", "webp", "heic", "gif"] {
-            if let filePath = Bundle.main.path(forResource: path, ofType: ext),
+        for ext in SupportedImageExtension.allCases {
+            if let filePath = Bundle.main.path(forResource: path, ofType: ext.rawValue),
                let image = UIImage(contentsOfFile: filePath) { return image }
         }
         return nil
@@ -107,11 +117,11 @@ struct ChatTopBar: View {
                 }
 
                 HStack(spacing: 10) {
-                    if theme.header.layoutType.lowercased() != "textonly" {
+                    if theme.header.layoutType != .textOnly {
                         headerImageView
                     }
 
-                    if theme.header.layoutType.lowercased() != "imageonly" {
+                    if theme.header.layoutType != .imageOnly {
                         headerTextView
                     }
                 }
