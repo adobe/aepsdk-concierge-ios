@@ -80,12 +80,12 @@ struct ChatMessageView: View {
 
             VStack(alignment: welcomeAlign == .center ? .center : .leading, spacing: titleBottomSpacing) {
                 Text(title)
-                    .font(.system(size: titleFontSize, design: .rounded).weight(.semibold))
+                    .font(.system(size: titleFontSize).weight(.semibold))
                     .foregroundColor(theme.colors.primary.text.color)
                     .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
                 Text(body)
-                    .font(.system(.body, design: .rounded))
+                    .font(.system(.body))
                     .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                     .multilineTextAlignment(welcomeAlign)
                     .textSelection(.enabled)
@@ -324,7 +324,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
-                                .font(.system(.headline, design: .rounded))
+                                .font(.system(.headline))
                                 .bold()
                                 .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
@@ -353,7 +353,7 @@ struct ChatMessageView: View {
                                 .frame(width: 32, height: 32)
 
                             Text("\(number)")
-                                .font(.system(.body, design: .rounded))
+                                .font(.system(.body))
                                 .bold()
                                 .foregroundColor(theme.colors.primary.text.color)
                         }
@@ -362,7 +362,7 @@ struct ChatMessageView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let title = title {
                             Text(title)
-                                .font(.system(.headline, design: .rounded))
+                                .font(.system(.headline))
                                 .bold()
                                 .foregroundColor(theme.colors.primary.text.color)
                                 .textSelection(.enabled)
@@ -473,7 +473,7 @@ private extension ChatMessageView {
                 }
 
                 Text(data.title)
-                    .font(.system(.subheadline, design: .rounded))
+                    .font(.system(.subheadline))
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.leading)
@@ -513,7 +513,7 @@ private extension ChatMessageView {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(data.title)
-                    .font(.system(.headline, design: .rounded))
+                    .font(.system(.headline))
                     .bold()
                     .foregroundColor(theme.colors.primary.text.color)
                     .textSelection(.enabled)
