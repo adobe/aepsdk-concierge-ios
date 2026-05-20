@@ -72,7 +72,10 @@ public struct ConciergeLayout: Codable {
     public var productCardWasPriceFontWeight: CodableFontWeight
     public var productCardWidth: CGFloat
     public var productCardHeight: CGFloat
-    public var productCardTextSpacing: CGFloat
+    public var productCardTextSpacing: CGFloat?
+    public var productCardTitleSubtitleSpacing: CGFloat?
+    public var productCardSectionSpacing: CGFloat?
+    public var productCardPriceSpacing: CGFloat?
     public var productCardTextTopPadding: CGFloat
     public var productCardTextBottomPadding: CGFloat
     public var productCardTextHorizontalPadding: CGFloat
@@ -174,8 +177,11 @@ public struct ConciergeLayout: Codable {
         productCardWasPriceFontWeight: CodableFontWeight = .regular,
         productCardWidth: CGFloat = 250,
         productCardHeight: CGFloat = 300,
-        productCardTextSpacing: CGFloat = 8,
-        productCardTextTopPadding: CGFloat = 20,
+        productCardTextSpacing: CGFloat? = nil,
+        productCardTitleSubtitleSpacing: CGFloat? = nil,
+        productCardSectionSpacing: CGFloat? = nil,
+        productCardPriceSpacing: CGFloat? = nil,
+        productCardTextTopPadding: CGFloat = 16,
         productCardTextBottomPadding: CGFloat = 12,
         productCardTextHorizontalPadding: CGFloat = 12,
         productCardCarouselSpacing: CGFloat = 12,
@@ -256,6 +262,9 @@ public struct ConciergeLayout: Codable {
         self.productCardWidth = productCardWidth
         self.productCardHeight = productCardHeight
         self.productCardTextSpacing = productCardTextSpacing
+        self.productCardTitleSubtitleSpacing = productCardTitleSubtitleSpacing
+        self.productCardSectionSpacing = productCardSectionSpacing
+        self.productCardPriceSpacing = productCardPriceSpacing
         self.productCardTextTopPadding = productCardTextTopPadding
         self.productCardTextBottomPadding = productCardTextBottomPadding
         self.productCardTextHorizontalPadding = productCardTextHorizontalPadding

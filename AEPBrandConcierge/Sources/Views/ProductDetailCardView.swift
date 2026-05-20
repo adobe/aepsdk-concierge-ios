@@ -137,7 +137,7 @@ private extension ProductDetailCardView {
 
     @ViewBuilder
     var productCardTitleSubtitleBlock: some View {
-        VStack(alignment: .leading, spacing: theme.layout.productCardTextSpacing) {
+        VStack(alignment: .leading, spacing: theme.layout.productCardTitleSubtitleSpacing ?? theme.layout.productCardTextSpacing) {
             Text(data.title)
                 .font(.system(size: theme.layout.productCardTitleFontSize))
                 .fontWeight(theme.layout.productCardTitleFontWeight.toSwiftUIFontWeight())
@@ -170,7 +170,7 @@ private extension ProductDetailCardView {
     @ViewBuilder
     var productCardPriceBlock: some View {
         if let price = data.price, !price.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: theme.layout.productCardPriceSpacing ?? theme.layout.productCardTextSpacing) {
                 Text(price)
                     .font(.system(size: theme.layout.productCardPriceFontSize))
                     .fontWeight(theme.layout.productCardPriceFontWeight.toSwiftUIFontWeight())
@@ -196,9 +196,8 @@ private extension ProductDetailCardView {
     }
 
     var textSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing) {
             productCardTitleSubtitleBlock
-            Spacer(minLength: 0)
             productCardPriceBlock
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
