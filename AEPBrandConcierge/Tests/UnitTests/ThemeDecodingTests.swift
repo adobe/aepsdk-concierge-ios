@@ -515,6 +515,10 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardTextHorizontalPadding, 16)
         XCTAssertEqual(theme.layout.productCardCarouselSpacing, 16)
         XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
+        // Optional spacing overrides — not set in test JSON, must be nil (fallback to productCardTextSpacing)
+        XCTAssertNil(theme.layout.productCardTitleSubtitleSpacing)
+        XCTAssertNil(theme.layout.productCardSectionSpacing)
+        XCTAssertNil(theme.layout.productCardPriceSpacing)
     }
     
     func test_productCardColors_convertsCorrectly() {

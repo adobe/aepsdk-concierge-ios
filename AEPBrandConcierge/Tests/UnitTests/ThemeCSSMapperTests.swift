@@ -664,6 +664,39 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
     }
 
+    func test_productCardTitleSubtitleSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-title-subtitle-spacing", cssValue: "6px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardTitleSubtitleSpacing, 6)
+    }
+
+    func test_productCardSectionSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-section-spacing", cssValue: "12px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardSectionSpacing, 12)
+    }
+
+    func test_productCardPriceSpacing_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-price-spacing", cssValue: "4px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardPriceSpacing, 4)
+    }
+
     // MARK: - CTA Button Color Mapping Tests
 
     func test_ctaButtonBackgroundColor_mapsToCtaButtonColors() {
