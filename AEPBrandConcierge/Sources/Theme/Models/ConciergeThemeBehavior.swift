@@ -39,6 +39,10 @@ public struct ConciergeInputBehavior: Codable {
     public var silenceThreshold: Float
     /// Seconds of continuous silence after speech before auto-stopping capture.
     public var silenceDuration: TimeInterval
+    /// Whether to show the rotating glow border animation on the input bar during voice recording.
+    public var enableRecordingAnimation: Bool
+    /// Asset name for the stop recording button icon. Falls back to SF Symbol `stop.circle.fill` when empty or not found.
+    public var stopRecordingIcon: String
 
     private enum CodingKeys: String, CodingKey {
         case enableVoiceInput
@@ -47,6 +51,8 @@ public struct ConciergeInputBehavior: Codable {
         case sendButtonStyle
         case silenceThreshold
         case silenceDuration
+        case enableRecordingAnimation
+        case stopRecordingIcon
     }
 
     public init(
@@ -55,7 +61,9 @@ public struct ConciergeInputBehavior: Codable {
         showAiChatIcon: ConciergeIconConfig? = nil,
         sendButtonStyle: String = "default",
         silenceThreshold: Float = 0.02,
-        silenceDuration: TimeInterval = 2.0
+        silenceDuration: TimeInterval = 2.0,
+        enableRecordingAnimation: Bool = true,
+        stopRecordingIcon: String = ""
     ) {
         self.enableVoiceInput = enableVoiceInput
         self.disableMultiline = disableMultiline
@@ -63,6 +71,8 @@ public struct ConciergeInputBehavior: Codable {
         self.sendButtonStyle = sendButtonStyle
         self.silenceThreshold = silenceThreshold
         self.silenceDuration = silenceDuration
+        self.enableRecordingAnimation = enableRecordingAnimation
+        self.stopRecordingIcon = stopRecordingIcon
     }
 
     public init(from decoder: Decoder) throws {
@@ -77,6 +87,8 @@ public struct ConciergeInputBehavior: Codable {
         } else {
             silenceDuration = 2.0
         }
+        enableRecordingAnimation = try container.decodeIfPresent(Bool.self, forKey: .enableRecordingAnimation) ?? true
+        stopRecordingIcon = try container.decodeIfPresent(String.self, forKey: .stopRecordingIcon) ?? ""
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -87,6 +99,8 @@ public struct ConciergeInputBehavior: Codable {
         try container.encode(sendButtonStyle, forKey: .sendButtonStyle)
         try container.encode(silenceThreshold, forKey: .silenceThreshold)
         try container.encode(silenceDuration, forKey: .silenceDuration)
+        try container.encode(enableRecordingAnimation, forKey: .enableRecordingAnimation)
+        try container.encode(stopRecordingIcon, forKey: .stopRecordingIcon)
     }
 }
 
