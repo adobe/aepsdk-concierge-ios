@@ -55,7 +55,7 @@ struct ComposerEditingView: View {
             .frame(height: max(40, measuredHeight))
             .animation(.easeInOut(duration: 0.15), value: measuredHeight)
 
-            if hasText {
+            if hasText, inputState != .recording {
                 Button(action: {
                     inputText = ""
                 }) {
@@ -70,17 +70,19 @@ struct ComposerEditingView: View {
             }
 
             if case .recording = inputState {
-                // Recording uses the send/mic slot: waveform is tappable to finish (`onStopRecording`).
-                //
-                // Future: reintroduce a dedicated stop control (e.g. icon button) beside or instead of
-                // tap-to-stop on the waveform, and gate it with theme JSON such as
-                // `behavior.input.showVoiceStopButton` (Bool, default false) on `ConciergeInputBehavior`
+                // Waveform visual indicator
+                AudioWaveformView(
+                    audioLevel: audioLevel,
+                    barColor: theme.colors.primary.primary.color
+                )
+                .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+
+                // Dedicated stop button (icon configurable via theme)
                 Button(action: onStopRecording) {
-                    AudioWaveformView(
-                        audioLevel: audioLevel,
-                        barColor: theme.colors.primary.primary.color
-                    )
-                    .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                    BrandIcon(assetName: theme.behavior.input.stopRecordingIcon, systemName: "stop.circle.fill")
+                        .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
+                        .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
+                        .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
