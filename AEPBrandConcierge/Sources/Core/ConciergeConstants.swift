@@ -211,25 +211,25 @@ public enum ConciergeConstants {
         }
 
         public enum XDMType {
-            public static let SESSION_INITIALIZED = "session:initialized"
-            public static let CHAT_OPENED = "chat:opened"
-            public static let CHAT_CLOSED = "chat:closed"
-            public static let QUERY_SUBMITTED = "query:submitted"
-            public static let PROMPT_SUGGESTION_CLICKED = "promptSuggestion:clicked"
-            public static let WELCOME_PROMPT_SUGGESTION_CLICKED = "welcomePromptSuggestion:clicked"
-            public static let CARD_CLICKED = "card:clicked"
-            public static let MIC_BUTTON_CLICKED = "micButton:clicked"
-            public static let RESPONSE_STARTED = "response:started"
-            public static let RESPONSE_COMPLETED = "response:completed"
-            public static let CARDS_RENDERED = "cards:rendered"
-            public static let FEEDBACK_SUBMITTED = "feedback:submitted"
-            public static let DISCLAIMER_LINK_CLICKED = "disclaimerLink:clicked"
-            public static let ERROR_OCCURRED = "error:occurred"
+            public static let SESSION_INITIALIZED = "concierge:session:initialized"
+            public static let CHAT_OPENED = "concierge:chat:opened"
+            public static let CHAT_CLOSED = "concierge:chat:closed"
+            public static let QUERY_SUBMITTED = "concierge:query:submitted"
+            public static let PROMPT_SUGGESTION_CLICKED = "concierge:promptSuggestion:clicked"
+            public static let WELCOME_PROMPT_SUGGESTION_CLICKED = "concierge:welcomePromptSuggestion:clicked"
+            public static let CARD_CLICKED = "concierge:card:clicked"
+            public static let MIC_BUTTON_CLICKED = "concierge:micButton:clicked"
+            public static let RESPONSE_STARTED = "concierge:response:started"
+            public static let RESPONSE_COMPLETED = "concierge:response:completed"
+            public static let CARDS_RENDERED = "concierge:cards:rendered"
+            public static let FEEDBACK_SUBMITTED = "concierge:feedback:submitted"
+            public static let DISCLAIMER_LINK_CLICKED = "concierge:disclaimerLink:clicked"
+            public static let ERROR_OCCURRED = "concierge:error:occurred"
         }
 
         public enum EventData {
             public enum Key {
-                public static let EVENT_TYPE = "concierge.eventType"
+                public static let EVENT_TYPE = "conciergeEventType"
                 public static let EPOCH_TIME = "epochTime"
                 public static let DURATION_MILLIS = "durationMillis"
                 public static let QUERY = "query"
