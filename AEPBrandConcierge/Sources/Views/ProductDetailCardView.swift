@@ -29,11 +29,11 @@ private enum ProductDetailCardDimensions {
 
 /// Product card with image, badge, title, subtitle, and price.
 ///
-/// Image slot defaults to 190×190 (`ProductDetailCardDimensions`). When `ProductCardData` includes
-/// both `imageWidth` and `imageHeight` (from `thumbnailWidth` / `thumbnailHeight`), the slot uses
-/// that aspect ratio: width is clamped to the inner content width, height scales proportionally, and
-/// height is capped when a fixed `cardHeight` would not leave room for text. Card shadow uses
-/// `multimodalCardBoxShadow`. The image uses center cropping (`scaledToFill` + clip).
+/// When `cardHeight` is provided the card is exactly that height: the image section fills all
+/// vertical space above the text section so cards in a carousel row are always uniform in height.
+/// When `cardHeight` is nil the card sizes to its content (natural image height + text).
+/// Image width is clamped to the inner content width; when API thumbnail dimensions are present the
+/// height uses the aspect ratio as a natural/minimum size. Card shadow uses `multimodalCardBoxShadow`.
 struct ProductDetailCardView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.openURL) private var openURL
@@ -51,8 +51,8 @@ struct ProductDetailCardView: View {
             textSection
         }
         .padding(ProductDetailCardDimensions.contentPadding)
-        .frame(width: cardWidth)
-        .frame(minHeight: cardHeight)
+        .frame(width: cardWidth, height: cardHeight)
+        .clipped()
         .background(
             theme.colors.productCard.backgroundColor?.color
                 ?? theme.colors.primary.container?.color
@@ -78,49 +78,49 @@ struct ProductDetailCardView: View {
 
 private extension ProductDetailCardView {
     var imageSection: some View {
-        ZStack(alignment: .bottomLeading) {
+        let slotSize = imageSlotSize
+        let naturalHeight = slotSize.height
+        let maxH: CGFloat = cardHeight == nil ? naturalHeight : .infinity
+
+        return ZStack(alignment: .bottomLeading) {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 ZStack {
                     switch data.imageSource {
                     case .local(let image):
-                            image
-                            .productCardImageCenterCropped(
-                                width: imageSlotSize.width,
-                                height: imageSlotSize.height
-                            )
+                        image
+                            .productCardImageFill(width: slotSize.width)
                             .overlay(debugImageBorder)
                     case .remote(let url):
                         if let url = url {
                             AsyncImage(url: url) { phase in
                                 switch phase {
                                 case .empty:
-                                    ProgressView()
-                                        .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                                 case .success(let loaded):
                                     loaded
-                                        .productCardImageCenterCropped(
-                                            width: imageSlotSize.width,
-                                            height: imageSlotSize.height
-                                        )
+                                        .productCardImageFill(width: slotSize.width)
                                         .overlay(debugImageBorder)
                                 case .failure:
                                     Image(systemName: "photo")
-                                        .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 @unknown default:
                                     EmptyView()
                                 }
                             }
                         } else {
                             Image(systemName: "photo")
-                                .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
                 }
-                .frame(width: imageSlotSize.width, height: imageSlotSize.height)
+                .frame(width: slotSize.width)
+                .frame(minHeight: naturalHeight, maxHeight: maxH)
+                .clipped()
                 Spacer(minLength: 0)
             }
-            .frame(width: innerContentWidth, height: imageSlotSize.height)
+            .frame(width: innerContentWidth)
+            .frame(minHeight: naturalHeight, maxHeight: maxH)
 
             if let badge = data.badge, !badge.isEmpty {
                 badgeView(text: badge)
@@ -132,6 +132,7 @@ private extension ProductDetailCardView {
                     )
             }
         }
+        .frame(minHeight: naturalHeight, maxHeight: maxH)
     }
 
     @ViewBuilder
@@ -228,32 +229,16 @@ private extension ProductDetailCardView {
 
     /// Resolved image slot size: uses `ProductCardData.imageWidth` / `imageHeight` when both are
     /// positive (API thumbnail dimensions); otherwise the default 190×190 (width clamped to inner content).
+    /// This determines the natural/minimum image slot size; when `cardHeight` is set the image section
+    /// grows to fill remaining VStack space via flexible framing in `imageSection`.
     var imageSlotSize: CGSize {
         let defaultWidth = min(ProductDetailCardDimensions.imageWidth, innerContentWidth)
-        let defaultHeight = ProductDetailCardDimensions.imageHeight
         guard let apiWidth = data.imageWidth, let apiHeight = data.imageHeight,
               apiWidth > 0, apiHeight > 0 else {
-            return CGSize(width: defaultWidth, height: defaultHeight)
+            return CGSize(width: defaultWidth, height: ProductDetailCardDimensions.imageHeight)
         }
-
-        var width = min(apiWidth, innerContentWidth)
-        var height = apiHeight * (width / apiWidth)
-
-        if let fixedCardHeight = cardHeight {
-            let paddedHeight = fixedCardHeight - 2 * ProductDetailCardDimensions.contentPadding
-            let minimumTextSectionHeight: CGFloat = 72
-            let maximumImageHeight = paddedHeight - minimumTextSectionHeight
-            if maximumImageHeight > 0, height > maximumImageHeight {
-                height = maximumImageHeight
-                width = apiWidth * (height / apiHeight)
-                if width > innerContentWidth {
-                    width = innerContentWidth
-                    height = apiHeight * (width / apiWidth)
-                }
-            }
-        }
-
-        return CGSize(width: width, height: height)
+        let width = min(apiWidth, innerContentWidth)
+        return CGSize(width: width, height: apiHeight * (width / apiWidth))
     }
 
     func productCardExtraLineSpacing(fontSize: CGFloat, lineHeight: CGFloat) -> CGFloat {
@@ -289,12 +274,13 @@ private extension ProductDetailCardView {
 }
 
 private extension Image {
-    /// Fills the image slot and clips overflow so the crop is centered (same as UIKit `contentMode` `.scaleAspectFill` + center).
-    func productCardImageCenterCropped(width: CGFloat, height: CGFloat) -> some View {
+    /// Fills the allocated slot width and stretches to fill whatever height the parent offers.
+    func productCardImageFill(width: CGFloat) -> some View {
         self
             .resizable()
             .scaledToFill()
-            .frame(width: width, height: height)
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
             .clipped()
     }
 }
