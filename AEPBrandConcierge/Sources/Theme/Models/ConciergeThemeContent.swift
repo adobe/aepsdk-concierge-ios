@@ -65,17 +65,20 @@ public struct ConciergeHeaderConfig: Codable {
     public var subtitle: String
     public var image: String
     public var layoutType: HeaderLayoutType
+    public var imageHeight: CGFloat
 
     public init(
         title: String = "",
         subtitle: String = "",
         image: String = "",
-        layoutType: HeaderLayoutType = .textOnly
+        layoutType: HeaderLayoutType = .textOnly,
+        imageHeight: CGFloat = 48
     ) {
         self.title = title
         self.subtitle = subtitle
         self.image = image
         self.layoutType = layoutType
+        self.imageHeight = imageHeight
     }
 
     public init(from decoder: Decoder) throws {
@@ -83,7 +86,7 @@ public struct ConciergeHeaderConfig: Codable {
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
         image = try container.decodeIfPresent(String.self, forKey: .image) ?? ""
-        // Decode as string first for case-insensitive matching, then fall back to .textOnly
+        imageHeight = try container.decodeIfPresent(CGFloat.self, forKey: .imageHeight) ?? 48
         if let raw = try container.decodeIfPresent(String.self, forKey: .layoutType),
            let type = HeaderLayoutType(rawValue: raw) {
             layoutType = type

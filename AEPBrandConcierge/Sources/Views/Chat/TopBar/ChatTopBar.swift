@@ -75,12 +75,12 @@ struct ChatTopBar: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(maxHeight: 48)
+                .frame(height: theme.header.imageHeight)
         } else {
             Image(systemName: "ellipsis.message.fill")
                 .resizable()
                 .scaledToFit()
-                .frame(maxHeight: 48)
+                .frame(height: theme.header.imageHeight)
                 .foregroundColor(theme.colors.primary.text.color)
         }
     }
