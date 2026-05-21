@@ -24,6 +24,7 @@ final class ConciergeHeaderConfigTests: XCTestCase {
         XCTAssertEqual(config.subtitle, "")
         XCTAssertEqual(config.image, "")
         XCTAssertEqual(config.layoutType, .textOnly)
+        XCTAssertEqual(config.imageHeight, 48)
     }
 
     // MARK: - Decoding with all fields
@@ -34,7 +35,8 @@ final class ConciergeHeaderConfigTests: XCTestCase {
             "title": "My Brand",
             "subtitle": "Tagline",
             "image": "logo",
-            "layoutType": "imageOnly"
+            "layoutType": "imageOnly",
+            "imageHeight": 64
         }
         """
         let config = try JSONDecoder().decode(ConciergeHeaderConfig.self, from: Data(json.utf8))
@@ -43,6 +45,7 @@ final class ConciergeHeaderConfigTests: XCTestCase {
         XCTAssertEqual(config.subtitle, "Tagline")
         XCTAssertEqual(config.image, "logo")
         XCTAssertEqual(config.layoutType, .imageOnly)
+        XCTAssertEqual(config.imageHeight, 64)
     }
 
     // MARK: - Decoding with missing fields falls back to defaults
@@ -55,6 +58,30 @@ final class ConciergeHeaderConfigTests: XCTestCase {
         XCTAssertEqual(config.subtitle, "")
         XCTAssertEqual(config.image, "")
         XCTAssertEqual(config.layoutType, .textOnly)
+        XCTAssertEqual(config.imageHeight, 48)
+    }
+
+    func test_decode_missingImageHeight_defaultsTo48() throws {
+        let json = """
+        {
+            "image": "logo",
+            "layoutType": "imageOnly"
+        }
+        """
+        let config = try JSONDecoder().decode(ConciergeHeaderConfig.self, from: Data(json.utf8))
+
+        XCTAssertEqual(config.imageHeight, 48)
+    }
+
+    func test_decode_customImageHeight() throws {
+        let json = """
+        {
+            "imageHeight": 100
+        }
+        """
+        let config = try JSONDecoder().decode(ConciergeHeaderConfig.self, from: Data(json.utf8))
+
+        XCTAssertEqual(config.imageHeight, 100)
     }
 
     func test_decode_missingLayoutType_defaultsToTextOnly() throws {
@@ -173,6 +200,7 @@ final class ConciergeHeaderConfigTests: XCTestCase {
         XCTAssertEqual(theme.header.subtitle, "Powered by AI")
         XCTAssertEqual(theme.header.image, "brand_logo")
         XCTAssertEqual(theme.header.layoutType, .imageOnly)
+        XCTAssertEqual(theme.header.imageHeight, 48)
     }
 
     func test_theme_decode_withoutHeader_usesDefaults() throws {
@@ -192,5 +220,6 @@ final class ConciergeHeaderConfigTests: XCTestCase {
         XCTAssertEqual(theme.header.subtitle, "")
         XCTAssertEqual(theme.header.image, "")
         XCTAssertEqual(theme.header.layoutType, .textOnly)
+        XCTAssertEqual(theme.header.imageHeight, 48)
     }
 }
