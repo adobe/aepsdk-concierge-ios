@@ -87,10 +87,20 @@ struct ComposerEditingView: View {
 
                 // Dedicated stop button (icon configurable via theme)
                 Button(action: onStopRecording) {
-                    BrandIcon(assetName: theme.behavior.input.stopRecordingIcon ?? "", systemName: "stop.circle.fill")
-                        .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
-                        .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
-                        .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
+                    Group {
+                        if let iconName = theme.behavior.input.stopRecordingIcon,
+                           let uiImage = UIImage(named: iconName) {
+                            Image(uiImage: uiImage)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                        } else {
+                            Image(systemName: "stop.circle.fill")
+                        }
+                    }
+                    .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
+                    .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
+                    .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
