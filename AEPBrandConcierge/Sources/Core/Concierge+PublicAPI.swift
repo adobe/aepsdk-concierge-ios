@@ -16,6 +16,17 @@ import AEPServices
 
 /// Public API extensions for showing/hiding the Concierge chat UI.
 public extension Concierge {
+    // MARK: - Tracking
+
+    /// Enables tracking of user interactions with the concierge chat interface.
+    ///
+    /// Tracking is **disabled by default**. Call this once during app setup to start forwarding
+    /// Concierge notification events to Adobe Experience Platform Edge Network. Until this is
+    /// called, the SDK dispatches no Edge events for chat interactions.
+    static func enableTracking() {
+        ConciergeEventTracker.enableTracking()
+    }
+
     // MARK: - SwiftUI Presentation APIs
 
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.

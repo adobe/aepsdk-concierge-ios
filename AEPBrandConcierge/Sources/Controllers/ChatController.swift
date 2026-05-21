@@ -384,6 +384,10 @@ final class ChatController: ObservableObject {
         dispatchTrackingEvent(.disclaimerLinkClicked(url: url.absoluteString))
     }
 
+    func trackCtaButtonClicked(label: String, url: String) {
+        dispatchTrackingEvent(.ctaButtonClicked(label: label, linkUrl: url))
+    }
+
     func trackCardClicked(cardData: ProductCardData) {
         var element: [String: Any] = ["productName": cardData.title]
         if let subtitle = cardData.subtitle { element["productDescription"] = subtitle }

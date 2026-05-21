@@ -208,6 +208,7 @@ public enum ConciergeConstants {
             static let FEEDBACK_SUBMITTED = "Brand Concierge Feedback Submitted"
             static let DISCLAIMER_LINK_CLICKED = "Brand Concierge Disclaimer Link Clicked"
             static let ERROR_OCCURRED = "Brand Concierge Error Occurred"
+            static let CTA_BUTTON_CLICKED = "Brand Concierge CTA Button Clicked"
         }
 
         public enum XDMType {
@@ -225,6 +226,7 @@ public enum ConciergeConstants {
             public static let FEEDBACK_SUBMITTED = "concierge:feedback:submitted"
             public static let DISCLAIMER_LINK_CLICKED = "concierge:disclaimerLink:clicked"
             public static let ERROR_OCCURRED = "concierge:error:occurred"
+            public static let CTA_BUTTON_CLICKED = "concierge:ctaButton:clicked"
         }
 
         public enum EventData {
@@ -244,6 +246,7 @@ public enum ConciergeConstants {
                 public static let NOTES = "notes"
                 public static let URL = "url"
                 public static let ERROR_MESSAGE = "errorMessage"
+                public static let LABEL = "label"
             }
         }
     }

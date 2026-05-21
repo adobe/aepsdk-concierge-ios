@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         ConciergeTracker.start()
+        Concierge.enableTracking()
 
         return true
     }

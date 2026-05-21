@@ -47,9 +47,26 @@ internal enum ConciergeEventTracker {
     private static let CARD_KEY_PRODUCT_NAME = "productName"
     private static let CARD_KEY_PRODUCT_PAGE_URL = "productPageURL"
 
+    /// Gate for Edge forwarding. Tracking is disabled by default; the consumer app must call
+    /// `Concierge.enableTracking()` to opt in. Mirrors the Android `trackingEnabled` flag.
+    internal static var trackingEnabled = false
+
+    /// Flips the gate so subsequent notification events are forwarded to Edge.
+    /// Internal — the public entry point is `Concierge.enableTracking()` in `Concierge+PublicAPI.swift`.
+    internal static func enableTracking() {
+        trackingEnabled = true
+        Log.debug(label: ConciergeConstants.LOG_TAG, "Concierge tracking enabled.")
+    }
+
     /// Builds and dispatches an Edge request event for the given Concierge notification.
-    /// No-ops if event data is missing, the routing key is absent, or the xdmType is unrecognized.
+    /// No-ops if tracking is disabled, event data is missing, the routing key is absent, or the
+    /// xdmType is unrecognized.
     static func trackEvent(_ event: Event) {
+        guard trackingEnabled else {
+            Log.debug(label: ConciergeConstants.LOG_TAG,
+                      "[\(SELF_TAG)] Ignoring track event. Call Concierge.enableTracking() to enable tracking.")
+            return
+        }
         guard let data = event.data else {
             Log.debug(label: ConciergeConstants.LOG_TAG,
                       "[\(SELF_TAG)] Skipping Edge forwarding: notification event '\(event.name)' has no event data.")
@@ -176,6 +193,16 @@ internal enum ConciergeEventTracker {
             var payload: [String: Any] = [:]
             if let errorMessage = data[Key.ERROR_MESSAGE] as? String {
                 payload[Key.ERROR_MESSAGE] = errorMessage
+            }
+            dispatchEdge(xdmType: xdmType, data: payload)
+
+        case Types.CTA_BUTTON_CLICKED:
+            var payload: [String: Any] = [:]
+            if let label = data[Key.LABEL] as? String {
+                payload[Key.LABEL] = label
+            }
+            if let url = data[Key.URL] as? String {
+                payload[Key.URL] = url
             }
             dispatchEdge(xdmType: xdmType, data: payload)
 
