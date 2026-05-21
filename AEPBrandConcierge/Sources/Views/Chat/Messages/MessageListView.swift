@@ -28,6 +28,8 @@ struct MessageListView: View {
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
+    var onWelcomePromptSuggestionTap: ((String) -> Void)?
+    var onCtaButtonTap: ((_ label: String, _ url: String) -> Void)?
 
     var body: some View {
         GeometryReader { geometry in
@@ -59,7 +61,9 @@ struct MessageListView: View {
                                 feedbackSentiment: message.feedbackSentiment,
                                 feedbackEligible: message.feedbackEligible,
                                 isStreamComplete: message.isStreamComplete,
-                                onSuggestionTap: onSuggestionTap
+                                onSuggestionTap: onSuggestionTap,
+                                onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
+                                onCtaButtonTap: onCtaButtonTap
                             )
                                 .id(message.id)
                                 .padding(horizontalPadding(for: message.template))

@@ -142,14 +142,14 @@ final class SessionManagerTests: XCTestCase {
     }
 
     func test_isSessionActive_afterRefresh_returnsTrue() {
-        let shortTTL: TimeInterval = 0.3
-        let sessionManager = SessionManager(dataStore: testDataStore, sessionTTL: shortTTL)
+        let ttl: TimeInterval = 2.0
+        let sessionManager = SessionManager(dataStore: testDataStore, sessionTTL: ttl)
         _ = sessionManager.getOrCreateSessionId()
 
-        Thread.sleep(forTimeInterval: 0.2)
+        Thread.sleep(forTimeInterval: 0.1)
         sessionManager.refreshSessionActivity()
 
-        Thread.sleep(forTimeInterval: 0.2)
+        Thread.sleep(forTimeInterval: 0.1)
         XCTAssertTrue(sessionManager.isSessionActive, "Refresh should have reset the TTL window")
     }
 

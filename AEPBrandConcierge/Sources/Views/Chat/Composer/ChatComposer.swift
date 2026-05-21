@@ -33,6 +33,7 @@ struct ChatComposer: View {
     let onCancel: () -> Void
     let onComplete: () -> Void
     let onSend: () -> Void
+    var onLinkTap: ((URL) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -77,8 +78,8 @@ struct ChatComposer: View {
                             RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
                                 .stroke(theme.colors.input.outlineFocus.color, lineWidth: theme.layout.inputFocusOutlineWidth)
                         }
-                        // Recording glow border
-                        if case .recording = inputState {
+                        // Recording glow border (configurable via theme)
+                        if case .recording = inputState, theme.behavior.input.enableRecordingAnimation {
                             RotatingGlowBorder(color: theme.colors.primary.text.color, cornerRadius: theme.layout.inputBorderRadius)
                         }
                     }
@@ -86,7 +87,7 @@ struct ChatComposer: View {
 
             }
 
-            ComposerDisclaimer()
+            ComposerDisclaimer(onLinkTap: onLinkTap)
                 .padding(.horizontal, 4)
         }
         .padding(.horizontal)

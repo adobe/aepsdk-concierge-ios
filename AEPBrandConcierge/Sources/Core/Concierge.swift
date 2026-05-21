@@ -58,6 +58,11 @@ public class Concierge: NSObject, Extension {
         registerListener(type: ConciergeConstants.EventType.concierge,
                          source: EventSource.requestContent,
                          listener: handleRequestContentEvent)
+
+        // Register listener for forwarding Concierge notification events to Edge
+        registerListener(type: ConciergeConstants.EventType.concierge,
+                         source: EventSource.notification,
+                         listener: handleNotificationEvent)
     }
 
     public func onUnregistered() {
@@ -86,6 +91,11 @@ public class Concierge: NSObject, Extension {
         if event.isShowUiEvent {
             handleShowChatUIRequestEvent(event)
         }
+    }
+
+    private func handleNotificationEvent(_ event: Event) {
+        Log.trace(label: ConciergeConstants.LOG_TAG, "Concierge notification event received - '\(event.id.uuidString)'.")
+        ConciergeEventTracker.trackEvent(event)
     }
 
     private func handleShowChatUIRequestEvent(_ event: Event) {
