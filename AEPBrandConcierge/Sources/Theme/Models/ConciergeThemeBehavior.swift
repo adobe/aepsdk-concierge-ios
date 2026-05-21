@@ -62,7 +62,7 @@ public struct ConciergeInputBehavior: Codable {
         sendButtonStyle: String = "default",
         silenceThreshold: Float = 0.02,
         silenceDuration: TimeInterval = 2.0,
-        enableRecordingAnimation: Bool = true,
+        enableRecordingAnimation: Bool = false,
         stopRecordingIcon: String? = nil
     ) {
         self.enableVoiceInput = enableVoiceInput
@@ -87,7 +87,7 @@ public struct ConciergeInputBehavior: Codable {
         } else {
             silenceDuration = 2.0
         }
-        enableRecordingAnimation = try container.decodeIfPresent(Bool.self, forKey: .enableRecordingAnimation) ?? true
+        enableRecordingAnimation = try container.decodeIfPresent(Bool.self, forKey: .enableRecordingAnimation) ?? false
         stopRecordingIcon = try container.decodeIfPresent(String.self, forKey: .stopRecordingIcon)
     }
 
