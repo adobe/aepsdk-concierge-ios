@@ -1,5 +1,5 @@
 /*
- Copyright 2025 Adobe. All rights reserved.
+ Copyright 2026 Adobe. All rights reserved.
  This file is licensed to you under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License. You may obtain a copy
  of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,6 +16,17 @@ import AEPServices
 
 /// Public API extensions for showing/hiding the Concierge chat UI.
 public extension Concierge {
+    // MARK: - Tracking
+
+    /// Enables tracking of user interactions with the concierge chat interface.
+    ///
+    /// Tracking is **disabled by default**. Call this once during app setup to start forwarding
+    /// Concierge notification events to Adobe Experience Platform Edge Network. Until this is
+    /// called, the SDK dispatches no Edge events for chat interactions.
+    static func enableTracking() {
+        ConciergeEventTracker.enableTracking()
+    }
+
     // MARK: - SwiftUI Presentation APIs
 
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.

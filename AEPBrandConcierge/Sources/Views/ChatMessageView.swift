@@ -37,8 +37,9 @@ struct ChatMessageView: View {
     var isStreamComplete: Bool = false
     var onSuggestionTap: ((String) -> Void)?
     var onWelcomePromptSuggestionTap: ((String) -> Void)?
+    var onCtaButtonTap: ((_ label: String, _ url: String) -> Void)?
 
-    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil, onWelcomePromptSuggestionTap: ((String) -> Void)? = nil) {
+    init(messageId: UUID? = nil, template: MessageTemplate, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, isStreamComplete: Bool = false, onSuggestionTap: ((String) -> Void)? = nil, onWelcomePromptSuggestionTap: ((String) -> Void)? = nil, onCtaButtonTap: ((_ label: String, _ url: String) -> Void)? = nil) {
         self.messageId = messageId
         self.template = template
         self.messageBody = messageBody
@@ -50,6 +51,7 @@ struct ChatMessageView: View {
         self.isStreamComplete = isStreamComplete
         self.onSuggestionTap = onSuggestionTap
         self.onWelcomePromptSuggestionTap = onWelcomePromptSuggestionTap
+        self.onCtaButtonTap = onCtaButtonTap
     }
 
     var body: some View {
@@ -268,7 +270,7 @@ struct ChatMessageView: View {
             .frame(maxWidth: .infinity, alignment: cardAlignment)
 
         case .ctaButton(let action):
-            CtaButtonView(action: action)
+            CtaButtonView(action: action, onTap: onCtaButtonTap)
 
         case .carouselGroup(let items):
             CarouselGroupView(items: items)

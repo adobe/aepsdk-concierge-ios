@@ -111,6 +111,8 @@ struct ChatView: View {
                 controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
                 controller.applyTextChange(suggestion)
                 controller.sendMessage(isUser: true)
+            } onCtaButtonTap: { label, url in
+                controller.trackCtaButtonClicked(label: label, url: url)
             }
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
