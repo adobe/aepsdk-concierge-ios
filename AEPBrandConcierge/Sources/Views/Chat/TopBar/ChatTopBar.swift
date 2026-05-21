@@ -20,7 +20,6 @@ private enum SupportedImageExtension: String, CaseIterable {
     case jpeg
     case webp
     case heic
-    case gif
 }
 
 /// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
