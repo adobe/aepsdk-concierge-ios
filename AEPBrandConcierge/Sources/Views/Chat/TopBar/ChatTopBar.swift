@@ -77,6 +77,12 @@ struct ChatTopBar: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxHeight: 48)
+        } else {
+            Image(systemName: "ellipsis.message.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 48)
+                .foregroundColor(theme.colors.primary.text.color)
         }
     }
 
@@ -88,11 +94,13 @@ struct ChatTopBar: View {
                     Text(resolvedTitle)
                         .font(titleFont)
                         .foregroundColor(theme.colors.primary.text.color)
+                        .lineLimit(1)
                 }
                 if hasSubtitle, let sub = resolvedSubtitle {
                     Text(sub)
                         .font(.system(.footnote))
                         .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
+                        .lineLimit(2)
                 }
             }
         }
