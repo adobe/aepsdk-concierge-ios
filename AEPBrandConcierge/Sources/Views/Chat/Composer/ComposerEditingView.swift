@@ -36,6 +36,11 @@ struct ComposerEditingView: View {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Fade + horizontal slide transition animation.
+    private var buttonTransition: AnyTransition {
+        .opacity.combined(with: .move(edge: .trailing))
+    }
+
     var body: some View {
         HStack(alignment: .center) {
             SelectableTextView(
@@ -67,6 +72,7 @@ struct ComposerEditingView: View {
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("Clear text")
+                .transition(buttonTransition)
             }
 
             if case .recording = inputState {
@@ -79,7 +85,7 @@ struct ComposerEditingView: View {
 
                 // Dedicated stop button (icon configurable via theme)
                 Button(action: onStopRecording) {
-                    BrandIcon(assetName: theme.behavior.input.stopRecordingIcon, systemName: "stop.circle.fill")
+                    BrandIcon(assetName: theme.behavior.input.stopRecordingIcon ?? "", systemName: "stop.circle.fill")
                         .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
                         .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
                         .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
@@ -102,6 +108,7 @@ struct ComposerEditingView: View {
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
+                    .transition(buttonTransition)
                 } else {
                     Button(action: onSend) {
                         BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
@@ -116,6 +123,7 @@ struct ComposerEditingView: View {
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
+                    .transition(buttonTransition)
                 }
             } else if showMic {
                 // Mic button when idle with no text
@@ -128,8 +136,11 @@ struct ComposerEditingView: View {
                 .contentShape(Rectangle())
                 .accessibilityLabel(theme.text.inputMicAria)
                 .disabled(!micEnabled)
+                .transition(buttonTransition)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: inputState)
+        .animation(.easeInOut(duration: 0.2), value: hasText)
     }
 }
 
