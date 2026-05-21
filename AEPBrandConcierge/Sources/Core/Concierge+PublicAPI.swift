@@ -23,8 +23,8 @@ public extension Concierge {
     /// Tracking is **disabled by default**. Call this once during app setup to start forwarding
     /// Concierge notification events to Adobe Experience Platform Edge Network. Until this is
     /// called, the SDK dispatches no Edge events for chat interactions.
-    static func enableTracking() {
-        ConciergeEventTracker.enableTracking()
+    static func setEdgeTrackingEnabled(enable: Bool) {
+        ConciergeEventTracker.enableTracking(enable: enable)
     }
 
     // MARK: - SwiftUI Presentation APIs

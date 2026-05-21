@@ -53,9 +53,12 @@ internal enum ConciergeEventTracker {
 
     /// Flips the gate so subsequent notification events are forwarded to Edge.
     /// Internal — the public entry point is `Concierge.enableTracking()` in `Concierge+PublicAPI.swift`.
-    internal static func enableTracking() {
-        trackingEnabled = true
-        Log.debug(label: ConciergeConstants.LOG_TAG, "Concierge tracking enabled.")
+    internal static func enableTracking(enable: Bool) {
+        trackingEnabled = enable
+        Log.debug(
+            label: ConciergeConstants.LOG_TAG,
+            "Concierge tracking \(enable ? "enabled" : "disabled")."
+        )
     }
 
     /// Builds and dispatches an Edge request event for the given Concierge notification.
