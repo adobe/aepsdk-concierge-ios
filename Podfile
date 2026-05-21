@@ -56,8 +56,6 @@ def app_main
     pod 'AEPEdgeIdentity'
     pod 'AEPAssurance'
     pod 'AEPEdgeConsent'
-    pod 'AEPIdentity'
-    pod 'AEPAnalytics'
 end
 
 def app_dev
@@ -66,8 +64,6 @@ def app_dev
     pod 'AEPEdgeIdentity', :git => $dev_repo, :branch => $dev_branch
     pod 'AEPAssurance', :git => $dev_repo, :branch => $dev_branch
     pod 'AEPEdgeConsent'
-    pod 'AEPIdentity'
-    pod 'AEPAnalytics'
 end
 
 def test_utils
