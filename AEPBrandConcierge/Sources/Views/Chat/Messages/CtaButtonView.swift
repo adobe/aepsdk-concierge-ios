@@ -20,6 +20,7 @@ struct CtaButtonView: View {
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
 
     let action: ActionButton
+    var onTap: ((_ label: String, _ url: String) -> Void)?
 
     var body: some View {
         HStack(alignment: .bottom) {
@@ -49,6 +50,7 @@ struct CtaButtonView: View {
     }
 
     private func handleTap() {
+        onTap?(action.text, action.url)
         guard let url = URL(string: action.url) else { return }
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(

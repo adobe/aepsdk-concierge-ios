@@ -50,6 +50,7 @@ public struct ConciergeTheme: Codable {
     public var behavior: ConciergeBehaviorConfig
     public var disclaimer: ConciergeDisclaimer
     public var assets: ConciergeAssets
+    public var header: ConciergeHeaderConfig
     public var text: ConciergeCopy
     public var arrays: ConciergeArrays
     public var theme: ConciergeThemeTokens
@@ -99,6 +100,7 @@ public struct ConciergeTheme: Codable {
         case behavior
         case disclaimer
         case assets
+        case header
         case text
         case arrays
         case theme
@@ -109,6 +111,7 @@ public struct ConciergeTheme: Codable {
         behavior: ConciergeBehaviorConfig = ConciergeBehaviorConfig(),
         disclaimer: ConciergeDisclaimer = ConciergeDisclaimer(),
         assets: ConciergeAssets = ConciergeAssets(),
+        header: ConciergeHeaderConfig = ConciergeHeaderConfig(),
         text: ConciergeCopy = ConciergeCopy(),
         arrays: ConciergeArrays = ConciergeArrays(),
         theme: ConciergeThemeTokens = ConciergeThemeTokens()
@@ -117,6 +120,7 @@ public struct ConciergeTheme: Codable {
         self.behavior = behavior
         self.disclaimer = disclaimer
         self.assets = assets
+        self.header = header
         self.text = text
         self.arrays = arrays
         self.theme = theme
@@ -130,6 +134,7 @@ public struct ConciergeTheme: Codable {
         behavior = try container.decodeIfPresent(ConciergeBehaviorConfig.self, forKey: .behavior) ?? ConciergeBehaviorConfig()
         disclaimer = try container.decodeIfPresent(ConciergeDisclaimer.self, forKey: .disclaimer) ?? ConciergeDisclaimer()
         assets = try container.decodeIfPresent(ConciergeAssets.self, forKey: .assets) ?? ConciergeAssets()
+        header = try container.decodeIfPresent(ConciergeHeaderConfig.self, forKey: .header) ?? ConciergeHeaderConfig()
 
         // Decode text/copy (maps from "text" key)
         do {
@@ -172,6 +177,7 @@ public struct ConciergeTheme: Codable {
         try container.encode(behavior, forKey: .behavior)
         try container.encode(disclaimer, forKey: .disclaimer)
         try container.encode(assets, forKey: .assets)
+        try container.encode(header, forKey: .header)
         try container.encode(text, forKey: .text)
         try container.encode(arrays, forKey: .arrays)
         try container.encode(theme, forKey: .theme)

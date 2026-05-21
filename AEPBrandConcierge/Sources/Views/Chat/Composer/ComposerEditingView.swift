@@ -36,8 +36,13 @@ struct ComposerEditingView: View {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Fade + horizontal slide transition animation.
+    private var buttonTransition: AnyTransition {
+        .opacity.combined(with: .move(edge: .trailing))
+    }
+
     var body: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .bottom) {
             SelectableTextView(
                 text: $inputText,
                 selectedRange: $selectedRange,
@@ -49,42 +54,58 @@ struct ComposerEditingView: View {
                 font: resolvedInputFont,
                 textColor: UIColor(theme.components.inputBar.textColor.color),
                 placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
-                maxLines: theme.behavior.input.disableMultiline ? 1 : 15,
+                maxLines: theme.behavior.input.disableMultiline ? 1 : 10,
                 onEditingChanged: onEditingChanged
             )
             .frame(height: max(40, measuredHeight))
             .animation(.easeInOut(duration: 0.15), value: measuredHeight)
 
-            if hasText {
+            if hasText, inputState != .recording {
                 Button(action: {
                     inputText = ""
                 }) {
-                    BrandIcon(assetName: "S2_Icon_CrossCircle_20_N", systemName: "xmark.circle.fill")
+                    BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
                         .font(.system(size: 18))
-                        .foregroundColor(Color.secondary.opacity(0.6))
+                        .foregroundColor(Color.black)
                         .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("Clear text")
+                .transition(buttonTransition)
+                .padding(.bottom, 8)
             }
 
             if case .recording = inputState {
-                // Recording uses the send/mic slot: waveform is tappable to finish (`onStopRecording`).
-                //
-                // Future: reintroduce a dedicated stop control (e.g. icon button) beside or instead of
-                // tap-to-stop on the waveform, and gate it with theme JSON such as
-                // `behavior.input.showVoiceStopButton` (Bool, default false) on `ConciergeInputBehavior`
+                // Waveform visual indicator
+                AudioWaveformView(
+                    audioLevel: audioLevel,
+                    barColor: theme.colors.primary.primary.color
+                )
+                .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                .padding(.bottom, 8)
+
+                // Dedicated stop button (icon configurable via theme)
                 Button(action: onStopRecording) {
-                    AudioWaveformView(
-                        audioLevel: audioLevel,
-                        barColor: theme.colors.primary.primary.color
-                    )
-                    .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+                    Group {
+                        if let iconName = theme.behavior.input.stopRecordingIcon,
+                           let uiImage = UIImage(named: iconName) {
+                            Image(uiImage: uiImage)
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                        } else {
+                            Image(systemName: "stop.circle.fill")
+                        }
+                    }
+                    .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
+                    .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
+                    .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("Stop recording")
+                .padding(.bottom, 8)
             } else if hasText {
                 // Send button appears in the same slot once text is present
                 if theme.behavior.input.sendButtonStyle == "arrow" {
@@ -100,6 +121,8 @@ struct ComposerEditingView: View {
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
+                    .transition(buttonTransition)
+                    .padding(.bottom, 8)
                 } else {
                     Button(action: onSend) {
                         BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
@@ -114,6 +137,8 @@ struct ComposerEditingView: View {
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
+                    .transition(buttonTransition)
+                    .padding(.bottom, 8)
                 }
             } else if showMic {
                 // Mic button when idle with no text
@@ -126,8 +151,12 @@ struct ComposerEditingView: View {
                 .contentShape(Rectangle())
                 .accessibilityLabel(theme.text.inputMicAria)
                 .disabled(!micEnabled)
+                .transition(buttonTransition)
+                .padding(.bottom, 8)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: inputState)
+        .animation(.easeInOut(duration: 0.2), value: hasText)
     }
 }
 

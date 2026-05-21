@@ -30,6 +30,7 @@
 		24037AC22EF3648600FF4031 /* Concierge+PublicAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ABF2EF3648600FF4031 /* Concierge+PublicAPI.swift */; };
 		24037AC32EF3648600FF4031 /* Concierge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ABE2EF3648600FF4031 /* Concierge.swift */; };
 		24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AC02EF3648600FF4031 /* ConciergeConstants.swift */; };
+		D000ECC120251120000000A1 /* ConciergeEventTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000ECC120251120000000A0 /* ConciergeEventTracker.swift */; };
 		24037AD72EF364B000FF4031 /* Source.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AD52EF364B000FF4031 /* Source.swift */; };
 		24037AD82EF364B000FF4031 /* FeedbackPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ACE2EF364B000FF4031 /* FeedbackPayload.swift */; };
 		24037AD92EF364B000FF4031 /* FeedbackSentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ACF2EF364B000FF4031 /* FeedbackSentiment.swift */; };
@@ -98,6 +99,7 @@
 		24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A32F4506C500CEE013 /* ConciergeLinkHandlerTests.swift */; };
 		24CAB3A62F45085400CEE013 /* View+WebViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A52F45083A00CEE013 /* View+WebViewPresenter.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
+		3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */; };
 		4C1738112E67C590003E88AF /* SourcesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738102E67C590003E88AF /* SourcesListView.swift */; };
 		4C1738152E67D59D003E88AF /* SourceRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1738142E67D59D003E88AF /* SourceRowView.swift */; };
 		4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */; };
@@ -110,6 +112,7 @@
 		4C29834B2F870A430057C927 /* ConciergeChatSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834A2F870A430057C927 /* ConciergeChatSession.swift */; };
 		4C29834D2F870A580057C927 /* ConciergeChatSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */; };
 		4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */; };
+		A1B2C3D40001000100010001 /* ConciergeHeaderConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */; };
 		4C2983512F91D5020057C927 /* FeedbackButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */; };
 		4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
@@ -243,6 +246,7 @@
 		24037ABE2EF3648600FF4031 /* Concierge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Concierge.swift; sourceTree = "<group>"; };
 		24037ABF2EF3648600FF4031 /* Concierge+PublicAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Concierge+PublicAPI.swift"; sourceTree = "<group>"; };
 		24037AC02EF3648600FF4031 /* ConciergeConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeConstants.swift; sourceTree = "<group>"; };
+		D000ECC120251120000000A0 /* ConciergeEventTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeEventTracker.swift; sourceTree = "<group>"; };
 		24037AC52EF364B000FF4031 /* ChatState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatState.swift; sourceTree = "<group>"; };
 		24037AC62EF364B000FF4031 /* CitationDecoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationDecoration.swift; sourceTree = "<group>"; };
 		24037AC72EF364B000FF4031 /* CitationMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationMarker.swift; sourceTree = "<group>"; };
@@ -316,6 +320,7 @@
 		24CC5AB62F11CF2800484C0B /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		2A8803C559E307362EE94BF3 /* Pods-AEPBrandConciergeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConciergeTests.release.xcconfig"; path = "Target Support Files/Pods-AEPBrandConciergeTests/Pods-AEPBrandConciergeTests.release.xcconfig"; sourceTree = "<group>"; };
 		49180BEE1E2A4439AC75F403 /* ConciergeCardTapHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeCardTapHandler.swift; sourceTree = "<group>"; };
+		AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicMessageView.swift; sourceTree = "<group>"; };
 		4C1738102E67C590003E88AF /* SourcesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcesListView.swift; sourceTree = "<group>"; };
 		4C1738142E67D59D003E88AF /* SourceRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceRowView.swift; sourceTree = "<group>"; };
 		4C2923D92E7E1CCD00D2D2C1 /* InputReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputReducerTests.swift; sourceTree = "<group>"; };
@@ -328,6 +333,7 @@
 		4C29834A2F870A430057C927 /* ConciergeChatSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSession.swift; sourceTree = "<group>"; };
 		4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeChatSessionTests.swift; sourceTree = "<group>"; };
 		4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergePresentationConfigTests.swift; sourceTree = "<group>"; };
+		A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeHeaderConfigTests.swift; sourceTree = "<group>"; };
 		4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackButtonStyle.swift; sourceTree = "<group>"; };
 		4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeFeedbackBehaviorTests.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
@@ -453,6 +459,7 @@
 				24037ABE2EF3648600FF4031 /* Concierge.swift */,
 				24037ABF2EF3648600FF4031 /* Concierge+PublicAPI.swift */,
 				24037AC02EF3648600FF4031 /* ConciergeConstants.swift */,
+				D000ECC120251120000000A0 /* ConciergeEventTracker.swift */,
 				24070DF09312406A88B8F60F /* ConciergeTrackingEvent.swift */,
 			);
 			path = Core;
@@ -696,6 +703,7 @@
 			children = (
 				4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */,
 				4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */,
+				A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */,
 				4C29834C2F870A580057C927 /* ConciergeChatSessionTests.swift */,
 				244E69EC2F22DF8300ADF1AA /* SnapshotTests */,
 				4C2983482F6CBC1B0057C927 /* ColorExtensionTests.swift */,
@@ -751,6 +759,7 @@
 		4C3A65C62E55272300EEEF3B /* Messages */ = {
 			isa = PBXGroup;
 			children = (
+				AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */,
 				4C5FE3252EBD9D2F004F9286 /* CitationAttachmentBuilder.swift */,
 				4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */,
 				4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */,
@@ -1172,6 +1181,7 @@
 				4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */,
 				4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */,
 				243868C12EB17592004BF9C0 /* Event+Concierge.swift in Sources */,
+				3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */,
 				4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */,
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
@@ -1189,6 +1199,7 @@
 				24037AC32EF3648600FF4031 /* Concierge.swift in Sources */,
 				4CC11B1E2F5A676D00EEF226 /* ProductCardData.swift in Sources */,
 				24037AC42EF3648600FF4031 /* ConciergeConstants.swift in Sources */,
+				D000ECC120251120000000A1 /* ConciergeEventTracker.swift in Sources */,
 				1297F79D2A9C4E61BBBE69DC /* ConciergeTrackingEvent.swift in Sources */,
 				B283F5767264476781252EEC /* ConciergeCardTapHandler.swift in Sources */,
 				4C3A65D32E55272400EEEF3B /* ChatComposer.swift in Sources */,
@@ -1292,6 +1303,7 @@
 				24CAB3662F2D579B00CEE013 /* MarkdownRendererTests.swift in Sources */,
 				4CDB0DD02EC82CA2000B85D0 /* ThemeDecodingTests.swift in Sources */,
 				4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */,
+				A1B2C3D40001000100010001 /* ConciergeHeaderConfigTests.swift in Sources */,
 				4CDB0DD12EC82CA2000B85D0 /* ThemeCSSConverterTests.swift in Sources */,
 				24CAB3A42F4506C500CEE013 /* ConciergeLinkHandlerTests.swift in Sources */,
 				244E6A062F22F5EB00ADF1AA /* ConsentStateTests.swift in Sources */,

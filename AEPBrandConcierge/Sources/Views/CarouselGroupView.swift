@@ -49,15 +49,6 @@ struct CarouselGroupView: View {
         return columnAlignedBase + (theme.layout.productCardCarouselHorizontalPadding ?? 0)
     }
 
-    private var carouselIdealHeight: CGFloat {
-        switch theme.behavior.productCard?.cardStyle ?? .actionButton {
-        case .productDetail:
-            return theme.layout.productCardHeight
-        case .actionButton:
-            return 200
-        }
-    }
-
     var body: some View {
         switch theme.behavior.multimodalCarousel.carouselStyle ?? .paged {
         case .paged:
@@ -75,7 +66,7 @@ struct CarouselGroupView: View {
                         .tag(index)
                 }
             }
-            .frame(idealHeight: carouselIdealHeight)
+            .fixedSize(horizontal: false, vertical: true)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             HStack(spacing: 16) {

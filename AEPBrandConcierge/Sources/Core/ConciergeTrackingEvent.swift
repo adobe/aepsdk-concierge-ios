@@ -35,6 +35,7 @@ enum ConciergeTrackingEvent {
     case feedbackSubmitted(conversationId: String, interactionId: String, feedbackType: String, selectedOptions: [String], notes: String)
     case disclaimerLinkClicked(url: String)
     case errorOccurred(errorMessage: String)
+    case ctaButtonClicked(label: String, linkUrl: String)
 
     /// Builds an `AEPCore.Event` for dispatch to the Event Hub.
     func toEvent() -> Event {
@@ -76,6 +77,8 @@ enum ConciergeTrackingEvent {
             return ConciergeConstants.TrackingEvent.Name.DISCLAIMER_LINK_CLICKED
         case .errorOccurred:
             return ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED
+        case .ctaButtonClicked:
+            return ConciergeConstants.TrackingEvent.Name.CTA_BUTTON_CLICKED
         }
     }
 
@@ -109,6 +112,8 @@ enum ConciergeTrackingEvent {
             return ConciergeConstants.TrackingEvent.XDMType.DISCLAIMER_LINK_CLICKED
         case .errorOccurred:
             return ConciergeConstants.TrackingEvent.XDMType.ERROR_OCCURRED
+        case .ctaButtonClicked:
+            return ConciergeConstants.TrackingEvent.XDMType.CTA_BUTTON_CLICKED
         }
     }
 
@@ -164,6 +169,10 @@ enum ConciergeTrackingEvent {
 
         case .errorOccurred(let errorMessage):
             data[Key.ERROR_MESSAGE] = errorMessage
+
+        case .ctaButtonClicked(let label, let linkUrl):
+            data[Key.LABEL] = label
+            data[Key.URL] = linkUrl
         }
 
         return data

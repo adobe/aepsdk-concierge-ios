@@ -37,7 +37,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             ])
         }
 
-        ConciergeTracker.start()
+        Concierge.setEdgeTrackingEnabled(enable: true)
 
         return true
     }
