@@ -246,8 +246,7 @@ struct ChatMessageView: View {
             case .productDetail:
                 ProductDetailCardView(
                     data: cardData,
-                    cardWidth: theme.layout.productCardWidth,
-                    cardHeight: theme.layout.productCardHeight
+                    cardWidth: theme.layout.productCardWidth
                 )
             case .actionButton:
                 actionButtonCarouselCard(data: cardData)
@@ -260,8 +259,7 @@ struct ChatMessageView: View {
                 case .productDetail:
                     ProductDetailCardView(
                         data: cardData,
-                        cardWidth: theme.layout.productCardWidth,
-                        cardHeight: theme.layout.productCardHeight
+                        cardWidth: theme.layout.productCardWidth
                     )
                 case .actionButton:
                     actionButtonProductCard(data: cardData)
