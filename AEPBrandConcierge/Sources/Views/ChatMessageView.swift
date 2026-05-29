@@ -20,6 +20,7 @@ struct ChatMessageView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeLinkClickTracker) private var linkClickTracker
     @Environment(\.conciergeCardTapHandler) private var cardTapHandler
 
     let messageId: UUID?
@@ -246,8 +247,7 @@ struct ChatMessageView: View {
             case .productDetail:
                 ProductDetailCardView(
                     data: cardData,
-                    cardWidth: theme.layout.productCardWidth,
-                    cardHeight: theme.layout.productCardHeight
+                    cardWidth: theme.layout.productCardWidth
                 )
             case .actionButton:
                 actionButtonCarouselCard(data: cardData)
@@ -260,8 +260,7 @@ struct ChatMessageView: View {
                 case .productDetail:
                     ProductDetailCardView(
                         data: cardData,
-                        cardWidth: theme.layout.productCardWidth,
-                        cardHeight: theme.layout.productCardHeight
+                        cardWidth: theme.layout.productCardWidth
                     )
                 case .actionButton:
                     actionButtonProductCard(data: cardData)
@@ -440,6 +439,7 @@ private extension ChatMessageView {
     }
 
     func handleLinkTap(_ url: URL) {
+        linkClickTracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.INLINE)
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,

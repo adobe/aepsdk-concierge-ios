@@ -12,6 +12,37 @@
 
 import SwiftUI
 
+/// Collects the tallest (already clamped) card height across all cards in a carousel.
+/// The `reduce` takes the maximum so every card can be equalized to the tallest one.
+struct CardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// Reports a card's raw (unclamped) natural content height to itself so it can decide whether the
+/// content overflows the displayed height and needs to scroll internally.
+struct CardNaturalHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct CarouselEqualizedHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+extension EnvironmentValues {
+    /// When non-nil, the shared height (the tallest card's clamped height) that every card in the
+    /// current carousel should adopt. `nil` for standalone cards, which self-size to their content.
+    var carouselEqualizedHeight: CGFloat? {
+        get { self[CarouselEqualizedHeightKey.self] }
+        set { self[CarouselEqualizedHeightKey.self] = newValue }
+    }
+}
+
 /// Horizontally scrollable carousel of message cards.
 ///
 /// Supports two modes controlled by `behavior.multimodalCarousel.carouselStyle`:
@@ -29,6 +60,16 @@ struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
     @State private var currentIndex = 0
+
+    /// Tallest clamped card height collected from the cards. Seeded to 0; `equalizedHeight` floors
+    /// it at the configured min so the carousel never collapses below the minimum.
+    @State private var maxCardHeight: CGFloat = 0
+
+    /// The single height every card in this carousel is displayed at: the tallest card's clamped
+    /// height, never less than the configured per-card minimum.
+    private var equalizedHeight: CGFloat {
+        max(maxCardHeight, theme.layout.productCardMinHeight)
+    }
 
     /// Leading offset applied inside the scroll content so the first card aligns correctly
     /// while the ScrollView itself spans the full width (preventing clipping on scroll).
@@ -66,7 +107,9 @@ struct CarouselGroupView: View {
                         .tag(index)
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
+            .environment(\.carouselEqualizedHeight, equalizedHeight)
+            .onPreferenceChange(CardHeightKey.self) { maxCardHeight = $0 }
+            .frame(height: equalizedHeight)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             HStack(spacing: 16) {
@@ -100,6 +143,8 @@ struct CarouselGroupView: View {
                     message.chatMessageView
                 }
             }
+            .environment(\.carouselEqualizedHeight, equalizedHeight)
+            .onPreferenceChange(CardHeightKey.self) { maxCardHeight = $0 }
             .padding(.leading, scrollContentLeadingInset)
             .padding(.trailing, theme.layout.productCardCarouselHorizontalPadding ?? theme.layout.chatHistoryPadding)
             .padding(.vertical, 12)

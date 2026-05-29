@@ -16,6 +16,7 @@ struct SourceRowView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeLinkClickTracker) private var linkClickTracker
     
     let ordinal: String
     let title: String
@@ -62,6 +63,7 @@ struct SourceRowView: View {
     }
     
     private func handleLinkTap(_ url: URL) {
+        linkClickTracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.CITATION)
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,

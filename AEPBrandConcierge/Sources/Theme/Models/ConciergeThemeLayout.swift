@@ -19,6 +19,22 @@ public enum ThinkingDotVerticalAlignment: String, Codable {
     case bottom
 }
 
+/// How a product card image is scaled within its fixed image slot.
+public enum ProductImageScale: String, Codable {
+    /// Fit the whole image inside the slot without cropping (letterboxed if aspect ratios differ).
+    case fit
+    /// Scale the image to fill the slot, cropping any overflow.
+    case fill
+
+    /// The SwiftUI content mode this scaling maps to.
+    public var contentMode: ContentMode {
+        switch self {
+        case .fit: return .fit
+        case .fill: return .fill
+        }
+    }
+}
+
 /// Layout and spacing configuration
 public struct ConciergeLayout: Codable {
     public var inputHeight: CGFloat
@@ -71,7 +87,11 @@ public struct ConciergeLayout: Codable {
     public var productCardWasPriceFontSize: CGFloat
     public var productCardWasPriceFontWeight: CodableFontWeight
     public var productCardWidth: CGFloat
-    public var productCardHeight: CGFloat
+    public var productCardMinHeight: CGFloat
+    public var productCardMaxHeight: CGFloat
+    public var productImageWidth: CGFloat
+    public var productImageHeight: CGFloat
+    public var productImageScale: ProductImageScale
     public var productCardTextSpacing: CGFloat
     public var productCardTitleSubtitleSpacing: CGFloat?
     public var productCardSectionSpacing: CGFloat?
@@ -176,7 +196,11 @@ public struct ConciergeLayout: Codable {
         productCardWasPriceFontSize: CGFloat = 12,
         productCardWasPriceFontWeight: CodableFontWeight = .regular,
         productCardWidth: CGFloat = 250,
-        productCardHeight: CGFloat = 300,
+        productCardMinHeight: CGFloat = 240,
+        productCardMaxHeight: CGFloat = 360,
+        productImageWidth: CGFloat = 190,
+        productImageHeight: CGFloat = 190,
+        productImageScale: ProductImageScale = .fill,
         productCardTextSpacing: CGFloat = 8,
         productCardTitleSubtitleSpacing: CGFloat? = nil,
         productCardSectionSpacing: CGFloat? = nil,
@@ -260,7 +284,11 @@ public struct ConciergeLayout: Codable {
         self.productCardWasPriceFontSize = productCardWasPriceFontSize
         self.productCardWasPriceFontWeight = productCardWasPriceFontWeight
         self.productCardWidth = productCardWidth
-        self.productCardHeight = productCardHeight
+        self.productCardMinHeight = productCardMinHeight
+        self.productCardMaxHeight = productCardMaxHeight
+        self.productImageWidth = productImageWidth
+        self.productImageHeight = productImageHeight
+        self.productImageScale = productImageScale
         self.productCardTextSpacing = productCardTextSpacing
         self.productCardTitleSubtitleSpacing = productCardTitleSubtitleSpacing
         self.productCardSectionSpacing = productCardSectionSpacing

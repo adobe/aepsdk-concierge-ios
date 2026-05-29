@@ -209,6 +209,16 @@ internal enum ConciergeEventTracker {
             }
             dispatchEdge(xdmType: xdmType, data: payload)
 
+        case Types.LINK_CLICKED:
+            var payload: [String: Any] = [:]
+            if let url = data[Key.URL] as? String {
+                payload[Key.URL] = url
+            }
+            if let origin = data[Key.ORIGIN] as? String {
+                payload[Key.ORIGIN] = origin
+            }
+            dispatchEdge(xdmType: xdmType, data: payload)
+
         default:
             Log.debug(label: ConciergeConstants.LOG_TAG,
                       "[\(SELF_TAG)] Skipping Edge forwarding: unrecognized xdmType '\(xdmType)'. " +
