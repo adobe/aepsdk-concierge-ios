@@ -146,6 +146,22 @@ final class ConciergeTrackingEventTests: XCTestCase {
         XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.NOTES] as? String, "Response did not address pricing")
     }
 
+    // MARK: - linkClicked
+
+    func test_linkClicked_createsCorrectEvent() {
+        let event = ConciergeTrackingEvent.linkClicked(
+            url: "https://adobe.com/photoshop",
+            origin: ConciergeConstants.TrackingEvent.LinkClickOrigin.CITATION
+        ).toEvent()
+
+        assertCommonEventProperties(event,
+            expectedName: ConciergeConstants.TrackingEvent.Name.LINK_CLICKED,
+            expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.LINK_CLICKED
+        )
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.URL] as? String, "https://adobe.com/photoshop")
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.ORIGIN] as? String, "citation")
+    }
+
     // MARK: - errorOccurred
 
     func test_errorOccurred_createsCorrectEvent() {

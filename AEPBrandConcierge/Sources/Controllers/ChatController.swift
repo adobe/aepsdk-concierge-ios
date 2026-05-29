@@ -382,10 +382,12 @@ final class ChatController: ObservableObject {
 
     func trackDisclaimerLinkClicked(url: URL) {
         dispatchTrackingEvent(.disclaimerLinkClicked(url: url.absoluteString))
+        trackLinkClicked(url: url.absoluteString, origin: ConciergeConstants.TrackingEvent.LinkClickOrigin.DISCLAIMER)
     }
 
     func trackCtaButtonClicked(label: String, url: String) {
         dispatchTrackingEvent(.ctaButtonClicked(label: label, linkUrl: url))
+        trackLinkClicked(url: url, origin: ConciergeConstants.TrackingEvent.LinkClickOrigin.CTA)
     }
 
     func trackCardClicked(cardData: ProductCardData) {
@@ -395,6 +397,13 @@ final class ChatController: ObservableObject {
         if let price = cardData.price { element["productPrice"] = price }
         if let badge = cardData.badge { element["productBadge"] = badge }
         dispatchTrackingEvent(.cardClicked(element: element))
+        if let url = cardData.destinationURL?.absoluteString {
+            trackLinkClicked(url: url, origin: ConciergeConstants.TrackingEvent.LinkClickOrigin.PRODUCT_CARD)
+        }
+    }
+
+    func trackLinkClicked(url: String, origin: String) {
+        dispatchTrackingEvent(.linkClicked(url: url, origin: origin))
     }
 
     private func dispatchTrackingEvent(_ trackingEvent: ConciergeTrackingEvent) {

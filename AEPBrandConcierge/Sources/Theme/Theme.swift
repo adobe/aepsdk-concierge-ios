@@ -136,3 +136,24 @@ public extension EnvironmentValues {
         set { self[ConciergeLinkInterceptorKey.self] = newValue }
     }
 }
+
+/// Tracks link-click events for analytics. The SDK injects this from the chat controller;
+/// child views call it with the tapped URL and an origin tag from
+/// `ConciergeConstants.TrackingEvent.LinkClickOrigin`.
+struct ConciergeLinkClickTracker {
+    var track: (_ url: String, _ origin: String) -> Void
+    init(track: @escaping (_ url: String, _ origin: String) -> Void = { _, _ in }) {
+        self.track = track
+    }
+}
+
+private struct ConciergeLinkClickTrackerKey: EnvironmentKey {
+    static let defaultValue = ConciergeLinkClickTracker()
+}
+
+extension EnvironmentValues {
+    var conciergeLinkClickTracker: ConciergeLinkClickTracker {
+        get { self[ConciergeLinkClickTrackerKey.self] }
+        set { self[ConciergeLinkClickTrackerKey.self] = newValue }
+    }
+}

@@ -20,6 +20,7 @@ struct ChatMessageView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeLinkClickTracker) private var linkClickTracker
     @Environment(\.conciergeCardTapHandler) private var cardTapHandler
 
     let messageId: UUID?
@@ -438,6 +439,7 @@ private extension ChatMessageView {
     }
 
     func handleLinkTap(_ url: URL) {
+        linkClickTracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.INLINE)
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,

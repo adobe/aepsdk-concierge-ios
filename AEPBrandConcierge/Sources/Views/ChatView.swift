@@ -178,6 +178,9 @@ struct ChatView: View {
         .conciergeCardTapHandler(ConciergeCardTapHandler { cardData in
             controller.trackCardClicked(cardData: cardData)
         })
+        .environment(\.conciergeLinkClickTracker, ConciergeLinkClickTracker { url, origin in
+            controller.trackLinkClicked(url: url, origin: origin)
+        })
         .onAppear {
             hapticFeedback.prepare()
             controller.trackChatOpened()
