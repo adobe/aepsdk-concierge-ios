@@ -12,11 +12,9 @@
 
 import SwiftUI
 
-/// Fixed layout for product-detail cards (padding, default image size, corner radius, line heights, letter spacing, badge insets are encoded here).
+/// Fixed layout for product-detail cards (padding, corner radius, line heights, letter spacing, badge insets are encoded here).
 private enum ProductDetailCardDimensions {
     static let contentPadding: CGFloat = 16
-    static let imageWidth: CGFloat = 190
-    static let imageHeight: CGFloat = 190
     static let titleLineHeight: CGFloat = 17
     static let subtitleLineHeight: CGFloat = 14
     static let priceLineHeight: CGFloat = 17
@@ -29,30 +27,47 @@ private enum ProductDetailCardDimensions {
 
 /// Product card with image, badge, title, subtitle, and price.
 ///
-/// When `cardHeight` is provided the card is exactly that height: the image section fills all
-/// vertical space above the text section so cards in a carousel row are always uniform in height.
-/// When `cardHeight` is nil the card sizes to its content (natural image height + text).
-/// Image width is clamped to the inner content width; when API thumbnail dimensions are present the
-/// height uses the aspect ratio as a natural/minimum size. Card shadow uses `multimodalCardBoxShadow`.
+/// The image is always rendered at a fixed `productImageWidth` x `productImageHeight` (width clamped
+/// to the inner content width); a missing or failed image shows a grey placeholder. Every other
+/// element renders only when present. The card height grows with its content, clamped between
+/// `productCardMinHeight` and `productCardMaxHeight`; content taller than the available height scrolls
+/// internally.
+///
+/// In a carousel, the parent supplies `carouselEqualizedHeight` (the tallest card's clamped height)
+/// via the environment so all cards share one height. Each card reports its own clamped natural
+/// height back up through `CardHeightKey`. Card shadow uses `multimodalCardBoxShadow`.
 struct ProductDetailCardView: View {
     @Environment(\.conciergeTheme) private var theme
     @Environment(\.openURL) private var openURL
     @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
     @Environment(\.conciergeCardTapHandler) private var cardTapHandler
+    @Environment(\.carouselEqualizedHeight) private var carouselEqualizedHeight
 
     let data: ProductCardData
     let cardWidth: CGFloat
-    var cardHeight: CGFloat? = nil
+
+    /// This card's own clamped natural height, measured from its content. Used to self-size when
+    /// the card is not part of a carousel (no equalized height supplied).
+    @State private var selfMeasuredHeight: CGFloat = 0
+
+    /// This card's raw (unclamped) natural content height. Used to decide whether the content
+    /// overflows the displayed height and therefore needs an internal scroll view.
+    @State private var naturalHeight: CGFloat = 0
 
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
-            imageSection
-            textSection
+        Group {
+            // Only wrap in a ScrollView when the content actually overflows the displayed height.
+            // When it fits, render plain content so there is no bounce/scroll (matching Android).
+            if needsScroll {
+                ScrollView(.vertical, showsIndicators: false) { cardContent }
+            } else {
+                cardContent
+            }
         }
-        .padding(ProductDetailCardDimensions.contentPadding)
-        .frame(width: cardWidth, height: cardHeight)
-        .clipped()
+        .frame(width: cardWidth, height: resolvedHeight, alignment: .top)
+        .onPreferenceChange(CardHeightKey.self) { selfMeasuredHeight = $0 }
+        .onPreferenceChange(CardNaturalHeightKey.self) { naturalHeight = $0 }
         .background(
             theme.colors.productCard.backgroundColor?.color
                 ?? theme.colors.primary.container?.color
@@ -72,6 +87,44 @@ struct ProductDetailCardView: View {
         .contentShape(Rectangle())
         .onTapGesture { handleCardTap() }
     }
+
+    /// The card's content. Publishes both its clamped height (for carousel equalization) and its
+    /// raw natural height (for the overflow/scroll decision).
+    private var cardContent: some View {
+        VStack(alignment: .center, spacing: 0) {
+            imageSection
+            textSection
+        }
+        .padding(ProductDetailCardDimensions.contentPadding)
+        .frame(width: cardWidth)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(key: CardHeightKey.self, value: clampedHeight(proxy.size.height))
+                    .preference(key: CardNaturalHeightKey.self, value: proxy.size.height)
+            }
+        )
+    }
+
+    /// The height to display the card at: the carousel's equalized (tallest) height when in a
+    /// carousel, otherwise this card's own clamped natural height. Content taller than this scrolls.
+    private var resolvedHeight: CGFloat {
+        if let equalized = carouselEqualizedHeight {
+            return equalized
+        }
+        return selfMeasuredHeight > 0 ? selfMeasuredHeight : theme.layout.productCardMinHeight
+    }
+
+    /// True when the natural content is taller than the height the card is displayed at, so the
+    /// content must scroll. A small tolerance avoids spurious scrolling from sub-pixel rounding.
+    private var needsScroll: Bool {
+        naturalHeight > resolvedHeight + 0.5
+    }
+
+    /// Clamps a natural content height into the configured per-card bounds.
+    private func clampedHeight(_ natural: CGFloat) -> CGFloat {
+        min(max(natural, theme.layout.productCardMinHeight), theme.layout.productCardMaxHeight)
+    }
 }
 
 // MARK: - Subviews
@@ -79,8 +132,7 @@ struct ProductDetailCardView: View {
 private extension ProductDetailCardView {
     var imageSection: some View {
         let slotSize = imageSlotSize
-        let naturalHeight = slotSize.height
-        let maxH: CGFloat = cardHeight == nil ? naturalHeight : .infinity
+        let contentMode = theme.layout.productImageScale.contentMode
 
         return ZStack(alignment: .bottomLeading) {
             HStack(spacing: 0) {
@@ -89,38 +141,34 @@ private extension ProductDetailCardView {
                     switch data.imageSource {
                     case .local(let image):
                         image
-                            .productCardImageFill(width: slotSize.width)
+                            .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
                             .overlay(debugImageBorder)
                     case .remote(let url):
                         if let url = url {
                             AsyncImage(url: url) { phase in
                                 switch phase {
                                 case .empty:
-                                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    ProgressView().frame(width: slotSize.width, height: slotSize.height)
                                 case .success(let loaded):
                                     loaded
-                                        .productCardImageFill(width: slotSize.width)
+                                        .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
                                         .overlay(debugImageBorder)
                                 case .failure:
-                                    Image(systemName: "photo")
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    imagePlaceholder(slotSize)
                                 @unknown default:
                                     EmptyView()
                                 }
                             }
                         } else {
-                            Image(systemName: "photo")
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            imagePlaceholder(slotSize)
                         }
                     }
                 }
-                .frame(width: slotSize.width)
-                .frame(minHeight: naturalHeight, maxHeight: maxH)
+                .frame(width: slotSize.width, height: slotSize.height)
                 .clipped()
                 Spacer(minLength: 0)
             }
             .frame(width: innerContentWidth)
-            .frame(minHeight: naturalHeight, maxHeight: maxH)
 
             if let badge = data.badge, !badge.isEmpty {
                 badgeView(text: badge)
@@ -132,7 +180,13 @@ private extension ProductDetailCardView {
                     )
             }
         }
-        .frame(minHeight: naturalHeight, maxHeight: maxH)
+    }
+
+    /// Grey placeholder shown when the product image is missing or fails to load.
+    func imagePlaceholder(_ size: CGSize) -> some View {
+        Rectangle()
+            .fill(Color(white: 0.9))
+            .frame(width: size.width, height: size.height)
     }
 
     @ViewBuilder
@@ -227,18 +281,11 @@ private extension ProductDetailCardView {
         cardWidth - 2 * ProductDetailCardDimensions.contentPadding
     }
 
-    /// Resolved image slot size: uses `ProductCardData.imageWidth` / `imageHeight` when both are
-    /// positive (API thumbnail dimensions); otherwise the default 190×190 (width clamped to inner content).
-    /// This determines the natural/minimum image slot size; when `cardHeight` is set the image section
-    /// grows to fill remaining VStack space via flexible framing in `imageSection`.
+    /// Fixed image slot size from the theme (`productImageWidth` x `productImageHeight`), with the
+    /// width clamped to the inner content width. The image is never scaled to API dimensions.
     var imageSlotSize: CGSize {
-        let defaultWidth = min(ProductDetailCardDimensions.imageWidth, innerContentWidth)
-        guard let apiWidth = data.imageWidth, let apiHeight = data.imageHeight,
-              apiWidth > 0, apiHeight > 0 else {
-            return CGSize(width: defaultWidth, height: ProductDetailCardDimensions.imageHeight)
-        }
-        let width = min(apiWidth, innerContentWidth)
-        return CGSize(width: width, height: apiHeight * (width / apiWidth))
+        let width = min(theme.layout.productImageWidth, innerContentWidth)
+        return CGSize(width: width, height: theme.layout.productImageHeight)
     }
 
     func productCardExtraLineSpacing(fontSize: CGFloat, lineHeight: CGFloat) -> CGFloat {
@@ -274,13 +321,13 @@ private extension ProductDetailCardView {
 }
 
 private extension Image {
-    /// Fills the allocated slot width and stretches to fill whatever height the parent offers.
-    func productCardImageFill(width: CGFloat) -> some View {
+    /// Renders the image in the fixed slot (width x height) using the given content mode:
+    /// `.fill` scales to fill and crops overflow; `.fit` fits the whole image inside the slot.
+    func productCardImageFill(width: CGFloat, height: CGFloat, contentMode: ContentMode) -> some View {
         self
             .resizable()
-            .scaledToFill()
-            .frame(width: width)
-            .frame(maxHeight: .infinity)
+            .aspectRatio(contentMode: contentMode)
+            .frame(width: width, height: height)
             .clipped()
     }
 }
@@ -294,15 +341,13 @@ extension ProductDetailCardView {
 }
 
 private struct MeasuredCardView: View {
-    @Environment(\.conciergeTheme) private var theme
     let data: ProductCardData
     let cardWidth: CGFloat
 
     var body: some View {
         ProductDetailCardView(
             data: data,
-            cardWidth: cardWidth,
-            cardHeight: theme.layout.productCardHeight
+            cardWidth: cardWidth
         )
             .overlay(alignment: .topTrailing) {
                 if ProductDetailCardView.showDebugOverlay {
@@ -448,6 +493,63 @@ private enum PreviewData {
         imageWidth: 150,
         imageHeight: 150
     )
+
+    /// Title only — no subtitle, price, was-price, or badge. The shortest card.
+    static let titleOnly = ProductCardData(
+        imageSource: .remote(photosImageURL),
+        title: "Minimal Card",
+        subtitle: nil,
+        price: nil,
+        wasPrice: nil,
+        badge: nil,
+        destinationURL: URL(string: "https://example.com/minimal"),
+        primaryButton: nil,
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
+    /// Missing image (nil URL) — exercises the grey placeholder. Has title + price.
+    static let missingImage = ProductCardData(
+        imageSource: .remote(nil),
+        title: "Image Failed To Load",
+        subtitle: "Shows the grey placeholder in the fixed image slot",
+        price: "$5.00",
+        wasPrice: nil,
+        badge: "Sale",
+        destinationURL: URL(string: "https://example.com/missing-image"),
+        primaryButton: nil,
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
+    /// Every field populated with long text — the tallest card, used to drive equalization and,
+    /// under a constrained max height, the internal scroll behaviour.
+    static let richTallest = ProductCardData(
+        imageSource: .remote(pdfImageURL),
+        title: "Premium All-In-One Creative Suite With Advanced Editing Tools",
+        subtitle: "Includes photo, video, vector, and PDF tools with cloud sync and team collaboration",
+        price: "$29.99–$59.99 / month",
+        wasPrice: "$79.99",
+        badge: "Best Value",
+        destinationURL: URL(string: "https://example.com/premium-suite"),
+        primaryButton: nil,
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
+    /// A representative mix of card shapes for carousel previews: full, title-only, no-subtitle,
+    /// minimal, missing-image, and the tall rich card.
+    static let mixed: [ProductCardData] = [
+        richTallest,
+        titleOnly,
+        pdfEditor,
+        videoClipper,
+        missingImage,
+        allFields
+    ]
 }
 
 #Preview("Carousel") {
@@ -501,6 +603,44 @@ private enum PreviewData {
         .padding()
     }
     .conciergeTheme(ConciergeTheme())
+}
+
+private extension PreviewData {
+    /// The mixed cards wrapped as carousel-card messages for `CarouselGroupView`.
+    static var mixedMessages: [Message] {
+        mixed.map { Message(template: .productCarouselCard($0)) }
+    }
+}
+
+/// Builds a theme that renders product-detail cards in a carousel of the given style. Pass
+/// `maxHeight` to constrain the card max height (to demonstrate internal scroll on overflow).
+private func productDetailCarouselTheme(carouselStyle: CarouselStyle, maxHeight: CGFloat? = nil) -> ConciergeTheme {
+    var theme = ConciergeTheme(
+        behavior: ConciergeBehaviorConfig(
+            multimodalCarousel: ConciergeMultimodalCarouselBehavior(carouselStyle: carouselStyle),
+            productCard: ConciergeProductCardBehavior(cardStyle: .productDetail)
+        )
+    )
+    if let maxHeight = maxHeight {
+        theme.layout.productCardMaxHeight = maxHeight
+    }
+    return theme
+}
+
+#Preview("CarouselGroupView - Scroll (mixed cards)") {
+    CarouselGroupView(items: PreviewData.mixedMessages)
+        .conciergeTheme(productDetailCarouselTheme(carouselStyle: .scroll))
+}
+
+#Preview("CarouselGroupView - Paged (mixed cards)") {
+    CarouselGroupView(items: PreviewData.mixedMessages)
+        .conciergeTheme(productDetailCarouselTheme(carouselStyle: .paged))
+}
+
+#Preview("CarouselGroupView - Constrained (internal scroll)") {
+    // Tall card exceeds the 260pt max, so every card equalizes to 260 and the tall one scrolls.
+    CarouselGroupView(items: PreviewData.mixedMessages)
+        .conciergeTheme(productDetailCarouselTheme(carouselStyle: .scroll, maxHeight: 260))
 }
 
 #endif

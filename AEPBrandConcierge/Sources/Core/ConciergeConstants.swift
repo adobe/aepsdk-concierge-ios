@@ -20,7 +20,7 @@ import Foundation
 public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.6.0"
+    static let EXTENSION_VERSION = "5.7.0"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
 
@@ -209,6 +209,7 @@ public enum ConciergeConstants {
             static let DISCLAIMER_LINK_CLICKED = "Brand Concierge Disclaimer Link Clicked"
             static let ERROR_OCCURRED = "Brand Concierge Error Occurred"
             static let CTA_BUTTON_CLICKED = "Brand Concierge CTA Button Clicked"
+            static let LINK_CLICKED = "Brand Concierge Link Clicked"
         }
 
         public enum XDMType {
@@ -227,6 +228,7 @@ public enum ConciergeConstants {
             public static let DISCLAIMER_LINK_CLICKED = "concierge:disclaimerLink:clicked"
             public static let ERROR_OCCURRED = "concierge:error:occurred"
             public static let CTA_BUTTON_CLICKED = "concierge:ctaButton:clicked"
+            public static let LINK_CLICKED = "concierge:link:clicked"
         }
 
         public enum EventData {
@@ -247,7 +249,17 @@ public enum ConciergeConstants {
                 public static let URL = "url"
                 public static let ERROR_MESSAGE = "errorMessage"
                 public static let LABEL = "label"
+                public static let ORIGIN = "origin"
             }
+        }
+
+        public enum LinkClickOrigin {
+            public static let CITATION     = "citation"
+            public static let LINK_HINT    = "linkHint"
+            public static let INLINE       = "inline"
+            public static let PRODUCT_CARD = "productCard"
+            public static let DISCLAIMER   = "disclaimer"
+            public static let CTA          = "cta"
         }
     }
 

@@ -587,15 +587,81 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardWidth, 220)
     }
 
-    func test_productCardHeight_mapsToLayout() {
+    func test_productCardMinHeight_mapsToLayout() {
         // Given
         var theme = ConciergeTheme()
 
         // When
-        CSSKeyMapper.apply(cssKey: "product-card-height", cssValue: "350px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "product-card-min-height", cssValue: "240px", to: &theme)
 
         // Then
-        XCTAssertEqual(theme.layout.productCardHeight, 350)
+        XCTAssertEqual(theme.layout.productCardMinHeight, 240)
+    }
+
+    func test_productCardMaxHeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-max-height", cssValue: "360px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardMaxHeight, 360)
+    }
+
+    func test_productImageWidth_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-image-width", cssValue: "190px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productImageWidth, 190)
+    }
+
+    func test_productImageHeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-image-height", cssValue: "190px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productImageHeight, 190)
+    }
+
+    func test_productImageScale_fit_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-image-scale", cssValue: "fit", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productImageScale, .fit)
+    }
+
+    func test_productImageScale_fill_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-image-scale", cssValue: "fill", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productImageScale, .fill)
+    }
+
+    func test_productImageScale_invalid_defaultsToFill() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-image-scale", cssValue: "bogus", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productImageScale, .fill)
     }
 
     func test_productCardTextSpacing_mapsToLayout() {
