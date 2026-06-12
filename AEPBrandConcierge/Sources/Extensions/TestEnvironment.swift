@@ -19,6 +19,12 @@ enum TestEnvironment {
     /// This is evaluated once per process to avoid repeatedly reading the environment dictionary.
     static let isRunningTests: Bool = {
         #if DEBUG
+        // XCUITest launches the app as a separate process. That process needs normal focus
+        // The test runner passes --ui-testing so we can opt out of the unit-test guard here.
+        if CommandLine.arguments.contains("--ui-testing") {
+            return false
+        }
+
         let environment = ProcessInfo.processInfo.environment
 
         // Xcode sets this when launching tests.
@@ -33,5 +39,19 @@ enum TestEnvironment {
         #endif
 
         return false
+    }()
+
+    /// Returns true when the app was launched by an XCUITest runner (which passes the
+    /// `--ui-testing` launch argument).
+    ///
+    /// Launch arguments are immutable for the lifetime of the process, so this is evaluated
+    /// once and cached (mirroring `isRunningTests`). It is read in hot paths such as
+    /// `SelectableTextView.updateUIView`, so it must not re-scan the arguments on every call.
+    static let isUITesting: Bool = {
+        #if DEBUG
+        return CommandLine.arguments.contains("--ui-testing")
+        #else
+        return false
+        #endif
     }()
 }

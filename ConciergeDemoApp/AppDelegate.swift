@@ -21,6 +21,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         MobileCore.setLogLevel(.trace)
 
+        #if DEBUG
+        // UI tests pass --reset-session for a fresh conversation. Safe before registerExtensions:
+        // it only clears local session state, with no dependency on a registered AEP extension.
+        if CommandLine.arguments.contains("--reset-session") {
+            Concierge.resetSessionForTesting()
+        }
+        #endif
+
         let extensions = [
             AEPEdgeIdentity.Identity.self,
             Edge.self,

@@ -92,3 +92,6 @@ iOSInjectionProject/
 Pods/
 
 .claude/
+
+# MCP server debug log
+mcp-server.log

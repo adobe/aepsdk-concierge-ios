@@ -81,6 +81,7 @@ struct MessageListView: View {
                     .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
                     .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
+                .accessibilityIdentifier("concierge.messageList")
                 // Scroll user message to top when sent, allowing agent response to fill screen below
                 .onChange(of: userScrollTick) { _ in
                     guard let messageId = userMessageToScrollId else { return }

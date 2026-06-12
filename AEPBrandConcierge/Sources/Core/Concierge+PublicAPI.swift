@@ -27,6 +27,16 @@ public extension Concierge {
         ConciergeEventTracker.enableTracking(enable: enable)
     }
 
+    #if DEBUG
+    /// Clears the persisted session and the in-memory session so the next `show(...)` starts a
+    /// brand-new conversation. UI-test only — used to isolate scenarios from one another.
+    @MainActor
+    static func resetSessionForTesting() {
+        SessionManager.shared.clearSession()
+        currentSession = nil
+    }
+    #endif
+
     // MARK: - SwiftUI Presentation APIs
 
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.

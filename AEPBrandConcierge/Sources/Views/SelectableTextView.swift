@@ -41,8 +41,23 @@ struct SelectableTextView: UIViewRepresentable {
         textView.textContainer.lineFragmentPadding = 0
         textView.delegate = context.coordinator
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        textView.accessibilityTraits.insert(.allowsDirectInteraction)
+        // `.allowsDirectInteraction` makes accessibility/automation pass touches straight to the view, which prevents XCUITest from establishing keyboard focus
+        if !TestEnvironment.isUITesting {
+            textView.accessibilityTraits.insert(.allowsDirectInteraction)
+        }
         textView.accessibilityLabel = accessibilityLabel ?? placeholder
+        textView.accessibilityIdentifier = "concierge.input"
+        // Under UI testing, turn off autocorrect/predictive/smart substitutions so XCUITest
+        // typeText enters the prompt verbatim — otherwise QuickType can inject extra words.
+        if TestEnvironment.isUITesting {
+            textView.autocorrectionType = .no
+            textView.autocapitalizationType = .none
+            textView.spellCheckingType = .no
+            textView.smartQuotesType = .no
+            textView.smartDashesType = .no
+            textView.smartInsertDeleteType = .no
+            if #available(iOS 17.0, *) { textView.inlinePredictionType = .no }
+        }
 
         // Placeholder label — positioned to match where text renders
         let placeholderLabel = UILabel()
@@ -118,7 +133,19 @@ struct SelectableTextView: UIViewRepresentable {
         //
         // Note: During snapshot/unit testing we intentionally avoid changing first responder status to keep
         // screenshots deterministic (caret blink, selection highlighting, and keyboard-driven layout can vary).
-        if !TestEnvironment.isRunningTests {
+        if TestEnvironment.isUITesting {
+            // Tap-driven focus: become first responder only when the field is actually focused
+            // (the test taps the field to type). Never auto-resign here, so the one-runloop-lagging
+            // `isFocused` binding cannot tear down a freshly tapped focus. Crucially we do NOT hold
+            // focus eagerly — once a turn is sent the keyboard drops and stays down through the
+            // post-response scroll/observe phase (and the final turn), so it does not cover cards
+            // or swallow scroll/swipe actions.
+            DispatchQueue.main.async {
+                if isFocused, !uiView.isFirstResponder, isEditable, uiView.window != nil {
+                    uiView.becomeFirstResponder()
+                }
+            }
+        } else if !TestEnvironment.isRunningTests {
             DispatchQueue.main.async {
                 if isFocused, !uiView.isFirstResponder, isEditable {
                     uiView.becomeFirstResponder()

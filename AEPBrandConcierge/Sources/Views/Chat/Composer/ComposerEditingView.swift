@@ -107,7 +107,8 @@ struct ComposerEditingView: View {
                 .accessibilityLabel("Stop recording")
                 .padding(.bottom, 8)
             } else if hasText {
-                // Send button appears in the same slot once text is present
+                // Send button appears in the same slot once text is present.
+                // Both branches share "concierge.sendButton"; only one renders at a time.
                 if theme.behavior.input.sendButtonStyle == "arrow" {
                     Button(action: onSend) {
                         Image(systemName: "arrow.up.circle.fill")
@@ -120,6 +121,7 @@ struct ComposerEditingView: View {
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
+                    .accessibilityIdentifier("concierge.sendButton")
                     .disabled(!sendEnabled)
                     .transition(buttonTransition)
                     .padding(.bottom, 8)
@@ -136,6 +138,7 @@ struct ComposerEditingView: View {
                     )
                     .contentShape(Rectangle())
                     .accessibilityLabel(theme.text.inputSendAria)
+                    .accessibilityIdentifier("concierge.sendButton")
                     .disabled(!sendEnabled)
                     .transition(buttonTransition)
                     .padding(.bottom, 8)

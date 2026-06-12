@@ -100,6 +100,7 @@ struct ContentView: View {
                                 )
                         }
                         .padding(.horizontal, 20)
+                        .accessibilityIdentifier("demo.openChatButton")
                         .padding(.bottom, 32)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

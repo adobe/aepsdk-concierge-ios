@@ -28,6 +28,14 @@ final class ChatController: ObservableObject {
     @Published var showPermissionDialog: Bool = false
     @Published var audioLevel: Float = 0
 
+    #if DEBUG
+    /// JSON timeline of the most recently completed chat turn. Populated only under UI
+    /// testing and surfaced via accessibility so an out-of-process XCUITest can read the
+    /// SSE → render timing. Empty otherwise.
+    @Published private(set) var lastTurnTimingJSON: String = ""
+    private var turnTiming = TurnTiming()
+    #endif
+
     // MARK: - Input Controller
 
     let inputController = InputController()
@@ -238,6 +246,9 @@ final class ChatController: ObservableObject {
         }
 
         if isUser {
+            #if DEBUG
+            if TestEnvironment.isUITesting { turnTiming.begin(prompt: text) }
+            #endif
             dispatchTrackingEvent(.querySubmitted(query: text))
             chatState = .processing
             streamAgentResponse(for: text)
@@ -430,6 +441,12 @@ final class ChatController: ObservableObject {
 
                     let state = payload.state
 
+                    #if DEBUG
+                    if TestEnvironment.isUITesting {
+                        self.turnTiming.markChunk(isInProgress: state == ConciergeConstants.StreamState.IN_PROGRESS)
+                    }
+                    #endif
+
                     if let response = payload.response {
                         if let data = try? JSONEncoder().encode(response),
                            let json = String(data: data, encoding: .utf8) {
@@ -470,6 +487,9 @@ final class ChatController: ObservableObject {
                                 self.messages[streamingMessageIndex] = current
                             }
                         } else if state == ConciergeConstants.StreamState.COMPLETED {
+                            #if DEBUG
+                            if TestEnvironment.isUITesting { self.turnTiming.markCompletedState() }
+                            #endif
                             let fullText = message
                             Log.trace(label: self.LOG_TAG, "Completion received. Full text length=\(fullText.count)")
 
@@ -509,6 +529,10 @@ final class ChatController: ObservableObject {
                 Task { @MainActor in
                     guard let self = self else { return }
 
+                    #if DEBUG
+                    if TestEnvironment.isUITesting { self.turnTiming.markStreamComplete() }
+                    #endif
+
                     if let error = error {
                         Log.error(label: self.LOG_TAG, "Streaming error: \(error)")
                         self.dispatchTrackingEvent(.errorOccurred(errorMessage: error.localizedDescription))
@@ -519,6 +543,9 @@ final class ChatController: ObservableObject {
                         }
                     } else if accumulatedContent.isEmpty && latestElements.isEmpty {
                         // Genuinely empty response — no text and no multimodal elements.
+                        #if DEBUG
+                        if TestEnvironment.isUITesting { self.turnTiming.markEmptyResponse() }
+                        #endif
                         if streamingMessageIndex < self.messages.count {
                             self.messages.remove(at: streamingMessageIndex)
                         }
@@ -568,6 +595,13 @@ final class ChatController: ObservableObject {
                             }
                         }
 
+                        #if DEBUG
+                        if TestEnvironment.isUITesting {
+                            let cards = latestElements.filter { $0.elementType != .ctaButton }.count
+                            self.turnTiming.markResult(cardCount: cards, textLength: accumulatedContent.count)
+                        }
+                        #endif
+
                         self.clearState()
                     }
                 }
@@ -580,6 +614,17 @@ final class ChatController: ObservableObject {
         latestSources = []
         latestLinkHints = []
         latestPromptSuggestions = []
+
+        #if DEBUG
+        if TestEnvironment.isUITesting {
+            // Defer one runloop tick so the @Published message mutations from this turn are
+            // applied before we stamp render-complete and publish the timeline.
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.lastTurnTimingJSON = self.turnTiming.finalize(renderedMessageCount: self.messages.count)
+            }
+        }
+        #endif
     }
 
     /// Appends multimodal elements to `messages`, respecting their relative order from
@@ -644,3 +689,105 @@ extension Array {
         return indices.contains(index) ? self[index] : nil
     }
 }
+
+#if DEBUG
+// MARK: - Turn Timing (UI-test instrumentation only)
+
+/// Records wall-clock timestamps for the key moments of a single chat turn so an XCUITest
+/// (which runs in a separate process and cannot read the app's logs) can read back the
+/// SSE → render timeline as JSON via the chat's accessibility probe.
+///
+/// The stored properties are both the live recording state and the serialized JSON contract
+/// consumed by the XCUITest `Timeline` mirror — renaming one requires a matching change in
+/// `ConversationScenarioTests.swift`. Field defaults make `TurnTiming()` a zeroed starting point.
+///
+/// Active only under UI testing; in every other run it does no work. Co-located with
+/// `ChatController` (its only user) so no new project file registration is required.
+struct TurnTiming: Encodable {
+    var prompt: String = ""
+
+    // Absolute epoch milliseconds for each mark (0 if not yet reached).
+    var submitMs: Int64 = 0
+    var firstChunkMs: Int64 = 0
+    var completedStateMs: Int64 = 0
+    var streamCompleteMs: Int64 = 0
+    var renderCompleteMs: Int64 = 0
+
+    // Counters.
+    var chunkCount: Int = 0
+    var inProgressCount: Int = 0
+    var renderedMessageCount: Int = 0
+
+    // Result classification (drives conditional multi-turn follow-ups in the test).
+    var cardCount: Int = 0        // number of multimodal card elements rendered (excludes CTAs)
+    var responseEmpty: Bool = false  // true if the empty-fallback ("Sorry, …") path was taken
+    var textLength: Int = 0       // length of the accumulated agent text
+
+    // Derived durations (milliseconds), computed at finalize time.
+    var ttfbMs: Int64 = 0                 // firstChunk - submit (time to first chunk)
+    var streamMs: Int64 = 0               // streamComplete - firstChunk
+    var renderAfterCompleteMs: Int64 = 0  // renderComplete - completedState
+    var totalMs: Int64 = 0                // renderComplete - submit
+
+    private var nowMs: Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
+
+    /// Resets all marks and records the moment the user's message was submitted.
+    mutating func begin(prompt: String) {
+        self = TurnTiming()
+        self.prompt = prompt
+        submitMs = nowMs
+    }
+
+    /// Call once per SSE chunk. Stamps the first chunk and tracks counts.
+    mutating func markChunk(isInProgress: Bool) {
+        chunkCount += 1
+        if isInProgress { inProgressCount += 1 }
+        if firstChunkMs == 0 { firstChunkMs = nowMs }
+    }
+
+    /// Call on the empty-fallback completion path (no text and no multimodal elements).
+    mutating func markEmptyResponse() {
+        responseEmpty = true
+    }
+
+    /// Call on the successful completion path with the rendered result classification.
+    mutating func markResult(cardCount: Int, textLength: Int) {
+        self.cardCount = cardCount
+        self.textLength = textLength
+    }
+
+    /// Call when a chunk with `state == completed` is observed.
+    mutating func markCompletedState() {
+        if completedStateMs == 0 { completedStateMs = nowMs }
+    }
+
+    /// Call when the stream's onComplete callback fires.
+    mutating func markStreamComplete() {
+        if streamCompleteMs == 0 { streamCompleteMs = nowMs }
+    }
+
+    /// Call after `chatState` returns to `.idle` and the message list is finalized.
+    /// Stamps render-complete, fills in the derived durations, and returns the turn's JSON.
+    mutating func finalize(renderedMessageCount: Int) -> String {
+        renderCompleteMs = nowMs
+        self.renderedMessageCount = renderedMessageCount
+
+        ttfbMs = diff(submitMs, firstChunkMs)
+        streamMs = diff(firstChunkMs, streamCompleteMs)
+        renderAfterCompleteMs = diff(completedStateMs, renderCompleteMs)
+        totalMs = diff(submitMs, renderCompleteMs)
+
+        guard let data = try? JSONEncoder().encode(self),
+              let json = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return json
+    }
+
+    /// Returns `end - start` in ms, or 0 if either mark was never taken.
+    private func diff(_ start: Int64, _ end: Int64) -> Int64 {
+        guard start > 0, end > 0, end >= start else { return 0 }
+        return end - start
+    }
+}
+#endif

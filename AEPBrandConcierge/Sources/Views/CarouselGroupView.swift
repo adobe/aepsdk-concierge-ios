@@ -68,6 +68,7 @@ struct CarouselGroupView: View {
             }
             .fixedSize(horizontal: false, vertical: true)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .accessibilityIdentifier("concierge.cardCarousel")
 
             HStack(spacing: 16) {
                 Button(action: { currentIndex = max(0, currentIndex - 1) }) {
@@ -104,5 +105,6 @@ struct CarouselGroupView: View {
             .padding(.trailing, theme.layout.productCardCarouselHorizontalPadding ?? theme.layout.chatHistoryPadding)
             .padding(.vertical, 12)
         }
+        .accessibilityIdentifier("concierge.cardCarousel")
     }
 }

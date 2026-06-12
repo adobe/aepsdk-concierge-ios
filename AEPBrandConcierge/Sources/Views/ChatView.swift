@@ -79,6 +79,14 @@ struct ChatView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            #if DEBUG
+            // UI-test state probe — 1pt square, opacity 0.01 keeps it in the accessibility
+            // tree without being visible. XCUITest polls this identifier to know when the
+            // chat transitions between processing and idle. DEBUG-only: it is pure test
+            // scaffolding and must not ship in the production accessibility tree.
+            probeView
+            #endif
+
             // Full background color ignoring safe area (dynamic for light/dark)
             theme.colors.surface.mainContainerBackground.color
                 .ignoresSafeArea()
@@ -297,6 +305,25 @@ struct ChatView: View {
                 : .custom(theme.typography.fontFamily, size: theme.typography.fontSize)
         )
     }
+
+    // MARK: - UI-test state probe (DEBUG-only)
+
+    #if DEBUG
+    /// 1pt, near-transparent element kept in the accessibility tree so an out-of-process
+    /// XCUITest can observe chat state transitions (busy → idle) and read the completed
+    /// turn's SSE → render timeline from its accessibility value. Test scaffolding only —
+    /// never compiled into release builds.
+    private var probeView: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.01))
+            .frame(width: 1, height: 1)
+            .accessibilityIdentifier(controller.chatState == .idle
+                ? "concierge.chatState.idle"
+                : "concierge.chatState.busy")
+            .accessibilityValue(controller.lastTurnTimingJSON)
+            .allowsHitTesting(false)
+    }
+    #endif
 
     // MARK: - Actions
 

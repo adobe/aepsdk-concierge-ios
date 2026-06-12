@@ -1,0 +1,48 @@
+{
+  "responseTimeoutSeconds": 60,
+  "scenarios": [
+    {
+      "id": "TC-01",
+      "name": "Nike shirts (retry until cards)",
+      "turns": [
+        {
+          "prompt": "Nike Men's shirts",
+          "stopWhen": { "hasCards": true },
+          "actions": [
+            { "scroll": "down", "target": "conversation", "times":1, "settleMs": 200 }
+          ]
+        },
+        {
+          "prompt": "regular size",
+          "stopWhen": { "hasCards": true },
+          "actions": [
+            { "scroll": "right", "target": "cards","times": 2, "settleMs": 300 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TC-02",
+      "name": "Hiking help",
+      "turns": [
+          { "prompt": "Help me with hiking",
+              "actions": [
+                { "scroll": "down",  "target": "conversation", "times": 0, "settleMs": 200 },
+                { "scroll": "right", "target": "cards","times": 1, "settleMs": 300 }
+              ]
+          }
+      ]
+    },
+    {
+      "id": "TC-03",
+      "name": "Stores in New York",
+      "turns": [
+        { "prompt": "Stores in New york",
+            "actions": [
+              { "scroll": "down",  "target": "conversation", "times": 2, "settleMs": 200 }
+            ]
+        }
+      ]
+    }
+  ]
+}
