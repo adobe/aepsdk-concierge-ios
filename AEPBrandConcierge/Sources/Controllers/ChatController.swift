@@ -12,6 +12,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 import AEPCore
 import AEPServices
 
@@ -27,6 +28,10 @@ final class ChatController: ObservableObject {
     @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
     @Published var audioLevel: Float = 0
+
+    /// Mirror of `inputController.state`, updated only on state transitions (not per-keystroke text
+    /// changes). Lets views react to input state without observing `InputController` directly.
+    @Published private(set) var composerState: InputState = .empty
 
     // MARK: - Input Controller
 
@@ -48,6 +53,7 @@ final class ChatController: ObservableObject {
     private var latestLinkHints: [LinkHint] = []
     private var latestPromptSuggestions: [String] = []
     private var chatOpenTime: Date?
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Computed Properties
 
@@ -76,6 +82,7 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        observeComposerState()
     }
 
     #if DEBUG
@@ -87,10 +94,19 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        observeComposerState()
     }
     #endif
 
     // MARK: - Input Handling
+
+    private func observeComposerState() {
+        inputController.$state
+            .sink { [weak self] newState in
+                self?.composerState = newState
+            }
+            .store(in: &cancellables)
+    }
 
     func applyTextChange(_ newText: String) {
         inputController.applyTextChange(newText)
@@ -439,6 +455,8 @@ final class ChatController: ObservableObject {
 
                     let state = payload.state
 
+                    // Serializing + pretty-printing the response is only useful for local debugging,
+                    #if DEBUG
                     if let response = payload.response {
                         if let data = try? JSONEncoder().encode(response),
                            let json = String(data: data, encoding: .utf8) {
@@ -447,6 +465,7 @@ final class ChatController: ObservableObject {
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
                     }
+                    #endif
 
                     // Dispatch responseStarted exactly once per turn, on the first chunk that
                     // carries any user-visible content (text OR multimodal elements). Mirrors
