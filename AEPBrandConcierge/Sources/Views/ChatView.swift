@@ -142,12 +142,8 @@ struct ChatView: View {
                 }
             )
         }
-        // Safe area respecting bottom composer.
-        //
-        // The composer is its own view holding the only `@ObservedObject` on `InputController`.
-        // This confines per-keystroke text updates to the input bar: typing re-renders only this
-        // subview, not `ChatView` and its (non-lazy) message list, which previously rebuilt every
-        // row on every keystroke and made the input progressively unresponsive.
+        // Safe area respecting bottom composer. Isolated in its own view so per-keystroke text
+        // updates re-render only the input bar, not the message list.
         .safeAreaInset(edge: .bottom) {
             ChatComposerContainer(
                 controller: controller,
@@ -316,10 +312,8 @@ struct ChatView: View {
     }
 }
 
-/// Hosts the input composer and owns the sole `@ObservedObject` reference to `InputController`.
-///
-/// Keeping this observation off `ChatView` is what prevents per-keystroke text updates from
-/// invalidating the chat transcript. Only this lightweight subview re-renders as the user types.
+/// Hosts the input composer and owns the sole `@ObservedObject` on `InputController`, so only this
+/// subview re-renders as the user types — not `ChatView` and its message list.
 private struct ChatComposerContainer: View {
     @Environment(\.conciergeTheme) private var theme
 

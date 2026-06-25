@@ -120,12 +120,8 @@ struct MarkdownRenderer {
         init(_ blocks: [MarkdownBlock]) { self.blocks = blocks }
     }
 
-    /// Memoizes parsed markdown. `buildBlocks` is a pure function of its inputs but runs inside
-    /// SwiftUI view bodies that re-evaluate on unrelated state changes — every keystroke and every
-    /// streaming chunk re-renders the whole message list, and each message re-parses its markdown.
-    /// Without this cache that work is O(messages × parse) on the main thread per render, which makes
-    /// the input bar and keyboard progressively unresponsive once a few messages accumulate.
-    /// The cached `NSAttributedString`s are only ever read (never mutated in place) downstream.
+    /// Memoizes parsed markdown so re-renders are cache hits instead of repeating the expensive
+    /// `AttributedString(markdown:)` parse. `buildBlocks` is pure and its result is only ever read.
     private static let blockCache: NSCache<NSString, BlockBox> = {
         let cache = NSCache<NSString, BlockBox>()
         cache.countLimit = 256
@@ -138,7 +134,6 @@ struct MarkdownRenderer {
         textColor: UIColor? = nil,
         baseFont: UIFont = .preferredFont(forTextStyle: .body)
     ) -> [MarkdownRenderer.MarkdownBlock] {
-        // Key on every input that affects the output. Color/font are part of the rendered attributes.
         let colorKey = textColor.map { String(describing: $0) } ?? "nil"
         let cacheKey = "\(baseFont.fontName)|\(baseFont.pointSize)|\(colorKey)|\(markdown)" as NSString
         if let cached = blockCache.object(forKey: cacheKey) {

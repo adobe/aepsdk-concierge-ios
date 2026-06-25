@@ -119,11 +119,8 @@ struct SelectableTextView: UIViewRepresentable {
         // Note: During snapshot/unit testing we intentionally avoid changing first responder status to keep
         // screenshots deterministic (caret blink, selection highlighting, and keyboard-driven layout can vary).
         if !TestEnvironment.isRunningTests {
-            // Only schedule the async first-responder update when the desired
-            // focus state can actually differ from the current one. This avoids
-            // dispatching a no-op closure on every re-render (e.g. per streaming
-            // chunk). The async block re-checks state, so it stays correct if
-            // first-responder status changes before it runs.
+            // Only schedule the async update when the desired focus state differs from the current
+            // one, to avoid dispatching a no-op closure on every re-render.
             let wantsFocus = isFocused && isEditable
             if wantsFocus != uiView.isFirstResponder {
                 DispatchQueue.main.async {
@@ -171,9 +168,7 @@ struct SelectableTextView: UIViewRepresentable {
         weak var placeholderTopConstraint: NSLayoutConstraint?
         var lastIsEditable: Bool?
 
-        // Cached inputs of the last real height measurement. Used to skip the
-        // synchronous layout pass in recalculateHeight(_:) when nothing that
-        // affects the measured height has changed.
+        // Inputs of the last height measurement, used to skip redundant recalculation.
         private var lastMeasuredText: String?
         private var lastMeasuredWidth: CGFloat = -1
         private var lastMeasuredFont: UIFont?
@@ -248,8 +243,7 @@ struct SelectableTextView: UIViewRepresentable {
         private let baseInset: CGFloat = 6
 
         func recalculateHeight(_ textView: UITextView) {
-            // Resolve the width to measure against. Reading bounds/frame does
-            // not force a layout pass.
+            // Resolve the width to measure against (reading bounds/frame does not force layout).
             var width = textView.bounds.width
             if !width.isFinite || width <= 0 {
                 width = textView.frame.size.width
@@ -261,12 +255,8 @@ struct SelectableTextView: UIViewRepresentable {
             let currentText = textView.text ?? ""
             let currentFont = textView.font
 
-            // Skip the synchronous layoutIfNeeded() + sizeThatFits() pass when
-            // none of the inputs that determine the measured height have
-            // changed. updateUIView() runs on every SwiftUI re-render of the
-            // host view — e.g. on each streaming message chunk — and without
-            // this guard each one would force a layout pass on the main thread,
-            // which is what makes the input bar lag while a response streams in.
+            // Skip the synchronous layoutIfNeeded() + sizeThatFits() pass when nothing affecting
+            // the measured height has changed (updateUIView runs on every re-render).
             if let lastText = lastMeasuredText,
                lastText == currentText,
                abs(lastMeasuredWidth - width) < 0.5,
