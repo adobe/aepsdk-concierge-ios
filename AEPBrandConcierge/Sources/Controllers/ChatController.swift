@@ -12,6 +12,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 import AEPCore
 import AEPServices
 
@@ -27,6 +28,12 @@ final class ChatController: ObservableObject {
     @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
     @Published var audioLevel: Float = 0
+
+    /// Coarse mirror of `inputController.state` (empty / editing / recording / …), updated only on
+    /// state transitions — never on per-keystroke text changes. Views that need to react to input
+    /// state (e.g. welcome-content visibility) observe this instead of holding an `@ObservedObject`
+    /// on `InputController`, so typing does not invalidate the whole chat view and message list.
+    @Published private(set) var composerState: InputState = .empty
 
     // MARK: - Input Controller
 
@@ -48,6 +55,7 @@ final class ChatController: ObservableObject {
     private var latestLinkHints: [LinkHint] = []
     private var latestPromptSuggestions: [String] = []
     private var chatOpenTime: Date?
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Computed Properties
 
@@ -76,6 +84,7 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        observeComposerState()
     }
 
     #if DEBUG
@@ -87,10 +96,22 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        observeComposerState()
     }
     #endif
 
     // MARK: - Input Handling
+
+    /// Mirrors the input state machine's `state` onto `composerState`. The `$state` publisher only
+    /// emits on state transitions, not on per-keystroke text changes (which live in `data`), so this
+    /// keeps the chat view's welcome logic reactive without re-rendering it on every keystroke.
+    private func observeComposerState() {
+        inputController.$state
+            .sink { [weak self] newState in
+                self?.composerState = newState
+            }
+            .store(in: &cancellables)
+    }
 
     func applyTextChange(_ newText: String) {
         inputController.applyTextChange(newText)

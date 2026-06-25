@@ -27,7 +27,6 @@ struct ChatView: View {
     // MARK: - State
 
     @ObservedObject private var controller: ChatController
-    @ObservedObject private var inputController: InputController
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
@@ -60,7 +59,6 @@ struct ChatView: View {
         self.subtitleText = subtitle
         self.onClose = onClose
         self._controller = ObservedObject(wrappedValue: controller)
-        self._inputController = ObservedObject(wrappedValue: controller.inputController)
     }
 
     // Internal use only for previews
@@ -72,7 +70,6 @@ struct ChatView: View {
         let chatController = ChatController(configuration: ConciergeConfiguration(), speechCapturer: nil, speaker: nil)
         chatController.messages = messages
         self._controller = ObservedObject(wrappedValue: chatController)
-        self._inputController = ObservedObject(wrappedValue: chatController.inputController)
     }
 
     // MARK: - Body
@@ -84,7 +81,7 @@ struct ChatView: View {
                 .ignoresSafeArea()
 
             // Filter welcome content (header + examples) based on input state and whether the user has interacted
-            let shouldShowWelcome = (inputController.state == .empty) && !controller.hasUserSentMessage
+            let shouldShowWelcome = (controller.composerState == .empty) && !controller.hasUserSentMessage
             let displayMessages: [Message] = shouldShowWelcome ? controller.messages : controller.messages.filter { message in
                 switch message.template {
                 case .welcomePromptSuggestion, .welcomeHeader:
@@ -145,23 +142,19 @@ struct ChatView: View {
                 }
             )
         }
-        // Safe area respecting bottom composer
+        // Safe area respecting bottom composer.
+        //
+        // The composer is its own view holding the only `@ObservedObject` on `InputController`.
+        // This confines per-keystroke text updates to the input bar: typing re-renders only this
+        // subview, not `ChatView` and its (non-lazy) message list, which previously rebuilt every
+        // row on every keystroke and made the input progressively unresponsive.
         .safeAreaInset(edge: .bottom) {
-            ChatComposer(
-                inputText: Binding(
-                    get: { inputController.data.text },
-                    set: { controller.applyTextChange($0) }
-                ),
+            ChatComposerContainer(
+                controller: controller,
+                inputController: controller.inputController,
                 selectedRange: $selectedTextRange,
                 measuredHeight: $composerHeight,
                 isFocused: $isInputFocused,
-                inputState: inputController.state,
-                chatState: controller.chatState,
-                composerEditable: controller.chatState != .processing,
-                micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
-                sendEnabled: inputController.data.canSend,
-                audioLevel: controller.audioLevel,
-                onEditingChanged: { _ in },
                 onMicTap: handleMicTap,
                 onCancel: {
                     controller.cancelMic()
@@ -320,6 +313,51 @@ struct ChatView: View {
             hapticFeedback.impactOccurred()
             controller.toggleMic(currentSelectionLocation: selectedTextRange.location)
         }
+    }
+}
+
+/// Hosts the input composer and owns the sole `@ObservedObject` reference to `InputController`.
+///
+/// Keeping this observation off `ChatView` is what prevents per-keystroke text updates from
+/// invalidating the chat transcript. Only this lightweight subview re-renders as the user types.
+private struct ChatComposerContainer: View {
+    @Environment(\.conciergeTheme) private var theme
+
+    @ObservedObject var controller: ChatController
+    @ObservedObject var inputController: InputController
+
+    @Binding var selectedRange: NSRange
+    @Binding var measuredHeight: CGFloat
+    @Binding var isFocused: Bool
+
+    let onMicTap: () -> Void
+    let onCancel: () -> Void
+    let onComplete: () -> Void
+    let onSend: () -> Void
+    let onLinkTap: (URL) -> Void
+
+    var body: some View {
+        ChatComposer(
+            inputText: Binding(
+                get: { inputController.data.text },
+                set: { controller.applyTextChange($0) }
+            ),
+            selectedRange: $selectedRange,
+            measuredHeight: $measuredHeight,
+            isFocused: $isFocused,
+            inputState: inputController.state,
+            chatState: controller.chatState,
+            composerEditable: controller.chatState != .processing,
+            micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
+            sendEnabled: inputController.data.canSend,
+            audioLevel: controller.audioLevel,
+            onEditingChanged: { _ in },
+            onMicTap: onMicTap,
+            onCancel: onCancel,
+            onComplete: onComplete,
+            onSend: onSend,
+            onLinkTap: onLinkTap
+        )
     }
 }
 

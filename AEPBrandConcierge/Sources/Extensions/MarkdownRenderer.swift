@@ -112,19 +112,48 @@ struct MarkdownRenderer {
     /// Final render tree built from the input runs. Consumed by SwiftUI views for display.
     private var blocks: [MarkdownBlock] = []
 
+    // MARK: - Cache
+
+    /// Boxes the value-type block array so it can be stored in `NSCache`, which requires class values.
+    private final class BlockBox {
+        let blocks: [MarkdownBlock]
+        init(_ blocks: [MarkdownBlock]) { self.blocks = blocks }
+    }
+
+    /// Memoizes parsed markdown. `buildBlocks` is a pure function of its inputs but runs inside
+    /// SwiftUI view bodies that re-evaluate on unrelated state changes — every keystroke and every
+    /// streaming chunk re-renders the whole message list, and each message re-parses its markdown.
+    /// Without this cache that work is O(messages × parse) on the main thread per render, which makes
+    /// the input bar and keyboard progressively unresponsive once a few messages accumulate.
+    /// The cached `NSAttributedString`s are only ever read (never mutated in place) downstream.
+    private static let blockCache: NSCache<NSString, BlockBox> = {
+        let cache = NSCache<NSString, BlockBox>()
+        cache.countLimit = 256
+        return cache
+    }()
+
     // MARK: - Public API
     static func buildBlocks(
         markdown: String,
         textColor: UIColor? = nil,
         baseFont: UIFont = .preferredFont(forTextStyle: .body)
     ) -> [MarkdownRenderer.MarkdownBlock] {
+        // Key on every input that affects the output. Color/font are part of the rendered attributes.
+        let colorKey = textColor.map { String(describing: $0) } ?? "nil"
+        let cacheKey = "\(baseFont.fontName)|\(baseFont.pointSize)|\(colorKey)|\(markdown)" as NSString
+        if let cached = blockCache.object(forKey: cacheKey) {
+            return cached.blocks
+        }
+
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
         guard let attributed = try? AttributedString(markdown: markdown, options: options) else { return [] }
         var builder = MarkdownRenderer(attributed: attributed, textColor: textColor, baseFont: baseFont)
-        return builder.build()
+        let result = builder.build()
+        blockCache.setObject(BlockBox(result), forKey: cacheKey)
+        return result
     }
 
     private mutating func build() -> [MarkdownBlock] {
