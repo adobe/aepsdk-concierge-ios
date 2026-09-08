@@ -33,15 +33,19 @@ public extension Concierge {
     ///
     /// The closure is `async`, so it works synchronously (`{ tokenCache.current }`) or asynchronously
     /// (`{ await tokenCache.freshToken() }`). It's consulted fresh each turn (never cached) and awaited
-    /// off the UI thread. Returning `nil`/blank — or not returning within a few seconds — sends the turn
+    /// off the UI thread. Returning `nil`/blank — or not returning within `timeout` — sends the turn
     /// without a token; pass `nil` to clear.
     ///
     /// - Important: Supply only the opaque, app-minted token your backend expects — never a raw Auth0
     ///   (or other identity-provider) token. The SDK attaches it verbatim as its own request-body field
     ///   (never a header, never merged into the identity payload) and never inspects it.
-    /// - Parameter provider: A closure returning the current token, or `nil` to clear the provider.
-    static func setAuthTokenProvider(_ provider: (@Sendable () async -> String?)?) {
-        ConciergeAuthTokenResolver.shared.setProvider(provider)
+    /// - Parameters:
+    ///   - timeout: How long to await the provider before sending the turn without a token. Defaults
+    ///     to 3 seconds; raise it if minting the token may take longer.
+    ///   - provider: A closure returning the current token, or `nil` to clear the provider.
+    static func setAuthTokenProvider(timeout: TimeInterval = 3,
+                                     _ provider: (@Sendable () async -> String?)?) {
+        ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
     }
 
     // MARK: - SwiftUI Presentation APIs

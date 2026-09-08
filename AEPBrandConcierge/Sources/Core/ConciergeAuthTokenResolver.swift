@@ -23,35 +23,45 @@ import AEPServices
 final class ConciergeAuthTokenResolver {
     static let shared = ConciergeAuthTokenResolver()
 
-    /// How long to wait for the provider before giving up and sending the turn without a token.
-    /// A safety net against a provider that never returns — the common path finishes far below it.
-    private let timeoutNanoseconds: UInt64
+    /// Default time to wait for the provider before sending the turn without a token, when the app
+    /// doesn't specify one. A safety net against a provider that never returns.
+    static let defaultTimeout: TimeInterval = 3
 
-    /// - Parameter timeoutNanoseconds: max time to await the provider before yielding no token.
-    ///   Defaults to 5s; tests inject a small value instead of mutating shared state.
-    init(timeoutNanoseconds: UInt64 = 5_000_000_000) {
-        self.timeoutNanoseconds = timeoutNanoseconds
-    }
+    /// Upper bound on the provider timeout. Clamps non-finite (`.infinity`/`.nan`) or absurdly large
+    /// values so the seconds→nanoseconds `UInt64` conversion can never trap.
+    static let maxTimeout: TimeInterval = 600 // 10 minutes; far below the UInt64-nanosecond overflow
 
     private let LOG_TAG = "ConciergeAuthTokenResolver"
 
     private let lock = NSLock()
     private var _provider: (@Sendable () async -> String?)?
+    private var _timeoutNanoseconds: UInt64 = 3_000_000_000 // defaultTimeout in ns; overwritten on setProvider
 
-    private var provider: (@Sendable () async -> String?)? {
-        get { lock.lock(); defer { lock.unlock() }; return _provider }
-        set { lock.lock(); defer { lock.unlock() }; _provider = newValue }
-    }
-
-    /// Registers `provider`, replacing any previously registered one. Pass `nil` to clear.
-    func setProvider(_ provider: (@Sendable () async -> String?)?) {
-        self.provider = provider
+    /// Registers `provider` and the maximum time to await it before sending the turn without a
+    /// token. Pass `nil` to clear. `timeout` is clamped to `[0, maxTimeout]`.
+    func setProvider(_ provider: (@Sendable () async -> String?)?,
+                     timeout: TimeInterval = ConciergeAuthTokenResolver.defaultTimeout) {
+        lock.lock()
+        _provider = provider
+        _timeoutNanoseconds = Self.nanoseconds(fromTimeout: timeout)
+        lock.unlock()
         Log.debug(label: LOG_TAG, provider == nil ? "Auth token provider cleared." : "Auth token provider registered.")
     }
 
+    /// Converts a timeout in seconds to nanoseconds, clamped to `[0, maxTimeout]` so a non-finite or
+    /// out-of-range value can't trap the `UInt64` conversion.
+    private static func nanoseconds(fromTimeout seconds: TimeInterval) -> UInt64 {
+        let clamped = seconds.isFinite ? min(max(0, seconds), maxTimeout) : maxTimeout
+        return UInt64(clamped * 1_000_000_000)
+    }
+
     /// Returns the current token, or `nil` if there's no provider, it returns `nil`/blank, or it
-    /// doesn't finish within `timeoutNanoseconds`. Awaits without blocking the caller.
+    /// doesn't finish within the configured timeout. Awaits without blocking the caller.
     func resolveToken() async -> String? {
+        lock.lock()
+        let provider = _provider
+        let timeoutNanoseconds = _timeoutNanoseconds
+        lock.unlock()
         guard let provider = provider else { return nil }
         let raw = await Self.firstResult(of: { await provider() }, orNilAfter: timeoutNanoseconds)
         guard let token = raw,

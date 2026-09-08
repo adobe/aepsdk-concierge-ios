@@ -32,36 +32,19 @@ class ConciergeChatService: NSObject {
 
     private var configuration: ConciergeConfiguration
     private var session: URLSession!
-    private let resolver: ConciergeAuthTokenResolver
 
-    /// Serializes the mutable request state below, which is written on the Swift concurrency pool
-    /// (streamChat's Task) and read/cleared on the URLSession delegate queue. The lock is only ever
-    /// held for the get/set itself — never across a handler call, `resume()`, or `cancel()`.
-    private let stateLock = NSLock()
-    private var _dataTask: URLSessionDataTask?
-    private var _onChunkHandler: ((ConversationPayload) -> Void)?
-    private var _onCompleteHandler: ((ConciergeError?) -> Void)?
-
-    private var dataTask: URLSessionDataTask? {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _dataTask }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _dataTask = newValue }
-    }
-    private var onChunkHandler: ((ConversationPayload) -> Void)? {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _onChunkHandler }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _onChunkHandler = newValue }
-    }
-    private var onCompleteHandler: ((ConciergeError?) -> Void)? {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _onCompleteHandler }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _onCompleteHandler = newValue }
-    }
+    // Per-turn streaming state. Written synchronously in `streamChat` (on the caller's thread, before
+    // `resume()`) and read/cleared on the URLSession delegate queue — `resume()` establishes the
+    // happens-before, and `ChatController` single-flights turns, so no lock is needed.
+    private var dataTask: URLSessionDataTask?
+    private var onChunkHandler: ((ConversationPayload) -> Void)?
+    private var onCompleteHandler: ((ConciergeError?) -> Void)?
 
     // MARK: - Initialization
 
     init(configuration: ConciergeConfiguration,
-         urlSessionConfiguration: URLSessionConfiguration = .default,
-         resolver: ConciergeAuthTokenResolver = .shared) {
+         urlSessionConfiguration: URLSessionConfiguration = .default) {
         self.configuration = configuration
-        self.resolver = resolver
         super.init()
 
         session = URLSession(configuration: urlSessionConfiguration, delegate: self, delegateQueue: nil)
@@ -69,88 +52,76 @@ class ConciergeChatService: NSObject {
 
     // MARK: - Streaming Chat / Queries
 
-    func streamChat(_ query: String, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
-        // Resolve the token (which may await an async provider) and assemble/send the request in a
-        // Task, off the caller's thread — awaiting never blocks a thread, so the UI can't freeze.
-        Task { [weak self] in
-            // If the service is torn down before this Task runs, still fire onComplete so a caller
-            // awaiting completion isn't left hanging (the request itself never started).
-            guard let self = self else { onComplete(.unknown); return }
-            do {
-                // Validate everything that doesn't need the token first, so an unrelated
-                // misconfiguration fails fast instead of waiting behind the async provider.
-                let url = try self.createUrl()
-                try self.validateChatConfiguration()
+    /// Builds and sends the streaming request. `token` is resolved by the caller (off the UI thread)
+    /// and attached to the request body; pass `nil` to send the turn without one.
+    func streamChat(_ query: String, token: String?,
+                    onChunk: @escaping (ConversationPayload) -> Void,
+                    onComplete: @escaping (ConciergeError?) -> Void) {
+        do {
+            let url = try createUrl()
 
-                let token = await self.resolver.resolveToken()
-                let payload = try self.createChatPayload(query: query, token: token)
+            // Register handlers for this streaming session
+            onChunkHandler = onChunk
+            onCompleteHandler = onComplete
 
-                // Register handlers only once the request is known to be valid, so a failed turn
-                // doesn't leave stale handlers behind.
-                self.onChunkHandler = onChunk
-                self.onCompleteHandler = onComplete
+            let payload = try createChatPayload(query: query, token: token)
 
-                var request = URLRequest(url: url)
-                request.httpMethod = ConciergeConstants.HTTPMethods.POST
-                request.httpBody = payload
-                request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
-                request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
-                request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
+            var request = URLRequest(url: url)
+            request.httpMethod = ConciergeConstants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
+            request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
+            request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-                self.dataTask = self.session.dataTask(with: request)
-                // Note: the request body is deliberately not logged — it carries the app's auth token.
-                Log.debug(label: self.LOG_TAG, "Sending request to Concierge Service: \(url)")
+            dataTask = session.dataTask(with: request)
+            // Note: the request body is deliberately not logged — it carries the app's auth token.
+            Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url)")
 
-                // Refresh session activity timestamp when starting a request
-                SessionManager.shared.refreshSessionActivity()
+            // Refresh session activity timestamp when starting a request
+            SessionManager.shared.refreshSessionActivity()
 
-                self.dataTask?.resume()
-            } catch {
-                let conciergeError = (error as? ConciergeError) ?? .unknown
-                Log.warning(label: self.LOG_TAG, conciergeError.localizedDescription)
-                onComplete(conciergeError)
-            }
+            dataTask?.resume()
+        } catch {
+            let conciergeError = (error as? ConciergeError) ?? .unknown
+            Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
+            onComplete(conciergeError)
         }
     }
 
     // MARK: - Feedback reporting
 
-    func sendFeedback(data: [String: Any]) {
-        // Resolve the token and assemble/send in a Task, mirroring `streamChat`.
-        Task { [weak self] in
-            guard let self = self else { return }
-            do {
-                // Build the URL first, so a config error fails fast rather than behind the provider.
-                let url = try self.createUrl()
-                let token = await self.resolver.resolveToken()
-                let payload = try self.createFeedbackPayload(data: data, token: token)
+    /// Builds and sends a feedback request. `token` is resolved by the caller and attached to the
+    /// request body; pass `nil` to send without one.
+    func sendFeedback(data: [String: Any], token: String?) {
+        do {
+            let url = try createUrl()
+            let payload = try createFeedbackPayload(data: data, token: token)
 
-                var request = URLRequest(url: url)
-                request.httpMethod = ConciergeConstants.HTTPMethods.POST
-                request.httpBody = payload
-                request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
-                request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
+            var request = URLRequest(url: url)
+            request.httpMethod = ConciergeConstants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
+            request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-                // Note: the request body is deliberately not logged — it carries the app's auth token.
-                Log.debug(label: self.LOG_TAG, "Sending feedback event to Concierge Service: \(url)")
+            // Note: the request body is deliberately not logged — it carries the app's auth token.
+            Log.debug(label: LOG_TAG, "Sending feedback event to Concierge Service: \(url)")
 
-                // Refresh session activity timestamp when sending feedback
-                SessionManager.shared.refreshSessionActivity()
+            // Refresh session activity timestamp when sending feedback
+            SessionManager.shared.refreshSessionActivity()
 
-                self.session.dataTask(with: request) { _, response, error in
-                    if let error = error {
-                        Log.warning(label: self.LOG_TAG, error.localizedDescription)
-                        return
-                    }
+            session.dataTask(with: request) { _, response, error in
+                if let error = error {
+                    Log.warning(label: self.LOG_TAG, error.localizedDescription)
+                    return
+                }
 
-                    if let httpResponse = response as? HTTPURLResponse {
-                        Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
-                    }
-                }.resume()
-            } catch {
-                let conciergeError = (error as? ConciergeError) ?? .unknown
-                Log.warning(label: self.LOG_TAG, conciergeError.localizedDescription)
-            }
+                if let httpResponse = response as? HTTPURLResponse {
+                    Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
+                }
+            }.resume()
+        } catch {
+            let conciergeError = (error as? ConciergeError) ?? .unknown
+            Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
         }
     }
 
@@ -192,16 +163,6 @@ class ConciergeChatService: NSObject {
         return url
     }
 
-    /// Validates the token-independent config a chat request needs and returns the ECID, so a
-    /// misconfiguration fails fast (before the async token provider is awaited) instead of behind it.
-    /// - Returns: the configured ECID.
-    @discardableResult
-    private func validateChatConfiguration() throws -> String {
-        guard let ecid = configuration.ecid else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
-        guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
-        return ecid
-    }
-
     /// Creates the JSON payload for a chat request.
     /// - Parameters:
     ///   - query: The user's message.
@@ -209,7 +170,8 @@ class ConciergeChatService: NSObject {
     /// - Returns: JSON data for the request body
     /// - Note: Internal visibility for testing
     func createChatPayload(query: String, token: String? = nil) throws -> Data {
-        let ecid = try validateChatConfiguration()
+        guard let ecid = configuration.ecid else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
+        guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
 
         let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
 

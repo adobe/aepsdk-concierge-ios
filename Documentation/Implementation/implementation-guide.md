@@ -178,12 +178,17 @@ Concierge.setAuthTokenProvider {
 Concierge.setAuthTokenProvider {
     await myAuthTokenCache.freshToken()
 }
+
+// Raise the timeout if minting the token can take longer than the 3-second default:
+Concierge.setAuthTokenProvider(timeout: 8) {
+    await myAuthTokenCache.freshToken()
+}
 ```
 
 Register the provider once, typically alongside extension registration during app setup. Pass `nil` to `setAuthTokenProvider(_:)` to clear a previously registered provider.
 
 - The provider is consulted once per turn (chat and feedback) — the token is never cached, so refreshed or rotated tokens are picked up on the next turn. The SDK `await`s the closure on a background task, so it never blocks the UI, whether it returns instantly or performs asynchronous work.
-- Returning `nil` or a blank value — or not returning within a few seconds — sends the turn without a token rather than failing it (a token that never resolves can't stall the conversation). The token travels as its own request-body field — never as an `Authorization` header, and never merged into the identity payload.
+- Returning `nil` or a blank value — or not returning within the timeout (`3` seconds by default; adjust with the `timeout:` parameter) — sends the turn without a token rather than failing it (a token that never resolves can't stall the conversation). The token travels as its own request-body field — never as an `Authorization` header, and never merged into the identity payload.
 - Supply only the opaque, app-minted token your backend expects. Never pass a raw Auth0 (or other identity-provider) token — the SDK attaches the value verbatim and must never receive the underlying credential.
 
 ---

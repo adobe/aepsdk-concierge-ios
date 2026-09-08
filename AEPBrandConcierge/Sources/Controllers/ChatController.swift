@@ -356,7 +356,11 @@ final class ChatController: ObservableObject {
             ]
         ]
 
-        chatService.sendFeedback(data: feedbackEventData)
+        Task { [weak self] in
+            guard let self else { return }
+            let token = await ConciergeAuthTokenResolver.shared.resolveToken()
+            self.chatService.sendFeedback(data: feedbackEventData, token: token)
+        }
 
         dispatchTrackingEvent(.feedbackSubmitted(
             conversationId: messagePayload.conversationId ?? "unknown",
@@ -448,7 +452,11 @@ final class ChatController: ObservableObject {
         var latestElements: [MultimodalElement] = []
         var responseStartedDispatched = false
 
-        chatService.streamChat(query,
+        // Resolve the auth token off the UI thread, then send the turn on the main actor.
+        Task { [weak self] in
+            guard let self else { return }
+            let token = await ConciergeAuthTokenResolver.shared.resolveToken()
+            self.chatService.streamChat(query, token: token,
             onChunk: { [weak self] payload in
                 Task { @MainActor in
                     guard let self = self else { return }
@@ -600,7 +608,8 @@ final class ChatController: ObservableObject {
                     }
                 }
             }
-        )
+            )
+        }
     }
 
     private func clearState() {
