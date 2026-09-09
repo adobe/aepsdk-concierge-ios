@@ -172,6 +172,19 @@ extension Concierge {
             ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
         }
     }
+
+    /// Resolves the `URLSessionConfiguration` for a new chat session's network service: the SDK's
+    /// normal configuration, unless a `#if DEBUG`-only testing override has been set via
+    /// `urlSessionConfigurationForTesting`.
+    static func resolvedURLSessionConfiguration() -> URLSessionConfiguration {
+        var configuration = URLSessionConfiguration.default
+        #if DEBUG
+        if let testingConfiguration = urlSessionConfigurationForTesting {
+            configuration = testingConfiguration
+        }
+        #endif
+        return configuration
+    }
 }
 
 // MARK: - Shared presentation internals
@@ -230,12 +243,7 @@ private extension Concierge {
             return existing
         }
 
-        var urlSessionConfiguration = URLSessionConfiguration.default
-        #if DEBUG
-        if let testingConfiguration = urlSessionConfigurationForTesting {
-            urlSessionConfiguration = testingConfiguration
-        }
-        #endif
+        let urlSessionConfiguration = resolvedURLSessionConfiguration()
 
         let session = ConciergeChatSession(
             configuration: configuration,
