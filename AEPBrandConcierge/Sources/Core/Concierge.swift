@@ -40,6 +40,16 @@ public class Concierge: NSObject, Extension {
     /// Cleared and replaced when the server session expires or the chat identity changes.
     @MainActor static var currentSession: ConciergeChatSession?
 
+    #if DEBUG
+    /// Testing-only override for the `URLSessionConfiguration` used when creating a new chat
+    /// session's network service. Lets a host app inject `URLProtocol` stubs for local mock
+    /// responses — set this *before* calling `show(...)`. `URLProtocol.registerClass(_:)` isn't
+    /// reliably consulted for custom `URLSession` instances or HTTP/3 (QUIC) connections, so
+    /// stubs must instead be added to this configuration's `protocolClasses`. `nil` (the default)
+    /// uses the SDK's normal configuration. Only exists in Debug builds.
+    public static var urlSessionConfigurationForTesting: URLSessionConfiguration?
+    #endif
+
     // MARK: - Extension Protocol Methods
 
     public required init?(runtime: ExtensionRuntime) {

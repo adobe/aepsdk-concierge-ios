@@ -230,13 +230,21 @@ private extension Concierge {
             return existing
         }
 
+        var urlSessionConfiguration = URLSessionConfiguration.default
+        #if DEBUG
+        if let testingConfiguration = urlSessionConfigurationForTesting {
+            urlSessionConfiguration = testingConfiguration
+        }
+        #endif
+
         let session = ConciergeChatSession(
             configuration: configuration,
             title: resolvedTitle,
             subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
-            dispatch: { event in MobileCore.dispatch(event: event) }
+            dispatch: { event in MobileCore.dispatch(event: event) },
+            urlSessionConfiguration: urlSessionConfiguration
         )
         currentSession = session
         return session

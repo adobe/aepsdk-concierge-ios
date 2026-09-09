@@ -305,6 +305,21 @@ public struct ConciergeCtaButtonColors: Codable {
     }
 }
 
+/// Product card CTA button color tokens
+public struct ConciergeProductCardCtaButtonColors: Codable {
+    public var background: CodableColor
+    public var text: CodableColor
+
+    public init(
+        // #BB5811 — the internal `Color(hex:)` initializer isn't accessible from a public default argument.
+        background: CodableColor = CodableColor(Color(red: 0xBB / 255, green: 0x58 / 255, blue: 0x11 / 255)),
+        text: CodableColor = CodableColor(Color.white)
+    ) {
+        self.background = background
+        self.text = text
+    }
+}
+
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
     public var primary: ConciergePrimaryColors
@@ -317,6 +332,7 @@ public struct ConciergeThemeColors: Codable {
     public var disclaimer: CodableColor
     public var productCard: ConciergeProductCardColors
     public var ctaButton: ConciergeCtaButtonColors
+    public var productCardCtaButton: ConciergeProductCardCtaButtonColors
     public var welcomePrompt: ConciergeWelcomePromptColors
     public var thinking: ConciergeThinkingColors
     public var promptSuggestion: ConciergeWelcomePromptColors
@@ -332,6 +348,7 @@ public struct ConciergeThemeColors: Codable {
         disclaimer: CodableColor = CodableColor(Color(UIColor.systemGray)),
         productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
         ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
+        productCardCtaButton: ConciergeProductCardCtaButtonColors = ConciergeProductCardCtaButtonColors(),
         welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors(),
         thinking: ConciergeThinkingColors = ConciergeThinkingColors(),
         promptSuggestion: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
@@ -346,6 +363,7 @@ public struct ConciergeThemeColors: Codable {
         self.disclaimer = disclaimer
         self.productCard = productCard
         self.ctaButton = ctaButton
+        self.productCardCtaButton = productCardCtaButton
         self.welcomePrompt = welcomePrompt
         self.thinking = thinking
         self.promptSuggestion = promptSuggestion

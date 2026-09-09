@@ -38,7 +38,7 @@ struct ContentView: View {
     }
 
     enum DemoTab: Hashable {
-        case swiftUI, magic, uiKit, testing, auth
+        case swiftUI, magic, uiKit, testing
     }
 
     @ObservedObject var deepLinkState: DeepLinkState
@@ -131,14 +131,14 @@ struct ContentView: View {
                 .tag(DemoTab.uiKit)
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
 
-            // MARK: - Testing
+            // MARK: - Testing (link handling, auth token, "Buy now" mock — see TestingHubView)
 
-            LinkHandlingTestView(
+            TestingHubView(
                 customLinkHandlingEnabled: $customLinkHandlingEnabled,
                 closeChatOnIntercept: $closeChatOnIntercept,
                 deepLinkURL: $deepLinkState.receivedURL,
                 handleLink: handleLink,
-                onOpenChat: {
+                onOpenChatViaSwiftUITab: {
                     selectedTab = .swiftUI
                     Concierge.show(
                         surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
@@ -150,20 +150,6 @@ struct ContentView: View {
             )
             .tag(DemoTab.testing)
             .tabItem { Label("Testing", systemImage: "flask") }
-
-            // MARK: - Auth token
-
-            AuthTokenTestView(onOpenChat: {
-                selectedTab = .swiftUI
-                Concierge.show(
-                    surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                    title: "Concierge",
-                    subtitle: "Powered by Adobe"
-                )
-            })
-            .conciergeTheme(loadedTheme)
-            .tag(DemoTab.auth)
-            .tabItem { Label("Auth", systemImage: "key.fill") }
         }
         .onAppear {
             loadTheme()

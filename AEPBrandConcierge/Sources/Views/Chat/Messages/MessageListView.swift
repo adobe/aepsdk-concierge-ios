@@ -114,7 +114,7 @@ struct MessageListView: View {
                     // permanent empty gap below the last message.
                     .frame(minHeight: fillHeight, alignment: .top)
                     .onAppear {
-                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
+                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
                             onSpeak(messageBody)
                         }
                     }

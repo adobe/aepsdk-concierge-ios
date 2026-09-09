@@ -59,7 +59,20 @@ extension EnvironmentValues {
 struct CarouselGroupView: View {
     @Environment(\.conciergeTheme) private var theme
     let items: [Message]
+
+    /// Forwarded to each item's `chatMessageView(onCtaButtonTap:)` — without this, CTA taps on
+    /// cards rendered inside a carousel (the common case for multi-card responses; see
+    /// `ChatController.renderMultimodalElements`) would silently drop their tracking callback.
+    var onCtaButtonTap: ((_ label: String, _ url: String) -> Void)?
+
     @State private var currentIndex = 0
+
+    /// Explicit init (rather than the synthesized memberwise one) so `onCtaButtonTap` can default
+    /// to `nil` on the parameter for the many call sites that don't need it (previews, etc.).
+    init(items: [Message], onCtaButtonTap: ((_ label: String, _ url: String) -> Void)? = nil) {
+        self.items = items
+        self.onCtaButtonTap = onCtaButtonTap
+    }
 
     /// Tallest clamped card height collected from the cards. Seeded to 0; `equalizedHeight` floors
     /// it at the configured min so the carousel never collapses below the minimum.
@@ -103,7 +116,7 @@ struct CarouselGroupView: View {
         VStack(spacing: 0) {
             TabView(selection: $currentIndex) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, message in
-                    message.chatMessageView
+                    message.chatMessageView(onCtaButtonTap: onCtaButtonTap)
                         .tag(index)
                 }
             }
@@ -140,7 +153,7 @@ struct CarouselGroupView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: theme.layout.productCardCarouselSpacing) {
                 ForEach(items, id: \.id) { message in
-                    message.chatMessageView
+                    message.chatMessageView(onCtaButtonTap: onCtaButtonTap)
                 }
             }
             .environment(\.carouselEqualizedHeight, equalizedHeight)
