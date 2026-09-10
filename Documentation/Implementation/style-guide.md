@@ -573,7 +573,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
-| `--color-primary` | `colors.primary.primary` | `Color` | `accentColor` | Primary brand color |
+| `--color-primary` | `colors.primary.primary` | `Color` | `accentColor` | Primary brand color; also the inline link **text** color in AI messages |
 | `--color-text` | `colors.primary.text` | `Color` | `primary` | Primary text color |
 | `--color-container` | `colors.primary.container` | `Color?` | `nil` (falls back to `secondarySystemBackground`) | Background for cards and container elements — prompt suggestion chips, product cards, message bubble fallback. |
 
@@ -593,7 +593,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-user-text` | `colors.message.userText` | `Color` | `primary` | User message text color |
 | `--message-concierge-background` | `colors.message.conciergeBackground` | `Color` | `systemBackground` | AI message bubble background |
 | `--message-concierge-text` | `colors.message.conciergeText` | `Color` | `primary` | AI message text color |
-| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Link color in AI messages |
+| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Sources-list link color and inline link-**icon** fallback color. (Inline link *text* uses `--color-primary`.) |
 
 ### Colors - Buttons
 

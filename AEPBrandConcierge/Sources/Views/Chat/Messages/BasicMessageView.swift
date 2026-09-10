@@ -188,6 +188,10 @@ struct BasicMessageView: View {
             MarkdownBlockView(
                 markdown: annotatedBody,
                 textColor: UIColor(theme.colors.message.conciergeText.color),
+                // Inline link text is colored with `--color-primary`; the link *icon* below
+                // intentionally falls back to `--message-concierge-link-color`, so if a theme sets
+                // those two tokens to different values, a link's text and its icon can differ.
+                linkColor: UIColor(theme.colors.primary.primary.color),
                 baseFont: resolvedAgentFont,
                 citationMarkers: markers,
                 citationStyle: .init(
@@ -200,7 +204,7 @@ struct BasicMessageView: View {
                 ),
                 linkIconResolver: resolvedLinkIconResolver,
                 linkIconColor: UIColor(theme.behavior.citations?.linkIconStyle?.color?.color ?? theme.colors.message.conciergeLink.color),
-                linkIconSize: theme.behavior.citations?.linkIconStyle?.size ?? 10,
+                linkIconSize: theme.behavior.citations?.linkIconStyle?.size ?? 16,
                 linkIconSpacing: theme.behavior.citations?.linkIconStyle?.spacing,
                 linkIconBaselineAdjust: theme.behavior.citations?.linkIconStyle?.baselineAdjust ?? 0,
                 onOpenLink: { url in

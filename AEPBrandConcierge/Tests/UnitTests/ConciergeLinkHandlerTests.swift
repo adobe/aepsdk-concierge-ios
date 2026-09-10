@@ -225,13 +225,67 @@ final class ConciergeLinkHandlerTests: XCTestCase {
     func testHandleURL_passesCorrectURLToSystemClosure() {
         let url = URL(string: "tel:+1234567890")!
         var receivedURL: URL?
-        
+
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { _ in },
             openWithSystem: { receivedURL = $0 }
         )
-        
+
         XCTAssertEqual(receivedURL, url)
+    }
+
+    // MARK: - handleURL geo: (Get directions) Tests
+
+    func testHandleURL_withGeoUrl_probesAppleMapsUniversalLinkWithCorrectOptions() {
+        let url = URL(string: "geo:0,0?q=The%20Mall%20At%20Robinson%2C%20Pittsburgh%2C%20PA%2015205-4834")!
+        var probedURL: URL?
+        var probedOptions: [UIApplication.OpenExternalURLOptionsKey: Any]?
+
+        ConciergeLinkHandler.urlOpener = { openedURL, options, completion in
+            probedURL = openedURL
+            probedOptions = options
+            completion?(true)
+        }
+
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in },
+            openWithSystem: { _ in }
+        )
+
+        let drain = expectation(description: "main queue drain")
+        DispatchQueue.main.async { drain.fulfill() }
+        waitForExpectations(timeout: 1)
+
+        XCTAssertEqual(
+            probedURL?.absoluteString,
+            "https://maps.apple.com/?daddr=The%20Mall%20At%20Robinson,%20Pittsburgh,%20PA%2015205-4834"
+        )
+        XCTAssertEqual(probedOptions?[.universalLinksOnly] as? Bool, true)
+    }
+
+    func testHandleURL_withGeoUrl_whenMapsAppUnavailable_opensAppleMapsInWebView() {
+        let url = URL(string: "geo:0,0?q=Ross%20Park%20Mall%2C%20Pittsburgh%2C%20PA%2015237-3803")!
+        let expectation = expectation(description: "openInWebView called")
+        var webViewURL: URL?
+        var openWithSystemCalled = false
+
+        ConciergeLinkHandler.urlOpener = { _, _, completion in
+            completion?(false)
+        }
+
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { webViewURL = $0; expectation.fulfill() },
+            openWithSystem: { _ in openWithSystemCalled = true }
+        )
+
+        waitForExpectations(timeout: 1)
+        XCTAssertEqual(
+            webViewURL?.absoluteString,
+            "https://maps.apple.com/?daddr=Ross%20Park%20Mall,%20Pittsburgh,%20PA%2015237-3803"
+        )
+        XCTAssertFalse(openWithSystemCalled)
     }
 }
