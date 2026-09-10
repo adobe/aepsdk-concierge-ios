@@ -104,6 +104,11 @@ public struct ConciergeLayout: Codable {
     /// - Leading: added on top of the column-aligned base (first card cannot move left of the base).
     /// - Trailing: used directly; when `nil`, falls back to `chatHistoryPadding`.
     public var productCardCarouselHorizontalPadding: CGFloat?
+    public var productCardCtaButtonBorderRadius: CGFloat
+    public var productCardCtaButtonHorizontalPadding: CGFloat
+    public var productCardCtaButtonVerticalPadding: CGFloat
+    public var productCardCtaButtonFontSize: CGFloat
+    public var productCardCtaButtonFontWeight: CodableFontWeight
     public var ctaButtonBorderRadius: CGFloat
     public var ctaButtonHorizontalPadding: CGFloat
     public var ctaButtonVerticalPadding: CGFloat
@@ -210,6 +215,11 @@ public struct ConciergeLayout: Codable {
         productCardTextHorizontalPadding: CGFloat = 0,
         productCardCarouselSpacing: CGFloat = 12,
         productCardCarouselHorizontalPadding: CGFloat? = nil,
+        productCardCtaButtonBorderRadius: CGFloat = 40,
+        productCardCtaButtonHorizontalPadding: CGFloat = 16,
+        productCardCtaButtonVerticalPadding: CGFloat = 8,
+        productCardCtaButtonFontSize: CGFloat = 12,
+        productCardCtaButtonFontWeight: CodableFontWeight = .semibold,
         ctaButtonBorderRadius: CGFloat = 99,
         ctaButtonHorizontalPadding: CGFloat = 16,
         ctaButtonVerticalPadding: CGFloat = 12,
@@ -298,6 +308,11 @@ public struct ConciergeLayout: Codable {
         self.productCardTextHorizontalPadding = productCardTextHorizontalPadding
         self.productCardCarouselSpacing = productCardCarouselSpacing
         self.productCardCarouselHorizontalPadding = productCardCarouselHorizontalPadding
+        self.productCardCtaButtonBorderRadius = productCardCtaButtonBorderRadius
+        self.productCardCtaButtonHorizontalPadding = productCardCtaButtonHorizontalPadding
+        self.productCardCtaButtonVerticalPadding = productCardCtaButtonVerticalPadding
+        self.productCardCtaButtonFontSize = productCardCtaButtonFontSize
+        self.productCardCtaButtonFontWeight = productCardCtaButtonFontWeight
         self.ctaButtonBorderRadius = ctaButtonBorderRadius
         self.ctaButtonHorizontalPadding = ctaButtonHorizontalPadding
         self.ctaButtonVerticalPadding = ctaButtonVerticalPadding

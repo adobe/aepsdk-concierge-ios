@@ -20,7 +20,7 @@ import Foundation
 public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.7.1"
+    static let EXTENSION_VERSION = "5.8.0"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
 
@@ -132,6 +132,14 @@ public enum ConciergeConstants {
                 static let CONVERSATION_ID = "conversationID"
                 static let TURN_ID = "turnID"
             }
+
+            /// Keys for the app-supplied auth token `data` part. See `Values.AuthData` for the `type` value.
+            enum AuthData {
+                static let DATA = "data"
+                static let TYPE = "type"
+                static let PAYLOAD = "payload"
+                static let TOKEN = "token"
+            }
         }
 
         enum Values {
@@ -142,6 +150,10 @@ public enum ConciergeConstants {
             enum Feedback {
                 static let END_USER = "end-user"
                 static let USER_INPUT = "user input"
+            }
+
+            enum AuthData {
+                static let TYPE_AUTH = "auth"
             }
         }
     }

@@ -13,7 +13,7 @@
 import SwiftUI
 import UIKit
 
-/// Displays a circular icon from a remote URL or a local app bundle asset.
+/// Displays an icon from a remote URL or a local app bundle asset.
 ///
 /// - Remote URLs (`http://` or `https://`): loaded asynchronously via `RemoteImageView`.
 /// - Local asset names: searched in the app bundle using supported image extensions
@@ -22,7 +22,15 @@ import UIKit
 /// - Empty path or unresolvable assets render nothing (silent failure).
 struct LocalAssetImageView: View {
     let iconPath: String
-    let size: CGFloat
+    /// Width to constrain to, or `nil` to size from `height` and the asset's aspect ratio
+    /// (used for wordmark-style logos where the width varies with the asset).
+    var width: CGFloat?
+    var height: CGFloat?
+    /// `.fill` crops to fill the frame (used for circular avatars); `.fit` preserves the whole
+    /// asset (used for brand marks like a header logo, where cropping would clip the artwork).
+    var contentMode: ContentMode = .fill
+    /// Whether the resolved image is clipped to a circle. Avatars want this; brand marks don't.
+    var clipToCircle: Bool = true
 
     var body: some View {
         iconContent
@@ -31,16 +39,25 @@ struct LocalAssetImageView: View {
     @ViewBuilder
     private var iconContent: some View {
         if iconPath.hasPrefix("http://") || iconPath.hasPrefix("https://") {
-            RemoteImageView(url: URL(string: iconPath), width: size, height: size)
-                .clipShape(Circle())
+            applyClip(RemoteImageView(url: URL(string: iconPath), width: width, height: height, contentMode: contentMode))
         } else if let uiImage = resolvedLocalImage {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .frame(width: size, height: size)
-                .clipShape(Circle())
+            applyClip(
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: contentMode)
+                    .frame(width: width, height: height)
+            )
         }
         // else: empty path or missing asset — renders nothing
+    }
+
+    @ViewBuilder
+    private func applyClip<T: View>(_ view: T) -> some View {
+        if clipToCircle {
+            view.clipShape(Circle())
+        } else {
+            view
+        }
     }
 
     enum SupportedImageExtension: String, CaseIterable {

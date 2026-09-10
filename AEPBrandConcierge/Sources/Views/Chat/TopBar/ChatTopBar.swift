@@ -11,16 +11,6 @@
  */
 
 import SwiftUI
-import UIKit
-
-/// Supported image file extensions for header image asset lookup.
-private enum SupportedImageExtension: String, CaseIterable {
-    case png
-    case jpg
-    case jpeg
-    case webp
-    case heic
-}
 
 /// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
 struct ChatTopBar: View {
@@ -49,19 +39,6 @@ struct ChatTopBar: View {
         return subtitle
     }
 
-    /// Resolved header image from the theme's `header.image` local asset path.
-    /// Returns nil when the key is absent or the asset cannot be found.
-    private var resolvedHeaderImage: UIImage? {
-        let path = theme.header.image
-        guard !path.isEmpty else { return nil }
-        if let image = UIImage(named: path) { return image }
-        for ext in SupportedImageExtension.allCases {
-            if let filePath = Bundle.main.path(forResource: path, ofType: ext.rawValue),
-               let image = UIImage(contentsOfFile: filePath) { return image }
-        }
-        return nil
-    }
-
     private var hasTitle: Bool { !resolvedTitle.isEmpty }
 
     private var hasSubtitle: Bool {
@@ -71,11 +48,14 @@ struct ChatTopBar: View {
 
     @ViewBuilder
     private var headerImageView: some View {
-        if let image = resolvedHeaderImage {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(height: theme.header.imageHeight)
+        if !theme.header.image.isEmpty {
+            // Local asset name or a remote http(s) URL; unresolvable paths render nothing.
+            LocalAssetImageView(
+                iconPath: theme.header.image,
+                height: theme.header.imageHeight,
+                contentMode: .fit,
+                clipToCircle: false
+            )
         } else {
             Image(systemName: "ellipsis.message.fill")
                 .resizable()

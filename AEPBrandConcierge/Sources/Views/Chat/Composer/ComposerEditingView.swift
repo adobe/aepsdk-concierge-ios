@@ -32,8 +32,31 @@ struct ComposerEditingView: View {
     let audioLevel: Float
     let onSend: () -> Void
 
+    /// Minimum height of the single-line input row, shared by the text field and every icon in
+    /// this row so they stay aligned. Not theme-configurable — it's a UX/tap-target floor, not a
+    /// brand value, matching the other tap targets sized via `theme.layout.inputButtonHeight`.
+    static let minimumRowHeight: CGFloat = 40
+
+    /// Bottom padding that centers an `iconHeight`-tall icon within `rowHeight` at the
+    /// single-line resting state, while still anchoring it to the bottom (last-line) edge as the
+    /// row grows for multi-line text — the same recipe used by every icon in this HStack. Pulled
+    /// out as a pure function so the centering math is unit-testable without rendering the view.
+    static func iconBottomPadding(rowHeight: CGFloat = minimumRowHeight, iconHeight: CGFloat) -> CGFloat {
+        max(0, (rowHeight - iconHeight) / 2)
+    }
+
+    private var iconBottomPadding: CGFloat {
+        Self.iconBottomPadding(iconHeight: theme.layout.inputButtonHeight)
+    }
+
     private var hasText: Bool {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Leading icon path (e.g. a brand icon) shown before the text field, from
+    /// `theme.behavior.input.showAiChatIcon`. Empty when no asset is configured.
+    private var leadingIconPath: String {
+        theme.components.inputBar.icon?.icon ?? ""
     }
 
     /// Fade + horizontal slide transition animation.
@@ -43,6 +66,19 @@ struct ComposerEditingView: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
+            if !leadingIconPath.isEmpty {
+                // Local asset name or a remote http(s) URL; unresolvable paths render nothing.
+                LocalAssetImageView(
+                    iconPath: leadingIconPath,
+                    width: theme.layout.inputButtonWidth,
+                    height: theme.layout.inputButtonHeight,
+                    contentMode: .fit,
+                    clipToCircle: false
+                )
+                .accessibilityLabel(theme.text.inputAiChatIconTooltip)
+                .padding(.bottom, iconBottomPadding)
+            }
+
             SelectableTextView(
                 text: $inputText,
                 selectedRange: $selectedRange,
@@ -57,7 +93,7 @@ struct ComposerEditingView: View {
                 maxLines: theme.behavior.input.disableMultiline ? 1 : 10,
                 onEditingChanged: onEditingChanged
             )
-            .frame(height: max(40, measuredHeight))
+            .frame(height: max(Self.minimumRowHeight, measuredHeight))
             .animation(.easeInOut(duration: 0.15), value: measuredHeight)
 
             if hasText, inputState != .recording {
@@ -73,17 +109,18 @@ struct ComposerEditingView: View {
                 .contentShape(Rectangle())
                 .accessibilityLabel("Clear text")
                 .transition(buttonTransition)
-                .padding(.bottom, 8)
+                .padding(.bottom, iconBottomPadding)
             }
 
             if case .recording = inputState {
                 // Waveform visual indicator
                 AudioWaveformView(
                     audioLevel: audioLevel,
-                    barColor: theme.colors.primary.primary.color
+                    barColor: theme.colors.primary.primary.color,
+                    gradient: theme.colors.input.micWaveformGradient
                 )
                 .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
-                .padding(.bottom, 8)
+                .padding(.bottom, iconBottomPadding)
 
                 // Dedicated stop button (icon configurable via theme)
                 Button(action: onStopRecording) {
@@ -99,22 +136,22 @@ struct ComposerEditingView: View {
                         }
                     }
                     .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
-                    .foregroundColor(theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color)
+                    .foregroundStyle(micIconStyle)
                     .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("Stop recording")
-                .padding(.bottom, 8)
+                .padding(.bottom, iconBottomPadding)
             } else if hasText {
                 // Send button appears in the same slot once text is present
                 if theme.behavior.input.sendButtonStyle == "arrow" {
                     Button(action: onSend) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: theme.layout.inputButtonHeight, weight: .semibold))
-                            .foregroundColor(sendEnabled
-                                             ? (theme.colors.input.sendArrowBackgroundColor?.color ?? theme.colors.primary.primary.color)
-                                             : theme.colors.button.submitFillDisabled.color)
+                            .foregroundStyle(sendEnabled
+                                             ? sendArrowStyle
+                                             : AnyShapeStyle(theme.colors.button.submitFillDisabled.color))
                             .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                     }
                     .buttonStyle(.plain)
@@ -122,7 +159,7 @@ struct ComposerEditingView: View {
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
                     .transition(buttonTransition)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, iconBottomPadding)
                 } else {
                     Button(action: onSend) {
                         BrandIcon(assetName: "S2_Icon_Send_20_N", systemName: "paperplane")
@@ -138,13 +175,15 @@ struct ComposerEditingView: View {
                     .accessibilityLabel(theme.text.inputSendAria)
                     .disabled(!sendEnabled)
                     .transition(buttonTransition)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, iconBottomPadding)
                 }
             } else if showMic {
                 // Mic button when idle with no text
                 Button(action: onMicTap) {
                     BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
-                        .foregroundColor(micEnabled ? (theme.colors.input.micIconColor?.color ?? theme.colors.primary.primary.color) : Color.secondary.opacity(0.5))
+                        .foregroundStyle(micEnabled
+                                         ? micIconStyle
+                                         : AnyShapeStyle(Color.secondary.opacity(0.5)))
                         .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
@@ -152,7 +191,7 @@ struct ComposerEditingView: View {
                 .accessibilityLabel(theme.text.inputMicAria)
                 .disabled(!micEnabled)
                 .transition(buttonTransition)
-                .padding(.bottom, 8)
+                .padding(.bottom, iconBottomPadding)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: inputState)
@@ -161,6 +200,23 @@ struct ComposerEditingView: View {
 }
 
 private extension ComposerEditingView {
+    /// Shared by the idle mic button and the recording/stop button so the two copies can't drift.
+    var micIconStyle: AnyShapeStyle {
+        conciergeShapeStyle(
+            color: theme.colors.input.micIconColor,
+            gradient: theme.colors.input.micIconGradient,
+            fallback: theme.colors.primary.primary.color
+        )
+    }
+
+    var sendArrowStyle: AnyShapeStyle {
+        conciergeShapeStyle(
+            color: theme.colors.input.sendArrowBackgroundColor,
+            gradient: theme.colors.input.sendArrowBackgroundGradient,
+            fallback: theme.colors.primary.primary.color
+        )
+    }
+
     var resolvedInputFont: UIFont {
         let fontSize = theme.layout.inputFontSize
         if theme.typography.fontFamily.isEmpty {

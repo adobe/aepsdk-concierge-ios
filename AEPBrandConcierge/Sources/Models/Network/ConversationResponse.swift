@@ -177,11 +177,75 @@ public struct EntityInfo: Codable {
     public let productPrice: String?
     public let productWasPrice: String?
     public let productBadge: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case productName, productDescription, description, productPageURL, details
+        case learningResource, productImageURL, backgroundColor, logo, primary, secondary
+        case productPrice, productWasPrice, productBadge
+    }
+
+    /// Explicit memberwise init — declaring a custom `init(from:)` below suppresses Swift's
+    /// synthesized one.
+    public init(
+        productName: String? = nil,
+        productDescription: String? = nil,
+        description: String? = nil,
+        productPageURL: String? = nil,
+        details: String? = nil,
+        learningResource: String? = nil,
+        productImageURL: String? = nil,
+        backgroundColor: String? = nil,
+        logo: String? = nil,
+        primary: ActionButton? = nil,
+        secondary: ActionButton? = nil,
+        productPrice: String? = nil,
+        productWasPrice: String? = nil,
+        productBadge: String? = nil
+    ) {
+        self.productName = productName
+        self.productDescription = productDescription
+        self.description = description
+        self.productPageURL = productPageURL
+        self.details = details
+        self.learningResource = learningResource
+        self.productImageURL = productImageURL
+        self.backgroundColor = backgroundColor
+        self.logo = logo
+        self.primary = primary
+        self.secondary = secondary
+        self.productPrice = productPrice
+        self.productWasPrice = productWasPrice
+        self.productBadge = productBadge
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        productName = try container.decodeIfPresent(String.self, forKey: .productName)
+        productDescription = try container.decodeIfPresent(String.self, forKey: .productDescription)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        productPageURL = try container.decodeIfPresent(String.self, forKey: .productPageURL)
+        details = try container.decodeIfPresent(String.self, forKey: .details)
+        learningResource = try container.decodeIfPresent(String.self, forKey: .learningResource)
+        productImageURL = try container.decodeIfPresent(String.self, forKey: .productImageURL)
+        backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
+        logo = try container.decodeIfPresent(String.self, forKey: .logo)
+        // A malformed primary/secondary action (e.g. a wrong-type `text`) degrades to nil instead
+        // of failing this whole decode — since MultimodalElement/[MultimodalElement] propagate
+        // decode errors upward, one bad action button would otherwise silently drop every card in
+        // the response.
+        primary = (try? container.decodeIfPresent(ActionButton.self, forKey: .primary)) ?? nil
+        secondary = (try? container.decodeIfPresent(ActionButton.self, forKey: .secondary)) ?? nil
+        productPrice = try container.decodeIfPresent(String.self, forKey: .productPrice)
+        productWasPrice = try container.decodeIfPresent(String.self, forKey: .productWasPrice)
+        productBadge = try container.decodeIfPresent(String.self, forKey: .productBadge)
+    }
 }
 
 /// A labeled link used for element actions.
 /// Used as the primary/secondary action on product cards, and as the payload for `ctaButton` multimodal elements.
 public struct ActionButton: Codable {
     public let text: String
-    public let url: String
+    /// Optional — a text-only action (no destination) is valid; callers that require a
+    /// destination (e.g. the product card's CTA button) check this themselves.
+    public let url: String?
 }

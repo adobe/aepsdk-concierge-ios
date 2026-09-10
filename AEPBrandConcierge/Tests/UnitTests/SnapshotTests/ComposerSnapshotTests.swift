@@ -55,12 +55,12 @@ final class ComposerSnapshotTests: XCTestCase {
 private struct ComposerProbeHost: View {
     let theme: ConciergeTheme
     let isFocused: Bool
-    
+
     @State private var inputText: String = "Test message"
     @State private var selectedRange: NSRange = NSRange(location: 12, length: 0)
     @State private var measuredHeight: CGFloat = 40
     @State private var focusedBinding: Bool
-    
+
     init(theme: ConciergeTheme, isFocused: Bool) {
         self.theme = theme
         self.isFocused = isFocused

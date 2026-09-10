@@ -18,6 +18,9 @@ import UIKit
 struct MarkdownBlockView: View {
     let markdown: String
     var textColor: UIColor
+    /// Foreground color applied to inline hyperlink text. Defaults to the system link color.
+    /// (Underlining is applied separately by `MarkdownText`, always-on.)
+    var linkColor: UIColor = .link
     var baseFont: UIFont = .preferredFont(forTextStyle: .body)
     var spacing: CGFloat = 8
     var citationMarkers: [CitationMarker] = []
@@ -28,8 +31,8 @@ struct MarkdownBlockView: View {
     var linkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))?
     /// Tint color applied to link icons. Only used when `linkIconResolver` is non-nil.
     var linkIconColor: UIColor = .link
-    /// Render size of link icons in points. Defaults to `10`.
-    var linkIconSize: CGFloat = 10
+    /// Render size of link icons in points. Defaults to `16`.
+    var linkIconSize: CGFloat = 16
     /// Horizontal gap in points between the link text and the icon.
     /// When `nil` a Unicode thin space is used.
     var linkIconSpacing: CGFloat? = nil
@@ -109,7 +112,7 @@ struct MarkdownBlockView: View {
                     iconResolver: resolver
                 )
             }
-            return .text(replaced)
+            return .text(Self.styleLinkText(replaced, color: linkColor))
         case .code(let ns):
             let replaced = CitationAttachmentBuilder.replaceTokens(
                 in: ns,
@@ -126,6 +129,20 @@ struct MarkdownBlockView: View {
             let transformedItems = items.map { $0.map(transformBlock) }
             return .list(type: type, items: transformedItems)
         }
+    }
+
+    /// Applies `color` to inline hyperlink text runs. The base foreground set by the renderer
+    /// covers link ranges too, so this overrides it to the theme link color. Underlining is applied
+    /// separately by `MarkdownText`. Inserted link icons carry no `.link` attribute, so they keep
+    /// their own tint.
+    private static func styleLinkText(_ attributed: NSAttributedString, color: UIColor) -> NSAttributedString {
+        guard attributed.length > 0 else { return attributed }
+        let mutable = NSMutableAttributedString(attributedString: attributed)
+        mutable.enumerateAttribute(.link, in: NSRange(location: 0, length: mutable.length)) { value, range, _ in
+            guard value != nil else { return }
+            mutable.addAttribute(.foregroundColor, value: color, range: range)
+        }
+        return mutable
     }
 }
 

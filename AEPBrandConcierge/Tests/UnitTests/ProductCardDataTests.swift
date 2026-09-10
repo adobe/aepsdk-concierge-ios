@@ -157,6 +157,53 @@ final class ProductCardDataTests: XCTestCase {
         XCTAssertNil(card.destinationURL)
     }
 
+    // MARK: - primary/secondary action leniency
+
+    func test_primaryAction_textOnly_urlAbsent_decodesWithNilUrl() throws {
+        // A text-only action (no destination) is valid — matches Android's ProductActionButton.
+        let entityInfo = try decodeEntityInfo("""
+        { "primary": { "text": "Buy Now" } }
+        """)
+        let element = MultimodalElement()
+
+        let card = ProductCardData(entityInfo: entityInfo, element: element)
+
+        XCTAssertEqual(card.primaryButton?.text, "Buy Now")
+        XCTAssertNil(card.primaryButton?.url)
+    }
+
+    func test_primaryAction_malformedUrl_degradesToNil_withoutFailingWholeDecode() throws {
+        // A wrong-type `url` (here, a number instead of a string) must not throw and drop every
+        // other field on EntityInfo — it should just make `primary` nil.
+        let entityInfo = try decodeEntityInfo("""
+        {
+            "productName": "Widget Pro",
+            "primary": { "text": "Buy Now", "url": 12345 }
+        }
+        """)
+        let element = MultimodalElement()
+
+        let card = ProductCardData(entityInfo: entityInfo, element: element)
+
+        XCTAssertEqual(card.title, "Widget Pro")
+        XCTAssertNil(card.primaryButton)
+    }
+
+    func test_secondaryAction_malformedText_degradesToNil_withoutFailingWholeDecode() throws {
+        let entityInfo = try decodeEntityInfo("""
+        {
+            "productName": "Widget Pro",
+            "secondary": { "text": 12345, "url": "https://example.com/learn" }
+        }
+        """)
+        let element = MultimodalElement()
+
+        let card = ProductCardData(entityInfo: entityInfo, element: element)
+
+        XCTAssertEqual(card.title, "Widget Pro")
+        XCTAssertNil(card.secondaryButton)
+    }
+
     // MARK: - Helpers
 
     private func decodeEntityInfo(_ json: String) throws -> EntityInfo {

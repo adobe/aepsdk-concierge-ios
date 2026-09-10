@@ -17,23 +17,30 @@ struct AudioWaveformView: View {
     let audioLevel: Float
     let barColor: Color
     let barCount: Int
+    let gradient: ConciergeGradient?
 
-    init(audioLevel: Float, barColor: Color, barCount: Int = 5) {
+    init(audioLevel: Float, barColor: Color, barCount: Int = 5, gradient: ConciergeGradient? = nil) {
         self.audioLevel = audioLevel
         self.barColor = barColor
         self.barCount = barCount
+        self.gradient = gradient
+    }
+
+    private var barFill: AnyShapeStyle {
+        conciergeShapeStyle(color: nil, gradient: gradient, fallback: barColor)
     }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
+            let fill = barFill
             HStack(spacing: 3) {
                 ForEach(0..<barCount, id: \.self) { index in
-                    let phase = sin(time * 4.0 + Double(index) * 0.8)
-                    let levelFactor = Double(max(audioLevel, 0.05))
-                    let scale = 0.3 + 0.7 * levelFactor * ((phase + 1.0) / 2.0)
+                    let phase = sin(time * 4.0 + Double(index) * 1.2)
+                    let levelFactor = pow(Double(max(audioLevel, 0.02)), 0.6)
+                    let scale = 0.12 + 0.88 * levelFactor * ((phase + 1.0) / 2.0)
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(barColor)
+                        .fill(fill)
                         .frame(width: 3, height: 20 * scale)
                 }
             }

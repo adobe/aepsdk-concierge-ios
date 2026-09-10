@@ -27,6 +27,27 @@ public extension Concierge {
         ConciergeEventTracker.enableTracking(enable: enable)
     }
 
+    // MARK: - Authentication
+
+    /// Registers the provider the SDK consults for an auth token before every chat and feedback turn.
+    ///
+    /// The closure is `async`, so it works synchronously (`{ tokenCache.current }`) or asynchronously
+    /// (`{ await tokenCache.freshToken() }`). It's consulted fresh each turn (never cached) and awaited
+    /// off the UI thread. Returning `nil`/blank — or not returning within `timeout` — sends the turn
+    /// without a token; pass `nil` to clear.
+    ///
+    /// - Important: Supply only the opaque, app-minted token your backend expects — never a raw Auth0
+    ///   (or other identity-provider) token. The SDK attaches it verbatim as its own request-body field
+    ///   (never a header, never merged into the identity payload) and never inspects it.
+    /// - Parameters:
+    ///   - timeout: How long to await the provider before sending the turn without a token. Defaults
+    ///     to 3 seconds; raise it if minting the token may take longer.
+    ///   - provider: A closure returning the current token, or `nil` to clear the provider.
+    static func setAuthTokenProvider(timeout: TimeInterval = 3,
+                                     _ provider: (@Sendable () async -> String?)?) {
+        ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
+    }
+
     // MARK: - SwiftUI Presentation APIs
 
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.
@@ -151,6 +172,19 @@ extension Concierge {
             ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
         }
     }
+
+    /// Resolves the `URLSessionConfiguration` for a new chat session's network service: the SDK's
+    /// normal configuration, unless a `#if DEBUG`-only testing override has been set via
+    /// `urlSessionConfigurationForTesting`.
+    static func resolvedURLSessionConfiguration() -> URLSessionConfiguration {
+        var configuration = URLSessionConfiguration.default
+        #if DEBUG
+        if let testingConfiguration = urlSessionConfigurationForTesting {
+            configuration = testingConfiguration
+        }
+        #endif
+        return configuration
+    }
 }
 
 // MARK: - Shared presentation internals
@@ -209,13 +243,16 @@ private extension Concierge {
             return existing
         }
 
+        let urlSessionConfiguration = resolvedURLSessionConfiguration()
+
         let session = ConciergeChatSession(
             configuration: configuration,
             title: resolvedTitle,
             subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
-            dispatch: { event in MobileCore.dispatch(event: event) }
+            dispatch: { event in MobileCore.dispatch(event: event) },
+            urlSessionConfiguration: urlSessionConfiguration
         )
         currentSession = session
         return session

@@ -14,8 +14,11 @@ import SwiftUI
 
 struct RemoteImageView: View {
     let url: URL?
-    let width: CGFloat
+    let width: CGFloat?
     let height: CGFloat?
+    /// `.fill` crops to fill the frame (thumbnails/cards); `.fit` preserves the whole image
+    /// (brand marks, where cropping would clip the artwork).
+    var contentMode: ContentMode = .fill
 
     var body: some View {
         if let url = url {
@@ -24,7 +27,8 @@ struct RemoteImageView: View {
                 case .empty:
                     sized(ProgressView())
                 case .success(let image):
-                    sized(image.resizable().scaledToFill()).clipped()
+                    let scaled = sized(image.resizable().aspectRatio(contentMode: contentMode))
+                    if contentMode == .fill { scaled.clipped() } else { scaled }
                 case .failure:
                     sized(Image(systemName: "photo"))
                 @unknown default:
@@ -36,12 +40,7 @@ struct RemoteImageView: View {
         }
     }
 
-    @ViewBuilder
     private func sized<T: View>(_ view: T) -> some View {
-        if let height = height {
-            view.frame(width: width, height: height)
-        } else {
-            view.frame(width: width)
-        }
+        view.frame(width: width, height: height)
     }
 }
