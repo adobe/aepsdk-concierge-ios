@@ -247,7 +247,8 @@ struct ChatMessageView: View {
             case .productDetail:
                 ProductDetailCardView(
                     data: cardData,
-                    cardWidth: theme.layout.productCardWidth
+                    cardWidth: theme.layout.productCardWidth,
+                    onTap: onCtaButtonTap
                 )
             case .actionButton:
                 actionButtonCarouselCard(data: cardData)
@@ -260,7 +261,8 @@ struct ChatMessageView: View {
                 case .productDetail:
                     ProductDetailCardView(
                         data: cardData,
-                        cardWidth: theme.layout.productCardWidth
+                        cardWidth: theme.layout.productCardWidth,
+                        onTap: onCtaButtonTap
                     )
                 case .actionButton:
                     actionButtonProductCard(data: cardData)
@@ -272,7 +274,7 @@ struct ChatMessageView: View {
             CtaButtonView(action: action, onTap: onCtaButtonTap)
 
         case .carouselGroup(let items):
-            CarouselGroupView(items: items)
+            CarouselGroupView(items: items, onCtaButtonTap: onCtaButtonTap)
 
         case .promptSuggestion(let text):
             let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
@@ -390,7 +392,7 @@ private extension ChatMessageView {
                                 text: primaryButton.text,
                                 variant: .primary,
                                 action: {
-                                    if let url = URL(string: primaryButton.url) {
+                                    if let urlString = primaryButton.url, let url = URL(string: urlString) {
                                         handleLinkTap(url)
                                     }
                                 }
@@ -402,7 +404,7 @@ private extension ChatMessageView {
                                 text: secondaryButton.text,
                                 variant: .secondary,
                                 action: {
-                                    if let url = URL(string: secondaryButton.url) {
+                                    if let urlString = secondaryButton.url, let url = URL(string: urlString) {
                                         handleLinkTap(url)
                                     }
                                 }

@@ -39,6 +39,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         Concierge.setEdgeTrackingEnabled(enable: true)
 
+        #if DEBUG
+        // URLProtocol.registerClass isn't reliably consulted for ConciergeChatService's custom
+        // URLSession (or once the connection negotiates HTTP/3 QUIC) — inserting the class
+        // directly into the injected configuration's protocolClasses is. Inert until
+        // BuyNowMockURLProtocol.isEnabled is turned on from the "Buy Now" tab.
+        let mockSessionConfiguration = URLSessionConfiguration.default
+        mockSessionConfiguration.protocolClasses = [BuyNowMockURLProtocol.self] + (mockSessionConfiguration.protocolClasses ?? [])
+        Concierge.urlSessionConfigurationForTesting = mockSessionConfiguration
+        #endif
+
         return true
     }
 }

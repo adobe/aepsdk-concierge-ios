@@ -28,8 +28,11 @@ public struct Message: Identifiable {
 
     public static let divider = Message(template: .divider)
 
-    var chatMessageView: ChatMessageView {
-        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, linkHints: linkHints, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, feedbackEligible: feedbackEligible, isStreamComplete: isStreamComplete, onSuggestionTap: nil)
+    /// - Parameter onCtaButtonTap: forwarded into the constructed `ChatMessageView` so CTA taps on
+    ///   cards/buttons rendered inside a carousel (see `CarouselGroupView`) still track, matching
+    ///   messages rendered directly by `MessageListView`.
+    func chatMessageView(onCtaButtonTap: ((_ label: String, _ url: String) -> Void)? = nil) -> ChatMessageView {
+        ChatMessageView(messageId: id, template: template, messageBody: messageBody, sources: sources, linkHints: linkHints, promptSuggestions: promptSuggestions, feedbackSentiment: feedbackSentiment, feedbackEligible: feedbackEligible, isStreamComplete: isStreamComplete, onSuggestionTap: nil, onCtaButtonTap: onCtaButtonTap)
     }
 
     public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, payload: ConversationPayload? = nil) {

@@ -570,6 +570,28 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#00000000")
     }
 
+    func test_productCardCtaButtonBackgroundColor_mapsToProductCardCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-background-color", cssValue: "#BB5811", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCardCtaButton.background.color.toHexString(), "#BB5811")
+    }
+
+    func test_productCardCtaButtonTextColor_mapsToProductCardCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-text-color", cssValue: "#FFFFFF", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCardCtaButton.text.color.toHexString(), "#FFFFFF")
+    }
+
     // MARK: - Product Card Layout Mapping Tests
 
     func test_productCardTitleFontSize_mapsToLayout() {
@@ -845,6 +867,61 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
+    }
+
+    func test_productCardCtaButtonBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-border-radius", cssValue: "24px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonBorderRadius, 24)
+    }
+
+    func test_productCardCtaButtonHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-horizontal-padding", cssValue: "20px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonHorizontalPadding, 20)
+    }
+
+    func test_productCardCtaButtonVerticalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-vertical-padding", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonVerticalPadding, 10)
+    }
+
+    func test_productCardCtaButtonFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-font-size", cssValue: "13px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonFontSize, 13)
+    }
+
+    func test_productCardCtaButtonFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-font-weight", cssValue: "700", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonFontWeight, .bold)
     }
 
     func test_productCardTitleSubtitleSpacing_mapsToLayout() {

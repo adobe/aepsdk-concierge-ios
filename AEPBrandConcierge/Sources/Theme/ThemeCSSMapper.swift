@@ -184,6 +184,8 @@ public enum CSSKeyMapper {
         "product-card-badge-text-color": { cssValue, theme in theme.colors.productCard.badgeTextColor = CSSValueConverter.parseColor(cssValue) },
         "product-card-badge-background-color": { cssValue, theme in theme.colors.productCard.badgeBackgroundColor = CSSValueConverter.parseColor(cssValue) },
         "product-card-outline-color": { cssValue, theme in theme.colors.productCard.outlineColor = CSSValueConverter.parseColor(cssValue) },
+        "product-card-cta-button-background-color": { cssValue, theme in theme.colors.productCardCtaButton.background = CSSValueConverter.parseColor(cssValue) },
+        "product-card-cta-button-text-color": { cssValue, theme in theme.colors.productCardCtaButton.text = CSSValueConverter.parseColor(cssValue) },
 
         // Layout - Product Card
         "product-card-title-font-size": { cssValue, theme in theme.layout.productCardTitleFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
@@ -212,6 +214,11 @@ public enum CSSKeyMapper {
         "product-card-text-horizontal-padding": { cssValue, theme in theme.layout.productCardTextHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 0 },
         "product-card-carousel-spacing": { cssValue, theme in theme.layout.productCardCarouselSpacing = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-carousel-horizontal-padding": { cssValue, theme in theme.layout.productCardCarouselHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) },
+        "product-card-cta-button-border-radius": { cssValue, theme in theme.layout.productCardCtaButtonBorderRadius = CSSValueConverter.parsePxValue(cssValue) ?? 40 },
+        "product-card-cta-button-horizontal-padding": { cssValue, theme in theme.layout.productCardCtaButtonHorizontalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+        "product-card-cta-button-vertical-padding": { cssValue, theme in theme.layout.productCardCtaButtonVerticalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
+        "product-card-cta-button-font-size": { cssValue, theme in theme.layout.productCardCtaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
+        "product-card-cta-button-font-weight": { cssValue, theme in theme.layout.productCardCtaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
 
         // Colors - CTA Button
         "cta-button-background-color": { cssValue, theme in theme.colors.ctaButton.background = CSSValueConverter.parseColor(cssValue) },
