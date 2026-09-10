@@ -25,6 +25,9 @@ final class ConciergePresentationConfigTests: XCTestCase {
         Concierge.speechCapturer = nil
         Concierge.textSpeaker = nil
         Concierge.linkInterceptor = ConciergeLinkInterceptor()
+        #if DEBUG
+        Concierge.urlSessionConfigurationForTesting = nil
+        #endif
         super.tearDown()
     }
 
@@ -151,4 +154,29 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertTrue(Concierge.textSpeaker as AnyObject === speaker)
         XCTAssertTrue(Concierge.linkInterceptor.handleLink(testURL))
     }
+
+    // MARK: - resolvedURLSessionConfiguration
+
+    func test_resolvedURLSessionConfiguration_returnsDefaultConfiguration_whenNoOverrideSet() {
+        #if DEBUG
+        Concierge.urlSessionConfigurationForTesting = nil
+        #endif
+
+        let configuration = Concierge.resolvedURLSessionConfiguration()
+
+        // `.default` uses the shared URL cache; an injected testing override (e.g. `.ephemeral`,
+        // used to isolate mock network stubs) does not.
+        XCTAssertNotNil(configuration.urlCache)
+    }
+
+    #if DEBUG
+    func test_resolvedURLSessionConfiguration_returnsTestingOverride_whenSet() {
+        let testingConfiguration = URLSessionConfiguration.ephemeral
+        Concierge.urlSessionConfigurationForTesting = testingConfiguration
+
+        let configuration = Concierge.resolvedURLSessionConfiguration()
+
+        XCTAssertTrue(configuration === testingConfiguration)
+    }
+    #endif
 }

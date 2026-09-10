@@ -82,6 +82,35 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(agent.messageBody, "Hello")
     }
 
+    func test_sendFeedbackFor_resolvesTokenAndForwardsItToService() {
+        ConciergeAuthTokenResolver.shared.setProvider({ "feedback-token" }, timeout: 3)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        fakeService.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "hi",
+                        conversationId: "conv-1", interactionId: "turn-1")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // Produce a completed assistant message that carries a payload to give feedback on.
+        controller.applyTextChange("q")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.messages.count == 2 && controller.messages[1].payload != nil)
+
+        let agentMessageId = controller.messages[1].id
+        controller.sendFeedbackFor(
+            messageId: agentMessageId,
+            with: FeedbackPayload(sentiment: .positive, selectedOptions: ["helpful"], notes: "great")
+        )
+
+        spinUntil(fakeService.sendFeedbackCallCount == 1)
+        XCTAssertEqual(fakeService.sendFeedbackCallCount, 1, "feedback should be sent once")
+        XCTAssertEqual(fakeService.lastFeedbackToken, "feedback-token",
+                       "the resolved auth token must be forwarded to sendFeedback")
+        XCTAssertNotNil(fakeService.lastFeedbackData, "feedback event data should be forwarded")
+    }
+
     func test_streaming_error_removes_placeholder_and_sets_error_state() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.plannedChunks = []

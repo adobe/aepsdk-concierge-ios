@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import SwiftUI
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -336,31 +337,147 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.inputHeight, originalInputHeight)
     }
     
-    func test_inputOutlineColor_gradient_setsToNil() {
-        // Given
-        var theme = ConciergeTheme()
-        let cssKey = "input-outline-color"
-        let cssValue = "linear-gradient(to right, #000, #fff)"
-        
-        // When
-        CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
-        
-        // Then
-        XCTAssertNil(theme.colors.input.outline)
-    }
-    
     func test_inputOutlineColor_solidColor_setsValue() {
         // Given
         var theme = ConciergeTheme()
         let cssKey = "input-outline-color"
         let cssValue = "#4B75FF"
-        
+
         // When
         CSSKeyMapper.apply(cssKey: cssKey, cssValue: cssValue, to: &theme)
-        
+
         // Then
-        XCTAssertNotNil(theme.colors.input.outline)
         XCTAssertEqual(theme.colors.input.outline?.color.toHexString(), "#4B75FF")
+        XCTAssertNil(theme.colors.input.outlineGradient)
+    }
+
+    func test_inputOutlineColor_legacyLinearGradientString_ignoredRatherThanMisparsed() {
+        // Regression test: a legacy "linear-gradient(...)" value must not fall through to
+        // CSSValueConverter.parseColor, which would silently produce Color.fromHexString's
+        // default fallback (systemBackground) instead of leaving the border unset.
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "input-outline-color", cssValue: "linear-gradient(to right, #000, #fff)", to: &theme)
+
+        XCTAssertNil(theme.colors.input.outline)
+    }
+
+    func test_inputOutlineGradient_startEndAndAngleKeys_buildOneGradient() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-start-color", cssValue: "#12B0A0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-end-color", cssValue: "#6DD3C4", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-angle", cssValue: "90deg", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.outlineGradient?.startColor.color.toHexString(), "#12B0A0")
+        XCTAssertEqual(theme.colors.input.outlineGradient?.endColor.color.toHexString(), "#6DD3C4")
+        XCTAssertEqual(theme.colors.input.outlineGradient?.angle, 90)
+    }
+
+    func test_inputOutlineGradient_angleOmitted_defaultsTo180() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-start-color", cssValue: "#12B0A0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-end-color", cssValue: "#6DD3C4", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.outlineGradient?.angle, 180)
+    }
+
+    func test_inputOutlineGradient_onlyStartColorSet_isNotRenderable() {
+        // Regression test: a theme that only ever sets one side of a gradient key trio (ex: a
+        // customer sets --input-outline-gradient-start-color but never the end color) must not
+        // render as a half-clear gradient -- see ConciergeGradient.isRenderable.
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "input-outline-gradient-start-color", cssValue: "#12B0A0", to: &theme)
+
+        XCTAssertNotNil(theme.colors.input.outlineGradient)
+        XCTAssertFalse(theme.colors.input.outlineGradient?.isRenderable ?? true)
+    }
+
+    func test_inputMicIconGradient_startEndKeys_buildOneGradient() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-mic-icon-gradient-start-color", cssValue: "#12B0A0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-mic-icon-gradient-end-color", cssValue: "#6DD3C4", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.micIconGradient?.startColor.color.toHexString(), "#12B0A0")
+        XCTAssertEqual(theme.colors.input.micIconGradient?.endColor.color.toHexString(), "#6DD3C4")
+    }
+
+    func test_inputSendArrowBackgroundGradient_startEndKeys_buildOneGradient() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-send-arrow-background-gradient-start-color", cssValue: "#12B0A0", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-send-arrow-background-gradient-end-color", cssValue: "#6DD3C4", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.sendArrowBackgroundGradient?.startColor.color.toHexString(), "#12B0A0")
+        XCTAssertEqual(theme.colors.input.sendArrowBackgroundGradient?.endColor.color.toHexString(), "#6DD3C4")
+    }
+
+    func test_inputMicIconGradientAngle_setAlone_createsGradientWithClearColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-mic-icon-gradient-angle", cssValue: "45deg", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.micIconGradient?.angle, 45)
+        XCTAssertEqual(theme.colors.input.micIconGradient?.startColor.color.toHexString(), Color.clear.toHexString())
+        XCTAssertEqual(theme.colors.input.micIconGradient?.endColor.color.toHexString(), Color.clear.toHexString())
+    }
+
+    func test_inputSendArrowBackgroundGradientAngle_setAlone_createsGradientWithClearColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-send-arrow-background-gradient-angle", cssValue: "45deg", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.sendArrowBackgroundGradient?.angle, 45)
+        XCTAssertEqual(theme.colors.input.sendArrowBackgroundGradient?.startColor.color.toHexString(), Color.clear.toHexString())
+        XCTAssertEqual(theme.colors.input.sendArrowBackgroundGradient?.endColor.color.toHexString(), Color.clear.toHexString())
+    }
+
+    func test_inputMicWaveformGradient_startEndAndAngleKeys_buildOneGradient() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-mic-waveform-gradient-start-color", cssValue: "#00F5D4", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-mic-waveform-gradient-end-color", cssValue: "#003D33", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-mic-waveform-gradient-angle", cssValue: "to right", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.micWaveformGradient?.startColor.color.toHexString(), "#00F5D4")
+        XCTAssertEqual(theme.colors.input.micWaveformGradient?.endColor.color.toHexString(), "#003D33")
+        XCTAssertEqual(theme.colors.input.micWaveformGradient?.angle, 90)
+    }
+
+    func test_inputMicWaveformGradient_angleOmitted_defaultsTo180() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "input-mic-waveform-gradient-start-color", cssValue: "#00F5D4", to: &theme)
+        CSSKeyMapper.apply(cssKey: "input-mic-waveform-gradient-end-color", cssValue: "#003D33", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.input.micWaveformGradient?.angle, 180)
     }
 
     // MARK: - Product Card Color Mapping Tests
@@ -451,6 +568,28 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertEqual(theme.colors.productCard.outlineColor.color.toHexString(), "#00000000")
+    }
+
+    func test_productCardCtaButtonBackgroundColor_mapsToProductCardCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-background-color", cssValue: "#BB5811", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCardCtaButton.background.color.toHexString(), "#BB5811")
+    }
+
+    func test_productCardCtaButtonTextColor_mapsToProductCardCtaButtonColors() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-text-color", cssValue: "#FFFFFF", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.colors.productCardCtaButton.text.color.toHexString(), "#FFFFFF")
     }
 
     // MARK: - Product Card Layout Mapping Tests
@@ -728,6 +867,61 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertEqual(theme.layout.productCardCarouselHorizontalPadding, 8)
+    }
+
+    func test_productCardCtaButtonBorderRadius_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-border-radius", cssValue: "24px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonBorderRadius, 24)
+    }
+
+    func test_productCardCtaButtonHorizontalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-horizontal-padding", cssValue: "20px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonHorizontalPadding, 20)
+    }
+
+    func test_productCardCtaButtonVerticalPadding_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-vertical-padding", cssValue: "10px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonVerticalPadding, 10)
+    }
+
+    func test_productCardCtaButtonFontSize_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-font-size", cssValue: "13px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonFontSize, 13)
+    }
+
+    func test_productCardCtaButtonFontWeight_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-cta-button-font-weight", cssValue: "700", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardCtaButtonFontWeight, .bold)
     }
 
     func test_productCardTitleSubtitleSpacing_mapsToLayout() {

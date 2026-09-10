@@ -1,0 +1,46 @@
+codecov:
+  notify:
+    require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: nearest
+  range: "65...90"
+
+  status:
+    project:
+      default:
+        target: 75%
+        threshold: 5%
+    patch:
+      default:
+        target: 75%
+        threshold: 5%
+    changes: no
+
+  ignore:
+    # SwiftUI view layer: rendering-only code, only exercisable via snapshot tests, which are
+    # currently skipped repo-wide in AEPBrandConcierge/Tests/UnitTests/UnitTests.xctestplan.
+    # Without a UI test path that runs in CI, patch/project coverage on this layer is not
+    # achievable and shouldn't gate PRs. Re-scope this once snapshot tests are enabled here.
+    - "AEPBrandConcierge/Sources/Views/**"
+    - "AEPBrandConcierge/AEPBrandConcierge.docc/**"
+    - "AEPBrandConcierge/Tests/**"
+    - "ConciergeDemoApp/**"
+    - "Documentation/**"
+    - "Script/**"
+    - "Pods/**"
+    - ".build/**"
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "header, diff"
+  behavior: default
+  require_changes: no

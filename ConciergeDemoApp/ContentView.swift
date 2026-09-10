@@ -131,14 +131,14 @@ struct ContentView: View {
                 .tag(DemoTab.uiKit)
                 .tabItem { Label("UIKit", systemImage: "square.stack.3d.up.fill") }
 
-            // MARK: - Testing
+            // MARK: - Testing (link handling, auth token, "Buy now" mock — see TestingHubView)
 
-            LinkHandlingTestView(
+            TestingHubView(
                 customLinkHandlingEnabled: $customLinkHandlingEnabled,
                 closeChatOnIntercept: $closeChatOnIntercept,
                 deepLinkURL: $deepLinkState.receivedURL,
                 handleLink: handleLink,
-                onOpenChat: {
+                onOpenChatViaSwiftUITab: {
                     selectedTab = .swiftUI
                     Concierge.show(
                         surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],

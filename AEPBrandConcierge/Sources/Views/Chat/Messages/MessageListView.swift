@@ -25,6 +25,11 @@ struct MessageListView: View {
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
     var scrollToLastOnAppear: Bool = false
+    /// Gates `shouldFillRemainingHeight` so only a turn that's actually in flight fills the screen —
+    /// message-list shape alone can't distinguish "just arrived" from "settled a while ago with
+    /// nothing following it" (e.g. a reopened past conversation, or an empty-response fallback
+    /// message), since both look structurally identical.
+    var chatState: ChatState = .idle
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
@@ -35,51 +40,9 @@ struct MessageListView: View {
         GeometryReader { geometry in
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            // showHeader: insert a "Suggestions" label above the first chip in a group
-                            if isFirstInSuggestionGroup(at: index),
-                               theme.behavior.promptSuggestions?.showHeader == true {
-                                HStack {
-                                    Text(theme.text.suggestionsHeader)
-                                        .font(.system(.subheadline).weight(.semibold))
-                                        .foregroundColor(theme.colors.message.conciergeText.color)
-                                    Spacer()
-                                }
-                                .padding(.leading, horizontalPadding(for: message.template).leading)
-                                .padding(.trailing, horizontalPadding(for: message.template).trailing)
-                                .padding(.bottom, -4)
-                            }
-
-                            ChatMessageView(
-                                messageId: message.id,
-                                template: message.template,
-                                messageBody: message.messageBody,
-                                sources: message.sources,
-                                linkHints: message.linkHints,
-                                promptSuggestions: message.promptSuggestions,
-                                feedbackSentiment: message.feedbackSentiment,
-                                feedbackEligible: message.feedbackEligible,
-                                isStreamComplete: message.isStreamComplete,
-                                onSuggestionTap: onSuggestionTap,
-                                onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
-                                onCtaButtonTap: onCtaButtonTap
-                            )
-                                .id(message.id)
-                                .padding(horizontalPadding(for: message.template))
-                                .onAppear {
-                                    if message.shouldSpeakMessage, let messageBody = message.chatMessageView.messageBody {
-                                        onSpeak(messageBody)
-                                    }
-                                }
-                        }
-
-                        // Add spacer to ensure scroll view has enough height to position user message at top
-                        Spacer()
-                            .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
-                    }
-                    .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
-                    .padding(.bottom, theme.layout.chatHistoryBottomPadding)
+                    messageStack(geometry: geometry)
+                        .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
+                        .padding(.bottom, theme.layout.chatHistoryBottomPadding)
                 }
                 // Scroll user message to top when sent, allowing agent response to fill screen below
                 .onChange(of: userScrollTick) { _ in
@@ -103,6 +66,58 @@ struct MessageListView: View {
                         isInputFocused = false
                     }
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func messageStack(geometry: GeometryProxy) -> some View {
+        VStack(spacing: 12) {
+            ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                // showHeader: insert a "Suggestions" label above the first chip in a group
+                if isFirstInSuggestionGroup(at: index),
+                   theme.behavior.promptSuggestions?.showHeader == true {
+                    HStack {
+                        Text(theme.text.suggestionsHeader)
+                            .font(.system(.subheadline).weight(.semibold))
+                            .foregroundColor(theme.colors.message.conciergeText.color)
+                        Spacer()
+                    }
+                    .padding(.leading, horizontalPadding(for: message.template).leading)
+                    .padding(.trailing, horizontalPadding(for: message.template).trailing)
+                    .padding(.bottom, -4)
+                }
+
+                let fillHeight: CGFloat? = shouldFillRemainingHeight(at: index) ? max(0, geometry.size.height - theme.layout.messageBlockerHeight) : nil
+
+                ChatMessageView(
+                    messageId: message.id,
+                    template: message.template,
+                    messageBody: message.messageBody,
+                    sources: message.sources,
+                    linkHints: message.linkHints,
+                    promptSuggestions: message.promptSuggestions,
+                    feedbackSentiment: message.feedbackSentiment,
+                    feedbackEligible: message.feedbackEligible,
+                    isStreamComplete: message.isStreamComplete,
+                    onSuggestionTap: onSuggestionTap,
+                    onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
+                    onCtaButtonTap: onCtaButtonTap
+                )
+                    .id(message.id)
+                    .padding(horizontalPadding(for: message.template))
+                    // The in-progress response bubble fills the remaining screen height while
+                    // it's the last thing on screen, so it appears to "fill in" below the user's
+                    // message as it streams. The instant anything is appended after it (prompt
+                    // suggestions, cards, a new user message), this no longer applies to it and
+                    // it settles back to its natural size — so completed turns never leave a
+                    // permanent empty gap below the last message.
+                    .frame(minHeight: fillHeight, alignment: .top)
+                    .onAppear {
+                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
+                            onSpeak(messageBody)
+                        }
+                    }
             }
         }
     }
@@ -159,5 +174,27 @@ struct MessageListView: View {
         if index == 0 { return true }
         if case .promptSuggestion = messages[index - 1].template { return false }
         return true
+    }
+
+    /// True when a turn is actively in flight (`chatState == .processing`) AND the message at `index`
+    /// is the agent's response to the latest user message with nothing appended after it yet (no
+    /// suggestions, cards, or new user message). The message-shape check alone matches the Android
+    /// implementation this was ported from; the `chatState` check is additionally required so a
+    /// settled conversation with the same shape (reopened past conversation, empty-response
+    /// fallback) doesn't also fill. Deliberately `== .processing` rather than `!= .idle`: `.error`
+    /// is also non-idle, and this must not fill an error-state bubble even if a future change to
+    /// the error path leaves one as the last message (today it doesn't, but that's an accident of
+    /// `ChatController`'s error handling, not something this guard should rely on).
+    /// Internal (not private) so `shouldFillRemainingHeight` can be unit tested directly — a
+    /// snapshot alone can't detect an inverted or broken condition here, since `.frame(minHeight:)`
+    /// only affects scrollable content height, which is invisible in a single fixed-frame capture.
+    func shouldFillRemainingHeight(at index: Int) -> Bool {
+        guard chatState == .processing,
+              index == messages.count - 1,
+              case .basic(let isUserMessage) = messages[index].template,
+              !isUserMessage,
+              let lastUserIndex = messages.lastIndex(where: { if case .basic(true) = $0.template { return true }; return false })
+        else { return false }
+        return lastUserIndex == index - 1
     }
 }

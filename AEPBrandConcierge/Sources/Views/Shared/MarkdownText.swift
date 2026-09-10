@@ -46,6 +46,10 @@ struct MarkdownText: UIViewRepresentable {
         tv.adjustsFontForContentSizeCategory = true
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tv.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        // Underline every inline link. Only the underline is forced here — no foreground — so the
+        // link text color comes from the attributed string (set to the theme primary color in
+        // `MarkdownBlockView`) rather than the text view's inherited tint.
+        tv.linkTextAttributes = [.underlineStyle: NSUnderlineStyle.single.rawValue]
         tv.delegate = context.coordinator
         return tv
     }

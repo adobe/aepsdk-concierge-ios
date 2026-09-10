@@ -63,16 +63,22 @@ public enum ConciergeLinkHandler {
         openInWebView: @escaping (URL) -> Void,
         openWithSystem: @escaping (URL) -> Void
     ) {
-        if isWebLink(url) {
-            urlOpener(url, [.universalLinksOnly: true]) { success in
+        // "Get directions" links arrive as platform-neutral geo: URIs (RFC 5870). iOS has no
+        // native geo: handler, so rewrite them to an Apple Maps directions URL, which then routes
+        // through the web-link path below (opens the Maps app via universal link, or the in-app
+        // webview as a fallback).
+        let resolvedURL = GeoURLConverter.appleMapsDirectionsURL(from: url) ?? url
+
+        if isWebLink(resolvedURL) {
+            urlOpener(resolvedURL, [.universalLinksOnly: true]) { success in
                 DispatchQueue.main.async {
                     if !success {
-                        openInWebView(url)
+                        openInWebView(resolvedURL)
                     }
                 }
             }
         } else {
-            openWithSystem(url)
+            openWithSystem(resolvedURL)
         }
     }
 }

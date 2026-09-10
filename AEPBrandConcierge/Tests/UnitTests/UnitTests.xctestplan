@@ -35,7 +35,16 @@
         "PermissionDialogSnapshotTests\/test_permissionDialogProbe_exaggeratedTheme()",
         "SourcesProbeSnapshotTests",
         "SourcesProbeSnapshotTests\/test_sourcesProbe_defaultTheme()",
-        "SourcesProbeSnapshotTests\/test_sourcesProbe_exaggeratedTheme()"
+        "SourcesProbeSnapshotTests\/test_sourcesProbe_exaggeratedTheme()",
+        "WhiteSpaceReservationSnapshotTests",
+        "WhiteSpaceReservationSnapshotTests\/test_activeResponse_fillsRemainingHeight()",
+        "WhiteSpaceReservationSnapshotTests\/test_completedConversationWithoutSuggestions_doesNotFillRemainingHeight()",
+        "WhiteSpaceReservationSnapshotTests\/test_emptyResponseFallback_doesNotFillRemainingHeight()",
+        "WhiteSpaceReservationSnapshotTests\/test_longSettledConversation_rendersWithoutBreaking()",
+        "WhiteSpaceReservationSnapshotTests\/test_responseWithProductCardAndSuggestions_doesNotFillRemainingHeight()",
+        "WhiteSpaceReservationSnapshotTests\/test_responseWithProductCardOnly_doesNotFillRemainingHeight()",
+        "WhiteSpaceReservationSnapshotTests\/test_settledConversationWithSuggestions_accessibilityDynamicType()",
+        "WhiteSpaceReservationSnapshotTests\/test_settledConversationWithSuggestions_doesNotFillRemainingHeight()"
       ],
       "target" : {
         "containerPath" : "container:AEPBrandConcierge.xcodeproj",

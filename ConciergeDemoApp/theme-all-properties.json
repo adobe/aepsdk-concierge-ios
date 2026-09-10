@@ -28,7 +28,9 @@
     "input": {
       "enableVoiceInput": true,
       "disableMultiline": false,
-      "showAiChatIcon": null,
+      "showAiChatIcon": {
+        "icon": "InputLeadingIcon"
+      },
       "sendButtonStyle": "arrow",
       "silenceDuration": 4,
       "silenceThreshold": 0.02
@@ -218,6 +220,8 @@
     "--input-send-icon-color": "#006554",
     "--input-mic-icon-color": "#006554",
     "--input-mic-recording-icon-color" : "#FFFFFF",
+    "--input-mic-waveform-gradient-start-color": "#00F5D4",
+    "--input-mic-waveform-gradient-end-color": "#003D33",
     "--input-send-arrow-icon-color": "#FFFFFF",
     "--input-send-arrow-background-color": "#006554",
 
@@ -282,6 +286,13 @@
     "--product-card-text-bottom-padding": "0px",
     "--product-card-carousel-horizontal-padding": "16px",
     "--product-card-carousel-spacing": "12px",
+    "--product-card-cta-button-background-color": "#BB5811",
+    "--product-card-cta-button-text-color": "#FFFFFF",
+    "--product-card-cta-button-border-radius": "40px",
+    "--product-card-cta-button-horizontal-padding": "16px",
+    "--product-card-cta-button-vertical-padding": "8px",
+    "--product-card-cta-button-font-size": "12px",
+    "--product-card-cta-button-font-weight": "600",
     "--cta-button-background-color": "#EDEDED",
     "--cta-button-text-color": "#191F1C",
     "--cta-button-icon-color": "#161313",

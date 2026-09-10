@@ -140,6 +140,31 @@ public enum CSSValueConverter {
         return CodableColor(Color.fromHexString(cssValue))
     }
 
+    /// Parses a CSS gradient direction value to a CSS-convention angle in degrees (0 = "to top", clockwise).
+    /// Supports "<n>deg" and the "to <keyword>" direction keywords. Defaults to 180 ("to bottom"), matching
+    /// the mic waveform gradient's vertical top-to-bottom direction.
+    public static func parseGradientAngle(_ cssValue: String) -> CGFloat {
+        let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch trimmed {
+        case "to top": return 0
+        case "to right": return 90
+        case "to bottom": return 180
+        case "to left": return 270
+        case "to top right", "to right top": return 45
+        case "to bottom right", "to right bottom": return 135
+        case "to bottom left", "to left bottom": return 225
+        case "to top left", "to left top": return 315
+        default:
+            // Double(_:) follows strtod conventions, so "nan"/"infinity"/huge-exponent strings parse
+            // "successfully" to non-finite values -- guard explicitly rather than let NaN/Infinity
+            // propagate into ConciergeGradient's sin/cos math.
+            if trimmed.hasSuffix("deg"), let value = Double(trimmed.dropLast(3)), value.isFinite {
+                return CGFloat(value)
+            }
+            return 180
+        }
+    }
+
     /// Parses CSS font-weight string to CodableFontWeight enum
     /// Supports: "400", "700", "normal", "bold"
     public static func parseFontWeight(_ cssValue: String) -> CodableFontWeight {

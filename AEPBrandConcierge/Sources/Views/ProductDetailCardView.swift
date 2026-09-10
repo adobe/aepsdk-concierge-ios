@@ -47,6 +47,21 @@ struct ProductDetailCardView: View {
     let data: ProductCardData
     let cardWidth: CGFloat
 
+    /// Invoked when the product card's CTA button is tapped, with the action's label and URL —
+    /// mirrors `CtaButtonView.onTap` so callers can track this the same way as the standalone CTA
+    /// button. The label is whatever the payload provides (e.g. "Buy now", "Add to cart", "Learn
+    /// more") — this view has no concept of a specific action, only a themeable action button.
+    var onTap: ((_ label: String, _ url: String) -> Void)?
+
+    /// Explicit init (rather than relying on the synthesized memberwise one) so `onTap` can
+    /// default to `nil` on the parameter — most call sites here (previews, tests, the demo
+    /// screen) don't need it, unlike `CtaButtonView`'s single call site.
+    init(data: ProductCardData, cardWidth: CGFloat, onTap: ((_ label: String, _ url: String) -> Void)? = nil) {
+        self.data = data
+        self.cardWidth = cardWidth
+        self.onTap = onTap
+    }
+
     /// This card's own clamped natural height, measured from its content. Used to self-size when
     /// the card is not part of a carousel (no equalized height supplied).
     @State private var selfMeasuredHeight: CGFloat = 0
@@ -124,6 +139,19 @@ struct ProductDetailCardView: View {
     /// Clamps a natural content height into the configured per-card bounds.
     private func clampedHeight(_ natural: CGFloat) -> CGFloat {
         min(max(natural, theme.layout.productCardMinHeight), theme.layout.productCardMaxHeight)
+    }
+
+    /// Whether the product card's CTA button should render: driven entirely by the response
+    /// payload's `entity_info.primary` action (parsed into `data.primaryButton`), with no
+    /// client-side content gating. Requires a non-blank label AND a non-blank URL — a blank label
+    /// would render an empty-looking button, and a blank URL fails
+    /// `handleProductCardCtaButtonTap`'s `URL(string:)` guard, leaving a dead button that does
+    /// nothing on tap (`onTap` is only invoked after that guard, so no tracking fires either).
+    /// Kept independent of `theme`/rendering so it's unit-testable without a view hierarchy.
+    var shouldShowProductCardCtaButton: Bool {
+        guard let action = data.primaryButton, let url = action.url else { return false }
+        return !action.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 
@@ -254,11 +282,40 @@ private extension ProductDetailCardView {
         VStack(alignment: .leading, spacing: theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing) {
             productCardTitleSubtitleBlock
             productCardPriceBlock
+            ctaButtonView
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
         .frame(width: innerContentWidth, alignment: .topLeading)
+    }
+
+    /// Text-only CTA button rendered from the payload's `primary` action (`data.primaryButton`),
+    /// themeable via `--product-card-cta-button-*`. The label is whatever the payload provides
+    /// (e.g. "Buy now", "Add to cart") — not a fixed "buy now" action. See
+    /// `shouldShowProductCardCtaButton` for when it renders.
+    @ViewBuilder
+    var ctaButtonView: some View {
+        if shouldShowProductCardCtaButton, let action = data.primaryButton {
+            Button(action: { handleProductCardCtaButtonTap(action) }) {
+                Text(action.text)
+                    .font(.system(
+                        size: theme.layout.productCardCtaButtonFontSize,
+                        weight: theme.layout.productCardCtaButtonFontWeight.toSwiftUIFontWeight()
+                    ))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .foregroundColor(theme.colors.productCardCtaButton.text.color)
+                    .padding(.horizontal, theme.layout.productCardCtaButtonHorizontalPadding)
+                    .padding(.vertical, theme.layout.productCardCtaButtonVerticalPadding)
+                    .background(
+                        RoundedRectangle(cornerRadius: theme.layout.productCardCtaButtonBorderRadius, style: .continuous)
+                            .fill(theme.colors.productCardCtaButton.background.color)
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(action.text)
+        }
     }
 
     func badgeView(text: String) -> some View {
@@ -314,6 +371,25 @@ private extension ProductDetailCardView {
         if linkInterceptor.handleLink(destination) { return }
         ConciergeLinkHandler.handleURL(
             destination,
+            openInWebView: { webViewPresenter.openURL($0) },
+            openWithSystem: { openURL($0) }
+        )
+    }
+}
+
+// Not `private` (unlike the extension above) so `handleProductCardCtaButtonTap` stays unit-testable via
+// `@testable import` without rendering a view hierarchy.
+extension ProductDetailCardView {
+    /// Fires `onTap` (mirrors `CtaButtonView.handleTap`'s tracking hook), then routes the action's
+    /// URL through the same link-handling path as every other CTA/product action (host
+    /// interception first, then the SDK's default App Link/WebView routing) — the destination
+    /// screen is entirely owned by the app embedding the SDK.
+    func handleProductCardCtaButtonTap(_ action: ActionButton) {
+        guard let urlString = action.url, let url = URL(string: urlString) else { return }
+        onTap?(action.text, urlString)
+        if linkInterceptor.handleLink(url) { return }
+        ConciergeLinkHandler.handleURL(
+            url,
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )
@@ -390,6 +466,21 @@ private enum PreviewData {
         imageHeight: 150
     )
 
+    /// `primaryButton` present alongside a subtitle — the CTA renders regardless, since visibility
+    /// is driven entirely by payload presence (`entity_info.primary`), not by subtitle absence.
+    static let withSubtitleAndCtaButton = ProductCardData(
+        imageSource: .remote(photosImageURL),
+        title: "AI Photo Retouching",
+        subtitle: "One-click enhancements",
+        price: "$14.99",
+        badge: nil,
+        destinationURL: nil,
+        primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy/photo-retouching"),
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
     static let exploreTemplates = ProductCardData(
         imageSource: .remote(templatesImageURL),
         title: "Explore Templates",
@@ -424,6 +515,20 @@ private enum PreviewData {
         badge: nil,
         destinationURL: URL(string: "https://example.com/pdf-editor"),
         primaryButton: nil,
+        secondaryButton: nil,
+        imageWidth: 150,
+        imageHeight: 150
+    )
+
+    /// No subtitle, `primaryButton` present — the CTA renders.
+    static let noSubtitleWithCtaButton = ProductCardData(
+        imageSource: .remote(videoImageURL),
+        title: "Quick Video Clipper",
+        subtitle: nil,
+        price: "$7.99",
+        badge: nil,
+        destinationURL: nil,
+        primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy/video-clipper"),
         secondaryButton: nil,
         imageWidth: 150,
         imageHeight: 150
@@ -599,6 +704,20 @@ private enum PreviewData {
     ScrollView {
         VStack(spacing: 16) {
             ProductDetailCardView(data: PreviewData.allFields, cardWidth: 222)
+        }
+        .padding()
+    }
+    .conciergeTheme(ConciergeTheme())
+}
+
+#Preview("Product Card CTA Button") {
+    // allFields has no primaryButton (CTA hidden); the other two have one, so the CTA shows
+    // regardless of whether a subtitle is also present.
+    ScrollView {
+        HStack(alignment: .top, spacing: 16) {
+            ProductDetailCardView(data: PreviewData.allFields, cardWidth: 222)
+            ProductDetailCardView(data: PreviewData.withSubtitleAndCtaButton, cardWidth: 222)
+            ProductDetailCardView(data: PreviewData.noSubtitleWithCtaButton, cardWidth: 222)
         }
         .padding()
     }
