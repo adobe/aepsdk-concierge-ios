@@ -27,6 +27,10 @@ enum GeoURLConverter {
     /// Real coordinates are preferred as the destination (exact routing); when the coordinates are
     /// the `0,0` placeholder, the `q` address query is used instead.
     ///
+    /// The `q` address is decoded and re-encoded via `URLComponents`. Per the backend contract its
+    /// spaces are percent-encoded (`%20`), not `+`-encoded, so they round-trip to spaces in `daddr`;
+    /// a `+`-encoded space would be forwarded literally.
+    ///
     /// - Parameter url: A `geo:` URI as emitted by the backend.
     /// - Returns: An `https://maps.apple.com/?daddr=…` directions URL, or `nil`.
     static func appleMapsDirectionsURL(from url: URL) -> URL? {

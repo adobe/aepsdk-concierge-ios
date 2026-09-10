@@ -1246,7 +1246,7 @@ This section documents which properties are fully implemented, partially impleme
 
 | CSS Variable | Status | Notes |
 |--------------|--------|-------|
-| `--color-primary` | ✅ | Used throughout UI |
+| `--color-primary` | ✅ | Used throughout UI; inline link text in BasicMessageView |
 | `--color-text` | ✅ | Used for text styling |
 | `--color-container` | ✅ | Background fallback for prompt suggestion chips, product cards, and message bubbles |
 | `--suggestion-background-color` | ✅ | Used in ChatMessageView for suggestion chip background |
@@ -1258,7 +1258,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-user-text` | ✅ | Used in ChatMessageView |
 | `--message-concierge-background` | ✅ | Used in ChatMessageView, SourcesListView |
 | `--message-concierge-text` | ✅ | Used in ChatMessageView |
-| `--message-concierge-link-color` | ✅ | Used in SourceRowView |
+| `--message-concierge-link-color` | ✅ | Used in SourceRowView; inline link-icon fallback in BasicMessageView |
 | `--button-primary-background` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-primary-text` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-secondary-border` | ✅ | Used in ConciergePressableButtonStyle |

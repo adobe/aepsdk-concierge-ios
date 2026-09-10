@@ -288,4 +288,26 @@ final class ConciergeLinkHandlerTests: XCTestCase {
         )
         XCTAssertFalse(openWithSystemCalled)
     }
+
+    func testHandleURL_withGeoUrl_realCoordinates_probesAppleMapsWithCoordinateDaddr() {
+        let url = URL(string: "geo:37.6788,-122.4567?q=DICK%27S")!
+        var probedURL: URL?
+
+        ConciergeLinkHandler.urlOpener = { openedURL, _, completion in
+            probedURL = openedURL
+            completion?(true)
+        }
+
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { _ in },
+            openWithSystem: { _ in }
+        )
+
+        let drain = expectation(description: "main queue drain")
+        DispatchQueue.main.async { drain.fulfill() }
+        waitForExpectations(timeout: 1)
+
+        XCTAssertEqual(probedURL?.absoluteString, "https://maps.apple.com/?daddr=37.6788,-122.4567")
+    }
 }
