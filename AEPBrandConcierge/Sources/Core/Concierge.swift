@@ -137,13 +137,15 @@ public class Concierge: NSObject, Extension {
             errorMessage = "Unable to show Brand Concierge UI - datastream information is unavailable from configuration."
             return
         }
+        
+        let region = configSharedState.conciergeRegion
 
         guard let surfaces = event.data?[ConciergeConstants.EventData.Key.SURFACES] as? [String], !surfaces.isEmpty else {
             errorMessage = "Unable to show Brand Concierge UI - no surfaces were provided in the show() call."
             return
         }
 
-        let config = ConciergeConfiguration(consentCollectValue: consentValue, datastream: datastream, ecid: ecid, server: server, surfaces: surfaces)
+        let config = ConciergeConfiguration(consentCollectValue: consentValue, datastream: datastream, ecid: ecid, server: server, region: region, surfaces: surfaces)
         let responseEvent = event.createResponseEvent(name: ConciergeConstants.EventName.SHOW_UI_RESPONSE,
                                                       type: ConciergeConstants.EventType.concierge,
                                                       source: EventSource.responseContent,
