@@ -41,6 +41,11 @@ extension SharedStateResult {
     var conciergeDatastream: String? {
         value?[ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM] as? String
     }
+    
+    /// The Concierge region from configuration.
+    var conciergeRegion: String? {
+        value?[ConciergeConstants.SharedState.Configuration.Concierge.REGION] as? String
+    }
 
     /// Value for collect out of consents shared state
     var collectValue: String {

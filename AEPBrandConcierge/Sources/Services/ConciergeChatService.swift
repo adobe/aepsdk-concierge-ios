@@ -26,7 +26,8 @@ class ConciergeChatService: NSObject {
     // MARK: - Constants
 
     private let LOG_TAG = "ConciergeChatService"
-    private let apiPath = "/brand-concierge/conversations"
+    private let serviceName = "/brand-concierge"
+    private let conversationsApiName = "/conversations"
 
     // MARK: - Private Properties
 
@@ -40,6 +41,7 @@ class ConciergeChatService: NSObject {
 
     init(configuration: ConciergeConfiguration) {
         self.configuration = configuration
+        
         super.init()
 
         session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
@@ -126,7 +128,9 @@ class ConciergeChatService: NSObject {
 
     // MARK: - Private Methods
 
-    private func createUrl() throws -> URL {
+    /// Creates the URL for a request to the Concierge Service.
+    /// - Note: Internal visibility for testing
+    func createUrl() throws -> URL {
         // TODO: Remove prior to release
         if USE_TEMPS {
             return URL(string: TEMP_serviceEndpoint)!
@@ -151,8 +155,13 @@ class ConciergeChatService: NSObject {
         if let conversationId = configuration.conversationId {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
         }
-
-        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(apiPath)")
+        
+        var region = ""
+        if let configRegion = configuration.region, !configRegion.isEmpty {
+            region = "/\(configRegion)"
+        }
+        
+        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(serviceName)\(region)\(conversationsApiName)")
         urlComponents?.queryItems = queryItems
 
         guard let url = urlComponents?.url else {

@@ -162,6 +162,7 @@ public enum ConciergeConstants {
             enum Concierge {
                 static let SERVER = "concierge.server"
                 static let DATASTREAM = "concierge.configId"
+                static let REGION = "concierge.region"
             }
         }
 

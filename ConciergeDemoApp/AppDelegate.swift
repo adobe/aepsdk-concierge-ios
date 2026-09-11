@@ -33,7 +33,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             // TODO: - temporary override of datastream and server until we get that sorted out
             MobileCore.updateConfigurationWith(configDict: [
                 "concierge.configId": "6acf9d12-5018-4f84-8224-aac4900782f0",
-                "concierge.server": "edge-int.adobedc.net"
+                "concierge.server": "edge-int.adobedc.net",
+                "concierge.region": "va7"
             ])
         }
 
