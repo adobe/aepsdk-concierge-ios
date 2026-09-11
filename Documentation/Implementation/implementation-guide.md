@@ -134,6 +134,7 @@ Brand Concierge expects the following keys to be present in the Configuration sh
 
 - **`concierge.server`**: String (server host or base domain used by Concierge requests)
 - **`concierge.configId`**: String (datastream ID)
+- **`concierge.region`**: String, optional (region segment inserted into the Concierge request path, e.g. `va7`; omit to use the default region)
 
 ECID is read from Edge Identity shared state. Surfaces are not a Configuration key; they are supplied per session via the `surfaces:` parameter on `Concierge.wrap(...)`, `Concierge.show(...)`, or `Concierge.present(on:...)`.
 
