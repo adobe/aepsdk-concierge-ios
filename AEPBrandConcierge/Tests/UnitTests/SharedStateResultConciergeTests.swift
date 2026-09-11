@@ -200,6 +200,59 @@ final class SharedStateResultConciergeTests: XCTestCase {
         XCTAssertNil(datastream)
     }
     
+    // MARK: - Concierge Region Tests
+
+    func test_conciergeRegion_withValidRegion_returnsRegion() {
+        // Given
+        let value: [String: Any] = [
+            "concierge.region": "va7"
+        ]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let region = result.conciergeRegion
+
+        // Then
+        XCTAssertEqual(region, "va7")
+    }
+
+    func test_conciergeRegion_withMissingKey_returnsNil() {
+        // Given
+        let value: [String: Any] = [:]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let region = result.conciergeRegion
+
+        // Then
+        XCTAssertNil(region)
+    }
+
+    func test_conciergeRegion_withNonStringValue_returnsNil() {
+        // Given
+        let value: [String: Any] = [
+            "concierge.region": 12345
+        ]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let region = result.conciergeRegion
+
+        // Then
+        XCTAssertNil(region)
+    }
+
+    func test_conciergeRegion_withNilValue_returnsNil() {
+        // Given
+        let result = SharedStateResult(status: .set, value: nil)
+
+        // When
+        let region = result.conciergeRegion
+
+        // Then
+        XCTAssertNil(region)
+    }
+
     // MARK: - Collect Value Tests
     
     func test_collectValue_withValidConsent_returnsValue() {

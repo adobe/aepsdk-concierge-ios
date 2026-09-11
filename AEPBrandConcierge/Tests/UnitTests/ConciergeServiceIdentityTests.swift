@@ -21,7 +21,8 @@ final class ConciergeServiceIdentityTests: XCTestCase {
         datastream: String? = "datastream-1",
         surfaces: [String] = ["surface-a", "surface-b"],
         conversationId: String? = "conv-1",
-        sessionId: String? = "session-1"
+        sessionId: String? = "session-1",
+        region: String? = "region-1"
     ) -> ConciergeConfiguration {
         ConciergeConfiguration(
             conversationId: conversationId,
@@ -29,6 +30,7 @@ final class ConciergeServiceIdentityTests: XCTestCase {
             ecid: ecid,
             server: server,
             sessionId: sessionId,
+            region: region,
             surfaces: surfaces
         )
     }
@@ -85,5 +87,38 @@ final class ConciergeServiceIdentityTests: XCTestCase {
         let left = ConciergeConfiguration(datastream: nil, ecid: nil, server: nil, surfaces: [])
         let right = ConciergeConfiguration(datastream: nil, ecid: nil, server: nil, surfaces: [])
         XCTAssertTrue(left.hasSameChatServiceIdentity(as: right))
+    }
+
+    func test_hasSameChatServiceIdentity_regionDiffers_returnsFalse() {
+        let left = makeConfiguration(region: "va7")
+        let right = makeConfiguration(region: "va6")
+        XCTAssertFalse(left.hasSameChatServiceIdentity(as: right))
+    }
+
+    func test_hasSameChatServiceIdentity_regionNilVsSet_returnsFalse() {
+        let left = makeConfiguration(region: nil)
+        let right = makeConfiguration(region: "va7")
+        XCTAssertFalse(left.hasSameChatServiceIdentity(as: right))
+    }
+
+    func test_hasSameChatServiceIdentity_regionBothNil_returnsTrue() {
+        let left = makeConfiguration(region: nil)
+        let right = makeConfiguration(region: nil)
+        XCTAssertTrue(left.hasSameChatServiceIdentity(as: right))
+    }
+
+    // MARK: - Region Codable
+
+    func test_codable_roundTrip_preservesRegion() throws {
+        let original = makeConfiguration(region: "va7")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(ConciergeConfiguration.self, from: data)
+        XCTAssertEqual(decoded.region, "va7")
+    }
+
+    func test_codable_missingRegionKey_decodesToNil() throws {
+        let json = "{\"surfaces\":[]}".data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeConfiguration.self, from: json)
+        XCTAssertNil(decoded.region)
     }
 }

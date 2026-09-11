@@ -20,7 +20,7 @@ import Foundation
 public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.8.0"
+    static let EXTENSION_VERSION = "5.8.1"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
 
@@ -174,6 +174,7 @@ public enum ConciergeConstants {
             enum Concierge {
                 static let SERVER = "concierge.server"
                 static let DATASTREAM = "concierge.configId"
+                static let REGION = "concierge.region"
             }
         }
 
