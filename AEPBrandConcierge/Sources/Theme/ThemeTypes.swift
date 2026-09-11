@@ -108,6 +108,92 @@ public struct ConciergeShadow: Codable, Equatable {
     }
 }
 
+/// Simple two-color linear gradient for theme tokens that support either a solid color or a gradient
+/// (ex: input bar border, mic/send icon colors, mic waveform gradient) -- pick a start and end color,
+/// with angle as an optional configuration knob on top rather than an arbitrary multi-stop system.
+public struct ConciergeGradient: Codable, Equatable {
+    public var startColor: CodableColor
+    public var endColor: CodableColor
+    /// Degrees, CSS `linear-gradient` convention: 0 = "to top", increases clockwise. Default 180 = "to bottom"
+    /// (matches the waveform gradient's vertical top-to-bottom direction when left unconfigured).
+    public var angle: CGFloat
+
+    public init(startColor: CodableColor, endColor: CodableColor, angle: CGFloat = 180) {
+        self.startColor = startColor
+        self.endColor = endColor
+        self.angle = angle
+    }
+
+    /// The gradient line's start/end points in unit space, derived from `angle`. Split out from
+    /// `linearGradient` so the angle math is directly unit-testable (SwiftUI's `LinearGradient` itself
+    /// exposes no way to read back its start/end points).
+    /// Exact for the 4 axis-aligned angles (0/90/180/270 = to-top/right/bottom/left). Approximate at other
+    /// angles: does not correct for non-square view aspect ratio or CSS's corner-reaching line-length scaling.
+    var unitPoints: (start: UnitPoint, end: UnitPoint) {
+        let radians = angle * .pi / 180
+        let dx = sin(radians) * 0.5
+        let dy = -cos(radians) * 0.5
+        return (
+            UnitPoint(x: 0.5 - dx, y: 0.5 - dy),
+            UnitPoint(x: 0.5 + dx, y: 0.5 + dy)
+        )
+    }
+
+    /// Converts the CSS-style angle + two colors into a SwiftUI `LinearGradient`.
+    public var linearGradient: LinearGradient {
+        let points = unitPoints
+        return LinearGradient(
+            gradient: Gradient(colors: [startColor.color, endColor.color]),
+            startPoint: points.start,
+            endPoint: points.end
+        )
+    }
+
+    /// Whether this gradient has real (non-`.clear`) colors on both ends. `CSSKeyMapper` builds a
+    /// gradient incrementally as its 3 CSS keys (start/end/angle) arrive independently, defaulting
+    /// whichever side hasn't been set yet to `.clear` as a placeholder -- so a gradient with only one
+    /// side configured is not yet meant to render. `conciergeShapeStyle` checks this before treating
+    /// the gradient as active, falling back to the solid color/fallback otherwise.
+    var isRenderable: Bool {
+        startColor != CodableColor(.clear) && endColor != CodableColor(.clear)
+    }
+}
+
+/// Which underlying style `conciergeShapeStyle` picks for a given (color, gradient, fallback) input.
+/// Split out from `conciergeShapeStyle` so the gradient > color > fallback priority is directly
+/// assertable in tests -- SwiftUI's `AnyShapeStyle`/`LinearGradient` expose no way to read back what
+/// they were constructed from, so testing `conciergeShapeStyle`'s return value directly can't catch
+/// e.g. the priority order being accidentally inverted.
+enum ConciergeResolvedStyle: Equatable {
+    case gradient(ConciergeGradient)
+    case color(CodableColor)
+    case fallback
+}
+
+func resolveConciergeStyle(color: CodableColor?, gradient: ConciergeGradient?) -> ConciergeResolvedStyle {
+    if let gradient, gradient.isRenderable {
+        return .gradient(gradient)
+    }
+    if let color {
+        return .color(color)
+    }
+    return .fallback
+}
+
+/// Resolves a themed color/gradient pair into a single `ShapeStyle`, preferring the gradient when
+/// present and renderable (see `ConciergeGradient.isRenderable`). Used by views that render either a
+/// solid color or a gradient through the same `.foregroundStyle`/`.stroke`/`.fill` call.
+func conciergeShapeStyle(color: CodableColor?, gradient: ConciergeGradient?, fallback: Color) -> AnyShapeStyle {
+    switch resolveConciergeStyle(color: color, gradient: gradient) {
+    case .gradient(let gradient):
+        return AnyShapeStyle(gradient.linearGradient)
+    case .color(let color):
+        return AnyShapeStyle(color.color)
+    case .fallback:
+        return AnyShapeStyle(fallback)
+    }
+}
+
 /// Text alignment configuration
 /// Matches SwiftUI's TextAlignment cases: .leading, .center, .trailing
 public enum ConciergeTextAlignment: String, Codable {

@@ -50,8 +50,9 @@ struct CtaButtonView: View {
     }
 
     private func handleTap() {
-        onTap?(action.text, action.url)
-        guard let url = URL(string: action.url) else { return }
+        guard let urlString = action.url else { return }
+        onTap?(action.text, urlString)
+        guard let url = URL(string: urlString) else { return }
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,

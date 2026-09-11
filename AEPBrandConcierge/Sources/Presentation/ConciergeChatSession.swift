@@ -28,7 +28,8 @@ final class ConciergeChatSession {
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?,
-        dispatch: ((_ event: Event) -> Void)? = nil
+        dispatch: ((_ event: Event) -> Void)? = nil,
+        urlSessionConfiguration: URLSessionConfiguration = .default
     ) {
         self.configuration = configuration
         self.title = title
@@ -37,7 +38,8 @@ final class ConciergeChatSession {
             configuration: configuration,
             speechCapturer: speechCapturer ?? SpeechCapturer(),
             speaker: textSpeaker,
-            dispatch: dispatch
+            dispatch: dispatch,
+            urlSessionConfiguration: urlSessionConfiguration
         )
     }
 

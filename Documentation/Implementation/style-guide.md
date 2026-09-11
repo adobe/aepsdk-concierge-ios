@@ -140,6 +140,29 @@ Shadows use CSS box-shadow syntax:
 
 Format: `offsetX offsetY blurRadius spreadRadius color`
 
+### Gradients
+
+Some color tokens (input border, mic/send icon tints, mic waveform bars) support a two-color linear
+gradient as an alternative to a solid color. Each gradient-capable token is configured via 3 CSS
+variables sharing a common prefix -- a start color, an end color, and an optional angle:
+
+```json
+"--input-outline-gradient-start-color": "#12B0A0",
+"--input-outline-gradient-end-color": "#6DD3C4",
+"--input-outline-gradient-angle": "90deg"
+```
+
+- Setting either the start or end color creates the gradient (the unset side defaults to clear) --
+  set both for the intended two-color look.
+- The angle accepts a CSS `<n>deg` value or a direction keyword (`to top`, `to right`, `to bottom`,
+  `to left`, `to top right`, `to top left`, `to bottom right`, `to bottom left`) and follows CSS
+  `linear-gradient` convention: `0deg`/`to top` points up, increasing clockwise. Defaults to `180deg`
+  (`to bottom`) when omitted.
+- When a gradient is set, it takes priority over the corresponding solid-color token (ex:
+  `--input-outline-gradient-*` overrides `--input-outline-color`).
+- On iOS, the angle-to-render conversion is exact only for the 4 axis-aligned angles (`0`/`90`/`180`/`270`);
+  other angles are a close visual approximation, not pixel-exact CSS gradient math.
+
 ### Font Weights
 
 Font weights use CSS numeric or named values:
@@ -209,7 +232,7 @@ Feature toggles and interaction configuration.
 |----------|------|---------|-------------|
 | `behavior.input.enableVoiceInput` | boolean | `false` | Enable voice input button |
 | `behavior.input.disableMultiline` | boolean | `true` | Disable multiline text input |
-| `behavior.input.showAiChatIcon` | object | `null` | AI chat icon configuration. Object with an `icon` property (SVG string or URL). |
+| `behavior.input.showAiChatIcon` | object | `null` | Leading icon shown before the text field in the input bar. Object with an `icon` property: a local asset name or a remote `http(s)` URL — same resolution rules as `assets.icons.company` (see [Bundling local icons](#bundling-local-icons)). `null` or an empty `icon` hides it. Tooltip/accessibility label is set via `text["input.aiChatIcon.tooltip"]`. |
 | `behavior.input.sendButtonStyle` | string | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
 | `behavior.input.silenceThreshold` | number | `0.02` | Voice capture: RMS level (raw, before UI normalization) above which input counts as speech. Lower values detect quieter speech but may increase false “speech” detection. |
 | `behavior.input.silenceDuration` | number | `2` | Voice capture: seconds of silence after speech is detected before recording stops automatically. |
@@ -550,7 +573,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
-| `--color-primary` | `colors.primary.primary` | `Color` | `accentColor` | Primary brand color |
+| `--color-primary` | `colors.primary.primary` | `Color` | `accentColor` | Primary brand color; also the inline link **text** color in AI messages |
 | `--color-text` | `colors.primary.text` | `Color` | `primary` | Primary text color |
 | `--color-container` | `colors.primary.container` | `Color?` | `nil` (falls back to `secondarySystemBackground`) | Background for cards and container elements — prompt suggestion chips, product cards, message bubble fallback. |
 
@@ -570,7 +593,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-user-text` | `colors.message.userText` | `Color` | `primary` | User message text color |
 | `--message-concierge-background` | `colors.message.conciergeBackground` | `Color` | `systemBackground` | AI message bubble background |
 | `--message-concierge-text` | `colors.message.conciergeText` | `Color` | `primary` | AI message text color |
-| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Link color in AI messages |
+| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Sources-list link color and inline link-**icon** fallback color. (Inline link *text* uses `--color-primary`.) |
 
 ### Colors - Buttons
 
@@ -592,6 +615,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-background` | `colors.input.background` | `Color` | `white` | Input field background |
 | `--input-text-color` | `colors.input.text` | `Color` | `primary` | Input text color |
 | `--input-outline-color` | `colors.input.outline` | `Color?` | `nil` | Input border color |
+| `--input-outline-gradient-start-color` | `colors.input.outlineGradient` | `Color?` | `nil` | Input border gradient start color. See [Gradients](#gradients). Overrides `--input-outline-color` when set. |
+| `--input-outline-gradient-end-color` | `colors.input.outlineGradient` | `Color?` | `nil` | Input border gradient end color. |
+| `--input-outline-gradient-angle` | `colors.input.outlineGradient` | `Degrees` | `180` | Input border gradient direction. |
 | `--input-focus-outline-color` | `colors.input.outlineFocus` | `Color` | `accentColor` | Focused input border color |
 
 ### Colors - Input Icons
@@ -601,8 +627,17 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-send-icon-color` | `colors.input.sendIconColor` | `Color?` | `nil` | Default send button icon tint |
 | `--input-send-arrow-icon-color` | `colors.input.sendArrowIconColor` | `Color?` | `nil` | Arrow-style send button arrow color |
 | `--input-send-arrow-background-color` | `colors.input.sendArrowBackgroundColor` | `Color?` | `nil` | Arrow-style send button circle background |
+| `--input-send-arrow-background-gradient-start-color` | `colors.input.sendArrowBackgroundGradient` | `Color?` | `nil` | Arrow-style send button circle gradient start color. See [Gradients](#gradients). |
+| `--input-send-arrow-background-gradient-end-color` | `colors.input.sendArrowBackgroundGradient` | `Color?` | `nil` | Arrow-style send button circle gradient end color. |
+| `--input-send-arrow-background-gradient-angle` | `colors.input.sendArrowBackgroundGradient` | `Degrees` | `180` | Arrow-style send button circle gradient direction. |
 | `--input-mic-icon-color` | `colors.input.micIconColor` | `Color?` | `nil` | Mic button icon tint. Falls back to `--color-primary`. |
+| `--input-mic-icon-gradient-start-color` | `colors.input.micIconGradient` | `Color?` | `nil` | Mic button icon gradient start color. See [Gradients](#gradients). |
+| `--input-mic-icon-gradient-end-color` | `colors.input.micIconGradient` | `Color?` | `nil` | Mic button icon gradient end color. |
+| `--input-mic-icon-gradient-angle` | `colors.input.micIconGradient` | `Degrees` | `180` | Mic button icon gradient direction. |
 | `--input-mic-recording-icon-color` | `colors.input.micRecordingIconColor` | `Color?` | `nil` | Stop/recording button icon color. Falls back to white. |
+| `--input-mic-waveform-gradient-start-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | Start color of the listening waveform bars' gradient. Falls back to `--color-primary` solid fill when unset. |
+| `--input-mic-waveform-gradient-end-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | End color of the listening waveform bars' gradient. |
+| `--input-mic-waveform-gradient-angle` | `colors.input.micWaveformGradient` | `Degrees` | `180` | Waveform bar gradient direction. Defaults to top-to-bottom. |
 
 ### Colors - Welcome Prompts
 
@@ -654,6 +689,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-badge-text-color` | `colors.productCard.badgeTextColor` | `Color` | `white` | Badge label text color |
 | `--product-card-badge-background-color` | `colors.productCard.badgeBackgroundColor` | `Color` | `primary` | Badge background color |
 | `--product-card-outline-color` | `colors.productCard.outlineColor` | `Color` | `clear` | Card border/outline color |
+| `--product-card-cta-button-background-color` | `colors.productCardCtaButton.background` | `Color` | `#BB5811` | product card CTA button background color |
+| `--product-card-cta-button-text-color` | `colors.productCardCtaButton.text` | `Color` | `white` | product card CTA button label text color |
 
 ### Colors - CTA Button
 
@@ -776,6 +813,11 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-text-horizontal-padding` | `layout.productCardTextHorizontalPadding` | `CGFloat` | `12` | Horizontal padding on both sides of the text area (does not apply to badge or image) |
 | `--product-card-carousel-spacing` | `layout.productCardCarouselSpacing` | `CGFloat` | `12` | Horizontal spacing between cards in a scrolling carousel |
 | `--product-card-carousel-horizontal-padding` | `layout.productCardCarouselHorizontalPadding` | `CGFloat?` | `nil` | Horizontal padding for the carousel container. When set, adds to the column-aligned leading base and overrides the trailing inset; when `nil`, both fall back to `chatHistoryPadding`. Leading cannot go below the column-aligned base. |
+| `--product-card-cta-button-border-radius` | `layout.productCardCtaButtonBorderRadius` | `CGFloat` | `40` | product card CTA button corner radius |
+| `--product-card-cta-button-horizontal-padding` | `layout.productCardCtaButtonHorizontalPadding` | `CGFloat` | `16` | product card CTA button horizontal padding |
+| `--product-card-cta-button-vertical-padding` | `layout.productCardCtaButtonVerticalPadding` | `CGFloat` | `8` | product card CTA button vertical padding |
+| `--product-card-cta-button-font-size` | `layout.productCardCtaButtonFontSize` | `CGFloat` | `12` | product card CTA button label font size |
+| `--product-card-cta-button-font-weight` | `layout.productCardCtaButtonFontWeight` | `FontWeight` | `semibold` | product card CTA button label font weight |
 
 ### Layout - CTA Button
 
@@ -944,6 +986,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--input-border-radius-mobile": "12px",
     "--input-background": "#FFFFFF",
     "--input-outline-color": null,
+    "--input-outline-gradient-start-color": "",
+    "--input-outline-gradient-end-color": "",
+    "--input-outline-gradient-angle": "",
     "--input-outline-width": "2px",
     "--input-focus-outline-width": "2px",
     "--input-focus-outline-color": "#4B75FF",
@@ -1030,6 +1075,13 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-text-horizontal-padding": "12px",
     "--product-card-carousel-spacing": "12px",
     "--product-card-carousel-horizontal-padding": "4px",
+    "--product-card-cta-button-background-color": "#BB5811",
+    "--product-card-cta-button-text-color": "#FFFFFF",
+    "--product-card-cta-button-border-radius": "40px",
+    "--product-card-cta-button-horizontal-padding": "16px",
+    "--product-card-cta-button-vertical-padding": "8px",
+    "--product-card-cta-button-font-size": "12px",
+    "--product-card-cta-button-font-weight": "600",
     "--cta-button-background-color": "#EDEDED",
     "--cta-button-text-color": "#191F1C",
     "--cta-button-icon-color": "#161313",
@@ -1043,8 +1095,17 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--input-send-icon-color": "",
     "--input-send-arrow-icon-color": "",
     "--input-send-arrow-background-color": "",
+    "--input-send-arrow-background-gradient-start-color": "",
+    "--input-send-arrow-background-gradient-end-color": "",
+    "--input-send-arrow-background-gradient-angle": "",
     "--input-mic-icon-color": "",
+    "--input-mic-icon-gradient-start-color": "",
+    "--input-mic-icon-gradient-end-color": "",
+    "--input-mic-icon-gradient-angle": "",
     "--input-mic-recording-icon-color": "",
+    "--input-mic-waveform-gradient-start-color": "",
+    "--input-mic-waveform-gradient-end-color": "",
+    "--input-mic-waveform-gradient-angle": "",
     "--color-container": "#F0F0F0",
     "--suggestion-background-color": "#F0F0F0",
     "--suggestion-text-color": "#131313",
@@ -1097,7 +1158,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.productCard.cardsAlignment` | ✅ | Horizontal alignment of single product card within its container (start/center/end) |
 | `behavior.input.enableVoiceInput` | ✅ | Controls mic button visibility |
 | `behavior.input.disableMultiline` | ✅ | Controls input line limit |
-| `behavior.input.showAiChatIcon` | ⚠️ | Parsed and mapped to component but not rendered |
+| `behavior.input.showAiChatIcon` | ✅ | Rendered as a leading icon before the text field in ComposerEditingView |
 | `behavior.input.sendButtonStyle` | ✅ | Controls send button style (default vs arrow) in ComposerEditingView |
 | `behavior.input.silenceThreshold` | ✅ | Voice capture: RMS threshold for speech vs silence in SpeechCapturer |
 | `behavior.input.silenceDuration` | ✅ | Voice capture: auto-stop delay after silence in SpeechCapturer |
@@ -1135,7 +1196,7 @@ This section documents which properties are fully implemented, partially impleme
 | `text["input.placeholder"]` | ✅ | Used in ComposerEditingView |
 | `text["input.messageInput.aria"]` | ✅ | Used for accessibility |
 | `text["input.send.aria"]` | ✅ | Used for accessibility |
-| `text["input.aiChatIcon.tooltip"]` | ⚠️ | Parsed but AI icon not rendered |
+| `text["input.aiChatIcon.tooltip"]` | ✅ | Used as the accessibility label for the leading input icon in ComposerEditingView |
 | `text["input.mic.aria"]` | ✅ | Used for accessibility |
 | `text["card.aria.select"]` | ✅ | Used in ChatMessageView |
 | `text["carousel.prev.aria"]` | ✅ | Used in CarouselGroupView |
@@ -1185,7 +1246,7 @@ This section documents which properties are fully implemented, partially impleme
 
 | CSS Variable | Status | Notes |
 |--------------|--------|-------|
-| `--color-primary` | ✅ | Used throughout UI |
+| `--color-primary` | ✅ | Used throughout UI; inline link text in BasicMessageView |
 | `--color-text` | ✅ | Used for text styling |
 | `--color-container` | ✅ | Background fallback for prompt suggestion chips, product cards, and message bubbles |
 | `--suggestion-background-color` | ✅ | Used in ChatMessageView for suggestion chip background |
@@ -1197,7 +1258,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-user-text` | ✅ | Used in ChatMessageView |
 | `--message-concierge-background` | ✅ | Used in ChatMessageView, SourcesListView |
 | `--message-concierge-text` | ✅ | Used in ChatMessageView |
-| `--message-concierge-link-color` | ✅ | Used in SourceRowView |
+| `--message-concierge-link-color` | ✅ | Used in SourceRowView; inline link-icon fallback in BasicMessageView |
 | `--button-primary-background` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-primary-text` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-secondary-border` | ✅ | Used in ConciergePressableButtonStyle |
@@ -1209,6 +1270,9 @@ This section documents which properties are fully implemented, partially impleme
 | `--input-background` | ✅ | Used in ChatComposer (via components) |
 | `--input-text-color` | ✅ | Used in ComposerEditingView via components.inputBar.textColor |
 | `--input-outline-color` | ✅ | Used in ChatComposer via components.inputBar.border.color |
+| `--input-outline-gradient-start-color` | ✅ | Used in ChatComposer for the input border gradient, overrides `--input-outline-color` |
+| `--input-outline-gradient-end-color` | ✅ | Used in ChatComposer for the input border gradient |
+| `--input-outline-gradient-angle` | ✅ | Used in ChatComposer for the input border gradient direction |
 | `--input-focus-outline-color` | ✅ | Used in ChatComposer |
 | `--citations-background-color` | ✅ | Used in MarkdownBlockView |
 | `--citations-text-color` | ✅ | Used in MarkdownBlockView |
@@ -1228,8 +1292,17 @@ This section documents which properties are fully implemented, partially impleme
 | `--input-send-icon-color` | ✅ | Used in ComposerSendButtonStyle |
 | `--input-send-arrow-icon-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
 | `--input-send-arrow-background-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
+| `--input-send-arrow-background-gradient-start-color` | ✅ | Used in ComposerEditingView for arrow-style send button gradient |
+| `--input-send-arrow-background-gradient-end-color` | ✅ | Used in ComposerEditingView for arrow-style send button gradient |
+| `--input-send-arrow-background-gradient-angle` | ✅ | Used in ComposerEditingView for arrow-style send button gradient direction |
 | `--input-mic-icon-color` | ✅ | Used in ComposerEditingView |
+| `--input-mic-icon-gradient-start-color` | ✅ | Used in ComposerEditingView for the mic icon gradient |
+| `--input-mic-icon-gradient-end-color` | ✅ | Used in ComposerEditingView for the mic icon gradient |
+| `--input-mic-icon-gradient-angle` | ✅ | Used in ComposerEditingView for the mic icon gradient direction |
 | `--input-mic-recording-icon-color` | ✅ | Used in ComposerEditingView for stop recording button |
+| `--input-mic-waveform-gradient-start-color` | ✅ | Used in AudioWaveformView for the listening waveform bar gradient |
+| `--input-mic-waveform-gradient-end-color` | ✅ | Used in AudioWaveformView for the listening waveform bar gradient |
+| `--input-mic-waveform-gradient-angle` | ✅ | Used in AudioWaveformView for the listening waveform bar gradient direction |
 | `--welcome-prompt-background-color` | ✅ | Used in ChatMessageView for prompt suggestion cards |
 | `--welcome-prompt-text-color` | ✅ | Used in ChatMessageView for prompt suggestion text |
 
@@ -1253,6 +1326,8 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-badge-text-color` | ✅ | Used in ProductDetailCardView |
 | `--product-card-badge-background-color` | ✅ | Used in ProductDetailCardView |
 | `--product-card-outline-color` | ✅ | Used in ProductDetailCardView |
+| `--product-card-cta-button-background-color` | ✅ | product card CTA button background, used in ProductDetailCardView |
+| `--product-card-cta-button-text-color` | ✅ | product card CTA button label text color, used in ProductDetailCardView |
 
 ### Theme Tokens - Layout
 
@@ -1324,6 +1399,11 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-text-horizontal-padding` | ✅ | Used in ProductDetailCardView |
 | `--product-card-carousel-spacing` | ✅ | Used in CarouselGroupView for spacing between cards |
 | `--product-card-carousel-horizontal-padding` | ✅ | Used in MessageListView; falls back to `chatHistoryPadding` when not set |
+| `--product-card-cta-button-border-radius` | ✅ | Used in ProductDetailCardView |
+| `--product-card-cta-button-horizontal-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-cta-button-vertical-padding` | ✅ | Used in ProductDetailCardView |
+| `--product-card-cta-button-font-size` | ✅ | Used in ProductDetailCardView |
+| `--product-card-cta-button-font-weight` | ✅ | Used in ProductDetailCardView |
 | `--cta-button-border-radius` | ✅ | Used in CtaButtonView |
 | `--cta-button-horizontal-padding` | ✅ | Used in CtaButtonView |
 | `--cta-button-vertical-padding` | ✅ | Used in CtaButtonView |

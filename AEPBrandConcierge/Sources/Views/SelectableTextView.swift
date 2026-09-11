@@ -119,11 +119,16 @@ struct SelectableTextView: UIViewRepresentable {
         // Note: During snapshot/unit testing we intentionally avoid changing first responder status to keep
         // screenshots deterministic (caret blink, selection highlighting, and keyboard-driven layout can vary).
         if !TestEnvironment.isRunningTests {
-            DispatchQueue.main.async {
-                if isFocused, !uiView.isFirstResponder, isEditable {
-                    uiView.becomeFirstResponder()
-                } else if !isFocused, uiView.isFirstResponder {
-                    uiView.resignFirstResponder()
+            // Only schedule the async update when the desired focus state differs from the current
+            // one, to avoid dispatching a no-op closure on every re-render.
+            let wantsFocus = isFocused && isEditable
+            if wantsFocus != uiView.isFirstResponder {
+                DispatchQueue.main.async {
+                    if isFocused, !uiView.isFirstResponder, isEditable {
+                        uiView.becomeFirstResponder()
+                    } else if !isFocused, uiView.isFirstResponder {
+                        uiView.resignFirstResponder()
+                    }
                 }
             }
         }
@@ -162,6 +167,11 @@ struct SelectableTextView: UIViewRepresentable {
         weak var placeholderLabel: UILabel?
         weak var placeholderTopConstraint: NSLayoutConstraint?
         var lastIsEditable: Bool?
+
+        // Inputs of the last height measurement, used to skip redundant recalculation.
+        private var lastMeasuredText: String?
+        private var lastMeasuredWidth: CGFloat = -1
+        private var lastMeasuredFont: UIFont?
 
         init(_ parent: SelectableTextView) {
             self.parent = parent
@@ -233,6 +243,30 @@ struct SelectableTextView: UIViewRepresentable {
         private let baseInset: CGFloat = 6
 
         func recalculateHeight(_ textView: UITextView) {
+            // Resolve the width to measure against (reading bounds/frame does not force layout).
+            var width = textView.bounds.width
+            if !width.isFinite || width <= 0 {
+                width = textView.frame.size.width
+            }
+            if !width.isFinite || width <= 0 {
+                width = UIScreen.main.bounds.width - 32
+            }
+
+            let currentText = textView.text ?? ""
+            let currentFont = textView.font
+
+            // Skip the synchronous layoutIfNeeded() + sizeThatFits() pass when nothing affecting
+            // the measured height has changed (updateUIView runs on every re-render).
+            if let lastText = lastMeasuredText,
+               lastText == currentText,
+               abs(lastMeasuredWidth - width) < 0.5,
+               lastMeasuredFont == currentFont {
+                return
+            }
+            lastMeasuredText = currentText
+            lastMeasuredWidth = width
+            lastMeasuredFont = currentFont
+
             // Temporarily reset to base insets for stable measurement
             let currentTopInset = textView.textContainerInset.top
             if currentTopInset != baseInset {
@@ -246,13 +280,6 @@ struct SelectableTextView: UIViewRepresentable {
             let baseVerticalInsets = baseInset * 2
             let minHeight = CGFloat(parent.minLines) * lineHeight + baseVerticalInsets
             let maxHeight = CGFloat(parent.maxLines) * lineHeight + baseVerticalInsets
-            var width = textView.bounds.width
-            if !width.isFinite || width <= 0 {
-                width = textView.frame.size.width
-            }
-            if !width.isFinite || width <= 0 {
-                width = UIScreen.main.bounds.width - 32
-            }
             let fittingSize = CGSize(width: max(1, width), height: .greatestFiniteMagnitude)
             var measured = textView.sizeThatFits(fittingSize).height
             if !measured.isFinite || measured.isNaN {

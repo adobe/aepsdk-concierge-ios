@@ -209,7 +209,8 @@ private extension ConciergeTheme {
         resolved.inputBar.border = ConciergeBorderStyle(
             width: layout.inputOutlineWidth,
             radius: layout.inputBorderRadius,
-            color: colors.input.outline ?? CodableColor(.clear)
+            color: colors.input.outline ?? CodableColor(.clear),
+            gradient: colors.input.outlineGradient
         )
         resolved.inputBar.voiceEnabled = behavior.input.enableVoiceInput
         resolved.inputBar.icon = behavior.input.showAiChatIcon

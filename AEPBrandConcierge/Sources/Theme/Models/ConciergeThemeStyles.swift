@@ -18,15 +18,18 @@ public struct ConciergeBorderStyle: Codable {
     public var width: CGFloat
     public var radius: CGFloat
     public var color: CodableColor
+    public var gradient: ConciergeGradient?
 
     public init(
         width: CGFloat = 1,
         radius: CGFloat = 0,
-        color: CodableColor = CodableColor(Color.primary)
+        color: CodableColor = CodableColor(Color.primary),
+        gradient: ConciergeGradient? = nil
     ) {
         self.width = width
         self.radius = radius
         self.color = color
+        self.gradient = gradient
     }
 }
 
