@@ -34,6 +34,21 @@ final class ConciergeChatServiceTests: XCTestCase {
             surfaces: surfaces
         )
     }
+
+    private func makeConfigurationForUrl(
+        datastream: String? = "test-datastream",
+        server: String? = "edge.adobedc.net",
+        region: String? = nil,
+        surfaces: [String] = ["web://test.adobe.com/surface"]
+    ) -> ConciergeConfiguration {
+        return ConciergeConfiguration(
+            datastream: datastream,
+            ecid: "test-ecid-12345",
+            server: server,
+            region: region,
+            surfaces: surfaces
+        )
+    }
     
     private func extractPayloadDictionary(from service: ConciergeChatService, query: String) throws -> [String: Any] {
         let payloadData = try service.createChatPayload(query: query)
@@ -347,6 +362,97 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertNotNil(meta, "Payload should contain 'meta' object")
         XCTAssertNotNil(consent, "Meta should contain 'consent' object")
         XCTAssertNotNil(consent?["state"], "Consent should contain 'state' key")
+    }
+
+    // MARK: - URL Construction Tests
+
+    func test_createUrl_withRegion_insertsRegionSegment() throws {
+        // Given
+        let configuration = makeConfigurationForUrl(region: "va7")
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When
+        let url = try service.createUrl()
+
+        // Then
+        XCTAssertEqual(url.path, "/brand-concierge/va7/conversations")
+    }
+
+    func test_createUrl_withNilRegion_omitsRegionSegment() throws {
+        // Given
+        let configuration = makeConfigurationForUrl(region: nil)
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When
+        let url = try service.createUrl()
+
+        // Then
+        XCTAssertEqual(url.path, "/brand-concierge/conversations")
+    }
+
+    func test_createUrl_withEmptyRegion_omitsRegionSegment() throws {
+        // Given
+        let configuration = makeConfigurationForUrl(region: "")
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When
+        let url = try service.createUrl()
+
+        // Then
+        XCTAssertEqual(url.path, "/brand-concierge/conversations")
+    }
+
+    func test_createUrl_includesHostAndConfigIdQueryItem() throws {
+        // Given
+        let configuration = makeConfigurationForUrl(datastream: "ds-123", server: "edge.adobedc.net")
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When
+        let url = try service.createUrl()
+
+        // Then
+        XCTAssertEqual(url.host, "edge.adobedc.net")
+        XCTAssertEqual(url.scheme, "https")
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        XCTAssertEqual(queryItems?.first(where: { $0.name == "configId" })?.value, "ds-123")
+    }
+
+    func test_createUrl_withNilServer_throwsInvalidEndpointError() {
+        // Given
+        let configuration = makeConfigurationForUrl(server: nil)
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When / Then
+        XCTAssertThrowsError(try service.createUrl()) { error in
+            guard let conciergeError = error as? ConciergeError else {
+                XCTFail("Expected ConciergeError")
+                return
+            }
+            if case .invalidEndpoint = conciergeError {
+                // Success
+            } else {
+                XCTFail("Expected invalidEndpoint error, got \(conciergeError)")
+            }
+        }
+    }
+
+    func test_createUrl_withNilDatastream_throwsInvalidDatastreamError() {
+        // Given
+        let configuration = makeConfigurationForUrl(datastream: nil)
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When / Then
+        XCTAssertThrowsError(try service.createUrl()) { error in
+            guard let conciergeError = error as? ConciergeError else {
+                XCTFail("Expected ConciergeError")
+                return
+            }
+            if case .invalidDatastream = conciergeError {
+                // Success
+            } else {
+                XCTFail("Expected invalidDatastream error, got \(conciergeError)")
+            }
+        }
     }
 
     // MARK: - Auth Token: Chat Payload

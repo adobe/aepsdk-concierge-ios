@@ -92,3 +92,6 @@ iOSInjectionProject/
 Pods/
 
 .claude/
+
+# JetBrains IDEs
+.idea/
