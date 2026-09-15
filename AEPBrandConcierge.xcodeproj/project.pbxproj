@@ -189,8 +189,10 @@
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		55C58A59A70A4F50B92C86CE /* ConciergeTrackingEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9C260CABEC46C3A3D97218 /* ConciergeTrackingEventTests.swift */; };
 		600E9EA5E91D0A6999BFA625 /* SpeechCapturerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78116DF64B3E7886464E3576 /* SpeechCapturerTests.swift */; };
+		86DFD56D280EC835E93B218E /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = F6331E6D5D255DF4F0532BB1 /* LiveKit */; };
 		942FC5542F55AABBD1818D06 /* MessageListViewShouldFillRemainingHeightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62777C5A2D1238AD286ECB85 /* MessageListViewShouldFillRemainingHeightTests.swift */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPBrandConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */; };
+		9FA98305BDBE865D0808CB2E /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 95A207B3912998883E1E1FE3 /* LiveKit */; };
 		A017E57000000000000000A1 /* AuthTokenTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A017E57000000000000000A2 /* AuthTokenTestView.swift */; };
 		A1B2C3D40001000100010001 /* ConciergeHeaderConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */; };
 		ABDEBF4434DB0A9044A9E92E /* GeoURLConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */; };
@@ -444,6 +446,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AC954A5C5714A1E8514A4C0 /* Pods_AEPBrandConcierge.framework in Frameworks */,
+				86DFD56D280EC835E93B218E /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -463,6 +466,7 @@
 			files = (
 				530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */,
 				2430137B2E69E6C800F6673E /* AEPBrandConcierge.framework in Frameworks */,
+				9FA98305BDBE865D0808CB2E /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -964,6 +968,9 @@
 			dependencies = (
 			);
 			name = AEPBrandConcierge;
+			packageProductDependencies = (
+				F6331E6D5D255DF4F0532BB1 /* LiveKit */,
+			);
 			productName = AEPBrandConcierge;
 			productReference = 249899492D6679790005CBD7 /* AEPBrandConcierge.framework */;
 			productType = "com.apple.product-type.framework";
@@ -1009,6 +1016,9 @@
 				2430137E2E69E6C800F6673E /* PBXTargetDependency */,
 			);
 			name = ConciergeDemoApp;
+			packageProductDependencies = (
+				95A207B3912998883E1E1FE3 /* LiveKit */,
+			);
 			productName = ConciergeDemoApp;
 			productReference = 2498999D2D67CCD20005CBD7 /* ConciergeDemoApp.app */;
 			productType = "com.apple.product-type.application";
@@ -1048,6 +1058,7 @@
 			mainGroup = 2498993F2D6679790005CBD7;
 			packageReferences = (
 				4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				985303FA5623D0BBC2062751 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
 			);
 			productRefGroup = 2498994A2D6679790005CBD7 /* Products */;
 			projectDirPath = "";
@@ -1441,7 +1452,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPBrandConcierge.debug.xcconfig */;
 			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -1482,7 +1492,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A609B1D994354F9C6B8622C5 /* Pods-AEPBrandConcierge.release.xcconfig */;
 			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -1819,6 +1828,14 @@
 				minimumVersion = 1.12.0;
 			};
 		};
+		985303FA5623D0BBC2062751 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.17.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1826,6 +1843,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
 			productName = SnapshotTesting;
+		};
+		95A207B3912998883E1E1FE3 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 985303FA5623D0BBC2062751 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+		F6331E6D5D255DF4F0532BB1 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 985303FA5623D0BBC2062751 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
