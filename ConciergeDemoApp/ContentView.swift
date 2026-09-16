@@ -82,7 +82,7 @@ struct ContentView: View {
 
                         Button(action: {
                             Concierge.show(
-                                surfaces: ["mobileapp://conciergetestapp/home"],
+                                surfaces: ["web://sj1010010243070.corp.adobe.com:18888/"],
                                 title: "Concierge",
                                 subtitle: "Powered by Adobe"
                             )
@@ -119,7 +119,7 @@ struct ContentView: View {
                 Label(
                     "hello, world", systemImage: "world"
                 ),
-                surfaces: ["mobileapp://conciergetestapp/home"]
+                surfaces: ["web://sj1010010243070.corp.adobe.com:18888/"]
             )
             .conciergeTheme(loadedTheme)
             .tag(DemoTab.magic)
@@ -141,7 +141,7 @@ struct ContentView: View {
                 onOpenChatViaSwiftUITab: {
                     selectedTab = .swiftUI
                     Concierge.show(
-                        surfaces: ["mobileapp://conciergetestapp/home"],
+                        surfaces: ["web://sj1010010243070.corp.adobe.com:18888/"],
                         title: "Concierge",
                         subtitle: "Powered by Adobe",
                         handleLink: handleLink

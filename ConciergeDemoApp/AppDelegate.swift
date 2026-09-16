@@ -30,10 +30,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         MobileCore.registerExtensions(extensions) {
             MobileCore.configureWith(appId: "staging/a0ff8cfcfb87/9d363ab429c8/launch-481f6ff16749-development")
 
-            // TODO: - temporary override of datastream and server until we get that sorted out
+            // Demo-only: stage voice datastream/org captured from the working voice client
+            // (bc-voice-test/sdk-load). The org override ensures the ECID is minted under the
+            // datastream's org so the bootstrap validates.
             MobileCore.updateConfigurationWith(configDict: [
-                "concierge.configId": "9f2c6bc4-f578-414c-a48f-af308aa9d264",
-                "concierge.server": "edge-int.adobedc.net"
+                "concierge.configId": "c906f3b3-dd7d-4c31-9c5e-38e099065971",
+                "concierge.server": "edge-int.adobedc.net",
+                "edge.configId": "c906f3b3-dd7d-4c31-9c5e-38e099065971",
+                "experienceCloud.org": "0F211E64690BA86B0A494136_AdobeOrg"
             ])
         }
 

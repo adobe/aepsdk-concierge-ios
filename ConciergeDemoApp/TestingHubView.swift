@@ -73,7 +73,7 @@ struct TestingHubView: View {
         Concierge.wrap(
             BuyNowMockView(onOpenChat: {
                 Concierge.show(
-                    surfaces: ["mobileapp://conciergetestapp/home"],
+                    surfaces: ["web://sj1010010243070.corp.adobe.com:18888/"],
                     title: "Concierge",
                     subtitle: "Powered by Adobe",
                     handleLink: handleLink
