@@ -198,6 +198,7 @@
 		9FA98305BDBE865D0808CB2E /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 95A207B3912998883E1E1FE3 /* LiveKit */; };
 		A017E57000000000000000A1 /* AuthTokenTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A017E57000000000000000A2 /* AuthTokenTestView.swift */; };
 		A1B2C3D40001000100010001 /* ConciergeHeaderConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */; };
+		A548A78DC0215EFC568A97CC /* ChatControllerVoiceSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0CE04E6DED5E43CEEC6B6B8 /* ChatControllerVoiceSessionTests.swift */; };
 		ABDEBF4434DB0A9044A9E92E /* GeoURLConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */; };
 		B283F5767264476781252EEC /* ConciergeCardTapHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49180BEE1E2A4439AC75F403 /* ConciergeCardTapHandler.swift */; };
 		B490FD20DFFB2D4A5E922B90 /* DataChannelMessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41273C5BD0E969AF5BB6C02A /* DataChannelMessageParserTests.swift */; };
@@ -444,6 +445,7 @@
 		CB8A6DBE18A82A94A689AF8E /* WhiteSpaceReservationSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteSpaceReservationSnapshotTests.swift; sourceTree = "<group>"; };
 		D000ECC120251120000000A0 /* ConciergeEventTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeEventTracker.swift; sourceTree = "<group>"; };
 		D593F447E7FFCBE0208FC8B5 /* Pods-ConciergeDemoApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.debug.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.debug.xcconfig"; sourceTree = "<group>"; };
+		E0CE04E6DED5E43CEEC6B6B8 /* ChatControllerVoiceSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChatControllerVoiceSessionTests.swift; sourceTree = "<group>"; };
 		E21378B0B68D3623005C3C79 /* ProductDetailCardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardViewTests.swift; sourceTree = "<group>"; };
 		E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPBrandConcierge.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConcierge.debug.xcconfig"; path = "Target Support Files/Pods-AEPBrandConcierge/Pods-AEPBrandConcierge.debug.xcconfig"; sourceTree = "<group>"; };
 		E5EE8AC6DB678C5F5BEA41F8 /* MessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTests.swift; sourceTree = "<group>"; };
@@ -799,6 +801,7 @@
 				FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */,
 				18837329E314605F7FC31F1D /* VoiceSessionControllerTests.swift */,
 				41273C5BD0E969AF5BB6C02A /* DataChannelMessageParserTests.swift */,
+				E0CE04E6DED5E43CEEC6B6B8 /* ChatControllerVoiceSessionTests.swift */,
 			);
 			path = UnitTests;
 			sourceTree = "<group>";
@@ -1403,6 +1406,7 @@
 				ABDEBF4434DB0A9044A9E92E /* GeoURLConverterTests.swift in Sources */,
 				4168C09F9AE8ECF09BC984C2 /* VoiceSessionControllerTests.swift in Sources */,
 				B490FD20DFFB2D4A5E922B90 /* DataChannelMessageParserTests.swift in Sources */,
+				A548A78DC0215EFC568A97CC /* ChatControllerVoiceSessionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
