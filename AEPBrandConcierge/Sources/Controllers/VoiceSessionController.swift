@@ -72,10 +72,14 @@ final class VoiceSessionController: NSObject {
     /// can be restored on `.ended` with `.shouldResume`.
     private var micWasEnabledBeforeInterruption = false
 
-    /// Accumulated running text for the in-progress user/assistant turn, so each live update carries
-    /// the full text so far (not just the latest delta). Touched only on the main thread.
-    private var pendingUserText = ""
+    /// Accumulated running text for the in-progress assistant turn (its deltas are incremental), so
+    /// each live update carries the full text so far. Touched only on the main thread. (User STT
+    /// arrives as full snapshots, so it needs no accumulator.)
     private var pendingAssistantText = ""
+
+    /// Whether the mic is currently muted for the assistant's turn (so the device's TTS output isn't
+    /// captured as input). Guards against redundant toggles. Touched only on the main thread.
+    private var micMutedForAssistantTurn = false
 
     // MARK: - Init
 
@@ -108,8 +112,8 @@ final class VoiceSessionController: NSObject {
             Log.debug(label: LOG_TAG, "start() ignored — a voice session is already active (state=\(state)).")
             return
         }
-        pendingUserText = ""
         pendingAssistantText = ""
+        micMutedForAssistantTurn = false
         setState(.connecting)
 
         guard await Self.requestMicrophonePermission() else {
@@ -283,13 +287,21 @@ private extension VoiceSessionController {
     func handle(_ message: DataChannelMessage) {
         switch message {
         case .transcriptDelta(let delta) where delta.role == .user:
-            pendingUserText += delta.delta
-            emit(.user, pendingUserText, isFinal: delta.final)
-            if delta.final { pendingUserText = "" }
+            // User STT sends a cumulative snapshot (the full running transcript) on each delta, not
+            // an incremental piece — use it directly rather than appending (which would concatenate
+            // every snapshot). Mirrors web's `onTranscriptUpdate(data.delta)`.
+            emit(.user, delta.delta, isFinal: delta.final)
+            // The user's turn ends → the worker responds. Mute the mic for the assistant's turn so
+            // the device's own TTS output isn't captured and transcribed back as input (half-duplex;
+            // mirrors web's mute-on-enter-processing). Barge-in remains deferred.
+            if delta.final { muteForAssistantTurn() }
 
         case .transcriptDelta(let delta): // assistant streaming chunks
             pendingAssistantText += delta.delta
             emit(.assistant, pendingAssistantText, isFinal: false)
+            // Also mute here in case the assistant speaks without a preceding user-final (e.g. an
+            // opening greeting) — the guard makes this a no-op once already muted.
+            muteForAssistantTurn()
 
         case .turnDone(let turn):
             // `fullText` is the authoritative assistant reply; fall back to what streamed if absent.
@@ -297,6 +309,9 @@ private extension VoiceSessionController {
             let text = full.isEmpty ? pendingAssistantText : full
             pendingAssistantText = ""
             emit(.assistant, text, isFinal: true)
+            // Assistant turn finished — reopen the mic for the next user turn. (A brief TTS tail may
+            // still be draining; the built-in echo cancellation covers that short window.)
+            unmuteForNextUserTurn()
 
         case .sessionNotice(.sessionEnded):
             // The worker ended the session; tear down so the state transitions to idle.
@@ -314,5 +329,17 @@ private extension VoiceSessionController {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || isFinal else { return }
         onTranscriptUpdate?(role, trimmed, isFinal)
+    }
+
+    func muteForAssistantTurn() {
+        guard !micMutedForAssistantTurn else { return }
+        micMutedForAssistantTurn = true
+        setMicrophone(enabled: false)
+    }
+
+    func unmuteForNextUserTurn() {
+        guard micMutedForAssistantTurn else { return }
+        micMutedForAssistantTurn = false
+        setMicrophone(enabled: true)
     }
 }
