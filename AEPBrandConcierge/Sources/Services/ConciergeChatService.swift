@@ -88,6 +88,65 @@ class ConciergeChatService: NSObject {
         }
     }
 
+    // MARK: - Voice Bootstrap
+
+    /// Requests LiveKit connection credentials over the existing CCS conversation-event channel,
+    /// reusing the same endpoint/session/auth-token/consent plumbing as `streamChat`. Fires
+    /// `onBootstrap` exactly once when a `response.voice` with `type == "livekit_session"` (carrying
+    /// `livekitUrl` and `token`) arrives on the stream; `onComplete` mirrors `streamChat`'s
+    /// completion/error semantics (FR-07) — a network/decoding failure or a stream that closes
+    /// without a session payload completes with an error / `nil` respectively, and it is the caller's
+    /// job to treat "completed without ever bootstrapping" as a failure.
+    /// - Parameters:
+    ///   - token: The app-supplied auth token to attach, or `nil` to send without one.
+    ///   - onBootstrap: Called once with the resolved credentials when the session payload arrives.
+    ///   - onComplete: Called when the stream ends (with an error, or `nil` on a clean close).
+    func bootstrapVoiceSession(token: String?,
+                               onBootstrap: @escaping (LiveKitSessionBootstrap) -> Void,
+                               onComplete: @escaping (ConciergeError?) -> Void) {
+        do {
+            let url = try createUrl()
+
+            // Reuse the streaming delegate path (`onChunkHandler`/`onCompleteHandler`): inspect each
+            // SSE chunk for the bootstrap voice payload and fire `onBootstrap` the first time it lands.
+            var didBootstrap = false
+            onChunkHandler = { payload in
+                guard !didBootstrap,
+                      let voice = payload.response?.voice,
+                      voice.type == VoicePayload.SessionType.livekitSession,
+                      let livekitUrl = voice.livekitUrl,
+                      let sessionToken = voice.token else {
+                    return
+                }
+                didBootstrap = true
+                onBootstrap(LiveKitSessionBootstrap(livekitUrl: livekitUrl, token: sessionToken))
+            }
+            onCompleteHandler = onComplete
+
+            let payload = try createVoiceBootstrapPayload(token: token)
+
+            var request = URLRequest(url: url)
+            request.httpMethod = ConciergeConstants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
+            request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
+            request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
+
+            dataTask = session.dataTask(with: request)
+            // Note: the request body is deliberately not logged — it carries the app's auth token.
+            Log.debug(label: LOG_TAG, "Sending voice bootstrap request to Concierge Service: \(url)")
+
+            // Refresh session activity timestamp when starting a request
+            SessionManager.shared.refreshSessionActivity()
+
+            dataTask?.resume()
+        } catch {
+            let conciergeError = (error as? ConciergeError) ?? .unknown
+            Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
+            onComplete(conciergeError)
+        }
+    }
+
     // MARK: - Feedback reporting
 
     /// Builds and sends a feedback request. `token` is resolved by the caller and attached to the
@@ -170,10 +229,8 @@ class ConciergeChatService: NSObject {
     /// - Returns: JSON data for the request body
     /// - Note: Internal visibility for testing
     func createChatPayload(query: String, token: String? = nil) throws -> Data {
-        guard let ecid = configuration.ecid else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
-        guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
-
-        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
+        let ecid = try requireEcid()
+        try requireSurfaces()
 
         var conversation: [String: Any] = [
             ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
@@ -183,7 +240,48 @@ class ConciergeChatService: NSObject {
             conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
         }
 
-        let payload: [String: Any] = [
+        let payload = makeConversationEventPayload(conversation: conversation, ecid: ecid)
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
+        }
+        return jsonData
+    }
+
+    /// Creates the JSON payload for a voice-bootstrap request. Identical envelope to
+    /// `createChatPayload` (same surfaces/identity/consent/auth-token plumbing) except the
+    /// `conversation` object carries `{ type: "livekit-bootstrap", publishMic: true }` in place of
+    /// `message` — mirroring web's `voiceCommands.ts` (`eventData: { type: "livekit-bootstrap", publishMic }`).
+    /// - Parameter token: The app-supplied auth token to attach, or `nil`/blank to omit the `data` part.
+    /// - Returns: JSON data for the request body.
+    /// - Note: Internal visibility for testing.
+    func createVoiceBootstrapPayload(token: String? = nil) throws -> Data {
+        let ecid = try requireEcid()
+        try requireSurfaces()
+
+        var conversation: [String: Any] = [
+            ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
+            ConciergeConstants.Request.Keys.TYPE: ConciergeConstants.Request.Values.Voice.LIVEKIT_BOOTSTRAP,
+            ConciergeConstants.Request.Keys.PUBLISH_MIC: true
+        ]
+        if let dataPart = Self.authDataPart(for: token) {
+            conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
+        }
+
+        let payload = makeConversationEventPayload(conversation: conversation, ecid: ecid)
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge voice bootstrap request.")
+        }
+        return jsonData
+    }
+
+    /// Wraps a built `conversation` object in the single-event envelope (xdm identity map + consent
+    /// meta) shared by the chat-turn and voice-bootstrap requests.
+    private func makeConversationEventPayload(conversation: [String: Any], ecid: String) -> [String: Any] {
+        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
+
+        return [
             ConciergeConstants.Request.Keys.EVENTS: [
                 [
                     ConciergeConstants.Request.Keys.QUERY: [
@@ -206,11 +304,23 @@ class ConciergeChatService: NSObject {
                 ]
             ]
         ]
+    }
 
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-            throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
+    /// Resolves the ECID from configuration, throwing the same error `createChatPayload` has always
+    /// thrown when it is missing.
+    private func requireEcid() throws -> String {
+        guard let ecid = configuration.ecid else {
+            throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.")
         }
-        return jsonData
+        return ecid
+    }
+
+    /// Verifies at least one surface is configured, throwing the same error `createChatPayload` has
+    /// always thrown when none are.
+    private func requireSurfaces() throws {
+        guard !configuration.surfaces.isEmpty else {
+            throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.")
+        }
     }
 
     /// Creates the JSON payload for a feedback request.

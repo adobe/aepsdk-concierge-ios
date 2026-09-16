@@ -21,6 +21,10 @@ public struct ConversationResponse: Codable {
     public let linkHints: [LinkHint]?
     public let state: String?
     public let feedback: ConversationFeedbackInfo?
+    /// Present only on a voice-bootstrap turn; carries LiveKit session credentials. Additive and
+    /// optional — `ConversationResponse` relies on Swift's synthesized `Decodable`, so ordinary
+    /// text-turn responses (which omit this key) decode unchanged.
+    public let voice: VoicePayload?
 }
 
 /// Feedback metadata returned with an agent response.
