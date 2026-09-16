@@ -77,9 +77,11 @@ final class VoiceSessionController: NSObject {
     /// arrives as full snapshots, so it needs no accumulator.)
     private var pendingAssistantText = ""
 
-    /// Whether the mic is currently muted for the assistant's turn (so the device's TTS output isn't
-    /// captured as input). Guards against redundant toggles. Touched only on the main thread.
-    private var micMutedForAssistantTurn = false
+    /// Whether the mic is currently muted — only during the brief "processing" gap between the user
+    /// finishing their turn and the assistant starting to respond (mirrors web). The mic is live
+    /// while the assistant responds so barge-in works; AEC keeps the TTS out of the captured signal.
+    /// Guards against redundant toggles. Touched only on the main thread.
+    private var micMuted = false
 
     // MARK: - Init
 
@@ -113,7 +115,7 @@ final class VoiceSessionController: NSObject {
             return
         }
         pendingAssistantText = ""
-        micMutedForAssistantTurn = false
+        micMuted = false
         setState(.connecting)
 
         guard await Self.requestMicrophonePermission() else {
@@ -291,17 +293,17 @@ private extension VoiceSessionController {
             // an incremental piece — use it directly rather than appending (which would concatenate
             // every snapshot). Mirrors web's `onTranscriptUpdate(data.delta)`.
             emit(.user, delta.delta, isFinal: delta.final)
-            // The user's turn ends → the worker responds. Mute the mic for the assistant's turn so
-            // the device's own TTS output isn't captured and transcribed back as input (half-duplex;
-            // mirrors web's mute-on-enter-processing). Barge-in remains deferred.
-            if delta.final { muteForAssistantTurn() }
+            // User turn ended → briefly mute while the worker processes (no assistant audio yet),
+            // mirroring web's mute-on-enter-processing. The mic reopens the moment the assistant
+            // starts responding, so the user can barge in and AEC keeps the TTS out of the input.
+            if delta.final { setMicMuted(true) }
 
-        case .transcriptDelta(let delta): // assistant streaming chunks
+        case .transcriptDelta(let delta): // assistant streaming chunks (responding)
             pendingAssistantText += delta.delta
             emit(.assistant, pendingAssistantText, isFinal: false)
-            // Also mute here in case the assistant speaks without a preceding user-final (e.g. an
-            // opening greeting) — the guard makes this a no-op once already muted.
-            muteForAssistantTurn()
+            // Assistant is responding — keep the mic live so barge-in works (web unmutes on
+            // enter-responding); AEC removes the TTS echo from the captured signal.
+            setMicMuted(false)
 
         case .turnDone(let turn):
             // `fullText` is the authoritative assistant reply; fall back to what streamed if absent.
@@ -309,9 +311,8 @@ private extension VoiceSessionController {
             let text = full.isEmpty ? pendingAssistantText : full
             pendingAssistantText = ""
             emit(.assistant, text, isFinal: true)
-            // Assistant turn finished — reopen the mic for the next user turn. (A brief TTS tail may
-            // still be draining; the built-in echo cancellation covers that short window.)
-            unmuteForNextUserTurn()
+            // Ensure the mic is open for the next user turn (covers a turn with no streamed deltas).
+            setMicMuted(false)
 
         case .sessionNotice(.sessionEnded):
             // The worker ended the session; tear down so the state transitions to idle.
@@ -331,15 +332,10 @@ private extension VoiceSessionController {
         onTranscriptUpdate?(role, trimmed, isFinal)
     }
 
-    func muteForAssistantTurn() {
-        guard !micMutedForAssistantTurn else { return }
-        micMutedForAssistantTurn = true
-        setMicrophone(enabled: false)
-    }
-
-    func unmuteForNextUserTurn() {
-        guard micMutedForAssistantTurn else { return }
-        micMutedForAssistantTurn = false
-        setMicrophone(enabled: true)
+    /// Toggles the mic mute state, guarding against redundant track toggles.
+    func setMicMuted(_ muted: Bool) {
+        guard micMuted != muted else { return }
+        micMuted = muted
+        setMicrophone(enabled: !muted)
     }
 }
