@@ -25,29 +25,65 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         return ChatController(configuration: configuration, chatService: service, speechCapturer: nil, speaker: nil)
     }
 
-    // MARK: - Transcript → bubble mapping (FR-05)
+    // MARK: - Live transcript rendering
 
-    func test_messagesFromVoiceTranscript_mapsRolesAndTextInOrder() {
-        let transcript: [VoiceSessionController.TranscriptEntry] = [
-            .init(role: .user, text: "what's the price?"),
-            .init(role: .assistant, text: "It's $9.99 per month.")
-        ]
-
-        let messages = ChatController.messages(fromVoiceTranscript: transcript)
-
-        XCTAssertEqual(messages.count, 2)
-        XCTAssertEqual(messages[0].messageBody, "what's the price?")
-        XCTAssertEqual(messages[1].messageBody, "It's $9.99 per month.")
-        guard case .basic(let firstIsUser) = messages[0].template,
-              case .basic(let secondIsUser) = messages[1].template else {
-            return XCTFail("expected .basic templates")
-        }
-        XCTAssertTrue(firstIsUser, "user entry maps to a user bubble")
-        XCTAssertFalse(secondIsUser, "assistant entry maps to an agent bubble")
+    private func isUserBubble(_ message: Message) -> Bool? {
+        if case .basic(let isUser) = message.template { return isUser }
+        return nil
     }
 
-    func test_messagesFromVoiceTranscript_emptyTranscript_producesNoMessages() {
-        XCTAssertTrue(ChatController.messages(fromVoiceTranscript: []).isEmpty)
+    func test_liveUpdate_userPartialsUpdateOneBubbleInPlaceThenClose() {
+        let controller = makeController()
+        controller.chatState = .voiceSession
+
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "what's", isFinal: false)
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "what's the price", isFinal: false)
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "what's the price?", isFinal: true)
+
+        XCTAssertEqual(controller.messages.count, 1, "user partials update one bubble in place")
+        XCTAssertEqual(controller.messages[0].messageBody, "what's the price?")
+        XCTAssertEqual(isUserBubble(controller.messages[0]), true)
+
+        // After final, the next user update starts a new bubble.
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "and shipping?", isFinal: true)
+        XCTAssertEqual(controller.messages.count, 2)
+        XCTAssertEqual(controller.messages[1].messageBody, "and shipping?")
+    }
+
+    func test_liveUpdate_assistantStreamsIntoOneBubble() {
+        let controller = makeController()
+        controller.chatState = .voiceSession
+
+        controller.applyVoiceTranscriptUpdate(role: .assistant, text: "It's", isFinal: false)
+        controller.applyVoiceTranscriptUpdate(role: .assistant, text: "It's $9.99", isFinal: false)
+        controller.applyVoiceTranscriptUpdate(role: .assistant, text: "It's $9.99 per month.", isFinal: true)
+
+        XCTAssertEqual(controller.messages.count, 1)
+        XCTAssertEqual(controller.messages[0].messageBody, "It's $9.99 per month.")
+        XCTAssertEqual(isUserBubble(controller.messages[0]), false)
+    }
+
+    func test_liveUpdate_userThenAssistant_rendersTwoBubblesInOrder() {
+        let controller = makeController()
+        controller.chatState = .voiceSession
+
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "hi", isFinal: true)
+        controller.applyVoiceTranscriptUpdate(role: .assistant, text: "hello there", isFinal: true)
+
+        XCTAssertEqual(controller.messages.count, 2)
+        XCTAssertEqual(isUserBubble(controller.messages[0]), true)
+        XCTAssertEqual(controller.messages[0].messageBody, "hi")
+        XCTAssertEqual(isUserBubble(controller.messages[1]), false)
+        XCTAssertEqual(controller.messages[1].messageBody, "hello there")
+    }
+
+    func test_liveUpdate_ignoredWhenNotInVoiceSession() {
+        let controller = makeController()
+        controller.chatState = .idle
+
+        controller.applyVoiceTranscriptUpdate(role: .user, text: "hi", isFinal: true)
+
+        XCTAssertTrue(controller.messages.isEmpty, "updates outside a voice session are ignored")
     }
 
     // MARK: - Gating (FR-06)

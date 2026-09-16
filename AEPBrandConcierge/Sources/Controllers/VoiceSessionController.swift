@@ -58,9 +58,10 @@ final class VoiceSessionController: NSObject {
     /// Invoked on the main thread whenever `state` changes.
     var onStateChange: ((State) -> Void)?
 
-    /// The buffered transcript accumulated over the session, in arrival order. Read on the main
-    /// thread once the session ends. Cleared at the start of each session.
-    private(set) var bufferedTranscript: [TranscriptEntry] = []
+    /// Invoked on the main thread as transcript content arrives, so the chat can render it live:
+    /// `(role, running text so far, isFinal)`. A `role` turn is "closed" once `isFinal` is true;
+    /// the next update for that role begins a new turn/bubble.
+    var onTranscriptUpdate: ((TranscriptEntry.Role, String, Bool) -> Void)?
 
     // MARK: - Private
 
@@ -71,9 +72,10 @@ final class VoiceSessionController: NSObject {
     /// can be restored on `.ended` with `.shouldResume`.
     private var micWasEnabledBeforeInterruption = false
 
-    /// Accumulated user-transcript text for the in-progress user turn; committed to
-    /// `bufferedTranscript` when the worker marks the turn final. Touched only on the main thread.
+    /// Accumulated running text for the in-progress user/assistant turn, so each live update carries
+    /// the full text so far (not just the latest delta). Touched only on the main thread.
     private var pendingUserText = ""
+    private var pendingAssistantText = ""
 
     // MARK: - Init
 
@@ -106,8 +108,8 @@ final class VoiceSessionController: NSObject {
             Log.debug(label: LOG_TAG, "start() ignored — a voice session is already active (state=\(state)).")
             return
         }
-        bufferedTranscript = []
         pendingUserText = ""
+        pendingAssistantText = ""
         setState(.connecting)
 
         guard await Self.requestMicrophonePermission() else {
@@ -272,40 +274,45 @@ extension VoiceSessionController: RoomDelegate {
     }
 }
 
-// MARK: - Data-channel buffering
+// MARK: - Data-channel handling (live transcript)
 
 private extension VoiceSessionController {
 
-    /// Accumulates transcript/turn content into `bufferedTranscript` (FR-05 — no live rendering).
-    /// Must run on the main thread.
+    /// Turns each parsed data-channel message into a live `onTranscriptUpdate` emission carrying the
+    /// running text so far. Must run on the main thread.
     func handle(_ message: DataChannelMessage) {
         switch message {
         case .transcriptDelta(let delta) where delta.role == .user:
             pendingUserText += delta.delta
-            if delta.final {
-                commitPendingUserText()
-            }
+            emit(.user, pendingUserText, isFinal: delta.final)
+            if delta.final { pendingUserText = "" }
+
+        case .transcriptDelta(let delta): // assistant streaming chunks
+            pendingAssistantText += delta.delta
+            emit(.assistant, pendingAssistantText, isFinal: false)
+
         case .turnDone(let turn):
-            // The user's utterance for this turn precedes the assistant's reply — flush it first.
-            commitPendingUserText()
-            let text = turn.fullText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty {
-                bufferedTranscript.append(TranscriptEntry(role: .assistant, text: text))
-            }
+            // `fullText` is the authoritative assistant reply; fall back to what streamed if absent.
+            let full = turn.fullText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = full.isEmpty ? pendingAssistantText : full
+            pendingAssistantText = ""
+            emit(.assistant, text, isFinal: true)
+
         case .sessionNotice(.sessionEnded):
-            // The worker ended the session; tear down so the state transition flushes the transcript.
+            // The worker ended the session; tear down so the state transitions to idle.
             Task { [weak self] in await self?.stop() }
-        case .transcriptDelta, .uiPayload, .sessionNotice, .stateUpdate:
-            // Assistant deltas (fullText arrives via turn_done), rich UI payloads (deferred, FR-05),
-            // silence warnings, and coarse state updates aren't part of the buffered v1 transcript.
+
+        case .uiPayload, .sessionNotice, .stateUpdate:
+            // Rich UI payloads (deferred, FR-05), silence warnings, and coarse state updates are not
+            // rendered in this minimal live transcript.
             break
         }
     }
 
-    func commitPendingUserText() {
-        let text = pendingUserText.trimmingCharacters(in: .whitespacesAndNewlines)
-        pendingUserText = ""
-        guard !text.isEmpty else { return }
-        bufferedTranscript.append(TranscriptEntry(role: .user, text: text))
+    /// Emits a trimmed running-text update, suppressing empty non-final noise.
+    func emit(_ role: TranscriptEntry.Role, _ text: String, isFinal: Bool) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty || isFinal else { return }
+        onTranscriptUpdate?(role, trimmed, isFinal)
     }
 }

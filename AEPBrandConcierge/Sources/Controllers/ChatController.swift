@@ -53,6 +53,11 @@ final class ChatController: ObservableObject {
     /// without ever delivering credentials is recognized as a failed start (FR-07).
     private var voiceBootstrapReceived = false
 
+    /// Indices of the in-progress voice-turn bubbles (user / assistant) being updated live. `nil`
+    /// means the next update for that role starts a new bubble.
+    private var voiceUserMessageIndex: Int?
+    private var voiceAssistantMessageIndex: Int?
+
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
     private var latestLinkHints: [LinkHint] = []
@@ -244,6 +249,37 @@ final class ChatController: ObservableObject {
                 self?.handleVoiceSessionState(state)
             }
         }
+        // Live transcript: render each update into the chat as it arrives (rather than buffering
+        // until the session ends).
+        voiceSessionController.onTranscriptUpdate = { [weak self] role, text, isFinal in
+            Task { @MainActor in
+                self?.applyVoiceTranscriptUpdate(role: role, text: text, isFinal: isFinal)
+            }
+        }
+    }
+
+    /// Renders a live voice-turn update into `messages`: updates the in-progress bubble for the role
+    /// in place, or starts a new one, closing it when the turn is final. Reused across turns via the
+    /// per-role indices.
+    func applyVoiceTranscriptUpdate(role: VoiceSessionController.TranscriptEntry.Role, text: String, isFinal: Bool) {
+        guard chatState == .voiceSession else { return }
+        let isUser = role == .user
+        let currentIndex = isUser ? voiceUserMessageIndex : voiceAssistantMessageIndex
+
+        if let index = currentIndex, index < messages.count {
+            var message = messages[index]
+            message.messageBody = text
+            messages[index] = message
+        } else {
+            guard !text.isEmpty else { return }
+            messages.append(Message(template: .basic(isUserMessage: isUser), messageBody: text))
+            let newIndex = messages.count - 1
+            if isUser { voiceUserMessageIndex = newIndex } else { voiceAssistantMessageIndex = newIndex }
+        }
+
+        if isFinal {
+            if isUser { voiceUserMessageIndex = nil } else { voiceAssistantMessageIndex = nil }
+        }
     }
 
     /// Starts a LiveKit voice session: bootstrap credentials over the existing conversation channel,
@@ -254,6 +290,8 @@ final class ChatController: ObservableObject {
             return
         }
         voiceBootstrapReceived = false
+        voiceUserMessageIndex = nil
+        voiceAssistantMessageIndex = nil
         chatState = .voiceSession
 
         Task { [weak self] in
@@ -308,14 +346,14 @@ final class ChatController: ObservableObject {
         }
     }
 
-    /// Appends the session's buffered transcript to `messages` as plain bubbles (FR-05 — no live
-    /// rendering) and returns the chat to idle. Idempotent: only acts while a voice session is active.
+    /// Ends the voice session and returns the chat to idle. Turn content has already been rendered
+    /// live (see `applyVoiceTranscriptUpdate`), so this only closes out any open turn indices and
+    /// surfaces an error if the session failed. Idempotent: only acts while a voice session is active.
     private func finishVoiceSession(errorReason: String?) {
         guard chatState == .voiceSession else { return }
 
-        for message in Self.messages(fromVoiceTranscript: voiceSessionController.bufferedTranscript) {
-            messages.append(message)
-        }
+        voiceUserMessageIndex = nil
+        voiceAssistantMessageIndex = nil
 
         if let errorReason {
             Log.warning(label: LOG_TAG, "Voice session ended with error: \(errorReason)")
@@ -325,14 +363,6 @@ final class ChatController: ObservableObject {
         }
 
         chatState = .idle
-    }
-
-    /// Maps a buffered voice transcript to plain chat bubbles. Pure and static so it can be unit
-    /// tested without a live session.
-    static func messages(fromVoiceTranscript transcript: [VoiceSessionController.TranscriptEntry]) -> [Message] {
-        transcript.map { entry in
-            Message(template: .basic(isUserMessage: entry.role == .user), messageBody: entry.text)
-        }
     }
 
     // MARK: - Message Sending
