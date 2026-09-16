@@ -419,7 +419,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         return conversation
     }
 
-    func test_createVoiceBootstrapPayload_carriesLivekitBootstrapTypeAndPublishMic() throws {
+    func test_createVoiceBootstrapPayload_carriesLivekitBootstrapTypeUnderData() throws {
         // Given
         let service = ConciergeChatService(configuration: makeConfiguration())
 
@@ -427,9 +427,11 @@ final class ConciergeChatServiceTests: XCTestCase {
         let payload = try extractVoiceBootstrapDictionary(from: service)
         let conversation = voiceBootstrapConversation(from: payload)
 
-        // Then
-        XCTAssertEqual(conversation?["type"] as? String, "livekit-bootstrap")
-        XCTAssertEqual(conversation?["publishMic"] as? Bool, true)
+        // Then — the discriminator rides in conversation.data.type (matches the stage voice client).
+        let data = conversation?["data"] as? [String: Any]
+        XCTAssertEqual(data?["type"] as? String, "livekit-bootstrap")
+        XCTAssertNil(conversation?["type"], "type must not sit at the conversation top level")
+        XCTAssertNil(conversation?["publishMic"], "publishMic is not part of the bootstrap payload")
     }
 
     func test_createVoiceBootstrapPayload_omitsMessageKey() throws {
@@ -459,8 +461,9 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(extractConsentState(from: event!), "in")
     }
 
-    func test_createVoiceBootstrapPayload_withToken_attachesAuthDataPart() throws {
-        // Given
+    func test_createVoiceBootstrapPayload_withToken_stillSendsBootstrapDataNotAuth() throws {
+        // Given — voice bootstrap authenticates via Edge identity, so a token must not overwrite the
+        // `data` slot's livekit-bootstrap discriminator.
         let service = ConciergeChatService(configuration: makeConfiguration())
 
         // When
@@ -469,21 +472,9 @@ final class ConciergeChatServiceTests: XCTestCase {
         let conversation = voiceBootstrapConversation(from: payload)
 
         // Then
-        let auth = conversation?["data"] as? [String: Any]
-        XCTAssertEqual(auth?["type"] as? String, "auth")
-        XCTAssertEqual((auth?["payload"] as? [String: Any])?["token"] as? String, "token-abc")
-    }
-
-    func test_createVoiceBootstrapPayload_withNilToken_omitsAuthDataPart() throws {
-        // Given
-        let service = ConciergeChatService(configuration: makeConfiguration())
-
-        // When
-        let data = try service.createVoiceBootstrapPayload(token: nil)
-        let payload = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-
-        // Then
-        XCTAssertNil(voiceBootstrapConversation(from: payload)?["data"])
+        let dataPart = conversation?["data"] as? [String: Any]
+        XCTAssertEqual(dataPart?["type"] as? String, "livekit-bootstrap")
+        XCTAssertNil(dataPart?["payload"], "no auth payload should be attached to a voice bootstrap")
     }
 
     func test_createVoiceBootstrapPayload_withNilEcid_throwsInvalidEcidError() {

@@ -27,6 +27,9 @@ class ConciergeChatService: NSObject {
 
     private let LOG_TAG = "ConciergeChatService"
     private let apiPath = "/brand-concierge/conversations"
+    /// Voice bootstrap uses a distinct CCS path from the text-turn path (confirmed against the
+    /// working stage voice client — the bootstrap SSE lives at `/brand-concierge-voice/…`).
+    private let voiceApiPath = "/brand-concierge-voice/conversations"
 
     // MARK: - Private Properties
 
@@ -58,7 +61,7 @@ class ConciergeChatService: NSObject {
                     onChunk: @escaping (ConversationPayload) -> Void,
                     onComplete: @escaping (ConciergeError?) -> Void) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(path: apiPath)
 
             // Register handlers for this streaming session
             onChunkHandler = onChunk
@@ -105,7 +108,7 @@ class ConciergeChatService: NSObject {
                                onBootstrap: @escaping (LiveKitSessionBootstrap) -> Void,
                                onComplete: @escaping (ConciergeError?) -> Void) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(path: voiceApiPath)
 
             // Reuse the streaming delegate path (`onChunkHandler`/`onCompleteHandler`): inspect each
             // SSE chunk for the bootstrap voice payload and fire `onBootstrap` the first time it lands.
@@ -153,7 +156,7 @@ class ConciergeChatService: NSObject {
     /// request body; pass `nil` to send without one.
     func sendFeedback(data: [String: Any], token: String?) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(path: apiPath)
             let payload = try createFeedbackPayload(data: data, token: token)
 
             var request = URLRequest(url: url)
@@ -186,7 +189,7 @@ class ConciergeChatService: NSObject {
 
     // MARK: - Private Methods
 
-    private func createUrl() throws -> URL {
+    private func createUrl(path: String) throws -> URL {
         // TODO: Remove prior to release
         if USE_TEMPS {
             return URL(string: TEMP_serviceEndpoint)!
@@ -212,7 +215,7 @@ class ConciergeChatService: NSObject {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
         }
 
-        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(apiPath)")
+        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(path)")
         urlComponents?.queryItems = queryItems
 
         guard let url = urlComponents?.url else {
@@ -259,14 +262,17 @@ class ConciergeChatService: NSObject {
         let ecid = try requireEcid()
         try requireSurfaces()
 
-        var conversation: [String: Any] = [
+        // The bootstrap discriminator rides in `conversation.data.type` (the same `data` slot the
+        // text turn uses for its `{type:"auth"}` part), matching the working stage voice client.
+        // Voice bootstrap authenticates via the Edge identity/ECID, not the app auth token, so
+        // `token` is intentionally not attached here.
+        _ = token
+        let conversation: [String: Any] = [
             ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
-            ConciergeConstants.Request.Keys.TYPE: ConciergeConstants.Request.Values.Voice.LIVEKIT_BOOTSTRAP,
-            ConciergeConstants.Request.Keys.PUBLISH_MIC: true
+            ConciergeConstants.Request.Keys.AuthData.DATA: [
+                ConciergeConstants.Request.Keys.TYPE: ConciergeConstants.Request.Values.Voice.LIVEKIT_BOOTSTRAP
+            ]
         ]
-        if let dataPart = Self.authDataPart(for: token) {
-            conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
-        }
 
         let payload = makeConversationEventPayload(conversation: conversation, ecid: ecid)
 
