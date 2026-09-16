@@ -411,4 +411,84 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertNotNil(response.feedback)
         XCTAssertEqual(response.feedback?.eligible, false)
     }
+
+    // MARK: - VoicePayload decoding
+
+    func test_voicePayload_livekitSession_decodesUrlAndToken() throws {
+        // Given
+        let json = """
+        {
+            "type": "livekit_session",
+            "livekitUrl": "wss://livekit.example.com",
+            "token": "lk-token-abc"
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let voice = try JSONDecoder().decode(VoicePayload.self, from: json)
+
+        // Then
+        XCTAssertEqual(voice.type, VoicePayload.SessionType.livekitSession)
+        XCTAssertEqual(voice.livekitUrl, "wss://livekit.example.com")
+        XCTAssertEqual(voice.token, "lk-token-abc")
+    }
+
+    func test_voicePayload_otherType_decodesWithNilCredentials() throws {
+        // Given — a non-session payload (e.g. "done") the client ignores; must still decode cleanly.
+        let json = """
+        { "type": "done" }
+        """.data(using: .utf8)!
+
+        // When
+        let voice = try JSONDecoder().decode(VoicePayload.self, from: json)
+
+        // Then
+        XCTAssertEqual(voice.type, "done")
+        XCTAssertNil(voice.livekitUrl)
+        XCTAssertNil(voice.token)
+    }
+
+    // MARK: - ConversationResponse.voice decoding (NFR-02: additive, backward compatible)
+
+    func test_conversationResponse_withVoice_decodesVoicePayload() throws {
+        // Given
+        let json = """
+        {
+            "message": "",
+            "voice": {
+                "type": "livekit_session",
+                "livekitUrl": "wss://livekit.example.com",
+                "token": "lk-token-abc"
+            }
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        // Then
+        XCTAssertEqual(response.voice?.type, VoicePayload.SessionType.livekitSession)
+        XCTAssertEqual(response.voice?.livekitUrl, "wss://livekit.example.com")
+        XCTAssertEqual(response.voice?.token, "lk-token-abc")
+    }
+
+    /// Regression guard for NFR-02: an ordinary text-turn response (no `voice` key) must decode
+    /// exactly as before, with `voice` absent.
+    func test_conversationResponse_missingVoice_decodesAsNil() throws {
+        // Given
+        let json = """
+        {
+            "message": "Hi there",
+            "promptSuggestions": ["a", "b"]
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        // Then
+        XCTAssertEqual(response.message, "Hi there")
+        XCTAssertEqual(response.promptSuggestions, ["a", "b"])
+        XCTAssertNil(response.voice)
+    }
 }
