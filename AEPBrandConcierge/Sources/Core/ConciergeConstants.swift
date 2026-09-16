@@ -100,6 +100,9 @@ public enum ConciergeConstants {
             static let CONVERSATION = "conversation"
             static let SURFACES = "surfaces"
             static let MESSAGE = "message"
+            // Voice bootstrap: replaces `message` in the conversation object for a `livekit-bootstrap` turn.
+            static let TYPE = "type"
+            static let PUBLISH_MIC = "publishMic"
             static let XDM = "xdm"
             static let IDENTITY_MAP = "identityMap"
             static let ECID = "ECID"
@@ -154,6 +157,12 @@ public enum ConciergeConstants {
 
             enum AuthData {
                 static let TYPE_AUTH = "auth"
+            }
+
+            enum Voice {
+                /// Conversation-event `type` requesting LiveKit connection credentials. Matches web's
+                /// `voiceCommands.ts` (`eventData: { type: "livekit-bootstrap", publishMic }`).
+                static let LIVEKIT_BOOTSTRAP = "livekit-bootstrap"
             }
         }
     }

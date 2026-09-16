@@ -342,7 +342,7 @@ private struct ChatComposerContainer: View {
             isFocused: $isFocused,
             inputState: inputController.state,
             chatState: controller.chatState,
-            composerEditable: controller.chatState != .processing,
+            composerEditable: controller.composerEditable,
             micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
             sendEnabled: inputController.data.canSend,
             audioLevel: controller.audioLevel,
@@ -351,7 +351,15 @@ private struct ChatComposerContainer: View {
             onCancel: onCancel,
             onComplete: onComplete,
             onSend: onSend,
-            onLinkTap: onLinkTap
+            onLinkTap: onLinkTap,
+            isVoiceSessionActive: controller.isVoiceSessionActive,
+            onVoiceTap: {
+                if controller.isVoiceSessionActive {
+                    controller.stopVoiceSession()
+                } else {
+                    controller.startVoiceSession()
+                }
+            }
         )
     }
 }

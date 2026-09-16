@@ -46,7 +46,12 @@ final class ChatController: ObservableObject {
     private let chatService: ConciergeChatService
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
+    private let voiceSessionController = VoiceSessionController()
     private let dispatch: ((_ event: Event) -> Void)?
+
+    /// Set once a `livekit_session` payload arrives on the bootstrap stream, so a stream that closes
+    /// without ever delivering credentials is recognized as a failed start (FR-07).
+    private var voiceBootstrapReceived = false
 
     private var welcomeMessagesLoaded: Bool = false
     private var latestSources: [Source] = []
@@ -59,9 +64,13 @@ final class ChatController: ObservableObject {
 
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
-    var composerEditable: Bool { chatState != .processing }
+    /// Text input is blocked while a turn is processing and while a voice session is active (FR-06).
+    var composerEditable: Bool { chatState != .processing && chatState != .voiceSession }
     var micEnabled: Bool { chatState == .idle }
     var sendEnabled: Bool { chatState == .idle && inputController.data.canSend }
+
+    /// Whether a LiveKit voice session is currently active.
+    var isVoiceSessionActive: Bool { chatState == .voiceSession }
 
     /// Whether at least one user message exists in the transcript.
     var hasUserSentMessage: Bool {
@@ -82,6 +91,7 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        configureVoiceSession()
         observeComposerState()
     }
 
@@ -94,6 +104,7 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
 
         configureSpeech()
+        configureVoiceSession()
         observeComposerState()
     }
     #endif
@@ -221,6 +232,107 @@ final class ChatController: ObservableObject {
 
     func requestOpenSettings() {
         showPermissionDialog = false
+    }
+
+    // MARK: - Voice Session (LiveKit)
+
+    private func configureVoiceSession() {
+        // `onStateChange` is delivered on the main thread by the controller; hop onto the main actor
+        // to touch `@MainActor` state.
+        voiceSessionController.onStateChange = { [weak self] state in
+            Task { @MainActor in
+                self?.handleVoiceSessionState(state)
+            }
+        }
+    }
+
+    /// Starts a LiveKit voice session: bootstrap credentials over the existing conversation channel,
+    /// then connect the `Room`. Mutually exclusive with a processing turn and with dictation (FR-06).
+    func startVoiceSession() {
+        guard chatState == .idle, !isRecording else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored (chatState=\(chatState), isRecording=\(isRecording)).")
+            return
+        }
+        voiceBootstrapReceived = false
+        chatState = .voiceSession
+
+        Task { [weak self] in
+            guard let self else { return }
+            let token = await ConciergeAuthTokenResolver.shared.resolveToken()
+            self.chatService.bootstrapVoiceSession(
+                token: token,
+                onBootstrap: { [weak self] bootstrap in
+                    Task { @MainActor in
+                        guard let self else { return }
+                        self.voiceBootstrapReceived = true
+                        await self.voiceSessionController.start(url: bootstrap.livekitUrl, token: bootstrap.token)
+                    }
+                },
+                onComplete: { [weak self] error in
+                    Task { @MainActor in
+                        guard let self else { return }
+                        // A bootstrap stream that closed without ever delivering credentials can't
+                        // start a session — surface it as a failure (FR-07). A stream that did
+                        // deliver them closing normally is expected and handled by the Room lifecycle.
+                        if !self.voiceBootstrapReceived {
+                            self.finishVoiceSession(errorReason: error?.localizedDescription
+                                ?? "The voice session could not be started.")
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    /// Ends the active voice session. The buffered transcript is flushed to `messages` via the
+    /// controller's state transition to `.idle` (see `handleVoiceSessionState`).
+    func stopVoiceSession() {
+        guard chatState == .voiceSession else {
+            Log.warning(label: LOG_TAG, "stopVoiceSession ignored — no voice session is active.")
+            return
+        }
+        Task { [weak self] in
+            await self?.voiceSessionController.stop()
+        }
+    }
+
+    private func handleVoiceSessionState(_ state: VoiceSessionController.State) {
+        switch state {
+        case .idle:
+            // Normal end (user stop or worker-initiated) — flush the buffered transcript.
+            finishVoiceSession(errorReason: nil)
+        case .failed(let reason):
+            finishVoiceSession(errorReason: reason)
+        case .connecting, .listening:
+            break
+        }
+    }
+
+    /// Appends the session's buffered transcript to `messages` as plain bubbles (FR-05 — no live
+    /// rendering) and returns the chat to idle. Idempotent: only acts while a voice session is active.
+    private func finishVoiceSession(errorReason: String?) {
+        guard chatState == .voiceSession else { return }
+
+        for message in Self.messages(fromVoiceTranscript: voiceSessionController.bufferedTranscript) {
+            messages.append(message)
+        }
+
+        if let errorReason {
+            Log.warning(label: LOG_TAG, "Voice session ended with error: \(errorReason)")
+            dispatchTrackingEvent(.errorOccurred(errorMessage: errorReason))
+            messages.append(Message(template: .basic(isUserMessage: false),
+                                    messageBody: "Sorry, the voice session ended unexpectedly. Please try again."))
+        }
+
+        chatState = .idle
+    }
+
+    /// Maps a buffered voice transcript to plain chat bubbles. Pure and static so it can be unit
+    /// tested without a live session.
+    static func messages(fromVoiceTranscript transcript: [VoiceSessionController.TranscriptEntry]) -> [Message] {
+        transcript.map { entry in
+            Message(template: .basic(isUserMessage: entry.role == .user), messageBody: entry.text)
+        }
     }
 
     // MARK: - Message Sending

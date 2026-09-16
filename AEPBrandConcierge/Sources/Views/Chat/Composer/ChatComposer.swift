@@ -34,10 +34,15 @@ struct ChatComposer: View {
     let onComplete: () -> Void
     let onSend: () -> Void
     var onLinkTap: ((URL) -> Void)?
+    /// Minimal LiveKit voice-session trigger (the full voice-mode UI is a separate design). Defaults
+    /// keep existing call sites (snapshot tests) valid.
+    var isVoiceSessionActive: Bool = false
+    var onVoiceTap: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
+                voiceSessionButton
                 HStack(spacing: 8) {
                     ComposerEditingView(
                         inputText: $inputText,
@@ -99,6 +104,18 @@ struct ChatComposer: View {
 }
 
 private extension ChatComposer {
+    /// Minimal tap target to start/stop a LiveKit voice session for the PoC demo. Turns red while a
+    /// session is active. This is a functional trigger, not the final voice-mode UI (separate design).
+    var voiceSessionButton: some View {
+        Button(action: onVoiceTap) {
+            Image(systemName: isVoiceSessionActive ? "waveform.circle.fill" : "waveform.circle")
+                .font(.system(size: 28))
+                .foregroundColor(isVoiceSessionActive ? .red : .accentColor)
+        }
+        .accessibilityLabel(isVoiceSessionActive ? "Stop voice session" : "Start voice session")
+        .accessibilityIdentifier("voiceSessionToggle")
+    }
+
     var borderStyle: AnyShapeStyle {
         // border.color is always non-optional, so conciergeShapeStyle's `fallback` branch would be
         // dead code here -- resolve the gradient/solid choice directly instead.

@@ -18,6 +18,12 @@ Pod::Spec.new do |s|
   s.dependency 'AEPCore', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPServices', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPEdgeIdentity', '>= 5.0.0', '< 6.0.0'
+  # NOTE: The voice feature depends on LiveKit (see AEPBrandConcierge/Sources/.../VoiceSessionController),
+  # but LiveKit is intentionally NOT declared as a CocoaPods dependency here. CocoaPods trunk
+  # stopped publishing LiveKitClient at 2.0.18, and our required version (2.17.0, for
+  # AudioManager/audio-session fixes) depends on LiveKitUniFFI, which was never published to
+  # trunk at all — so this SDK cannot currently be consumed with working voice support via
+  # CocoaPods. Tracked as an open question in voice-livekit-connection-bootstrap-design.md (OQ-1).
 
   s.source_files = 'AEPBrandConcierge/Sources/**/*.swift'
 

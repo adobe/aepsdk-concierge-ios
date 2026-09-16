@@ -44,5 +44,8 @@ public enum ChatError: Error, Equatable {
 public enum ChatState: Equatable {
     case idle
     case processing
+    /// A LiveKit voice session is active. Text input and dictation are gated off for its duration
+    /// (FR-06); voice-turn content is buffered and appended to the transcript only when it ends.
+    case voiceSession
     case error(ChatError)
 }
