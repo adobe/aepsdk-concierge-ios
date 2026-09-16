@@ -17,20 +17,25 @@ import PackageDescription
 
 let package = Package(
     name: "AEPBrandConcierge",
-    platforms: [.iOS(.v15)],
+    // macOS minimum added because LiveKit's own manifest requires macOS 10.15; this SDK still only
+    // targets iOS in practice (no macOS product/build here), but SPM requires every platform's
+    // minimum to be consistent across the whole dependency graph.
+    platforms: [.iOS(.v15), .macOS(.v10_15)],
     products: [
         .library(name: "AEPBrandConcierge", targets: ["AEPBrandConcierge"])
     ],
     dependencies: [
         .package(url: "https://github.com/adobe/aepsdk-core-ios.git", .upToNextMajor(from: "5.7.0")),
-        .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0"))
+        .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0")),
+        .package(url: "https://github.com/livekit/client-sdk-swift.git", .upToNextMajor(from: "2.17.0"))
     ],
     targets: [
         .target(name: "AEPBrandConcierge",
             dependencies: [
                 .product(name: "AEPCore", package: "aepsdk-core-ios"),
                 .product(name: "AEPServices", package: "aepsdk-core-ios"),
-                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios")
+                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios"),
+                .product(name: "LiveKit", package: "client-sdk-swift")
             ],
             path: "AEPBrandConcierge/Sources",
             exclude: ["Info.plist", "AEPBrandConcierge.h"])

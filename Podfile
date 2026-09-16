@@ -50,6 +50,15 @@ def lib_dev
     pod 'AEPServices', :git => $dev_repo, :branch => $dev_branch
 end
 
+# LiveKit is NOT a CocoaPods dependency: CocoaPods trunk stopped publishing LiveKitClient at
+# 2.0.18, and 2.0.18+'s LiveKitUniFFI dependency was never published to trunk at all, so our
+# actual LiveKit version (2.17.0, needed for AudioManager/audio-session fixes — see the voice
+# design docs) cannot be resolved via CocoaPods. It's added as a native Xcode Swift Package
+# dependency directly on the AEPBrandConcierge and ConciergeDemoApp targets instead (see
+# AEPBrandConcierge.xcodeproj's Package Dependencies). This means CocoaPods-based external
+# consumers of AEPBrandConcierge currently cannot get the voice feature — tracked as an open
+# question in voice-livekit-connection-bootstrap-design.md (OQ-1).
+
 def app_main
     lib_main
     pod 'AEPEdge'
