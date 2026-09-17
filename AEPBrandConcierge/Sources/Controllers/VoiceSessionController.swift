@@ -138,8 +138,32 @@ final class VoiceSessionController: NSObject {
         }
 
         do {
-            try await room.connect(url: url, token: token)
-            try await room.localParticipant.setMicrophone(enabled: true)
+            let room = self.room
+            let logTag = LOG_TAG
+            var connectedViaPreconnect = false
+            do {
+                // Capture mic audio into LiveKit's preconnect buffer *while* the Room connects, so
+                // speech spoken before the mic track is published isn't lost. `connect()` inside the
+                // closure auto-publishes the recorded mic track with the preconnect option, and the
+                // buffer is flushed to the worker once the track publishes (the worker consumes it —
+                // see its `preconnect_audio_timeout_s`). Mic permission was already granted above,
+                // which `withPreConnectAudio` requires before it creates the capture track.
+                try await room.withPreConnectAudio {
+                    try await room.connect(url: url, token: token)
+                } onError: { error in
+                    Log.warning(label: logTag, "Preconnect audio buffer send failed: \(error.localizedDescription)")
+                }
+                connectedViaPreconnect = true
+            } catch {
+                // Don't let a preconnect-capture problem fail the whole session — fall back to the
+                // plain connect + publish path (early speech may be lost, but the conversation works).
+                Log.warning(label: LOG_TAG, "Preconnect path unavailable; falling back to plain connect: \(error.localizedDescription)")
+            }
+
+            if !connectedViaPreconnect {
+                try await room.connect(url: url, token: token)
+                try await room.localParticipant.setMicrophone(enabled: true)
+            }
             setState(.listening)
         } catch {
             Log.warning(label: LOG_TAG, "Failed to start voice session: \(error.localizedDescription)")
