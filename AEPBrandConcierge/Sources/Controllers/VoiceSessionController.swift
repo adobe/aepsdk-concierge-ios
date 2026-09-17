@@ -14,6 +14,7 @@ import AEPServices
 import AVFoundation
 import Foundation
 import LiveKit
+import UIKit
 
 /// Owns the LiveKit `Room` for a voice session: connect using bootstrapped credentials, publish the
 /// local mic track, and let LiveKit auto-subscribe/render the worker's remote (TTS) audio track.
@@ -96,10 +97,23 @@ final class VoiceSessionController: NSObject {
             name: AVAudioSession.interruptionNotification,
             object: nil
         )
+        // Foreground-only sessions (audio-session design): end the session when the app is
+        // backgrounded so the LiveKit room is released rather than lingering server-side.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        // Safety net: if the controller is torn down without an explicit stop() (e.g. the chat is
+        // dismissed while a session is active), still release the room. Capture `room` so it outlives
+        // `self` for the async disconnect.
+        let room = room
+        Task { await room.disconnect() }
     }
 
     // MARK: - Lifecycle
@@ -180,6 +194,12 @@ final class VoiceSessionController: NSObject {
     }
 
     // MARK: - Interruptions (audio-session design §6.3)
+
+    @objc private func handleAppDidEnterBackground() {
+        // End the session (disconnect the room) on background so it can't linger. A future iteration
+        // could pause/resume instead if background voice becomes a requirement.
+        Task { [weak self] in await self?.stop() }
+    }
 
     @objc private func handleAudioSessionInterruption(_ notification: Notification) {
         guard let info = notification.userInfo,

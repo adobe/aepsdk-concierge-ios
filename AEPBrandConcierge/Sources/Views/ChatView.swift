@@ -177,6 +177,9 @@ struct ChatView: View {
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         .onDisappear {
+            // End any active voice session so the LiveKit room is released when the chat is dismissed
+            // (otherwise the room lingers server-side). No-op when no session is active.
+            controller.stopVoiceSession()
             controller.trackChatClosed()
         }
         // Provide a presenter to child views via environment
