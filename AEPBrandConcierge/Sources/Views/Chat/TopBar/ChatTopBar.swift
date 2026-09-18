@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import UIKit
 
 /// Header bar showing title/subtitle, a User/Agent toggle, and a close button.
 struct ChatTopBar: View {
@@ -20,11 +21,15 @@ struct ChatTopBar: View {
 
     let title: String
     let subtitle: String?
+    /// Current conversation session ID, surfaced (DEBUG builds only) as a tap-to-copy chip for
+    /// debugging — it matches the request `sessionId` and the LiveKit room name.
+    var sessionId: String? = nil
 
     let onToggleMode: (Bool) -> Void
     let onClose: () -> Void
 
     @State private var showSourcesToggle: Bool = true
+    @State private var didCopySessionId: Bool = false
 
     /// Resolved title, preferring theme header over the initializer value.
     private var resolvedTitle: String {
@@ -65,9 +70,17 @@ struct ChatTopBar: View {
         }
     }
 
+    private var showHeaderText: Bool {
+        if hasTitle || hasSubtitle { return true }
+        #if DEBUG
+        if let sessionId, !sessionId.isEmpty { return true }
+        #endif
+        return false
+    }
+
     @ViewBuilder
     private var headerTextView: some View {
-        if hasTitle || hasSubtitle {
+        if showHeaderText {
             VStack(alignment: .leading, spacing: 2) {
                 if hasTitle {
                     Text(resolvedTitle)
@@ -81,9 +94,39 @@ struct ChatTopBar: View {
                         .foregroundColor(theme.colors.primary.text.color.opacity(0.75))
                         .lineLimit(2)
                 }
+                #if DEBUG
+                sessionIdChip
+                #endif
             }
         }
     }
+
+    #if DEBUG
+    /// Debug-only tap-to-copy chip showing the current session ID. Compiled out of release builds.
+    @ViewBuilder
+    private var sessionIdChip: some View {
+        if let sessionId, !sessionId.isEmpty {
+            Button {
+                UIPasteboard.general.string = sessionId
+                didCopySessionId = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { didCopySessionId = false }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: didCopySessionId ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 9))
+                    Text(didCopySessionId ? "Copied session ID" : "sid: \(sessionId)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .foregroundColor(theme.colors.primary.text.color.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Copy session ID")
+            .accessibilityIdentifier("debugSessionIdChip")
+        }
+    }
+    #endif
 
     private var closeButtonAlignedStart: Bool {
         theme.behavior.welcomeCard?.closeButtonAlignment == "start"

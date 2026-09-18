@@ -129,6 +129,7 @@ struct ChatView: View {
                 showAgentSend: $showAgentSend,
                 title: titleText,
                 subtitle: subtitleText,
+                sessionId: controller.sessionId,
                 onToggleMode: { isAgent in
                     if isAgent {
                         controller.chatState = .idle

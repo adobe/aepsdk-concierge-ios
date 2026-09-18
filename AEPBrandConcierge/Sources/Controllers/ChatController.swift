@@ -77,6 +77,10 @@ final class ChatController: ObservableObject {
     /// Whether a LiveKit voice session is currently active.
     var isVoiceSessionActive: Bool { chatState == .voiceSession }
 
+    /// The current conversation session ID — the value sent as `sessionId` on requests and embedded
+    /// in the LiveKit room name. Exposed so the header can surface it for debugging.
+    var sessionId: String? { configuration?.sessionId }
+
     /// Whether at least one user message exists in the transcript.
     var hasUserSentMessage: Bool {
         messages.contains { message in
