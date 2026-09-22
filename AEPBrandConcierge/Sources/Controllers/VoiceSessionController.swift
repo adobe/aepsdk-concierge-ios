@@ -84,7 +84,6 @@ final class VoiceSessionController: NSObject {
         room = Room()
         super.init()
         room.add(delegate: self)
-        Self.configureAudioSessionPolicy()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAudioSessionInterruption(_:)),
@@ -122,6 +121,11 @@ final class VoiceSessionController: NSObject {
             Log.debug(label: LOG_TAG, "start() ignored — a voice session is already active (state=\(state)).")
             return
         }
+        // Re-asserted per session rather than once in `init()`: `AudioManager.shared` is a
+        // process-wide LiveKit singleton, so another component (or a future host-app integration
+        // sharing the same LiveKit instance) could have changed `isSpeakerOutputPreferred` in the
+        // time between construction and this call.
+        Self.configureAudioSessionPolicy()
         pendingAssistantText = ""
         setState(.connecting)
 
@@ -175,24 +179,8 @@ final class VoiceSessionController: NSObject {
 
     // MARK: - Audio session policy
 
-    /// The audio-session policy handed to LiveKit (audio-session design §6.1) — LiveKit's own
-    /// `.playAndRecordSpeaker` preset values, kept here as plain AVFoundation types because that
-    /// preset is `internal` to LiveKit. `.playAndRecord` / `.videoChat` (not `.voiceChat`) with the
-    /// speaker-routed Bluetooth/AirPlay option set; `.mixWithOthers` is deliberately omitted (it
-    /// triggers a WebRTC engine-init race on the record path). Exposed for testing.
-    static let audioSessionCategory: AVAudioSession.Category = .playAndRecord
-    static let audioSessionMode: AVAudioSession.Mode = .videoChat
-    static let audioSessionCategoryOptions: AVAudioSession.CategoryOptions =
-        [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker]
-
-    /// Hands the policy above to LiveKit's `AudioManager`, which becomes the sole owner of
-    /// `AVAudioSession.setActive`/`setCategory` while a voice `Room` exists (NFR-01).
     private static func configureAudioSessionPolicy() {
-        AudioManager.shared.sessionConfiguration = AudioSessionConfiguration(
-            category: audioSessionCategory,
-            categoryOptions: audioSessionCategoryOptions,
-            mode: audioSessionMode
-        )
+        AudioManager.shared.isSpeakerOutputPreferred = true
     }
 
     /// Requests record permission, using the non-deprecated `AVAudioApplication` API on iOS 17+.
