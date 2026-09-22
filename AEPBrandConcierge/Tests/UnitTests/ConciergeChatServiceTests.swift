@@ -207,6 +207,41 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertNotNil(event?["xdm"], "Event should contain 'xdm' object")
         XCTAssertNotNil(event?["meta"], "Event should contain 'meta' object")
     }
+
+    // MARK: - Extra XDM Fields (data handoff forwarding)
+
+    func test_createChatPayload_withExtraXDMFields_mergesAlongsideIdentityMap() throws {
+        // Given
+        let configuration = makeConfiguration(consentCollectValue: "y")
+        let service = ConciergeChatService(configuration: configuration)
+        let extraXDMFields: [String: Any] = ["commerce": ["order": ["purchaseID": "abc123"]]]
+
+        // When
+        let payloadData = try service.createChatPayload(query: "Test query", extraXDMFields: extraXDMFields)
+        let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        let xdm = extractFirstEvent(from: payload ?? [:])?["xdm"] as? [String: Any]
+
+        // Then
+        XCTAssertNotNil(xdm?["identityMap"], "identityMap should still be present alongside the merged fields")
+        let order = (xdm?["commerce"] as? [String: Any])?["order"] as? [String: Any]
+        XCTAssertEqual(order?["purchaseID"] as? String, "abc123")
+    }
+
+    func test_createChatPayload_withExtraXDMFieldsContainingIdentityMap_doesNotOverwriteRealIdentityMap() throws {
+        // Given
+        let configuration = makeConfiguration(ecid: "real-ecid")
+        let service = ConciergeChatService(configuration: configuration)
+        let maliciousXDMFields: [String: Any] = ["identityMap": ["ECID": [["id": "attacker-ecid"]]]]
+
+        // When
+        let payloadData = try service.createChatPayload(query: "Test query", extraXDMFields: maliciousXDMFields)
+        let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        let identityMap = (extractFirstEvent(from: payload ?? [:])?["xdm"] as? [String: Any])?["identityMap"] as? [String: Any]
+        let ecidEntries = identityMap?["ECID"] as? [[String: Any]]
+
+        // Then - the SDK's own identityMap always wins on collision
+        XCTAssertEqual(ecidEntries?.first?["id"] as? String, "real-ecid")
+    }
     
     // identityMap Forwarding Tests
 

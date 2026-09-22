@@ -28,6 +28,78 @@ final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
         MessageListView(messages: messages, chatState: chatState, isInputFocused: .constant(false), onSpeak: { _ in })
     }
 
+    private func makeView(messages: [Message], chatState: ChatState, anchorId: UUID?) -> MessageListView {
+        MessageListView(messages: messages,
+                        userMessageToScrollId: anchorId,
+                        chatState: chatState,
+                        isInputFocused: .constant(false),
+                        onSpeak: { _ in })
+    }
+
+    /// A `sendDataHandoff(...)` local message is an *agent* message - the user never typed it - so
+    /// the "last user message sits directly above" test can't see it. Without the filler the
+    /// anchor has nothing to scroll against and the response lands below the fold.
+    func test_handoffLocalMessageAnchor_returnsTrue() {
+        let localMessage = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
+        let view = makeView(
+            messages: [
+                Message(template: .basic(isUserMessage: true), messageBody: "Show me headphones"),
+                Message(template: .basic(isUserMessage: false), messageBody: "Here are a couple of products:"),
+                Message(template: .carouselGroup([]), messageBody: nil),
+                localMessage,
+                Message(template: .basic(isUserMessage: false), messageBody: "")
+            ],
+            chatState: .processing,
+            anchorId: localMessage.id
+        )
+        XCTAssertTrue(view.shouldFillRemainingHeight(at: 4))
+    }
+
+    /// A handoff with no local message anchors on the streaming placeholder itself.
+    func test_handoffWithNoLocalMessage_placeholderIsItsOwnAnchor_returnsTrue() {
+        let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
+        let view = makeView(
+            messages: [
+                Message(template: .basic(isUserMessage: true), messageBody: "Show me headphones"),
+                Message(template: .carouselGroup([]), messageBody: nil),
+                placeholder
+            ],
+            chatState: .processing,
+            anchorId: placeholder.id
+        )
+        XCTAssertTrue(view.shouldFillRemainingHeight(at: 2))
+    }
+
+    /// The anchor only counts for the turn that's actually in flight.
+    func test_handoffLocalMessageAnchor_idle_returnsFalse() {
+        let localMessage = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
+        let view = makeView(
+            messages: [
+                localMessage,
+                Message(template: .basic(isUserMessage: false), messageBody: "Great pick!")
+            ],
+            chatState: .idle,
+            anchorId: localMessage.id
+        )
+        XCTAssertFalse(view.shouldFillRemainingHeight(at: 1))
+    }
+
+    /// A stale anchor from a previous turn must not resurrect the filler for a settled message.
+    func test_staleAnchorFromEarlierTurn_returnsFalse() {
+        let oldAnchor = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
+        let view = makeView(
+            messages: [
+                oldAnchor,
+                Message(template: .basic(isUserMessage: false), messageBody: "Great pick!"),
+                Message(template: .carouselGroup([]), messageBody: nil),
+                Message(template: .basic(isUserMessage: false), messageBody: "Anything else?")
+            ],
+            chatState: .processing,
+            anchorId: oldAnchor.id
+        )
+        XCTAssertFalse(view.shouldFillRemainingHeight(at: 3))
+    }
+
     func test_activeResponse_returnsTrue() {
         let view = makeView(
             messages: [

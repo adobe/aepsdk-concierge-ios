@@ -223,23 +223,95 @@ Concierge.sendDataHandoff(
 
 #### `Concierge.sendDataHandoff(routingHint:xdmFields:localMessage:completion:)`
 
-- **`routingHint`** *(required)*: A keyword consumed only by Brand Concierge's current phrase-based router (e.g. `"successful-checkout"`) — the end user never sees it, and it is not conversational content.
+- **`routingHint`**: A keyword consumed only by Brand Concierge's current phrase-based router (e.g. `"successful-checkout"`) — the end user never sees it, and it is not conversational content. Defaults to empty, which is appropriate when `xdmFields` carries the routing context on its own.
 - **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, JSON-serializable, and must not use `identityMap` as a top-level key (reserved by the SDK).
 - **`localMessage`**: Optional text rendered immediately in the chat transcript as a local, non-networked message, distinct from the data forwarded to Brand Concierge. `nil`/empty -> nothing shown locally; the conversation only gets whatever Product Advisor eventually replies with.
-- **`completion`**: Optional closure called once with the outcome. `accepted` reports whether the SDK received and validated the payload's shape — it does not confirm delivery to or processing by Brand Concierge or Product Advisor. When `accepted` is `false`, `rejectReason` is a typed `ConciergeDataHandoffRejectReason` describing why:
+- **`completion`**: Optional closure called exactly once with the outcome, on the main actor, and always within 60 seconds — a handoff turn is bounded on both ends, so the callback can't be left hanging by a slow or stalled backend. It receives a `Result<Void, ConciergeDataHandoffError>`. `.success` means Brand Concierge completed the turn and its response was rendered into the transcript — not merely that the payload passed validation. On `.failure`, the error is a typed `ConciergeDataHandoffError`:
 
-  | Reject reason | Meaning |
-  | --- | --- |
-  | `missingEventData` | No payload arrived at all — an internal wiring issue, not something a caller can trigger directly. |
-  | `missingRoutingHint` | `routingHint` was empty (or blank). |
-  | `emptyXdmFields` | `xdmFields` was empty. |
-  | `invalidXdmFieldValue` | `xdmFields` contained a value that isn't JSON-serializable. |
-  | `reservedKeyCollision` | `xdmFields` used a reserved top-level key (e.g. `identityMap`). |
-  | `noResponse` | The extension never responded (e.g. the call timed out). |
+  | Error | `code` | Meaning |
+  | --- | --- | --- |
+  | `missingEventData` | `missing_event_data` | No payload arrived at all — an internal wiring issue, not something a caller can trigger directly. |
+  | `emptyXdmFields` | `empty_xdm_fields` | `xdmFields` was empty. |
+  | `invalidXdmFieldValue` | `invalid_xdm_field_value` | `xdmFields` contained a value that isn't JSON-serializable. |
+  | `reservedKeyCollision` | `reserved_key_collision` | `xdmFields` used a reserved top-level key (e.g. `identityMap`). |
+  | `noActiveSession` | `no_active_session` | No Concierge chat session was active, or the existing one had expired. Show or resolve a session, then retry. |
+  | `chatInProgress` | `chat_in_progress` | Another turn is already being processed. Nothing was started or rendered; retry once the chat is idle. |
+  | `deliveryFailed(String?)` | `delivery_failed` | Brand Concierge returned an error or the request couldn't be completed. Carries the underlying service detail when available. |
+  | `emptyResponse` | `empty_response` | The stream completed with no renderable content. |
+  | `deliveryTimeout` | `delivery_timeout` | The backend produced no response at all within 10 seconds, or the turn ran past its 60-second ceiling. A turn that is actively streaming is never cut off at the 10-second mark, so a slow-but-healthy reply still renders. The in-flight request is cancelled, so a retry starts a clean turn rather than racing the original. Distinct from `deliveryFailed` so a slow turn can be retried without retrying a rejected one. |
+  | `noResponse` | `no_response` | The extension itself never responded — an internal failure, distinct from the backend timing out, which reports `deliveryTimeout`. |
+
+  `code` is a public, stable identifier intended for analytics and crash reporting, so an app can
+  report a failure without switching over every case. They are a stable contract and will not
+  change for an existing case.
+
+  A failed handoff leaves **nothing** in the chat transcript: the streaming placeholder is removed
+  and the chat returns to idle. A handoff is initiated by app code, not by the user, so an error
+  bubble would appear unprompted for something the user never asked for. Any `localMessage` already
+  rendered stays, since the user has seen it.
+
+  This means the app owns the failure UX. If a failed handoff needs to be visible, present it in
+  app UI on `.failure` - the SDK will not show it. (This is the inverse of a user-typed turn, where
+  the SDK does render the failure because the user is waiting on a visible answer.)
 
 ---
 
 ## Basic usage
+
+### Data handoff
+
+Use `Concierge.sendDataHandoff(...)` when an app flow such as checkout has native
+transaction data that should be forwarded into the existing Concierge conversation:
+
+```swift
+Concierge.sendDataHandoff(
+    routingHint: "successful-checkout",
+    xdmFields: [
+        "commerce": [
+            "order": [
+                "purchaseID": order.id
+            ]
+        ]
+    ],
+    localMessage: "Your order is confirmed!"
+) { result in
+    switch result {
+    case .success:
+        analytics.track("concierge_handoff_delivered")
+
+    case .failure(let error):
+        // `code` is stable, so reporting needs no per-case mapping.
+        analytics.track("concierge_handoff_failed", ["code": error.code])
+
+        switch error {
+        case .chatInProgress, .deliveryTimeout:
+            pendingHandoff = order          // safe to retry
+        case .noActiveSession:
+            Concierge.show(surfaces: surfaces)
+            pendingHandoff = order
+        case .deliveryFailed, .emptyResponse, .noResponse:
+            // Nothing was rendered in the transcript, so the app owns this failure.
+            showCheckoutBanner("We couldn't load your recommendations.")
+        case .missingEventData, .emptyXdmFields, .invalidXdmFieldValue, .reservedKeyCollision:
+            assertionFailure("Bad handoff payload: \(error.localizedDescription)")
+        }
+    }
+}
+```
+
+The handoff requires an active Concierge session, but the chat does not need to be
+visible while the app is collecting checkout data. The checkout screen can be
+dismissed after submitting the handoff so the existing Concierge session displays
+the local message and the streamed Brand Concierge/Product Advisor response.
+
+The callback completes after the forwarding stream finishes, reporting either the
+delivered response or the first error encountered along the way. A handoff submitted
+while another chat turn is still processing is rejected immediately with
+`ConciergeDataHandoffError.chatInProgress`; the SDK does not queue or retain it, and
+nothing is rendered for the rejected handoff — not even `localMessage`. The host app
+owns the retry and can resubmit the same handoff once the in-flight turn finishes,
+whether it succeeded or failed. An empty `routingHint` is allowed when the XDM fields
+provide the necessary routing context.
 
 ### API reference
 

@@ -1202,7 +1202,7 @@ This section documents which properties are fully implemented, partially impleme
 | `text["carousel.prev.aria"]` | ✅ | Used in CarouselGroupView |
 | `text["carousel.next.aria"]` | ✅ | Used in CarouselGroupView |
 | `text["scroll.bottom.aria"]` | ⚠️ | Parsed but scroll button not implemented |
-| `text["error.network"]` | ✅ | Used in ChatView |
+| `text["error.network"]` | ✅ | Rendered into the transcript by ChatController when a turn fails; synced from the theme by ChatView |
 | `text["loading.message"]` | ✅ | Used in ChatView placeholder |
 | `text["feedback.dialog.title.positive"]` | ✅ | Used in FeedbackOverlayView |
 | `text["feedback.dialog.title.negative"]` | ✅ | Used in FeedbackOverlayView |
