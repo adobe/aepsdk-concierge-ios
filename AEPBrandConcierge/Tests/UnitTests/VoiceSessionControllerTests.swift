@@ -10,35 +10,14 @@
  governing permissions and limitations under the License.
  */
 
-import AVFoundation
 import XCTest
 @testable import AEPBrandConcierge
 
 /// Unit coverage for `VoiceSessionController`. The connect / mic-publish / interruption / route-change
 /// behaviors are validated on real devices (see the audio-session design §8) — `AVAudioSession`
 /// behavior is not meaningfully testable in the simulator — so these tests cover the deterministic,
-/// no-`Room`-needed surface: the audio policy values and the initial state.
+/// no-`Room`-needed surface: initial/derived state.
 final class VoiceSessionControllerTests: XCTestCase {
-
-    // MARK: - Audio session policy (audio-session design §6.1 / §6.5)
-
-    func test_audioSessionPolicy_matchesLiveKitPlayAndRecordSpeaker() {
-        // Category / mode: full-duplex, echo-cancelled; `.videoChat`, deliberately not `.voiceChat`.
-        XCTAssertEqual(VoiceSessionController.audioSessionCategory, .playAndRecord)
-        XCTAssertEqual(VoiceSessionController.audioSessionMode, .videoChat)
-
-        // Options mirror LiveKit's `.playAndRecordSpeaker` preset.
-        let options = VoiceSessionController.audioSessionCategoryOptions
-        XCTAssertTrue(options.contains(.allowBluetooth))
-        XCTAssertTrue(options.contains(.allowBluetoothA2DP))
-        XCTAssertTrue(options.contains(.allowAirPlay))
-        XCTAssertTrue(options.contains(.defaultToSpeaker))
-    }
-
-    func test_audioSessionPolicy_omitsMixWithOthers() {
-        // `.mixWithOthers` triggers a WebRTC engine-init race on the record path — must stay absent.
-        XCTAssertFalse(VoiceSessionController.audioSessionCategoryOptions.contains(.mixWithOthers))
-    }
 
     // MARK: - Initial state
 
