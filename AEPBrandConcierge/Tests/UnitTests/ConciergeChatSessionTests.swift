@@ -43,7 +43,8 @@ final class ConciergeChatSessionTests: XCTestCase {
             title: title ?? self.title,
             subtitle: subtitle ?? self.subtitle,
             speechCapturer: MockSpeechCapturer(),
-            textSpeaker: nil
+            textSpeaker: nil,
+            voiceHandler: nil
         )
     }
 

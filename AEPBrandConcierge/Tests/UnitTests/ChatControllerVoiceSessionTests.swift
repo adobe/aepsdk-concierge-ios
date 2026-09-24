@@ -22,7 +22,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
     private func makeController() -> ChatController {
         let configuration = ConciergeConfiguration(consentCollectValue: "y", ecid: "ecid", surfaces: ["web://test"])
         let service = MockChatService(configuration: configuration)
-        return ChatController(configuration: configuration, chatService: service, speechCapturer: nil, speaker: nil)
+        return ChatController(configuration: configuration, chatService: service, speechCapturer: nil, speaker: nil, voiceHandler: FakeVoiceHandling())
     }
 
     // MARK: - Live transcript rendering

@@ -11,7 +11,7 @@
  */
 
 import XCTest
-@testable import AEPBrandConcierge
+@testable import AEPVoice
 
 /// Mirrors web's `voiceStreamingUtils.test.ts` coverage for `parseDataChannelMessage` — the wire
 /// contract is shared with the backend worker, so both clients must parse it identically.

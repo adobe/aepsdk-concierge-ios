@@ -95,6 +95,10 @@ target 'UnitTests' do
   lib_main
 end
 
+target 'AEPVoiceTests' do
+  lib_main
+end
+
 target 'ConciergeDemoApp' do
   app_main
 end

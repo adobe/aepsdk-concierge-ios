@@ -11,7 +11,8 @@
  */
 
 import XCTest
-@testable import AEPBrandConcierge
+import AEPBrandConcierge
+@testable import AEPVoice
 
 /// Unit coverage for `VoiceSessionController`. The connect / mic-publish / interruption / route-change
 /// behaviors are validated on real devices (see the audio-session design §8) — `AVAudioSession`
@@ -29,8 +30,8 @@ final class VoiceSessionControllerTests: XCTestCase {
     // MARK: - State equality
 
     func test_state_failedEquality_comparesReason() {
-        XCTAssertEqual(VoiceSessionController.State.failed("x"), .failed("x"))
-        XCTAssertNotEqual(VoiceSessionController.State.failed("x"), .failed("y"))
-        XCTAssertNotEqual(VoiceSessionController.State.connecting, .listening)
+        XCTAssertEqual(VoiceSessionState.failed("x"), .failed("x"))
+        XCTAssertNotEqual(VoiceSessionState.failed("x"), .failed("y"))
+        XCTAssertNotEqual(VoiceSessionState.connecting, .listening)
     }
 }
