@@ -16,6 +16,7 @@ import AVFoundation
 import Speech
 import AudioToolbox
 import AEPBrandConcierge
+import AEPVoice
 
 struct ContentView: View {
     private enum DemoThemeFile: String, CaseIterable, Identifiable {
@@ -84,7 +85,8 @@ struct ContentView: View {
                             Concierge.show(
                                 surfaces: ["mobileapp://conciergetestapp/home"],
                                 title: "Concierge",
-                                subtitle: "Powered by Adobe"
+                                subtitle: "Powered by Adobe",
+                                voiceHandler: VoiceSessionController()
                             )
                         }) {
                             Text("Open chat (SwiftUI)")
@@ -144,6 +146,7 @@ struct ContentView: View {
                         surfaces: ["mobileapp://conciergetestapp/home"],
                         title: "Concierge",
                         subtitle: "Powered by Adobe",
+                        voiceHandler: VoiceSessionController(),
                         handleLink: handleLink
                     )
                 }

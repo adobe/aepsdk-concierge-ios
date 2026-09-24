@@ -356,6 +356,7 @@ private struct ChatComposerContainer: View {
             onComplete: onComplete,
             onSend: onSend,
             onLinkTap: onLinkTap,
+            isVoiceAvailable: controller.isVoiceAvailable,
             isVoiceSessionActive: controller.isVoiceSessionActive,
             onVoiceTap: {
                 if controller.isVoiceSessionActive {

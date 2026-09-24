@@ -12,6 +12,7 @@
 
 import UIKit
 import AEPBrandConcierge
+import AEPVoice
 
 /// Simple UIKit screen showcasing the UIKit-based Concierge presentation API.
 final class ConciergeUIKitDemoViewController: UIViewController {
@@ -48,7 +49,7 @@ final class ConciergeUIKitDemoViewController: UIViewController {
     }
 
     @objc private func openTapped() {
-        Concierge.present(on: self, surfaces: ["mobileapp://conciergetestapp/home"], title: "Concierge", subtitle: "Powered by Adobe")
+        Concierge.present(on: self, surfaces: ["mobileapp://conciergetestapp/home"], title: "Concierge", subtitle: "Powered by Adobe", voiceHandler: VoiceSessionController())
     }
 
 }

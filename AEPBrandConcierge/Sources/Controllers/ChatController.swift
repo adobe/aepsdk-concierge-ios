@@ -46,7 +46,10 @@ final class ChatController: ObservableObject {
     private let chatService: ConciergeChatService
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
-    private let voiceSessionController = VoiceSessionController()
+    /// Optional, injected voice-session implementation. `nil` when the host app hasn't linked and
+    /// supplied a concrete `VoiceHandling` (e.g. `AEPVoice`), in which case voice is simply off — the
+    /// same opt-in shape as the un-defaulted `TextSpeaking` speaker.
+    private let voiceHandler: VoiceHandling?
     private let dispatch: ((_ event: Event) -> Void)?
 
     /// Set once a `livekit_session` payload arrives on the bootstrap stream, so a stream that closes
@@ -74,8 +77,12 @@ final class ChatController: ObservableObject {
     var micEnabled: Bool { chatState == .idle }
     var sendEnabled: Bool { chatState == .idle && inputController.data.canSend }
 
-    /// Whether a LiveKit voice session is currently active.
+    /// Whether a voice session is currently active.
     var isVoiceSessionActive: Bool { chatState == .voiceSession }
+
+    /// Whether a concrete voice implementation was injected. When `false` (no `AEPVoice` wired in),
+    /// the voice-session UI is hidden and start requests are ignored.
+    var isVoiceAvailable: Bool { voiceHandler != nil }
 
     /// The current conversation session ID — the value sent as `sessionId` on requests and embedded
     /// in the LiveKit room name. Exposed so the header can surface it for debugging.
@@ -93,10 +100,11 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceHandler: VoiceHandling? = nil, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default) {
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.voiceHandler = voiceHandler
         self.dispatch = dispatch
 
         configureSpeech()
@@ -106,10 +114,11 @@ final class ChatController: ObservableObject {
 
     #if DEBUG
     // Internal for testing only
-    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil) {
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceHandler: VoiceHandling? = nil, dispatch: ((_ event: Event) -> Void)? = nil) {
         self.configuration = configuration
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.voiceHandler = voiceHandler
         self.dispatch = dispatch
 
         configureSpeech()
@@ -246,16 +255,17 @@ final class ChatController: ObservableObject {
     // MARK: - Voice Session (LiveKit)
 
     private func configureVoiceSession() {
-        // `onStateChange` is delivered on the main thread by the controller; hop onto the main actor
+        guard let voiceHandler else { return }
+        // `onStateChange` is delivered on the main thread by the handler; hop onto the main actor
         // to touch `@MainActor` state.
-        voiceSessionController.onStateChange = { [weak self] state in
+        voiceHandler.onStateChange = { [weak self] state in
             Task { @MainActor in
                 self?.handleVoiceSessionState(state)
             }
         }
         // Live transcript: render each update into the chat as it arrives (rather than buffering
         // until the session ends).
-        voiceSessionController.onTranscriptUpdate = { [weak self] role, text, isFinal in
+        voiceHandler.onTranscriptUpdate = { [weak self] role, text, isFinal in
             Task { @MainActor in
                 self?.applyVoiceTranscriptUpdate(role: role, text: text, isFinal: isFinal)
             }
@@ -265,7 +275,7 @@ final class ChatController: ObservableObject {
     /// Renders a live voice-turn update into `messages`: updates the in-progress bubble for the role
     /// in place, or starts a new one, closing it when the turn is final. Reused across turns via the
     /// per-role indices.
-    func applyVoiceTranscriptUpdate(role: VoiceSessionController.TranscriptEntry.Role, text: String, isFinal: Bool) {
+    func applyVoiceTranscriptUpdate(role: VoiceTranscriptRole, text: String, isFinal: Bool) {
         guard chatState == .voiceSession else { return }
         let isUser = role == .user
         let currentIndex = isUser ? voiceUserMessageIndex : voiceAssistantMessageIndex
@@ -286,9 +296,14 @@ final class ChatController: ObservableObject {
         }
     }
 
-    /// Starts a LiveKit voice session: bootstrap credentials over the existing conversation channel,
-    /// then connect the `Room`. Mutually exclusive with a processing turn and with dictation (FR-06).
+    /// Starts a voice session: bootstrap credentials over the existing conversation channel, then
+    /// connect via the injected `VoiceHandling`. Mutually exclusive with a processing turn and with
+    /// dictation (FR-06). No-ops when no voice handler was injected.
     func startVoiceSession() {
+        guard let voiceHandler else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored — no voice handler was injected.")
+            return
+        }
         guard chatState == .idle, !isRecording else {
             Log.warning(label: LOG_TAG, "startVoiceSession ignored (chatState=\(chatState), isRecording=\(isRecording)).")
             return
@@ -307,7 +322,7 @@ final class ChatController: ObservableObject {
                     Task { @MainActor in
                         guard let self else { return }
                         self.voiceBootstrapReceived = true
-                        await self.voiceSessionController.start(url: bootstrap.livekitUrl, token: bootstrap.token)
+                        await voiceHandler.start(url: bootstrap.livekitUrl, token: bootstrap.token)
                     }
                 },
                 onComplete: { [weak self] error in
@@ -327,18 +342,18 @@ final class ChatController: ObservableObject {
     }
 
     /// Ends the active voice session. The buffered transcript is flushed to `messages` via the
-    /// controller's state transition to `.idle` (see `handleVoiceSessionState`).
+    /// handler's state transition to `.idle` (see `handleVoiceSessionState`).
     func stopVoiceSession() {
         guard chatState == .voiceSession else {
             Log.warning(label: LOG_TAG, "stopVoiceSession ignored — no voice session is active.")
             return
         }
         Task { [weak self] in
-            await self?.voiceSessionController.stop()
+            await self?.voiceHandler?.stop()
         }
     }
 
-    private func handleVoiceSessionState(_ state: VoiceSessionController.State) {
+    private func handleVoiceSessionState(_ state: VoiceSessionState) {
         switch state {
         case .idle:
             // Normal end (user stop or worker-initiated) — flush the buffered transcript.

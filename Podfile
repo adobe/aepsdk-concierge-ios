@@ -54,10 +54,12 @@ end
 # 2.0.18, and 2.0.18+'s LiveKitUniFFI dependency was never published to trunk at all, so our
 # actual LiveKit version (2.17.0, needed for AudioManager/audio-session fixes — see the voice
 # design docs) cannot be resolved via CocoaPods. It's added as a native Xcode Swift Package
-# dependency directly on the AEPBrandConcierge and ConciergeDemoApp targets instead (see
-# AEPBrandConcierge.xcodeproj's Package Dependencies). This means CocoaPods-based external
-# consumers of AEPBrandConcierge currently cannot get the voice feature — tracked as an open
-# question in voice-livekit-connection-bootstrap-design.md (OQ-1).
+# dependency directly on the AEPVoice and ConciergeDemoApp targets instead (see
+# AEPBrandConcierge.xcodeproj's Package Dependencies). LiveKit is now isolated in the separate
+# AEPVoice library (Option A, voice-packaging-architecture-design.md); the core AEPBrandConcierge
+# pod has no LiveKit dependency. Host apps that want voice link AEPVoice via SwiftPM — voice
+# remains unavailable to purely CocoaPods-based integrations until LiveKit's own CocoaPods
+# publishing situation changes.
 
 def app_main
     lib_main
@@ -80,6 +82,12 @@ def test_utils
 end
 
 target 'AEPBrandConcierge' do
+  lib_main
+end
+
+# AEPVoice (opt-in voice library) needs the same first-party AEP modules; its LiveKit dependency
+# comes via SwiftPM, not CocoaPods (see the note above).
+target 'AEPVoice' do
   lib_main
 end
 

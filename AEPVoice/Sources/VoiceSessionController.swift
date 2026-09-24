@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPBrandConcierge
 import AEPServices
 import AVFoundation
 import Foundation
@@ -27,42 +28,25 @@ import UIKit
 /// Audio-session policy is handed to LiveKit's `AudioManager` rather than set directly — LiveKit
 /// remains the sole caller of `AVAudioSession.setActive`/`setCategory` while a voice `Room` exists
 /// (audio-session design NFR-01).
-final class VoiceSessionController: NSObject {
-
-    /// Lifecycle state of the voice session. Later phases extend this with the data-channel-driven
-    /// turn states (`processing`/`responding`); this phase only covers connection + mic publish.
-    enum State: Equatable {
-        /// No session — nothing connected.
-        case idle
-        /// Bootstrapped; connecting the `Room` and publishing the mic.
-        case connecting
-        /// Connected with the mic live, awaiting/among turns.
-        case listening
-        /// The session failed to start or dropped; carries a human-readable reason.
-        case failed(String)
-    }
-
-    /// One buffered line of the post-call transcript. Per FR-05 the PoC does not render turns live;
-    /// entries accumulate here and `ChatController` appends them to the chat once the session ends.
-    struct TranscriptEntry: Equatable {
-        enum Role { case user, assistant }
-        let role: Role
-        let text: String
-    }
+///
+/// This is the concrete, LiveKit-backed `VoiceHandling` implementation. It lives in the separate
+/// `AEPVoice` library so its LiveKit/WebRTC dependency stays off the core `AEPBrandConcierge`
+/// distribution; a host app links `AEPVoice`, constructs this, and injects it at `Concierge.show(...)`.
+public final class VoiceSessionController: NSObject, VoiceHandling {
 
     // MARK: - Public surface
 
     /// Current session state. Mutated only via `setState(_:)` (which lands on the main thread), so
     /// observers are always called on main.
-    private(set) var state: State = .idle
+    public private(set) var state: VoiceSessionState = .idle
 
     /// Invoked on the main thread whenever `state` changes.
-    var onStateChange: ((State) -> Void)?
+    public var onStateChange: ((VoiceSessionState) -> Void)?
 
     /// Invoked on the main thread as transcript content arrives, so the chat can render it live:
     /// `(role, running text so far, isFinal)`. A `role` turn is "closed" once `isFinal` is true;
     /// the next update for that role begins a new turn/bubble.
-    var onTranscriptUpdate: ((TranscriptEntry.Role, String, Bool) -> Void)?
+    public var onTranscriptUpdate: ((VoiceTranscriptRole, String, Bool) -> Void)?
 
     // MARK: - Private
 
@@ -80,7 +64,7 @@ final class VoiceSessionController: NSObject {
 
     // MARK: - Init
 
-    override init() {
+    public override init() {
         room = Room()
         super.init()
         room.add(delegate: self)
@@ -116,7 +100,7 @@ final class VoiceSessionController: NSObject {
     /// - Parameters:
     ///   - url: LiveKit server URL from the bootstrap response.
     ///   - token: LiveKit access token from the bootstrap response.
-    func start(url: String, token: String) async {
+    public func start(url: String, token: String) async {
         guard state == .idle || isFailed else {
             Log.debug(label: LOG_TAG, "start() ignored — a voice session is already active (state=\(state)).")
             return
@@ -172,7 +156,7 @@ final class VoiceSessionController: NSObject {
 
     /// Ends the session: disconnects the `Room` (which lets LiveKit's `AudioManager` deactivate the
     /// shared audio session per FR-07) and returns to `idle`.
-    func stop() async {
+    public func stop() async {
         await room.disconnect()
         setState(.idle)
     }
@@ -251,7 +235,7 @@ final class VoiceSessionController: NSObject {
         }
     }
 
-    private func setState(_ newState: State) {
+    private func setState(_ newState: VoiceSessionState) {
         let apply = { [weak self] in
             guard let self, self.state != newState else { return }
             self.state = newState
@@ -269,7 +253,7 @@ final class VoiceSessionController: NSObject {
 
 extension VoiceSessionController: RoomDelegate {
 
-    func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
+    public func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
         if let error {
             Log.warning(label: LOG_TAG, "Voice Room disconnected with error: \(error.localizedDescription)")
             setState(.failed(error.localizedDescription))
@@ -279,12 +263,12 @@ extension VoiceSessionController: RoomDelegate {
         }
     }
 
-    func room(_ room: Room, didFailToConnectWithError error: LiveKitError?) {
+    public func room(_ room: Room, didFailToConnectWithError error: LiveKitError?) {
         Log.warning(label: LOG_TAG, "Voice Room failed to connect: \(error?.localizedDescription ?? "unknown error")")
         setState(.failed(error?.localizedDescription ?? "Failed to connect to the voice session."))
     }
 
-    func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
+    public func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
         // LiveKit auto-subscribes and its AudioManager renders the remote audio track; this is just
         // observability for the remote (TTS) track arriving.
         if publication.kind == .audio {
@@ -292,7 +276,7 @@ extension VoiceSessionController: RoomDelegate {
         }
     }
 
-    func room(_ room: Room, participant: RemoteParticipant?, didReceiveData data: Data, forTopic topic: String, encryptionType: EncryptionType) {
+    public func room(_ room: Room, participant: RemoteParticipant?, didReceiveData data: Data, forTopic topic: String, encryptionType: EncryptionType) {
         guard let message = DataChannelMessageParser.parse(data) else {
             Log.trace(label: LOG_TAG, "Dropped an unrecognized data-channel message on topic '\(topic)'.")
             return
@@ -342,7 +326,7 @@ private extension VoiceSessionController {
     }
 
     /// Emits a trimmed running-text update, suppressing empty non-final noise.
-    func emit(_ role: TranscriptEntry.Role, _ text: String, isFinal: Bool) {
+    func emit(_ role: VoiceTranscriptRole, _ text: String, isFinal: Bool) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || isFinal else { return }
         onTranscriptUpdate?(role, trimmed, isFinal)

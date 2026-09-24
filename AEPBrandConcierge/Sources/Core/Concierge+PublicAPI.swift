@@ -58,11 +58,13 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
+    ///   - voiceHandler: Optional real-time voice implementation to use (e.g. the LiveKit-backed
+    ///     `VoiceSessionController` from `AEPVoice`). When omitted, the voice-session UI is hidden.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
-    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
+    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceHandler: VoiceHandling? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config in
-            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, voiceHandler: voiceHandler, handleLink: handleLink)
 
             let session = resolveSession(configuration: config)
             ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
@@ -131,11 +133,13 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle displayed under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
+    ///   - voiceHandler: Optional real-time voice implementation to use (e.g. the LiveKit-backed
+    ///     `VoiceSessionController` from `AEPVoice`). When omitted, the voice-session UI is hidden.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
-    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceHandler: VoiceHandling? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config in
-            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, voiceHandler: voiceHandler, handleLink: handleLink)
 
             attachConciergeUIKitHost(configuration: config, presentingViewController: presentingViewController)
         }
@@ -152,12 +156,14 @@ extension Concierge {
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?,
+        voiceHandler: VoiceHandling?,
         handleLink: ((URL) -> Bool)?
     ) {
         self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
         self.chatSubtitle = subtitle
         self.speechCapturer = speechCapturer
         self.textSpeaker = textSpeaker
+        self.voiceHandler = voiceHandler
         self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
     }
 
@@ -251,6 +257,7 @@ private extension Concierge {
             subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
+            voiceHandler: voiceHandler,
             dispatch: { event in MobileCore.dispatch(event: event) },
             urlSessionConfiguration: urlSessionConfiguration
         )

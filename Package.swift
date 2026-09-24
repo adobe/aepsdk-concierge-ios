@@ -22,7 +22,11 @@ let package = Package(
     // minimum to be consistent across the whole dependency graph.
     platforms: [.iOS(.v15), .macOS(.v10_15)],
     products: [
-        .library(name: "AEPBrandConcierge", targets: ["AEPBrandConcierge"])
+        .library(name: "AEPBrandConcierge", targets: ["AEPBrandConcierge"]),
+        // Opt-in voice library. Kept separate so its LiveKit/WebRTC dependency, app-size cost, and
+        // CocoaPods incompatibility land only on host apps that actually use voice (see
+        // Documentation/Implementation/voice-packaging-architecture-design.md, Option A).
+        .library(name: "AEPVoice", targets: ["AEPVoice"])
     ],
     dependencies: [
         .package(url: "https://github.com/adobe/aepsdk-core-ios.git", .upToNextMajor(from: "5.7.0")),
@@ -34,10 +38,17 @@ let package = Package(
             dependencies: [
                 .product(name: "AEPCore", package: "aepsdk-core-ios"),
                 .product(name: "AEPServices", package: "aepsdk-core-ios"),
-                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios"),
-                .product(name: "LiveKit", package: "client-sdk-swift")
+                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios")
             ],
             path: "AEPBrandConcierge/Sources",
-            exclude: ["Info.plist", "AEPBrandConcierge.h"])
+            exclude: ["Info.plist", "AEPBrandConcierge.h"]),
+        // Concrete, LiveKit-backed implementation of `AEPBrandConcierge`'s `VoiceHandling` protocol.
+        .target(name: "AEPVoice",
+            dependencies: [
+                "AEPBrandConcierge",
+                .product(name: "AEPServices", package: "aepsdk-core-ios"),
+                .product(name: "LiveKit", package: "client-sdk-swift")
+            ],
+            path: "AEPVoice/Sources")
     ]
 )

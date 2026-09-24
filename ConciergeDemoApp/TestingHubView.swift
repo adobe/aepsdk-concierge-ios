@@ -12,6 +12,7 @@
 
 import SwiftUI
 import AEPBrandConcierge
+import AEPVoice
 
 /// Consolidates the test-only scenarios (link handling, auth token provider, "Buy now" mock
 /// response) behind one segmented picker instead of separate top-level tabs. Keeping the tab bar
@@ -76,6 +77,7 @@ struct TestingHubView: View {
                     surfaces: ["mobileapp://conciergetestapp/home"],
                     title: "Concierge",
                     subtitle: "Powered by Adobe",
+                    voiceHandler: VoiceSessionController(),
                     handleLink: handleLink
                 )
             }),
