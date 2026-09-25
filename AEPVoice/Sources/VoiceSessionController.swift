@@ -20,10 +20,11 @@ import UIKit
 /// Owns the LiveKit `Room` for a voice session: connect using bootstrapped credentials, publish the
 /// local mic track, and let LiveKit auto-subscribe/render the worker's remote (TTS) audio track.
 ///
-/// Sibling to `SpeechController` (not built on it) — the two voice paths are mutually exclusive and
-/// share no code (see the LiveKit voice design docs). Combines web's `VoiceTransport` and
-/// `LiveKitVoiceManager` responsibilities into one controller, including data-channel turn handling;
-/// it surfaces state and transcript via the `VoiceHandling` callbacks rather than touching `ChatController`.
+/// A separate voice path from dictation (`SpeechController`, internal to `AEPBrandConcierge`): not
+/// built on it, mutually exclusive with it, and shares no code (see the LiveKit voice design docs).
+/// Combines web's `VoiceTransport` and `LiveKitVoiceManager` responsibilities into one controller,
+/// including data-channel turn handling; it surfaces state and transcript via the `VoiceHandling`
+/// callbacks rather than touching `ChatController`.
 ///
 /// Audio-session policy is handed to LiveKit's `AudioManager` rather than set directly — LiveKit
 /// remains the sole caller of `AVAudioSession.setActive`/`setCategory` while a voice `Room` exists
