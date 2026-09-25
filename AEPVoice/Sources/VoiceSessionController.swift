@@ -29,9 +29,8 @@ import UIKit
 /// remains the sole caller of `AVAudioSession.setActive`/`setCategory` while a voice `Room` exists
 /// (audio-session design NFR-01).
 ///
-/// This is the concrete, LiveKit-backed `VoiceHandling` implementation. It lives in the separate
-/// `AEPVoice` library so its LiveKit/WebRTC dependency stays off the core `AEPBrandConcierge`
-/// distribution; a host app links `AEPVoice`, constructs this, and injects it at `Concierge.show(...)`.
+/// The concrete `VoiceHandling` implementation, kept in the separate `AEPVoice` library so LiveKit
+/// stays off the core distribution.
 public final class VoiceSessionController: NSObject, VoiceHandling {
 
     // MARK: - Public surface

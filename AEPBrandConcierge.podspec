@@ -18,16 +18,10 @@ Pod::Spec.new do |s|
   s.dependency 'AEPCore', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPServices', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPEdgeIdentity', '>= 5.0.0', '< 6.0.0'
-  # NOTE: This pod ships the core Brand Concierge extension only — it has NO LiveKit dependency.
-  # The real-time voice feature lives in a separate library, AEPVoice (LiveKit-backed), which is
-  # distributed via Swift Package Manager and is NOT offered via CocoaPods: CocoaPods trunk stopped
-  # publishing LiveKitClient at 2.0.18, and the required version (2.17.0, for AudioManager/
-  # audio-session fixes) depends on LiveKitUniFFI, which was never published to trunk at all — so
-  # LiveKit cannot be resolved via CocoaPods. Voice is therefore SPM-only by design (Option A in
-  # Documentation/Implementation/voice-packaging-architecture-design.md); CocoaPods-based
-  # integrations of this pod are unaffected and simply don't get voice. Because the LiveKit-backed
-  # sources now live under AEPVoice/Sources (not AEPBrandConcierge/Sources), the glob below no
-  # longer picks up any `import LiveKit`, so `pod lib lint` succeeds.
+  # NOTE: Voice lives in the separate AEPVoice library, so this pod has no LiveKit dependency.
+  # Voice is SPM-only: LiveKit 2.17.0 can't be resolved via CocoaPods (trunk stopped at LiveKitClient
+  # 2.0.18, and its LiveKitUniFFI dependency was never published to trunk). See Option A in
+  # Documentation/Implementation/voice-packaging-architecture-design.md.
 
   s.source_files = 'AEPBrandConcierge/Sources/**/*.swift'
 

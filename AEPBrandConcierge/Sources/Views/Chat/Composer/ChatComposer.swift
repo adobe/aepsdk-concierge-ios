@@ -36,7 +36,6 @@ struct ChatComposer: View {
     var onLinkTap: ((URL) -> Void)?
     /// Minimal LiveKit voice-session trigger (the full voice-mode UI is a separate design). Defaults
     /// keep existing call sites (snapshot tests) valid.
-    /// Whether a concrete voice implementation was injected; the trigger is hidden when `false`.
     var isVoiceAvailable: Bool = false
     var isVoiceSessionActive: Bool = false
     var onVoiceTap: () -> Void = {}

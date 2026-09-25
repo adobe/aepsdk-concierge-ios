@@ -23,9 +23,7 @@ let package = Package(
     platforms: [.iOS(.v15), .macOS(.v10_15)],
     products: [
         .library(name: "AEPBrandConcierge", targets: ["AEPBrandConcierge"]),
-        // Opt-in voice library. Kept separate so its LiveKit/WebRTC dependency, app-size cost, and
-        // CocoaPods incompatibility land only on host apps that actually use voice (see
-        // Documentation/Implementation/voice-packaging-architecture-design.md, Option A).
+        // Opt-in voice library, separate so LiveKit lands only on host apps that use voice (Option A).
         .library(name: "AEPVoice", targets: ["AEPVoice"])
     ],
     dependencies: [
@@ -42,7 +40,6 @@ let package = Package(
             ],
             path: "AEPBrandConcierge/Sources",
             exclude: ["Info.plist", "AEPBrandConcierge.h"]),
-        // Concrete, LiveKit-backed implementation of `AEPBrandConcierge`'s `VoiceHandling` protocol.
         .target(name: "AEPVoice",
             dependencies: [
                 "AEPBrandConcierge",

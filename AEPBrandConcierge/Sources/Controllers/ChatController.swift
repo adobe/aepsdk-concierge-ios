@@ -46,9 +46,6 @@ final class ChatController: ObservableObject {
     private let chatService: ConciergeChatService
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
-    /// Optional, injected voice-session implementation. `nil` when the host app hasn't linked and
-    /// supplied a concrete `VoiceHandling` (e.g. `AEPVoice`), in which case voice is simply off — the
-    /// same opt-in shape as the un-defaulted `TextSpeaking` speaker.
     private let voiceHandler: VoiceHandling?
     private let dispatch: ((_ event: Event) -> Void)?
 
@@ -80,8 +77,6 @@ final class ChatController: ObservableObject {
     /// Whether a voice session is currently active.
     var isVoiceSessionActive: Bool { chatState == .voiceSession }
 
-    /// Whether a concrete voice implementation was injected. When `false` (no `AEPVoice` wired in),
-    /// the voice-session UI is hidden and start requests are ignored.
     var isVoiceAvailable: Bool { voiceHandler != nil }
 
     /// The current conversation session ID — the value sent as `sessionId` on requests and embedded
@@ -298,7 +293,7 @@ final class ChatController: ObservableObject {
 
     /// Starts a voice session: bootstrap credentials over the existing conversation channel, then
     /// connect via the injected `VoiceHandling`. Mutually exclusive with a processing turn and with
-    /// dictation (FR-06). No-ops when no voice handler was injected.
+    /// dictation (FR-06).
     func startVoiceSession() {
         guard let voiceHandler else {
             Log.warning(label: LOG_TAG, "startVoiceSession ignored — no voice handler was injected.")

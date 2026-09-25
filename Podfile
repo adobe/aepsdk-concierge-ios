@@ -50,24 +50,13 @@ def lib_dev
     pod 'AEPServices', :git => $dev_repo, :branch => $dev_branch
 end
 
-# LiveKit is NOT a CocoaPods dependency: CocoaPods trunk stopped publishing LiveKitClient at
-# 2.0.18, and 2.0.18+'s LiveKitUniFFI dependency was never published to trunk at all, so our
-# actual LiveKit version (2.17.0, needed for AudioManager/audio-session fixes — see the voice
-# design docs) cannot be resolved via CocoaPods. It's added as a native Xcode Swift Package
-# dependency directly on the AEPVoice and ConciergeDemoApp targets instead (see
-# AEPBrandConcierge.xcodeproj's Package Dependencies). LiveKit is now isolated in the separate
-# AEPVoice library (Option A, voice-packaging-architecture-design.md); the core AEPBrandConcierge
-# pod has no LiveKit dependency. Host apps that want voice link AEPVoice via SwiftPM — voice
-# remains unavailable to purely CocoaPods-based integrations until LiveKit's own CocoaPods
-# publishing situation changes.
+# LiveKit is NOT a CocoaPods dependency (trunk can't resolve 2.17.0; see the podspec/design docs).
+# It's added as an Xcode Swift Package dependency on the AEPVoice and ConciergeDemoApp targets.
 #
-# NOTE on the ConciergeDemoApp LiveKit link: the demo does NOT import LiveKit — it only imports
-# AEPVoice. LiveKit is kept on the demo target purely so Xcode embeds LiveKit's transitive binary
-# xcframeworks (LiveKitWebRTC, RustLiveKitUniFFI) into the .app bundle. In this xcodeproj-based
-# host, Xcode does not auto-embed those binaries through the intermediate AEPVoice.framework, so
-# removing this line builds fine but crashes at launch (dyld: @rpath/LiveKitWebRTC.framework not
-# found — verified). A real SPM-integrated host app gets this embedding automatically from the
-# AEPVoice product and never names LiveKit itself.
+# ConciergeDemoApp doesn't import LiveKit — the link only forces Xcode to embed LiveKit's binary
+# xcframeworks (LiveKitWebRTC, RustLiveKitUniFFI) into the .app. Xcode won't embed them through the
+# intermediate AEPVoice.framework here, so dropping this link builds but crashes at launch (verified).
+# An SPM-integrated host app gets this embedding automatically and never names LiveKit.
 
 def app_main
     lib_main

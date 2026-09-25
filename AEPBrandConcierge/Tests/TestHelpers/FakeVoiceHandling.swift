@@ -13,9 +13,7 @@
 import Foundation
 @testable import AEPBrandConcierge
 
-/// Dependency-free `VoiceHandling` double for `ChatController` tests, so the base module's test
-/// target never needs the concrete LiveKit-backed implementation (which now lives in `AEPVoice`).
-/// Records calls and lets tests drive state/transcript callbacks synchronously.
+/// `VoiceHandling` test double so the base module's tests don't need the concrete `AEPVoice` type.
 final class FakeVoiceHandling: VoiceHandling {
     private(set) var state: VoiceSessionState = .idle
     var onStateChange: ((VoiceSessionState) -> Void)?
@@ -40,13 +38,11 @@ final class FakeVoiceHandling: VoiceHandling {
 
     // MARK: - Test drivers
 
-    /// Sets `state` and fires `onStateChange`, mimicking the real handler's main-thread emission.
     func setState(_ newState: VoiceSessionState) {
         state = newState
         onStateChange?(newState)
     }
 
-    /// Fires `onTranscriptUpdate` as the real handler would.
     func emitTranscript(_ role: VoiceTranscriptRole, _ text: String, isFinal: Bool) {
         onTranscriptUpdate?(role, text, isFinal)
     }
