@@ -60,6 +60,14 @@ end
 # pod has no LiveKit dependency. Host apps that want voice link AEPVoice via SwiftPM — voice
 # remains unavailable to purely CocoaPods-based integrations until LiveKit's own CocoaPods
 # publishing situation changes.
+#
+# NOTE on the ConciergeDemoApp LiveKit link: the demo does NOT import LiveKit — it only imports
+# AEPVoice. LiveKit is kept on the demo target purely so Xcode embeds LiveKit's transitive binary
+# xcframeworks (LiveKitWebRTC, RustLiveKitUniFFI) into the .app bundle. In this xcodeproj-based
+# host, Xcode does not auto-embed those binaries through the intermediate AEPVoice.framework, so
+# removing this line builds fine but crashes at launch (dyld: @rpath/LiveKitWebRTC.framework not
+# found — verified). A real SPM-integrated host app gets this embedding automatically from the
+# AEPVoice product and never names LiveKit itself.
 
 def app_main
     lib_main
