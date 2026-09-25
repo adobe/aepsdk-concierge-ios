@@ -26,7 +26,7 @@ public enum VoiceTranscriptRole: Equatable {
 
 /// Dependency-free seam through which `ChatController` drives a voice session, kept free of
 /// LiveKit/WebRTC so the core module never links them. A host app injects a concrete implementation
-/// (e.g. `AEPVoice`'s `VoiceSessionController`) at `Concierge.show(...)`; with none injected, voice is off.
+/// at `Concierge.show(...)`; with none injected, voice is off.
 public protocol VoiceHandling: AnyObject {
     var state: VoiceSessionState { get }
 

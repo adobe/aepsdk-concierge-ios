@@ -58,7 +58,7 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    ///   - voiceHandler: Optional voice implementation to use (e.g. `AEPVoice`'s `VoiceSessionController`).
+    ///   - voiceHandler: Optional voice implementation to use.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceHandler: VoiceHandling? = nil, handleLink: ((URL) -> Bool)? = nil) {
@@ -132,7 +132,7 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle displayed under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    ///   - voiceHandler: Optional voice implementation to use (e.g. `AEPVoice`'s `VoiceSessionController`).
+    ///   - voiceHandler: Optional voice implementation to use.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceHandler: VoiceHandling? = nil, handleLink: ((URL) -> Bool)? = nil) {
