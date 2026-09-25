@@ -21,9 +21,9 @@ import UIKit
 /// local mic track, and let LiveKit auto-subscribe/render the worker's remote (TTS) audio track.
 ///
 /// Sibling to `SpeechController` (not built on it) — the two voice paths are mutually exclusive and
-/// share no code (see the LiveKit voice design docs). This PoC combines web's `VoiceTransport` and
-/// `LiveKitVoiceManager` responsibilities into one controller; the data-channel turn state machine
-/// and `ChatController` wiring are added in a later phase and are intentionally absent here.
+/// share no code (see the LiveKit voice design docs). Combines web's `VoiceTransport` and
+/// `LiveKitVoiceManager` responsibilities into one controller, including data-channel turn handling;
+/// it surfaces state and transcript via the `VoiceHandling` callbacks rather than touching `ChatController`.
 ///
 /// Audio-session policy is handed to LiveKit's `AudioManager` rather than set directly — LiveKit
 /// remains the sole caller of `AVAudioSession.setActive`/`setCategory` while a voice `Room` exists
