@@ -143,6 +143,10 @@ public class Concierge: NSObject, Extension {
             return
         }
 
+        // Log namespace names only, never id values (PII)
+        let identityMap = edgeIdentitySharedState.identityMap
+        Log.debug(label: ConciergeConstants.LOG_TAG, "Updating concierge configuration with identityMap namespaces: \(identityMap?.keys.sorted() ?? [])")
+
         guard let server = configSharedState.conciergeServer else {
             errorMessage = "Unable to show Brand Concierge UI - server information is unavailable from configuration."
             return
@@ -160,7 +164,7 @@ public class Concierge: NSObject, Extension {
             return
         }
 
-        let config = ConciergeConfiguration(consentCollectValue: consentValue, datastream: datastream, ecid: ecid, server: server, region: region, surfaces: surfaces)
+        let config = ConciergeConfiguration(consentCollectValue: consentValue, datastream: datastream, ecid: ecid, identityMap: identityMap, server: server, region: region, surfaces: surfaces)
         let responseEvent = event.createResponseEvent(name: ConciergeConstants.EventName.SHOW_UI_RESPONSE,
                                                       type: ConciergeConstants.EventType.concierge,
                                                       source: EventSource.responseContent,
@@ -181,43 +185,63 @@ public class Concierge: NSObject, Extension {
         Log.trace(label: ConciergeConstants.LOG_TAG, "Received data handoff event - '\(event.id.uuidString)'.")
 
         guard let payload = event.data?[ConciergeConstants.DataHandoffEventData.Key.PAYLOAD] as? ConciergeDataHandoffEvent else {
-            dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: .missingEventData))
-            return
-        }
-
-        guard !payload.routingHint.isEmpty else {
-            dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: .missingRoutingHint))
+            dispatch(event: createDataHandoffResponseEvent(for: event, error: .missingEventData))
             return
         }
 
         guard !payload.xdmFields.isEmpty else {
-            dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: .emptyXdmFields))
+            dispatch(event: createDataHandoffResponseEvent(for: event, error: .emptyXdmFields))
             return
         }
 
         guard JSONSerialization.isValidJSONObject(payload.xdmFields) else {
-            dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: .invalidXdmFieldValue))
+            dispatch(event: createDataHandoffResponseEvent(for: event, error: .invalidXdmFieldValue))
             return
         }
 
         guard payload.xdmFields[ConciergeConstants.Request.Keys.IDENTITY_MAP] == nil else {
-            dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: .reservedKeyCollision))
+            dispatch(event: createDataHandoffResponseEvent(for: event, error: .reservedKeyCollision))
             return
         }
 
-        Log.trace(label: ConciergeConstants.LOG_TAG, "Data handoff event accepted - '\(event.id.uuidString)'.")
-        dispatch(event: createDataHandoffResponseEvent(for: event, rejectReason: nil))
+        Task { @MainActor in
+            // `resolveSession` gates reuse on `isSessionActive`, so a handoff has to clear the same
+            // bar - an expired session's controller is still in memory but no longer valid.
+            guard let controller = Concierge.currentSession?.controller,
+                  SessionManager.shared.isSessionActive else {
+                dispatch(event: createDataHandoffResponseEvent(for: event, error: .noActiveSession))
+                return
+            }
+
+            // The controller owns chat state, so it is the single authority on whether a turn can
+            // start. It reports back `false` without side effects when one is already in flight.
+            let started = controller.handleDataHandoff(routingHint: payload.routingHint,
+                                                       xdmFields: payload.xdmFields,
+                                                       localMessage: payload.localMessage) { serviceError in
+                // `self` is captured strongly on purpose. This closure lives only for one turn and
+                // the extension is an app-lifetime singleton, so there is no retain cycle. A weak
+                // capture could drop the response event entirely.
+                let error = serviceError.map { ConciergeDataHandoffError(serviceError: $0) }
+                self.dispatch(event: self.createDataHandoffResponseEvent(for: event, error: error))
+            }
+
+            guard started else {
+                dispatch(event: createDataHandoffResponseEvent(for: event, error: .chatInProgress))
+                return
+            }
+        }
     }
 
-    private func createDataHandoffResponseEvent(for event: Event, rejectReason: ConciergeDataHandoffRejectReason?) -> Event {
-        if let rejectReason = rejectReason {
-            Log.warning(label: ConciergeConstants.LOG_TAG, "Rejected data handoff event '\(event.id.uuidString)': \(rejectReason.rawValue)")
+    private func createDataHandoffResponseEvent(for event: Event, error: ConciergeDataHandoffError?) -> Event {
+        if let error {
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Data handoff failed for event '\(event.id.uuidString)': \(error.code)")
         }
 
         var data: [String: Any] = [
-            ConciergeConstants.DataHandoffEventData.Key.ACCEPTED: rejectReason == nil
+            ConciergeConstants.DataHandoffEventData.Key.ACCEPTED: error == nil
         ]
-        data[ConciergeConstants.DataHandoffEventData.Key.REJECT_REASON] = rejectReason?.rawValue
+        data[ConciergeConstants.DataHandoffEventData.Key.ERROR_CODE] = error?.code
+        data[ConciergeConstants.DataHandoffEventData.Key.ERROR_MESSAGE] = error?.wireMessage
 
         return event.createResponseEvent(name: ConciergeConstants.EventName.DATA_HANDOFF_RESPONSE,
                                          type: ConciergeConstants.EventType.concierge,

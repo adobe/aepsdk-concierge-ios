@@ -127,6 +127,11 @@ public struct ConciergeCopy: Codable {
     public var feedbackHelpfulLabel: String
     public var suggestionsHeader: String
 
+    /// Fallback copy for a failed conversation turn. Shared so the controller can render the same
+    /// text into the transcript when no themed value has been applied (a data handoff can fail
+    /// before the chat UI has ever appeared).
+    public static let defaultErrorNetwork = "I'm sorry, I'm having trouble connecting to our services right now."
+
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
         case welcomeSubheading = "welcome.subheading"
@@ -169,7 +174,7 @@ public struct ConciergeCopy: Codable {
         carouselPrevAria: String = "Previous cards",
         carouselNextAria: String = "Next cards",
         scrollBottomAria: String = "Scroll to bottom",
-        errorNetwork: String = "I'm sorry, I'm having trouble connecting to our services right now.",
+        errorNetwork: String = ConciergeCopy.defaultErrorNetwork,
         loadingMessage: String = "Generating response from our knowledge base",
         feedbackDialogTitlePositive: String = "Your feedback is appreciated",
         feedbackDialogTitleNegative: String = "Your feedback is appreciated",
@@ -229,7 +234,7 @@ public struct ConciergeCopy: Codable {
         carouselPrevAria = try container.decodeIfPresent(String.self, forKey: .carouselPrevAria) ?? "Previous cards"
         carouselNextAria = try container.decodeIfPresent(String.self, forKey: .carouselNextAria) ?? "Next cards"
         scrollBottomAria = try container.decodeIfPresent(String.self, forKey: .scrollBottomAria) ?? "Scroll to bottom"
-        errorNetwork = try container.decodeIfPresent(String.self, forKey: .errorNetwork) ?? "I'm sorry, I'm having trouble connecting to our services right now."
+        errorNetwork = try container.decodeIfPresent(String.self, forKey: .errorNetwork) ?? ConciergeCopy.defaultErrorNetwork
         loadingMessage = try container.decodeIfPresent(String.self, forKey: .loadingMessage) ?? "Generating response from our knowledge base"
         feedbackDialogTitlePositive = try container.decodeIfPresent(String.self, forKey: .feedbackDialogTitlePositive) ?? "Your feedback is appreciated"
         feedbackDialogTitleNegative = try container.decodeIfPresent(String.self, forKey: .feedbackDialogTitleNegative) ?? "Your feedback is appreciated"
