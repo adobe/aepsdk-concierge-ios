@@ -109,6 +109,8 @@ public struct ConciergeLayout: Codable {
     public var productCardCtaButtonVerticalPadding: CGFloat
     public var productCardCtaButtonFontSize: CGFloat
     public var productCardCtaButtonFontWeight: CodableFontWeight
+    /// Outline width for the secondary product card CTA (shares radius/padding/font with the primary).
+    public var productCardSecondaryCtaButtonBorderWidth: CGFloat
     public var ctaButtonBorderRadius: CGFloat
     public var ctaButtonHorizontalPadding: CGFloat
     public var ctaButtonVerticalPadding: CGFloat
@@ -220,6 +222,7 @@ public struct ConciergeLayout: Codable {
         productCardCtaButtonVerticalPadding: CGFloat = 8,
         productCardCtaButtonFontSize: CGFloat = 12,
         productCardCtaButtonFontWeight: CodableFontWeight = .semibold,
+        productCardSecondaryCtaButtonBorderWidth: CGFloat = 1,
         ctaButtonBorderRadius: CGFloat = 99,
         ctaButtonHorizontalPadding: CGFloat = 16,
         ctaButtonVerticalPadding: CGFloat = 12,
@@ -313,6 +316,7 @@ public struct ConciergeLayout: Codable {
         self.productCardCtaButtonVerticalPadding = productCardCtaButtonVerticalPadding
         self.productCardCtaButtonFontSize = productCardCtaButtonFontSize
         self.productCardCtaButtonFontWeight = productCardCtaButtonFontWeight
+        self.productCardSecondaryCtaButtonBorderWidth = productCardSecondaryCtaButtonBorderWidth
         self.ctaButtonBorderRadius = ctaButtonBorderRadius
         self.ctaButtonHorizontalPadding = ctaButtonHorizontalPadding
         self.ctaButtonVerticalPadding = ctaButtonVerticalPadding

@@ -251,6 +251,9 @@ private extension ThemeKeyCoverageTests {
         // Colors - Product Card CTA Button
         "product-card-cta-button-background-color": "colors.productCardCtaButton.background",
         "product-card-cta-button-text-color": "colors.productCardCtaButton.text",
+        "product-card-secondary-cta-button-background-color": "colors.productCardSecondaryCtaButton.background",
+        "product-card-secondary-cta-button-text-color": "colors.productCardSecondaryCtaButton.text",
+        "product-card-secondary-cta-button-border-color": "colors.productCardSecondaryCtaButton.border",
 
         // Layout - Product Card
         "product-card-title-font-size": "layout.productCardTitleFontSize",
@@ -286,6 +289,7 @@ private extension ThemeKeyCoverageTests {
         "product-card-cta-button-vertical-padding": "layout.productCardCtaButtonVerticalPadding",
         "product-card-cta-button-font-size": "layout.productCardCtaButtonFontSize",
         "product-card-cta-button-font-weight": "layout.productCardCtaButtonFontWeight",
+        "product-card-secondary-cta-button-border-width": "layout.productCardSecondaryCtaButtonBorderWidth",
 
         // Colors - CTA Button
         "cta-button-background-color": "colors.ctaButton.background",

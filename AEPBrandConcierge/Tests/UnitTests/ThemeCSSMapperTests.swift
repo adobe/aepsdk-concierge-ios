@@ -592,6 +592,38 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.colors.productCardCtaButton.text.color.toHexString(), "#FFFFFF")
     }
 
+    func test_productCardSecondaryCtaButtonBackgroundColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-background-color", cssValue: "#101820", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.background.color.toHexString(), "#101820")
+    }
+
+    func test_productCardSecondaryCtaButtonTextColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-text-color", cssValue: "#BB5811", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.text.color.toHexString(), "#BB5811")
+    }
+
+    func test_productCardSecondaryCtaButtonBorderColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-border-color", cssValue: "#123456", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.border.color.toHexString(), "#123456")
+    }
+
+    func test_productCardSecondaryCtaButtonBorderWidth_mapsToLayout() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-border-width", cssValue: "2px", to: &theme)
+
+        XCTAssertEqual(theme.layout.productCardSecondaryCtaButtonBorderWidth, 2)
+    }
+
     // MARK: - Product Card Layout Mapping Tests
 
     func test_productCardTitleFontSize_mapsToLayout() {

@@ -23,6 +23,8 @@ private enum ProductDetailCardDimensions {
     static let priceLetterSpacing: CGFloat = -0.5
     static let badgeHorizontalPadding: CGFloat = 12
     static let badgeVerticalPadding: CGFloat = 4
+    /// Gap between side-by-side CTA buttons.
+    static let ctaButtonSpacing: CGFloat = 8
 }
 
 /// Product card with image, badge, title, subtitle, and price.
@@ -149,9 +151,7 @@ struct ProductDetailCardView: View {
     /// nothing on tap (`onTap` is only invoked after that guard, so no tracking fires either).
     /// Kept independent of `theme`/rendering so it's unit-testable without a view hierarchy.
     var shouldShowProductCardCtaButton: Bool {
-        guard let action = data.primaryButton, let url = action.url else { return false }
-        return !action.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        data.ctas.contains { $0.role == .primary }
     }
 }
 
@@ -290,31 +290,68 @@ private extension ProductDetailCardView {
         .frame(width: innerContentWidth, alignment: .topLeading)
     }
 
-    /// Text-only CTA button rendered from the payload's `primary` action (`data.primaryButton`),
-    /// themeable via `--product-card-cta-button-*`. The label is whatever the payload provides
-    /// (e.g. "Buy now", "Add to cart") — not a fixed "buy now" action. See
-    /// `shouldShowProductCardCtaButton` for when it renders.
+    /// Renders `data.ctas` side by side: primary filled, secondary outlined.
     @ViewBuilder
     var ctaButtonView: some View {
-        if shouldShowProductCardCtaButton, let action = data.primaryButton {
-            Button(action: { handleProductCardCtaButtonTap(action) }) {
-                Text(action.text)
-                    .font(.system(
-                        size: theme.layout.productCardCtaButtonFontSize,
-                        weight: theme.layout.productCardCtaButtonFontWeight.toSwiftUIFontWeight()
-                    ))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .foregroundColor(theme.colors.productCardCtaButton.text.color)
-                    .padding(.horizontal, theme.layout.productCardCtaButtonHorizontalPadding)
-                    .padding(.vertical, theme.layout.productCardCtaButtonVerticalPadding)
-                    .background(
-                        RoundedRectangle(cornerRadius: theme.layout.productCardCtaButtonBorderRadius, style: .continuous)
-                            .fill(theme.colors.productCardCtaButton.background.color)
-                    )
+        let ctas = data.ctas
+        if !ctas.isEmpty {
+            // Equal-width only for multiple CTAs; a lone CTA keeps its intrinsic width.
+            let fillWidth = ctas.count > 1
+            HStack(spacing: ProductDetailCardDimensions.ctaButtonSpacing) {
+                ForEach(ctas) { cta in
+                    ctaButton(for: cta, fillWidth: fillWidth)
+                }
             }
-            .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel(action.text)
+        }
+    }
+
+    /// A CTA button styled by `role`; `fillWidth` makes it share the row width equally.
+    func ctaButton(for cta: ProductCardCTA, fillWidth: Bool) -> some View {
+        Button(action: { handleProductCardCtaButtonTap(ActionButton(text: cta.text, url: cta.url)) }) {
+            Text(cta.text)
+                .font(.system(
+                    size: theme.layout.productCardCtaButtonFontSize,
+                    weight: theme.layout.productCardCtaButtonFontWeight.toSwiftUIFontWeight()
+                ))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: fillWidth ? .infinity : nil)
+                .foregroundColor(ctaTextColor(for: cta.role))
+                .padding(.horizontal, theme.layout.productCardCtaButtonHorizontalPadding)
+                .padding(.vertical, theme.layout.productCardCtaButtonVerticalPadding)
+                .background(ctaButtonBackground(for: cta.role))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(cta.text)
+    }
+
+    /// Filled pill for the primary role; outlined pill (border, transparent fill) for the secondary.
+    @ViewBuilder
+    func ctaButtonBackground(for role: ProductCardCTARole) -> some View {
+        let radius = theme.layout.productCardCtaButtonBorderRadius
+        switch role {
+        case .primary:
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(theme.colors.productCardCtaButton.background.color)
+        case .secondary:
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(theme.colors.productCardSecondaryCtaButton.background.color)
+                .overlay(
+                    RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .stroke(
+                            theme.colors.productCardSecondaryCtaButton.border.color,
+                            lineWidth: theme.layout.productCardSecondaryCtaButtonBorderWidth
+                        )
+                )
+        }
+    }
+
+    func ctaTextColor(for role: ProductCardCTARole) -> Color {
+        switch role {
+        case .primary:
+            return theme.colors.productCardCtaButton.text.color
+        case .secondary:
+            return theme.colors.productCardSecondaryCtaButton.text.color
         }
     }
 

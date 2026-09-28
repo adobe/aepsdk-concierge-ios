@@ -689,8 +689,11 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-badge-text-color` | `colors.productCard.badgeTextColor` | `Color` | `white` | Badge label text color |
 | `--product-card-badge-background-color` | `colors.productCard.badgeBackgroundColor` | `Color` | `primary` | Badge background color |
 | `--product-card-outline-color` | `colors.productCard.outlineColor` | `Color` | `clear` | Card border/outline color |
-| `--product-card-cta-button-background-color` | `colors.productCardCtaButton.background` | `Color` | `#BB5811` | product card CTA button background color |
-| `--product-card-cta-button-text-color` | `colors.productCardCtaButton.text` | `Color` | `white` | product card CTA button label text color |
+| `--product-card-cta-button-background-color` | `colors.productCardCtaButton.background` | `Color` | `#BB5811` | product card primary CTA button background color |
+| `--product-card-cta-button-text-color` | `colors.productCardCtaButton.text` | `Color` | `white` | product card primary CTA button label text color |
+| `--product-card-secondary-cta-button-background-color` | `colors.productCardSecondaryCtaButton.background` | `Color` | `transparent` | product card secondary (outlined) CTA button background color |
+| `--product-card-secondary-cta-button-text-color` | `colors.productCardSecondaryCtaButton.text` | `Color` | `#BB5811` | product card secondary CTA button label text color |
+| `--product-card-secondary-cta-button-border-color` | `colors.productCardSecondaryCtaButton.border` | `Color` | `#BB5811` | product card secondary CTA button outline color |
 
 ### Colors - CTA Button
 
@@ -816,8 +819,9 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-cta-button-border-radius` | `layout.productCardCtaButtonBorderRadius` | `CGFloat` | `40` | product card CTA button corner radius |
 | `--product-card-cta-button-horizontal-padding` | `layout.productCardCtaButtonHorizontalPadding` | `CGFloat` | `16` | product card CTA button horizontal padding |
 | `--product-card-cta-button-vertical-padding` | `layout.productCardCtaButtonVerticalPadding` | `CGFloat` | `8` | product card CTA button vertical padding |
-| `--product-card-cta-button-font-size` | `layout.productCardCtaButtonFontSize` | `CGFloat` | `12` | product card CTA button label font size |
-| `--product-card-cta-button-font-weight` | `layout.productCardCtaButtonFontWeight` | `FontWeight` | `semibold` | product card CTA button label font weight |
+| `--product-card-cta-button-font-size` | `layout.productCardCtaButtonFontSize` | `CGFloat` | `12` | product card CTA button label font size (shared by primary and secondary) |
+| `--product-card-cta-button-font-weight` | `layout.productCardCtaButtonFontWeight` | `FontWeight` | `semibold` | product card CTA button label font weight (shared by primary and secondary) |
+| `--product-card-secondary-cta-button-border-width` | `layout.productCardSecondaryCtaButtonBorderWidth` | `CGFloat` | `1` | product card secondary CTA button outline width |
 
 ### Layout - CTA Button
 
@@ -1077,11 +1081,15 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-carousel-horizontal-padding": "4px",
     "--product-card-cta-button-background-color": "#BB5811",
     "--product-card-cta-button-text-color": "#FFFFFF",
+    "--product-card-secondary-cta-button-background-color": "",
+    "--product-card-secondary-cta-button-text-color": "#BB5811",
+    "--product-card-secondary-cta-button-border-color": "#BB5811",
     "--product-card-cta-button-border-radius": "40px",
     "--product-card-cta-button-horizontal-padding": "16px",
     "--product-card-cta-button-vertical-padding": "8px",
     "--product-card-cta-button-font-size": "12px",
     "--product-card-cta-button-font-weight": "600",
+    "--product-card-secondary-cta-button-border-width": "1px",
     "--cta-button-background-color": "#EDEDED",
     "--cta-button-text-color": "#191F1C",
     "--cta-button-icon-color": "#161313",
@@ -1326,8 +1334,11 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-badge-text-color` | ✅ | Used in ProductDetailCardView |
 | `--product-card-badge-background-color` | ✅ | Used in ProductDetailCardView |
 | `--product-card-outline-color` | ✅ | Used in ProductDetailCardView |
-| `--product-card-cta-button-background-color` | ✅ | product card CTA button background, used in ProductDetailCardView |
-| `--product-card-cta-button-text-color` | ✅ | product card CTA button label text color, used in ProductDetailCardView |
+| `--product-card-cta-button-background-color` | ✅ | product card primary CTA button background, used in ProductDetailCardView |
+| `--product-card-cta-button-text-color` | ✅ | product card primary CTA button label text color, used in ProductDetailCardView |
+| `--product-card-secondary-cta-button-background-color` | ✅ | product card secondary CTA button background, used in ProductDetailCardView |
+| `--product-card-secondary-cta-button-text-color` | ✅ | product card secondary CTA button label text color, used in ProductDetailCardView |
+| `--product-card-secondary-cta-button-border-color` | ✅ | product card secondary CTA button outline color, used in ProductDetailCardView |
 
 ### Theme Tokens - Layout
 
@@ -1404,6 +1415,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-cta-button-vertical-padding` | ✅ | Used in ProductDetailCardView |
 | `--product-card-cta-button-font-size` | ✅ | Used in ProductDetailCardView |
 | `--product-card-cta-button-font-weight` | ✅ | Used in ProductDetailCardView |
+| `--product-card-secondary-cta-button-border-width` | ✅ | secondary CTA outline width, used in ProductDetailCardView |
 | `--cta-button-border-radius` | ✅ | Used in CtaButtonView |
 | `--cta-button-horizontal-padding` | ✅ | Used in CtaButtonView |
 | `--cta-button-vertical-padding` | ✅ | Used in CtaButtonView |
