@@ -48,6 +48,31 @@ public extension Concierge {
         ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
     }
 
+    // MARK: - XDM Context
+
+    /// Applies a JSON Merge Patch (RFC 7396) to the SDK's held XDM context, which is merged into
+    /// every outbound conversational turn — both organic chat messages and `sendDataHandoff`
+    /// turns. Not applied to feedback submissions.
+    ///
+    /// Existing keys in the held context are recursively merged with (and overwritten by)
+    /// `fields`' values; new top-level or nested keys are added without disturbing sibling data.
+    /// A value of `NSNull()` anywhere in `fields` removes the corresponding key from the held
+    /// context at that nesting level — e.g. `["fan": ["seatSection": NSNull()]]` removes only
+    /// `fan.seatSection`, leaving the rest of `fan` untouched.
+    ///
+    /// Settable at any time, including before the first message of a conversation — there is no
+    /// session yet to attach it to; it's held independently and applied whenever a turn is next
+    /// sent. Held for the lifetime of the current conversation session; automatically cleared when
+    /// a genuinely new session begins — there is no separate reset API. To clear specific data
+    /// proactively (e.g. on logout), call this again with `NSNull()` values for the keys to remove.
+    ///
+    /// Synchronous and local to the SDK — no network round trip, no timeout. Validated
+    /// immediately and throws if `fields` is not JSON-serializable or uses the reserved
+    /// `identityMap` top-level key (which always wins over held context regardless).
+    static func updateXDMContext(_ fields: [String: Any]) throws {
+        try ConciergeXDMContextStore.shared.update(fields)
+    }
+
     // MARK: - Data Handoff
 
     /// Hands data to the Concierge SDK to forward toward the agent pipeline (Brand Concierge /
@@ -242,6 +267,52 @@ extension Concierge {
         #endif
         return configuration
     }
+
+    /// Returns the current `ConciergeChatSession` if its service identity (ECID, server, datastream, surfaces),
+    /// title, and subtitle all match the incoming values, and the server session has not expired;
+    /// otherwise creates and stores a new session.
+    ///
+    /// This is the single decision point for chat reuse across both SwiftUI and UIKit presentation paths.
+    /// The `ChatController` inside the returned session retains all messages and the chat
+    /// service from prior interactions when a match is found.
+    ///
+    /// - Parameter configuration: The freshly fetched configuration from the `SHOW_UI` response event.
+    /// - Returns: An existing or newly created session.
+    @MainActor
+    static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
+        let resolvedTitle = chatTitle
+        let resolvedSubtitle = chatSubtitle
+
+        if let existing = currentSession,
+           SessionManager.shared.isSessionActive,
+           existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
+            return existing
+        }
+
+        // A genuinely new session *replacing* a prior one (TTL expiry, or a change in chat
+        // identity) starts without whatever context that prior session had accumulated via
+        // `updateXDMContext(_:)` - the app is responsible for re-establishing it. But the very
+        // first session ever resolved (`currentSession == nil`) isn't replacing anything, so it
+        // must not clear context an app already set via `updateXDMContext(_:)` before its first
+        // `show()` call - the API's primary supported use case.
+        if currentSession != nil {
+            ConciergeXDMContextStore.shared.clear()
+        }
+
+        let urlSessionConfiguration = resolvedURLSessionConfiguration()
+
+        let session = ConciergeChatSession(
+            configuration: configuration,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle,
+            speechCapturer: speechCapturer,
+            textSpeaker: textSpeaker,
+            dispatch: { event in MobileCore.dispatch(event: event) },
+            urlSessionConfiguration: urlSessionConfiguration
+        )
+        currentSession = session
+        return session
+    }
 }
 
 // MARK: - Shared presentation internals
@@ -277,42 +348,6 @@ private extension Concierge {
                 completion(config)
             }
         }
-    }
-
-    /// Returns the current `ConciergeChatSession` if its service identity (ECID, server, datastream, surfaces),
-    /// title, and subtitle all match the incoming values, and the server session has not expired;
-    /// otherwise creates and stores a new session.
-    ///
-    /// This is the single decision point for chat reuse across both SwiftUI and UIKit presentation paths.
-    /// The `ChatController` inside the returned session retains all messages and the chat
-    /// service from prior interactions when a match is found.
-    ///
-    /// - Parameter configuration: The freshly fetched configuration from the `SHOW_UI` response event.
-    /// - Returns: An existing or newly created session.
-    @MainActor
-    static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
-        let resolvedTitle = chatTitle
-        let resolvedSubtitle = chatSubtitle
-
-        if let existing = currentSession,
-           SessionManager.shared.isSessionActive,
-           existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
-            return existing
-        }
-
-        let urlSessionConfiguration = resolvedURLSessionConfiguration()
-
-        let session = ConciergeChatSession(
-            configuration: configuration,
-            title: resolvedTitle,
-            subtitle: resolvedSubtitle,
-            speechCapturer: speechCapturer,
-            textSpeaker: textSpeaker,
-            dispatch: { event in MobileCore.dispatch(event: event) },
-            urlSessionConfiguration: urlSessionConfiguration
-        )
-        currentSession = session
-        return session
     }
 
     /// Creates a new `ChatView` bound to the given session's `ChatController`.

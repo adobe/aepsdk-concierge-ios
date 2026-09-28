@@ -281,8 +281,13 @@ final class ChatController: ObservableObject {
         }
 
         if isUser {
-            dispatchTrackingEvent(.querySubmitted(query: text))
-            streamAgentResponse(for: text)
+            // Reads the store synchronously (no async work involved) so the same snapshot
+            // `streamAgentResponse` sends over the wire moments later is what's visible in
+            // Assurance on this event - the SDK's chat turns bypass the Event Hub entirely, so
+            // this is the only place the outbound XDM is ever observable outside local debug logs.
+            let xdmContext = ConciergeXDMContextStore.shared.snapshot()
+            dispatchTrackingEvent(.querySubmitted(query: text, xdmFields: xdmContext))
+            streamAgentResponse(for: text, heldXDMFields: xdmContext)
         } else {
             clearState()
         }
@@ -583,6 +588,7 @@ final class ChatController: ObservableObject {
     /// bounded. See `TurnKind`.
     @discardableResult
     private func streamAgentResponse(for query: String,
+                                     heldXDMFields: [String: Any]? = nil,
                                      extraXDMFields: [String: Any]? = nil,
                                      kind: TurnKind = .typed,
                                      completion: ((ConciergeError?) -> Void)? = nil) -> ChatTurn {
@@ -595,6 +601,13 @@ final class ChatController: ObservableObject {
         // Armed from submission, so it also bounds the auth-token wait below.
         turn.armCeiling { [weak self] interval in
             self?.cap(turn, after: interval, reason: "exceeded its wall-clock cap")
+        }
+
+        // Freeze the context before the asynchronous token-provider wait, so the request carries
+        // the same snapshot a typed turn already exposed in its query-submitted event.
+        var mergedXDMFields = heldXDMFields ?? ConciergeXDMContextStore.shared.snapshot()
+        if let extraXDMFields {
+            mergedXDMFields.merge(extraXDMFields) { _, callSpecific in callSpecific }
         }
 
         // Accumulators are used to handle the progressive building up of response content from the server
@@ -624,7 +637,7 @@ final class ChatController: ObservableObject {
             turn.armNoResponseCap { [weak self] interval in
                 self?.cap(turn, after: interval, reason: "produced no response")
             }
-            self.chatService.streamChat(query, token: token, extraXDMFields: extraXDMFields,
+            self.chatService.streamChat(query, token: token, extraXDMFields: mergedXDMFields.isEmpty ? nil : mergedXDMFields,
             onChunk: { [weak self] payload in
                 Task { @MainActor in
                     guard let self = self, self.activeTurn === turn else { return }

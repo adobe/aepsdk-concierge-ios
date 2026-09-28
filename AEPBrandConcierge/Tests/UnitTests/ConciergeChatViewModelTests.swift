@@ -21,7 +21,19 @@ private final class NoopSpeaker: TextSpeaking { func utter(text: String) {} }
 final class ChatControllerTests: XCTestCase {
     
     private var mockConciergeConfiguration = ConciergeConfiguration()
-    
+
+    // Both a sent turn and a data handoff read the store fresh at send-time, so every test in
+    // this file needs it empty going in, and must not leak state into the next test's controller.
+    override func setUp() {
+        super.setUp()
+        ConciergeXDMContextStore.shared.clear()
+    }
+
+    override func tearDown() {
+        ConciergeXDMContextStore.shared.clear()
+        super.tearDown()
+    }
+
     func test_sendMessage_ignores_when_text_empty_or_not_idle() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
@@ -58,6 +70,116 @@ final class ChatControllerTests: XCTestCase {
         }
     }
 
+    // MARK: - updateXDMContext merge
+
+    func test_sendMessage_mergesHeldXDMContext_intoTheOutboundTurn() throws {
+        try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+    }
+
+    func test_sendMessage_withNoHeldXDMContext_sendsNilExtraXDMFields() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        XCTAssertNil(fakeService.lastExtraXDMFields)
+    }
+
+    func test_handleDataHandoff_mergesHeldXDMContext_withItsOwnFieldsWinningOnCollision() throws {
+        try ConciergeXDMContextStore.shared.update([
+            "loyalty": ["tier": "gold"],
+            "commerce": ["order": ["purchaseID": "held-should-lose"]]
+        ])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.handleDataHandoff(routingHint: "successful-checkout",
+                                     xdmFields: ["commerce": ["order": ["purchaseID": "abc123"]]])
+        spinUntil(fakeService.lastQuery != nil)
+
+        let expected: [String: Any] = [
+            "loyalty": ["tier": "gold"],
+            "commerce": ["order": ["purchaseID": "abc123"]]
+        ]
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
+    }
+
+    func test_sendMessage_withHeldXDMContext_includesItOnTheQuerySubmittedEvent_forAssuranceVisibility() throws {
+        try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        let queryEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        XCTAssertEqual(queryEvents.count, 1)
+        let sentXDM = queryEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        XCTAssertTrue((sentXDM as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+    }
+
+    func test_sendMessage_withNoHeldXDMContext_querySubmittedEventOmitsXdmFieldsKey() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        let queryEvent = dispatchedEvents.first { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        XCTAssertNil(queryEvent?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS])
+    }
+
+    func test_sendMessage_usesTheSameXDMContextSnapshotForAssuranceAndRequest() async throws {
+        let providerEntered = expectation(description: "auth token provider started")
+        ConciergeAuthTokenResolver.shared.setProvider({
+            providerEntered.fulfill()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            return "test-token"
+        }, timeout: 5)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "gold"]])
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [providerEntered], timeout: 2)
+
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "platinum"]])
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(fakeService.streamChatCallCount, 1, "the turn should reach the service after the token is released")
+
+        let queryEvent = dispatchedEvents.first { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        let assuranceXDM = queryEvent?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        let expected: [String: Any] = ["loyalty": ["tier": "gold"]]
+        XCTAssertTrue((assuranceXDM as NSDictionary?)?.isEqual(to: expected) ?? false,
+                      "Assurance XDM was \(String(describing: assuranceXDM))")
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false,
+                      "Request XDM was \(String(describing: fakeService.lastExtraXDMFields))")
+    }
+
     func test_handleDataHandoff_withLocalMessage_appendsItBeforeStreamingPlaceholder() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
@@ -72,6 +194,7 @@ final class ChatControllerTests: XCTestCase {
         } else {
             XCTFail("Expected a basic message template")
         }
+
     }
 
     func test_handleDataHandoff_withNilOrEmptyLocalMessage_appendsOnlyStreamingPlaceholder() {
