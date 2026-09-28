@@ -77,12 +77,13 @@ struct ProductDetailCardView: View {
             // Only wrap in a ScrollView when the content actually overflows the displayed height.
             // When it fits, render plain content so there is no bounce/scroll (matching Android).
             if needsScroll {
-                ScrollView(.vertical, showsIndicators: false) { cardContent }
+                ScrollView(.vertical, showsIndicators: false) { cardContent() }
             } else {
-                cardContent
+                cardContent()
             }
         }
         .frame(width: cardWidth, height: resolvedHeight, alignment: .top)
+        .background(naturalHeightProbe)
         .onPreferenceChange(CardHeightKey.self) { selfMeasuredHeight = $0 }
         .onPreferenceChange(CardNaturalHeightKey.self) { naturalHeight = $0 }
         .background(
@@ -105,22 +106,45 @@ struct ProductDetailCardView: View {
         .onTapGesture { handleCardTap() }
     }
 
-    /// The card's content. Publishes both its clamped height (for carousel equalization) and its
-    /// raw natural height (for the overflow/scroll decision).
-    private var cardContent: some View {
+    /// The card's content. Stretches to whatever height it is displayed at so `textSection`'s
+    /// spacer can push the pricing/CTA block to the bottom edge; the natural (unstretched) height
+    /// is measured separately by `naturalHeightProbe`.
+    ///
+    /// `measureOnly` is forwarded to `imageSection` so the measurement copy skips loading the
+    /// product image.
+    private func cardContent(measureOnly: Bool = false) -> some View {
         VStack(alignment: .center, spacing: 0) {
-            imageSection
+            imageSection(measureOnly: measureOnly)
             textSection
         }
         .padding(ProductDetailCardDimensions.contentPadding)
         .frame(width: cardWidth)
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .preference(key: CardHeightKey.self, value: clampedHeight(proxy.size.height))
-                    .preference(key: CardNaturalHeightKey.self, value: proxy.size.height)
-            }
-        )
+    }
+
+    /// Hidden, zero-cost-to-layout copy of the card content used solely to measure height.
+    ///
+    /// `cardContent` is displayed at `resolvedHeight` and expands to fill it, so measuring the
+    /// displayed copy would report the height it was *given* rather than the height it *needs* —
+    /// which would feed `resolvedHeight` back into itself and permanently defeat `needsScroll`.
+    /// `fixedSize(vertical:)` makes this copy ignore the proposed height and report its ideal
+    /// height instead, which is the true natural content height (the bottom-anchoring spacer
+    /// contributes its `minLength` of zero in an ideal-size pass).
+    ///
+    /// Built with `measureOnly: true`: `.hidden()` still composes and appears in the hierarchy, so
+    /// without it every card would start a second, redundant fetch of the same product image.
+    private var naturalHeightProbe: some View {
+        cardContent(measureOnly: true)
+            .fixedSize(horizontal: false, vertical: true)
+            .hidden()
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: CardHeightKey.self, value: clampedHeight(proxy.size.height))
+                        .preference(key: CardNaturalHeightKey.self, value: proxy.size.height)
+                }
+            )
     }
 
     /// The height to display the card at: the carousel's equalized (tallest) height when in a
@@ -158,7 +182,7 @@ struct ProductDetailCardView: View {
 // MARK: - Subviews
 
 private extension ProductDetailCardView {
-    var imageSection: some View {
+    func imageSection(measureOnly: Bool) -> some View {
         let slotSize = imageSlotSize
         let contentMode = theme.layout.productImageScale.contentMode
 
@@ -166,29 +190,37 @@ private extension ProductDetailCardView {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 ZStack {
-                    switch data.imageSource {
-                    case .local(let image):
-                        image
-                            .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
-                            .overlay(debugImageBorder)
-                    case .remote(let url):
-                        if let url = url {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView().frame(width: slotSize.width, height: slotSize.height)
-                                case .success(let loaded):
-                                    loaded
-                                        .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
-                                        .overlay(debugImageBorder)
-                                case .failure:
-                                    imagePlaceholder(slotSize)
-                                @unknown default:
-                                    EmptyView()
+                    if measureOnly {
+                        // The slot is a fixed `slotSize` in every load phase, so the image
+                        // contributes the same height whether or not it has loaded. The
+                        // measurement pass therefore renders nothing here rather than starting a
+                        // duplicate fetch of an image the visible copy is already loading.
+                        Color.clear
+                    } else {
+                        switch data.imageSource {
+                        case .local(let image):
+                            image
+                                .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
+                                .overlay(debugImageBorder)
+                        case .remote(let url):
+                            if let url = url {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView().frame(width: slotSize.width, height: slotSize.height)
+                                    case .success(let loaded):
+                                        loaded
+                                            .productCardImageFill(width: slotSize.width, height: slotSize.height, contentMode: contentMode)
+                                            .overlay(debugImageBorder)
+                                    case .failure:
+                                        imagePlaceholder(slotSize)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
                                 }
+                            } else {
+                                imagePlaceholder(slotSize)
                             }
-                        } else {
-                            imagePlaceholder(slotSize)
                         }
                     }
                 }
@@ -279,15 +311,31 @@ private extension ProductDetailCardView {
     }
 
     var textSection: some View {
-        VStack(alignment: .leading, spacing: theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing) {
+        let sectionSpacing = theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing
+
+        // The outer stack uses `spacing: 0` and the spacer carries the section spacing as its
+        // `minLength` instead. A `VStack`'s spacing is inserted between *every* adjacent pair, so
+        // leaving it on would apply it on both sides of the spacer and double the description-to-
+        // price gap whenever there is no slack to absorb (a standalone card, or the tallest card
+        // in a carousel) -- and the `.fixedSize` probe would measure that extra height too.
+        return VStack(alignment: .leading, spacing: 0) {
             productCardTitleSubtitleBlock
-            productCardPriceBlock
-            ctaButtonView
+            // Absorbs any slack between the card's natural content height and the height it is
+            // actually displayed at (the carousel's equalized height), so the pricing and CTA
+            // block stays anchored to the bottom of the card instead of floating directly under
+            // the description. With no slack it collapses to exactly one section spacing —
+            // including in the measurement pass, where a `Spacer`'s ideal height is its `minLength`.
+            Spacer(minLength: sectionSpacing)
+            VStack(alignment: .leading, spacing: sectionSpacing) {
+                productCardPriceBlock
+                ctaButtonView
+            }
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
         .frame(width: innerContentWidth, alignment: .topLeading)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
     }
 
     /// Renders `data.ctas` side by side: primary filled, secondary outlined.
