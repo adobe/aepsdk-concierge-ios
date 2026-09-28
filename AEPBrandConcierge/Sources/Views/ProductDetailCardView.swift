@@ -83,6 +83,7 @@ struct ProductDetailCardView: View {
             }
         }
         .frame(width: cardWidth, height: resolvedHeight, alignment: .top)
+        .background(naturalHeightProbe)
         .onPreferenceChange(CardHeightKey.self) { selfMeasuredHeight = $0 }
         .onPreferenceChange(CardNaturalHeightKey.self) { naturalHeight = $0 }
         .background(
@@ -105,8 +106,9 @@ struct ProductDetailCardView: View {
         .onTapGesture { handleCardTap() }
     }
 
-    /// The card's content. Publishes both its clamped height (for carousel equalization) and its
-    /// raw natural height (for the overflow/scroll decision).
+    /// The card's content. Stretches to whatever height it is displayed at so `textSection`'s
+    /// spacer can push the pricing/CTA block to the bottom edge; the natural (unstretched) height
+    /// is measured separately by `naturalHeightProbe`.
     private var cardContent: some View {
         VStack(alignment: .center, spacing: 0) {
             imageSection
@@ -114,13 +116,29 @@ struct ProductDetailCardView: View {
         }
         .padding(ProductDetailCardDimensions.contentPadding)
         .frame(width: cardWidth)
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .preference(key: CardHeightKey.self, value: clampedHeight(proxy.size.height))
-                    .preference(key: CardNaturalHeightKey.self, value: proxy.size.height)
-            }
-        )
+    }
+
+    /// Hidden, zero-cost-to-layout copy of the card content used solely to measure height.
+    ///
+    /// `cardContent` is displayed at `resolvedHeight` and expands to fill it, so measuring the
+    /// displayed copy would report the height it was *given* rather than the height it *needs* —
+    /// which would feed `resolvedHeight` back into itself and permanently defeat `needsScroll`.
+    /// `fixedSize(vertical:)` makes this copy ignore the proposed height and report its ideal
+    /// height instead, which is the true natural content height (the bottom-anchoring spacer
+    /// contributes its `minLength` of zero in an ideal-size pass).
+    private var naturalHeightProbe: some View {
+        cardContent
+            .fixedSize(horizontal: false, vertical: true)
+            .hidden()
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: CardHeightKey.self, value: clampedHeight(proxy.size.height))
+                        .preference(key: CardNaturalHeightKey.self, value: proxy.size.height)
+                }
+            )
     }
 
     /// The height to display the card at: the carousel's equalized (tallest) height when in a
@@ -281,6 +299,12 @@ private extension ProductDetailCardView {
     var textSection: some View {
         VStack(alignment: .leading, spacing: theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing) {
             productCardTitleSubtitleBlock
+            // Absorbs any slack between the card's natural content height and the height it is
+            // actually displayed at (the carousel's equalized height), so the pricing and CTA
+            // block stays anchored to the bottom of the card instead of floating directly under
+            // the description. Contributes zero height when there is no slack — including in the
+            // `.fixedSize` measurement pass, where a `Spacer`'s ideal height is its `minLength`.
+            Spacer(minLength: 0)
             productCardPriceBlock
             ctaButtonView
         }
@@ -288,6 +312,7 @@ private extension ProductDetailCardView {
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
         .padding(.bottom, theme.layout.productCardTextBottomPadding)
         .frame(width: innerContentWidth, alignment: .topLeading)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
     }
 
     /// Renders `data.ctas` side by side: primary filled, secondary outlined.

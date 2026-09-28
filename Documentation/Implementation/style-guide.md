@@ -593,7 +593,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-user-text` | `colors.message.userText` | `Color` | `primary` | User message text color |
 | `--message-concierge-background` | `colors.message.conciergeBackground` | `Color` | `systemBackground` | AI message bubble background |
 | `--message-concierge-text` | `colors.message.conciergeText` | `Color` | `primary` | AI message text color |
-| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Sources-list link color and inline link-**icon** fallback color. (Inline link *text* uses `--color-primary`.) |
+| `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Link color for concierge messages: sources-list links, inline link **text**, and the inline link-**icon** fallback color. |
 
 ### Colors - Buttons
 
@@ -618,7 +618,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-outline-gradient-start-color` | `colors.input.outlineGradient` | `Color?` | `nil` | Input border gradient start color. See [Gradients](#gradients). Overrides `--input-outline-color` when set. |
 | `--input-outline-gradient-end-color` | `colors.input.outlineGradient` | `Color?` | `nil` | Input border gradient end color. |
 | `--input-outline-gradient-angle` | `colors.input.outlineGradient` | `Degrees` | `180` | Input border gradient direction. |
-| `--input-focus-outline-color` | `colors.input.outlineFocus` | `Color` | `accentColor` | Focused input border color |
+| `--input-focus-outline-color` | `colors.input.outlineFocus` | `Color` | `accentColor` | Focused input border color. Drawn *over* the base border, so when it differs from `--input-outline-color` the border visibly changes color on focus. Ignored when the border uses a gradient — see `--input-outline-gradient-start-color` — so focusing never flattens a gradient border to a solid ring. |
 
 ### Colors - Input Icons
 
@@ -799,6 +799,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--product-card-width` | `layout.productCardWidth` | `CGFloat` | `250` | Card width in points |
 | `--product-card-height` | `layout.productCardHeight` | `CGFloat` | `300` | Card height in points |
+| `--product-card-min-height` | `layout.productCardMinHeight` | `CGFloat` | `240` | Minimum product-detail card height. Cards shorter than this are padded out to it. |
+| `--product-card-max-height` | `layout.productCardMaxHeight` | `CGFloat` | `360` | Maximum product-detail card height. Content taller than this scrolls inside the card, which clips the bottom inset (and the bottom-anchored price/CTA block) below the fold. |
 | `--product-card-title-font-size` | `layout.productCardTitleFontSize` | `CGFloat` | `14` | Title font size |
 | `--product-card-title-font-weight` | `layout.productCardTitleFontWeight` | `FontWeight` | `bold` | Title font weight |
 | `--product-card-subtitle-font-size` | `layout.productCardSubtitleFontSize` | `CGFloat` | `12` | Subtitle font size |
@@ -1073,6 +1075,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--product-card-outline-color": "#00000000",
     "--product-card-width": "200px",
     "--product-card-height": "300px",
+    "--product-card-min-height": "240px",
+    "--product-card-max-height": "360px",
     "--product-card-text-spacing": "8px",
     "--product-card-text-top-padding": "20px",
     "--product-card-text-bottom-padding": "12px",
@@ -1266,7 +1270,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-user-text` | ✅ | Used in ChatMessageView |
 | `--message-concierge-background` | ✅ | Used in ChatMessageView, SourcesListView |
 | `--message-concierge-text` | ✅ | Used in ChatMessageView |
-| `--message-concierge-link-color` | ✅ | Used in SourceRowView; inline link-icon fallback in BasicMessageView |
+| `--message-concierge-link-color` | ✅ | Used in SourceRowView; inline link text and link-icon fallback in BasicMessageView |
 | `--button-primary-background` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-primary-text` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-secondary-border` | ✅ | Used in ConciergePressableButtonStyle |
@@ -1281,7 +1285,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--input-outline-gradient-start-color` | ✅ | Used in ChatComposer for the input border gradient, overrides `--input-outline-color` |
 | `--input-outline-gradient-end-color` | ✅ | Used in ChatComposer for the input border gradient |
 | `--input-outline-gradient-angle` | ✅ | Used in ChatComposer for the input border gradient direction |
-| `--input-focus-outline-color` | ✅ | Used in ChatComposer |
+| `--input-focus-outline-color` | ✅ | Used in ChatComposer; skipped when the border has a renderable gradient so the gradient survives focus |
 | `--citations-background-color` | ✅ | Used in MarkdownBlockView |
 | `--citations-text-color` | ✅ | Used in MarkdownBlockView |
 | `--feedback-icon-btn-background` | ✅ | Used in SourcesListView |
@@ -1392,6 +1396,8 @@ This section documents which properties are fully implemented, partially impleme
 | `--welcome-prompt-corner-radius` | ✅ | Used in ChatMessageView for prompt card corner radius |
 | `--suggestion-item-border-radius` | ✅ | Used in ChatMessageView for post-response suggestion chip corner radius |
 | `--product-card-width` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
+| `--product-card-min-height` | ✅ | Floor applied by `ProductDetailCardView.clampedHeight` |
+| `--product-card-max-height` | ✅ | Cap applied by `ProductDetailCardView.clampedHeight`; content beyond it scrolls internally |
 | `--product-card-height` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
 | `--product-card-title-font-size` | ✅ | Used in ProductDetailCardView |
 | `--product-card-title-font-weight` | ✅ | Used in ProductDetailCardView |

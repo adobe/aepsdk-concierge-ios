@@ -59,6 +59,11 @@ struct ComposerEditingView: View {
         theme.components.inputBar.icon?.icon ?? ""
     }
 
+    /// Gap between the leading (AI chat) icon and the text field. Hardcoded because the icon has to
+    /// sit at a consistent optical distance from the text, so this is a layout constant rather than
+    /// a brand value a theme should be able to drift.
+    static let leadingIconSpacing: CGFloat = 4
+
     /// Fade + horizontal slide transition animation.
     private var buttonTransition: AnyTransition {
         .opacity.combined(with: .move(edge: .trailing))
@@ -66,35 +71,40 @@ struct ComposerEditingView: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
-            if !leadingIconPath.isEmpty {
-                // Local asset name or a remote http(s) URL; unresolvable paths render nothing.
-                LocalAssetImageView(
-                    iconPath: leadingIconPath,
-                    width: theme.layout.inputButtonWidth,
-                    height: theme.layout.inputButtonHeight,
-                    contentMode: .fit,
-                    clipToCircle: false
-                )
-                .accessibilityLabel(theme.text.inputAiChatIconTooltip)
-                .padding(.bottom, iconBottomPadding)
-            }
+            // Icon and text field are grouped so `leadingIconSpacing` governs only the gap between
+            // them; the outer HStack's default spacing still separates this group from the
+            // trailing buttons, exactly as it did before the icon was introduced.
+            HStack(alignment: .bottom, spacing: Self.leadingIconSpacing) {
+                if !leadingIconPath.isEmpty {
+                    // Local asset name or a remote http(s) URL; unresolvable paths render nothing.
+                    LocalAssetImageView(
+                        iconPath: leadingIconPath,
+                        width: theme.layout.inputButtonWidth,
+                        height: theme.layout.inputButtonHeight,
+                        contentMode: .fit,
+                        clipToCircle: false
+                    )
+                    .accessibilityLabel(theme.text.inputAiChatIconTooltip)
+                    .padding(.bottom, iconBottomPadding)
+                }
 
-            SelectableTextView(
-                text: $inputText,
-                selectedRange: $selectedRange,
-                measuredHeight: $measuredHeight,
-                isFocused: $isFocused,
-                isEditable: isEditable,
-                placeholder: theme.text.inputPlaceholder,
-                accessibilityLabel: theme.text.inputMessageInputAria,
-                font: resolvedInputFont,
-                textColor: UIColor(theme.components.inputBar.textColor.color),
-                placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
-                maxLines: theme.behavior.input.disableMultiline ? 1 : 10,
-                onEditingChanged: onEditingChanged
-            )
-            .frame(height: max(Self.minimumRowHeight, measuredHeight))
-            .animation(.easeInOut(duration: 0.15), value: measuredHeight)
+                SelectableTextView(
+                    text: $inputText,
+                    selectedRange: $selectedRange,
+                    measuredHeight: $measuredHeight,
+                    isFocused: $isFocused,
+                    isEditable: isEditable,
+                    placeholder: theme.text.inputPlaceholder,
+                    accessibilityLabel: theme.text.inputMessageInputAria,
+                    font: resolvedInputFont,
+                    textColor: UIColor(theme.components.inputBar.textColor.color),
+                    placeholderTextColor: UIColor(theme.components.inputBar.placeholderColor.color),
+                    maxLines: theme.behavior.input.disableMultiline ? 1 : 10,
+                    onEditingChanged: onEditingChanged
+                )
+                .frame(height: max(Self.minimumRowHeight, measuredHeight))
+                .animation(.easeInOut(duration: 0.15), value: measuredHeight)
+            }
 
             if hasText, inputState != .recording {
                 Button(action: {

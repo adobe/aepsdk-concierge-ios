@@ -188,10 +188,10 @@ struct BasicMessageView: View {
             MarkdownBlockView(
                 markdown: annotatedBody,
                 textColor: UIColor(theme.colors.message.conciergeText.color),
-                // Inline link text is colored with `--color-primary`; the link *icon* below
-                // intentionally falls back to `--message-concierge-link-color`, so if a theme sets
-                // those two tokens to different values, a link's text and its icon can differ.
-                linkColor: UIColor(theme.colors.primary.primary.color),
+                // Inline link text and the link *icon* below both resolve from
+                // `--message-concierge-link-color`, so a link's text and its icon stay in sync and
+                // are themeable independently of `--color-primary`.
+                linkColor: UIColor(theme.colors.message.conciergeLink.color),
                 baseFont: resolvedAgentFont,
                 citationMarkers: markers,
                 citationStyle: .init(
