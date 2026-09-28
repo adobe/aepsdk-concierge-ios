@@ -389,57 +389,6 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.colors.input.outlineGradient?.angle, 180)
     }
 
-    func test_focusOutlineStyle_gradientBorder_keepsGradientWhileFocused() {
-        // Regression test for the focus ring flattening a gradient border: the focused outline is
-        // stroked over the base border, so resolving it to the solid --input-focus-outline-color
-        // would erase the gradient the theme asked for.
-        // Given
-        let gradient = ConciergeGradient(
-            startColor: CodableColor(Color(hex: 0x4DAF90)),
-            endColor: CodableColor(Color(hex: 0x006554)),
-            angle: 180
-        )
-        let border = ConciergeBorderStyle(width: 2, color: CodableColor(Color(hex: 0x4DAF90)), gradient: gradient)
-
-        // When
-        let resolved = ChatComposer.focusOutlineStyle(border: border, focusColor: CodableColor(Color(hex: 0x000000)))
-
-        // Then
-        XCTAssertEqual(resolved, .gradient(gradient))
-    }
-
-    func test_focusOutlineStyle_solidBorder_stillUsesFocusOutlineColor() {
-        // Themes without a border gradient must keep the previous focus behavior.
-        // Given
-        let focusColor = CodableColor(Color(hex: 0x006554))
-        let border = ConciergeBorderStyle(width: 2, color: CodableColor(Color(hex: 0x4DAF90)), gradient: nil)
-
-        // When
-        let resolved = ChatComposer.focusOutlineStyle(border: border, focusColor: focusColor)
-
-        // Then
-        XCTAssertEqual(resolved, .color(focusColor))
-    }
-
-    func test_focusOutlineStyle_halfConfiguredBorderGradient_fallsBackToFocusColor() {
-        // A gradient missing one side isn't renderable, so it must not win over the focus color
-        // and paint a half-clear ring.
-        // Given
-        let focusColor = CodableColor(Color(hex: 0x006554))
-        let halfGradient = ConciergeGradient(
-            startColor: CodableColor(Color(hex: 0x4DAF90)),
-            endColor: CodableColor(.clear),
-            angle: 180
-        )
-        let border = ConciergeBorderStyle(width: 2, color: CodableColor(Color(hex: 0x4DAF90)), gradient: halfGradient)
-
-        // When
-        let resolved = ChatComposer.focusOutlineStyle(border: border, focusColor: focusColor)
-
-        // Then
-        XCTAssertEqual(resolved, .color(focusColor))
-    }
-
     func test_inputOutlineGradient_onlyStartColorSet_isNotRenderable() {
         // Regression test: a theme that only ever sets one side of a gradient key trio (ex: a
         // customer sets --input-outline-gradient-start-color but never the end color) must not

@@ -133,17 +133,16 @@ private extension ChatComposer {
     /// only changes the ring's *width* (`--input-focus-outline-width`). Themes with a solid border
     /// are unaffected and still get `--input-focus-outline-color`.
     var focusBorderStyle: AnyShapeStyle {
-        switch Self.focusOutlineStyle(
+        // Border gradient when renderable, otherwise `--input-focus-outline-color`.
+        // `focusOutlineStyle` cannot report `.fallback` here because `outlineFocus` is
+        // non-optional, so there is no unresolved case to handle.
+        if case .gradient(let gradient) = Self.focusOutlineStyle(
             border: theme.components.inputBar.border,
             focusColor: theme.colors.input.outlineFocus
         ) {
-        case .gradient(let gradient):
             return AnyShapeStyle(gradient.linearGradient)
-        case .color(let color):
-            return AnyShapeStyle(color.color)
-        case .fallback:
-            return AnyShapeStyle(theme.colors.input.outlineFocus.color)
         }
+        return AnyShapeStyle(theme.colors.input.outlineFocus.color)
     }
 
     func startOrStopGlow() {

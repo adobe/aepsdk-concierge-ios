@@ -311,16 +311,25 @@ private extension ProductDetailCardView {
     }
 
     var textSection: some View {
-        VStack(alignment: .leading, spacing: theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing) {
+        let sectionSpacing = theme.layout.productCardSectionSpacing ?? theme.layout.productCardTextSpacing
+
+        // The outer stack uses `spacing: 0` and the spacer carries the section spacing as its
+        // `minLength` instead. A `VStack`'s spacing is inserted between *every* adjacent pair, so
+        // leaving it on would apply it on both sides of the spacer and double the description-to-
+        // price gap whenever there is no slack to absorb (a standalone card, or the tallest card
+        // in a carousel) -- and the `.fixedSize` probe would measure that extra height too.
+        return VStack(alignment: .leading, spacing: 0) {
             productCardTitleSubtitleBlock
             // Absorbs any slack between the card's natural content height and the height it is
             // actually displayed at (the carousel's equalized height), so the pricing and CTA
             // block stays anchored to the bottom of the card instead of floating directly under
-            // the description. Contributes zero height when there is no slack — including in the
-            // `.fixedSize` measurement pass, where a `Spacer`'s ideal height is its `minLength`.
-            Spacer(minLength: 0)
-            productCardPriceBlock
-            ctaButtonView
+            // the description. With no slack it collapses to exactly one section spacing —
+            // including in the measurement pass, where a `Spacer`'s ideal height is its `minLength`.
+            Spacer(minLength: sectionSpacing)
+            VStack(alignment: .leading, spacing: sectionSpacing) {
+                productCardPriceBlock
+                ctaButtonView
+            }
         }
         .padding(.top, theme.layout.productCardTextTopPadding)
         .padding(.horizontal, theme.layout.productCardTextHorizontalPadding)
