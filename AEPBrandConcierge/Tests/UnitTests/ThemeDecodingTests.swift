@@ -819,5 +819,61 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertNil(theme.colors.productCard.backgroundColor)
     }
 
+    // MARK: - Typed theme layout defaults
+
+    /// Encodes a typed theme whose `layout` object is produced from a default `ConciergeLayout`,
+    /// optionally with keys removed or overridden, mirroring what a real typed theme file holds.
+    private func decodeTypedTokens(
+        removingLayoutKeys removed: Set<String> = [],
+        overridingLayout overrides: [String: Any] = [:]
+    ) throws -> ConciergeThemeTokens {
+        let encoded = try JSONEncoder().encode(ConciergeThemeTokens())
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        var layout = try XCTUnwrap(object["layout"] as? [String: Any])
+
+        for key in removed { layout.removeValue(forKey: key) }
+        for (key, value) in overrides { layout[key] = value }
+        object["layout"] = layout
+
+        let data = try JSONSerialization.data(withJSONObject: object)
+        return try JSONDecoder().decode(ConciergeThemeTokens.self, from: data)
+    }
+
+    /// A typed theme written before the property existed has no such key. Synthesized decoding
+    /// would map that to `nil`, i.e. an unbounded description, silently changing how those themes
+    /// render. The decoder restores the default instead.
+    func test_typedTheme_omittingDescriptionMaxLines_keepsDefault() throws {
+        let tokens = try decodeTypedTokens(removingLayoutKeys: ["productCardDescriptionMaxLines"])
+
+        XCTAssertEqual(tokens.layout.productCardDescriptionMaxLines, 2)
+    }
+
+    /// An explicit `null` is a deliberate opt-in to an unbounded description and must survive the
+    /// default restoration above.
+    func test_typedTheme_explicitNullDescriptionMaxLines_isUnbounded() throws {
+        let tokens = try decodeTypedTokens(
+            overridingLayout: ["productCardDescriptionMaxLines": NSNull()]
+        )
+
+        XCTAssertNil(tokens.layout.productCardDescriptionMaxLines)
+    }
+
+    func test_typedTheme_explicitDescriptionMaxLines_isHonored() throws {
+        let tokens = try decodeTypedTokens(overridingLayout: ["productCardDescriptionMaxLines": 6])
+
+        XCTAssertEqual(tokens.layout.productCardDescriptionMaxLines, 6)
+    }
+
+    /// The custom decoder must not disturb anything else it now decodes by hand.
+    func test_typedTheme_roundTripsOtherLayoutValues() throws {
+        let tokens = try decodeTypedTokens(overridingLayout: ["productCardMaxHeight": 463])
+
+        XCTAssertEqual(tokens.layout.productCardMaxHeight, 463)
+        XCTAssertEqual(tokens.layout.productCardWidth, ConciergeLayout().productCardWidth)
+        XCTAssertEqual(tokens.layout.inputHeight, ConciergeLayout().inputHeight)
+    }
+
 }
 

@@ -27,4 +27,63 @@ public struct ConciergeThemeTokens: Codable {
         self.colors = colors
         self.layout = layout
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case typography, colors, layout
+    }
+
+    private struct DynamicCodingKey: CodingKey {
+        var stringValue: String
+        var intValue: Int?
+
+        init(_ stringValue: String) {
+            self.stringValue = stringValue
+            self.intValue = nil
+        }
+
+        init?(stringValue: String) {
+            self.init(stringValue)
+        }
+
+        init?(intValue: Int) {
+            return nil
+        }
+    }
+
+    /// Decodes the typed theme, restoring defaults for optional layout properties whose absence
+    /// would otherwise be indistinguishable from an explicit `null`.
+    ///
+    /// `ConciergeLayout` relies on synthesized decoding, which maps an absent optional to `nil`
+    /// rather than to the property's `init` default. That is the right behaviour for properties
+    /// whose default *is* `nil`, but not for `productCardDescriptionMaxLines`, where `nil` means
+    /// "unbounded" and the default is `2`. A typed theme written before that property existed has
+    /// no such key, and would silently switch from a two-line description to an unbounded one.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        typography = try container.decode(ConciergeTypography.self, forKey: .typography)
+        colors = try container.decode(ConciergeThemeColors.self, forKey: .colors)
+
+        var decodedLayout = try container.decode(ConciergeLayout.self, forKey: .layout)
+        if decodedLayout.productCardDescriptionMaxLines == nil,
+           !Self.layoutDeclaresDescriptionMaxLines(in: container) {
+            // Read the default off a default-constructed layout so the two cannot drift apart.
+            decodedLayout.productCardDescriptionMaxLines = ConciergeLayout().productCardDescriptionMaxLines
+        }
+        layout = decodedLayout
+    }
+
+    /// Whether the encoded layout carries a `productCardDescriptionMaxLines` key at all, which is
+    /// what distinguishes "written before the property existed" from an explicit `null` opting in
+    /// to an unbounded description.
+    private static func layoutDeclaresDescriptionMaxLines(
+        in container: KeyedDecodingContainer<CodingKeys>
+    ) -> Bool {
+        guard let layoutContainer = try? container.nestedContainer(
+            keyedBy: DynamicCodingKey.self,
+            forKey: .layout
+        ) else {
+            return false
+        }
+        return layoutContainer.contains(DynamicCodingKey("productCardDescriptionMaxLines"))
+    }
 }
