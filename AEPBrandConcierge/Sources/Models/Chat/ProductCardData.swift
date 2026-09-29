@@ -70,3 +70,44 @@ public struct ProductCardData {
         self.imageHeight = imageHeight
     }
 }
+
+// Call to action (CTA) resolution
+
+/// Drives a CTA's visual style. Add a case (and update `ProductCardData.ctas`) to support more actions.
+public enum ProductCardCTARole: Hashable {
+    case primary
+    case secondary
+}
+
+/// A validated, display-ready product card CTA (see `ProductCardData.makeCTA(from:role:)`).
+public struct ProductCardCTA: Identifiable {
+    /// Role as identity: one CTA per role, so it's a stable `ForEach` id across renders.
+    public var id: ProductCardCTARole { role }
+    public let text: String
+    public let url: String
+    public let role: ProductCardCTARole
+
+    public init(text: String, url: String, role: ProductCardCTARole) {
+        self.text = text
+        self.url = url
+        self.role = role
+    }
+}
+
+public extension ProductCardData {
+    /// Ordered, validated CTAs (primary then secondary) — the single source of truth for CTA visibility.
+    var ctas: [ProductCardCTA] {
+        [(primaryButton, ProductCardCTARole.primary), (secondaryButton, ProductCardCTARole.secondary)]
+            .compactMap { action, role in ProductCardData.makeCTA(from: action, role: role) }
+    }
+
+    /// Returns a CTA only when both text and url are non-blank; stores trimmed values so a padded
+    /// url can't render a button that then fails `URL(string:)` on tap.
+    static func makeCTA(from action: ActionButton?, role: ProductCardCTARole) -> ProductCardCTA? {
+        guard let action, let url = action.url else { return nil }
+        let trimmedText = action.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty, !trimmedURL.isEmpty else { return nil }
+        return ProductCardCTA(text: trimmedText, url: trimmedURL, role: role)
+    }
+}

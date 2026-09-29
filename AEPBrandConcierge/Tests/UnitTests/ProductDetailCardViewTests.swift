@@ -113,9 +113,131 @@ final class ProductDetailCardViewTests: XCTestCase {
         XCTAssertEqual(onTapCallCount, 0)
     }
 
+    // MARK: - CTA resolution (primary + secondary)
+
+    func test_ctas_primaryOnly_whenNoSecondary() {
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy")
+        )
+
+        XCTAssertEqual(data.ctas.map { $0.role }, [.primary])
+        XCTAssertEqual(data.ctas.map { $0.text }, ["Buy now"])
+    }
+
+    func test_ctas_bothRendered_primaryBeforeSecondary_whenBothValid() {
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "myapp://checkout?productId=prod-123"),
+            secondaryButton: ActionButton(text: "Learn more", url: "https://shop.com/products/prod-123")
+        )
+
+        XCTAssertEqual(data.ctas.map { $0.role }, [.primary, .secondary])
+        XCTAssertEqual(data.ctas.map { $0.text }, ["Buy now", "Learn more"])
+        XCTAssertEqual(data.ctas.map { $0.url }, ["myapp://checkout?productId=prod-123", "https://shop.com/products/prod-123"])
+    }
+
+    func test_ctas_secondaryOnly_whenPrimaryInvalid() {
+        // A valid secondary still renders even if the primary is missing/invalid.
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: nil,
+            secondaryButton: ActionButton(text: "Learn more", url: "https://shop.com/learn")
+        )
+
+        XCTAssertEqual(data.ctas.map { $0.role }, [.secondary])
+    }
+
+    func test_ctas_dropsSecondary_whenUrlNil() {
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy"),
+            secondaryButton: ActionButton(text: "Learn more", url: nil)
+        )
+
+        XCTAssertEqual(data.ctas.map { $0.role }, [.primary])
+    }
+
+    func test_ctas_dropsSecondary_whenTextOrUrlBlank() {
+        let blankText = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy"),
+            secondaryButton: ActionButton(text: "   ", url: "https://shop.com/learn")
+        )
+        XCTAssertEqual(blankText.ctas.map { $0.role }, [.primary])
+
+        let blankUrl = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy"),
+            secondaryButton: ActionButton(text: "Learn more", url: "   ")
+        )
+        XCTAssertEqual(blankUrl.ctas.map { $0.role }, [.primary])
+    }
+
+    func test_ctas_trimsWhitespaceFromTextAndUrl() {
+        // Padded url must be stored trimmed so URL(string:) succeeds on tap.
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "  Buy now  ", url: "  https://example.com/buy  ")
+        )
+
+        XCTAssertEqual(data.ctas.first?.text, "Buy now")
+        XCTAssertEqual(data.ctas.first?.url, "https://example.com/buy")
+        XCTAssertNotNil(URL(string: data.ctas.first?.url ?? ""))
+    }
+
+    func test_ctas_idIsStableAcrossAccesses() {
+        // ForEach identity must be stable across renders; id is derived from role, not a fresh UUID.
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy"),
+            secondaryButton: ActionButton(text: "Learn more", url: "https://example.com/learn")
+        )
+
+        XCTAssertEqual(data.ctas.map { $0.id }, data.ctas.map { $0.id })
+        XCTAssertEqual(data.ctas.map { $0.id }, [.primary, .secondary])
+    }
+
+    func test_ctas_empty_whenNeitherValid() {
+        let data = makeProductCardData(
+            subtitle: nil,
+            primaryButton: ActionButton(text: "Buy now", url: nil),
+            secondaryButton: ActionButton(text: "", url: "https://shop.com/learn")
+        )
+
+        XCTAssertTrue(data.ctas.isEmpty)
+    }
+
+    func test_handleProductCardCtaButtonTap_routesSecondaryAction() {
+        var capturedLabel: String?
+        var capturedUrl: String?
+        let secondary = ActionButton(text: "Learn more", url: "https://shop.com/learn")
+        let card = ProductDetailCardView(
+            data: makeProductCardData(
+                subtitle: nil,
+                primaryButton: ActionButton(text: "Buy now", url: "https://example.com/buy"),
+                secondaryButton: secondary
+            ),
+            cardWidth: 222,
+            onTap: { label, url in
+                capturedLabel = label
+                capturedUrl = url
+            }
+        )
+
+        card.handleProductCardCtaButtonTap(secondary)
+
+        XCTAssertEqual(capturedLabel, "Learn more")
+        XCTAssertEqual(capturedUrl, "https://shop.com/learn")
+    }
+
     // MARK: - Helpers
 
-    private func makeProductCardData(subtitle: String?, primaryButton: ActionButton?) -> ProductCardData {
+    private func makeProductCardData(
+        subtitle: String?,
+        primaryButton: ActionButton?,
+        secondaryButton: ActionButton? = nil
+    ) -> ProductCardData {
         ProductCardData(
             imageSource: .remote(nil),
             title: "Product Name",
@@ -124,7 +246,7 @@ final class ProductDetailCardViewTests: XCTestCase {
             badge: nil,
             destinationURL: nil,
             primaryButton: primaryButton,
-            secondaryButton: nil,
+            secondaryButton: secondaryButton,
             imageWidth: 150,
             imageHeight: 150
         )

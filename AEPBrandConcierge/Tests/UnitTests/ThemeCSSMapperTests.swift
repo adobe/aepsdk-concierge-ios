@@ -592,6 +592,38 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.colors.productCardCtaButton.text.color.toHexString(), "#FFFFFF")
     }
 
+    func test_productCardSecondaryCtaButtonBackgroundColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-background-color", cssValue: "#101820", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.background.color.toHexString(), "#101820")
+    }
+
+    func test_productCardSecondaryCtaButtonTextColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-text-color", cssValue: "#BB5811", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.text.color.toHexString(), "#BB5811")
+    }
+
+    func test_productCardSecondaryCtaButtonBorderColor_mapsToSecondaryColors() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-border-color", cssValue: "#123456", to: &theme)
+
+        XCTAssertEqual(theme.colors.productCardSecondaryCtaButton.border.color.toHexString(), "#123456")
+    }
+
+    func test_productCardSecondaryCtaButtonBorderWidth_mapsToLayout() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(cssKey: "product-card-secondary-cta-button-border-width", cssValue: "2px", to: &theme)
+
+        XCTAssertEqual(theme.layout.productCardSecondaryCtaButtonBorderWidth, 2)
+    }
+
     // MARK: - Product Card Layout Mapping Tests
 
     func test_productCardTitleFontSize_mapsToLayout() {
@@ -746,6 +778,52 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertEqual(theme.layout.productCardMaxHeight, 360)
+    }
+
+    /// Unset by default, like every other optional layout token, leaving the card to apply its own
+    /// two-line default. A theme that never sets the key therefore clamps exactly as it did before
+    /// the key existed.
+    func test_productCardDescriptionMaxLines_defaultsToUnset() {
+        XCTAssertNil(ConciergeTheme().layout.productCardDescriptionMaxLines)
+    }
+
+    func test_productCardDescriptionMaxLines_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: "6", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardDescriptionMaxLines, 6)
+    }
+
+    /// `none` is not a supported clamp value, so it leaves the token unset and the card keeps its
+    /// own default rather than rendering an unbounded description.
+    func test_productCardDescriptionMaxLines_none_mapsToNil() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: "none", to: &theme)
+
+        // Then
+        XCTAssertNil(theme.layout.productCardDescriptionMaxLines)
+    }
+
+    /// Zero, negatives and junk are all meaningless as a line clamp; each must leave the token
+    /// unset rather than being passed through, since a `lineLimit(0)` renders nothing at all.
+    func test_productCardDescriptionMaxLines_invalidValues_mapToNil() {
+        for value in ["0", "-3", "abc", ""] {
+            // Given
+            var theme = ConciergeTheme()
+
+            // When
+            CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: value, to: &theme)
+
+            // Then
+            XCTAssertNil(theme.layout.productCardDescriptionMaxLines, "expected nil for \(value.isEmpty ? "empty string" : value)")
+        }
     }
 
     func test_productImageWidth_mapsToLayout() {

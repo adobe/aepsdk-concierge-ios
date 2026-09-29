@@ -81,7 +81,7 @@ struct ChatView: View {
                 .ignoresSafeArea()
 
             // Filter welcome content (header + examples) based on input state and whether the user has interacted
-            let shouldShowWelcome = (controller.composerState == .empty) && !controller.hasUserSentMessage
+            let shouldShowWelcome = (controller.composerState == .empty) && !controller.hasConversationStarted
             let displayMessages: [Message] = shouldShowWelcome ? controller.messages : controller.messages.filter { message in
                 switch message.template {
                 case .welcomePromptSuggestion, .welcomeHeader:
@@ -96,7 +96,7 @@ struct ChatView: View {
                 messages: displayMessages,
                 userScrollTick: controller.userScrollTick,
                 userMessageToScrollId: controller.userMessageToScrollId,
-                scrollToLastOnAppear: controller.hasUserSentMessage,
+                scrollToLastOnAppear: controller.hasConversationStarted,
                 chatState: controller.chatState,
                 isInputFocused: $isInputFocused
             ) { text in
@@ -131,7 +131,7 @@ struct ChatView: View {
                 subtitle: subtitleText,
                 onToggleMode: { isAgent in
                     if isAgent {
-                        controller.chatState = .idle
+                        controller.abandonActiveTurn()
                     }
                 },
                 onClose: {
@@ -174,6 +174,7 @@ struct ChatView: View {
         .onAppear {
             hapticFeedback.prepare()
             controller.trackChatOpened()
+            controller.networkErrorMessage = theme.text.errorNetwork
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         .onDisappear {
@@ -211,23 +212,6 @@ struct ChatView: View {
                         : .opacity
                 )
                 .zIndex(1000)
-            }
-        }
-        .overlay(alignment: .top) {
-            if controller.chatState == .error(.networkFailure) {
-                Text(theme.text.errorNetwork)
-                    .font(.subheadline)
-                    .foregroundStyle(theme.colors.message.conciergeText.color)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(
-                                theme.components.chatMessage.conciergeBackground.color.opacity(0.96)
-                            )
-                    )
-                    .padding(.top, 12)
-                    .padding(.horizontal, 16)
             }
         }
         .overlay(alignment: .center) {

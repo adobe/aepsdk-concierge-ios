@@ -67,7 +67,7 @@ def app_dev
 end
 
 def test_utils
-     pod 'AEPTestUtils', :git => 'https://github.com/adobe/aepsdk-core-ios.git', :tag => 'testutils-5.2.0'
+     pod 'AEPTestUtils', :git => 'https://github.com/adobe/aepsdk-core-ios.git', :tag => 'testutils-5.6.0'
 end
 
 target 'AEPBrandConcierge' do
@@ -76,6 +76,7 @@ end
 
 target 'UnitTests' do
   lib_main
+  test_utils
 end
 
 target 'ConciergeDemoApp' do

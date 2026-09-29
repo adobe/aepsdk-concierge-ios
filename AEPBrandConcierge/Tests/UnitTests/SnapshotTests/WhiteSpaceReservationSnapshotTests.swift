@@ -55,7 +55,7 @@ final class WhiteSpaceReservationSnapshotTests: XCTestCase {
             Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
             Message(template: .basic(isUserMessage: false), messageBody: "Here are a few")
         ]
-        controller.chatState = .processing
+        controller.setChatStateForTesting(.processing)
 
         let view = ChatView(controller: controller)
             .frame(width: 390, height: 844)

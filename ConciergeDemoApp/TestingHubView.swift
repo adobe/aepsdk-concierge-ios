@@ -32,6 +32,12 @@ struct TestingHubView: View {
     @Binding var customLinkHandlingEnabled: Bool
     @Binding var closeChatOnIntercept: Bool
     @Binding var deepLinkURL: URL?
+    /// The Buy Now Mock toggle and scenario selection both live in `ContentView`, which owns the
+    /// single decision about when `BuyNowMockURLProtocol` is active.
+    @Binding var buyNowMockRequested: Bool
+    @Binding var buyNowMockScenarioSelected: Bool
+    @Binding var buyNowMockSlowResponse: Bool
+    @Binding var buyNowMockSlowResponseDelay: Double
     var handleLink: (URL) -> Bool
 
     /// Switches to the tab hosting the always-mounted `Concierge.wrap` and shows chat. Used by
@@ -61,6 +67,10 @@ struct TestingHubView: View {
                 buyNowMockScenario
             }
         }
+        .onAppear { buyNowMockScenarioSelected = scenario == .buyNowMock }
+        .onChange(of: scenario) { newScenario in
+            buyNowMockScenarioSelected = newScenario == .buyNowMock
+        }
     }
 
     /// Wrapped in its own `Concierge.wrap` (rather than reusing the SwiftUI tab's) so it can force
@@ -71,14 +81,19 @@ struct TestingHubView: View {
     /// max across pages (`TabView` only keeps the current +/- 1 page mounted).
     private var buyNowMockScenario: some View {
         Concierge.wrap(
-            BuyNowMockView(onOpenChat: {
-                Concierge.show(
-                    surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
-                    title: "Concierge",
-                    subtitle: "Powered by Adobe",
-                    handleLink: handleLink
-                )
-            }),
+            BuyNowMockView(
+                isMockEnabled: $buyNowMockRequested,
+                isSlowResponseEnabled: $buyNowMockSlowResponse,
+                slowResponseDelay: $buyNowMockSlowResponseDelay,
+                onOpenChat: {
+                    Concierge.show(
+                        surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
+                        title: "Concierge",
+                        subtitle: "Powered by Adobe",
+                        handleLink: handleLink
+                    )
+                }
+            ),
             hideButton: true,
             handleLink: handleLink
         )

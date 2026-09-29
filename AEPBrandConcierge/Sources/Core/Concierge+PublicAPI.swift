@@ -48,6 +48,63 @@ public extension Concierge {
         ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
     }
 
+    // MARK: - Data Handoff
+
+    /// Hands data to the Concierge SDK to forward toward the agent pipeline (Brand Concierge /
+    /// Product Advisor), outside of normal user-typed chat - e.g. the result of a native checkout flow.
+    ///
+    /// - Parameters:
+    ///   - routingHint: An optional keyword consumed by Brand Concierge's current phrase-based
+    ///     router (e.g. "successful-checkout"). Defaults to empty, which is appropriate when the
+    ///     XDM fields provide sufficient routing context.
+    ///   - xdmFields: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK
+    ///     forwards alongside the routing hint - an ordinary nested dictionary, e.g.
+    ///     `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, JSON-serializable
+    ///     (see `JSONSerialization.isValidJSONObject`), and must not use `identityMap` as a
+    ///     top-level key.
+    ///   - localMessage: Optional text to render immediately in the chat transcript as a local,
+    ///     non-networked message. `nil`/empty -> nothing shown locally; the conversation only gets
+    ///     whatever Product Advisor eventually replies with.
+    ///   - completion: Called on the main actor after the handoff stream completes, and always
+    ///     within `DATA_HANDOFF_TURN_TIMEOUT` - the turn carries a wall-clock cap, so a slow or
+    ///     stalled backend can't leave the callback hanging. Success means the Concierge service
+    ///     completed the stream; it does not imply a particular business action was performed by
+    ///     Brand Concierge or Product Advisor. If another turn is active, the callback receives
+    ///     `.chatInProgress` immediately; the app may retry after the chat returns to an idle state.
+    ///
+    ///     A failure leaves nothing in the transcript - the user never asked for this turn, so the
+    ///     SDK does not render an error for it. The app owns the failure UX.
+    static func sendDataHandoff(
+        routingHint: String = "",
+        xdmFields: [String: Any],
+        localMessage: String? = nil,
+        completion: (@MainActor (Result<Void, ConciergeDataHandoffError>) -> Void)? = nil
+    ) {
+        let payload = ConciergeDataHandoffEvent(routingHint: routingHint, xdmFields: xdmFields, localMessage: localMessage)
+        let event = Event(name: ConciergeConstants.EventName.DATA_HANDOFF,
+                          type: ConciergeConstants.EventType.concierge,
+                          source: EventSource.requestContent,
+                          data: [ConciergeConstants.DataHandoffEventData.Key.PAYLOAD: payload])
+
+        MobileCore.dispatch(event: event, timeout: ConciergeConstants.Request.dataHandoffResponseTimeout) { response in
+            guard let completion = completion else { return }
+            let accepted = response?.data?[ConciergeConstants.DataHandoffEventData.Key.ACCEPTED] as? Bool ?? false
+            let errorCode = response?.data?[ConciergeConstants.DataHandoffEventData.Key.ERROR_CODE] as? String
+            let errorMessage = response?.data?[ConciergeConstants.DataHandoffEventData.Key.ERROR_MESSAGE] as? String
+            let result: Result<Void, ConciergeDataHandoffError>
+            if accepted {
+                result = .success(())
+            } else if let errorCode, let error = ConciergeDataHandoffError(code: errorCode, message: errorMessage) {
+                result = .failure(error)
+            } else {
+                result = .failure(.noResponse)
+            }
+            Task { @MainActor in
+                completion(result)
+            }
+        }
+    }
+
     // MARK: - SwiftUI Presentation APIs
 
     /// Shows the Concierge chat UI on top of the wrapped SwiftUI view hierarchy.

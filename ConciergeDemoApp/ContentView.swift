@@ -15,6 +15,7 @@ import UIKit
 import AVFoundation
 import Speech
 import AudioToolbox
+import AEPServices
 import AEPBrandConcierge
 
 struct ContentView: View {
@@ -47,9 +48,24 @@ struct ContentView: View {
     @State private var loadedTheme: ConciergeTheme = ConciergeThemeLoader.default()
     @State private var themeLoadStatusText: String = ""
     @State private var interceptedLinkURL: URL?
+    /// Drives the checkout sheet. Cleared on dismissal; `pendingCheckout` keeps the product around
+    /// long enough for the dismissal handler to build the handoff.
+    @State private var checkoutProduct: CheckoutProduct?
+    @State private var pendingCheckout: CheckoutProduct?
+    @State private var checkoutWasCompleted = false
     @State private var customLinkHandlingEnabled: Bool = true
     @State private var closeChatOnIntercept: Bool = false
     @State private var selectedTab: DemoTab = .swiftUI
+
+    /// The "Mock \"Buy now\" response" toggle's value. Lifted out of `BuyNowMockView` so the single
+    /// place that owns `BuyNowMockURLProtocol.isEnabled` can combine it with the current tab.
+    @State private var buyNowMockRequested: Bool = true
+    /// Whether the Testing tab is currently showing the Buy Now Mock scenario.
+    @State private var buyNowMockScenarioSelected: Bool = false
+    /// The "Slow response" toggle and its delay, used to see how the chat behaves when Brand
+    /// Concierge takes a long time to answer - including past the SDK's read timeout.
+    @State private var buyNowMockSlowResponse: Bool = false
+    @State private var buyNowMockSlowResponseDelay: Double = 5
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -137,6 +153,10 @@ struct ContentView: View {
                 customLinkHandlingEnabled: $customLinkHandlingEnabled,
                 closeChatOnIntercept: $closeChatOnIntercept,
                 deepLinkURL: $deepLinkState.receivedURL,
+                buyNowMockRequested: $buyNowMockRequested,
+                buyNowMockScenarioSelected: $buyNowMockScenarioSelected,
+                buyNowMockSlowResponse: $buyNowMockSlowResponse,
+                buyNowMockSlowResponseDelay: $buyNowMockSlowResponseDelay,
                 handleLink: handleLink,
                 onOpenChatViaSwiftUITab: {
                     selectedTab = .swiftUI
@@ -153,9 +173,25 @@ struct ContentView: View {
         }
         .onAppear {
             loadTheme()
+            syncBuyNowMock()
         }
         .onChange(of: selectedThemeFile) { _ in
             loadTheme()
+        }
+        .onChange(of: selectedTab) { _ in
+            syncBuyNowMock()
+        }
+        .onChange(of: buyNowMockRequested) { _ in
+            syncBuyNowMock()
+        }
+        .onChange(of: buyNowMockScenarioSelected) { _ in
+            syncBuyNowMock()
+        }
+        .onChange(of: buyNowMockSlowResponse) { _ in
+            syncBuyNowMock()
+        }
+        .onChange(of: buyNowMockSlowResponseDelay) { _ in
+            syncBuyNowMock()
         }
         .onChange(of: deepLinkState.targetTab) { tab in
             if let tab {
@@ -164,13 +200,25 @@ struct ContentView: View {
             }
         }
         .alert("Link Intercepted", isPresented: showInterceptedAlert, presenting: interceptedLinkURL) { _ in
-            Button("OK") { interceptedLinkURL = nil }
+            Button("OK") {
+                interceptedLinkURL = nil
+            }
         } message: { url in
             if closeChatOnIntercept {
                 Text("The app intercepted this link and closed the chat:\n\(url.absoluteString)")
             } else {
                 Text("The app intercepted this link:\n\(url.absoluteString)")
             }
+        }
+        .sheet(item: $checkoutProduct, onDismiss: finishCheckout) { product in
+            CheckoutView(
+                product: product,
+                onComplete: {
+                    checkoutWasCompleted = true
+                    checkoutProduct = nil
+                },
+                onCancel: { checkoutProduct = nil }
+            )
         }
     }
 
@@ -181,8 +229,41 @@ struct ContentView: View {
         )
     }
 
+    /// Scopes the canned "Buy now" responses to the Testing tab's Buy Now Mock scenario, so chat
+    /// opened from anywhere else talks to the real Concierge service.
+    ///
+    /// Gated at request time via `isEnabled` rather than by swapping
+    /// `Concierge.urlSessionConfigurationForTesting`: the SDK resolves that configuration once,
+    /// when it *creates* a session, and reuses an existing session across tabs here - so a
+    /// session-level swap would be ignored for whichever tab opened the chat second.
+    private func syncBuyNowMock() {
+        let isActive = selectedTab == .testing
+            && buyNowMockScenarioSelected
+            && buyNowMockRequested
+
+        BuyNowMockURLProtocol.isEnabled = isActive
+        // Tied to the same condition so the artificial delay can't survive the mock being disarmed.
+        BuyNowMockURLProtocol.responseDelay = (isActive && buyNowMockSlowResponse) ? buyNowMockSlowResponseDelay : 0
+    }
+
     private func handleLink(_ url: URL) -> Bool {
         guard customLinkHandlingEnabled else { return false }
+
+        // A "Buy now" CTA opens the mock checkout screen rather than the generic intercept alert:
+        // the whole point of the handoff API is that the transaction happens in the app's own UI.
+        // The chat is left open behind the sheet so the forwarded turn is visible after checkout.
+        if url.host == "buy-now", let product = CheckoutProduct(buyNowURL: url) {
+            // A second "Buy now" tapped during the sheet's dismissal animation would overwrite
+            // `pendingCheckout` and reset `checkoutWasCompleted` *before* `onDismiss` runs for the
+            // first one, reporting the previous outcome against the newly tapped product.
+            guard pendingCheckout == nil else { return true }
+
+            pendingCheckout = product
+            checkoutWasCompleted = false
+            checkoutProduct = product
+            return true
+        }
+
         if url.scheme == "demoapp" || url.host == "adobe.com" || url.host == "www.adobe.com" {
             if closeChatOnIntercept {
                 Concierge.hide()
@@ -191,6 +272,62 @@ struct ContentView: View {
             return true
         }
         return false
+    }
+
+    /// Runs when the checkout sheet goes away for *any* reason, so no exit path can silently skip
+    /// the handoff. `checkoutWasCompleted` is the only thing that distinguishes them.
+    private func finishCheckout() {
+        guard let product = pendingCheckout else { return }
+        pendingCheckout = nil
+
+        let outcome: CheckoutOutcome = checkoutWasCompleted ? .purchased : .abandoned
+        checkoutWasCompleted = false
+        dispatchCheckoutDataHandoff(for: product, outcome: outcome)
+    }
+
+    /// Demo-only: forwards the checkout result to the SDK the same way a real integrator's
+    /// post-checkout code would. Both outcomes are reported - an abandoned cart is a useful signal
+    /// too, and forwarding only the happy path would make the API look purchase-specific.
+    private func dispatchCheckoutDataHandoff(for product: CheckoutProduct, outcome: CheckoutOutcome) {
+        var productListItem: [String: Any] = ["name": product.name, "quantity": 1]
+        if let priceTotal = product.priceTotal {
+            productListItem["priceTotal"] = priceTotal
+        }
+
+        var commerce: [String: Any] = [:]
+        let routingHint: String
+        let localMessage: String?
+
+        switch outcome {
+        case .purchased:
+            routingHint = "successful-checkout"
+            localMessage = "Thank you for purchasing \(product.name)"
+
+            var order: [String: Any] = ["purchaseID": UUID().uuidString, "currencyCode": "USD"]
+            if let priceTotal = product.priceTotal {
+                order["priceTotal"] = priceTotal
+            }
+            commerce["order"] = order
+            commerce["purchases"] = ["value": 1]
+
+        case .abandoned:
+            routingHint = "abandoned-checkout"
+            // No local message: nothing happened worth confirming in the transcript, so the only
+            // thing that should appear is whatever Product Advisor decides to say about it.
+            localMessage = nil
+            commerce["abandons"] = ["value": 1]
+        }
+
+        Concierge.sendDataHandoff(
+            routingHint: routingHint,
+            xdmFields: [
+                "commerce": commerce,
+                "productListItems": [productListItem]
+            ],
+            localMessage: localMessage
+        ) { result in
+            Log.debug(label: "ConciergeDemoApp", "Checkout data handoff (\(routingHint)) response: \(String(describing: result))")
+        }
     }
 
     private func loadTheme() {

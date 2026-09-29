@@ -320,6 +320,24 @@ public struct ConciergeProductCardCtaButtonColors: Codable {
     }
 }
 
+/// Colors for the product card's outlined secondary CTA button (`entity_info.secondary`).
+public struct ConciergeProductCardSecondaryCtaButtonColors: Codable {
+    public var background: CodableColor
+    public var text: CodableColor
+    public var border: CodableColor
+
+    public init(
+        background: CodableColor = CodableColor(Color.clear),
+        // #BB5811 — matches the primary CTA fill; used as outline + label.
+        text: CodableColor = CodableColor(Color(red: 0xBB / 255, green: 0x58 / 255, blue: 0x11 / 255)),
+        border: CodableColor = CodableColor(Color(red: 0xBB / 255, green: 0x58 / 255, blue: 0x11 / 255))
+    ) {
+        self.background = background
+        self.text = text
+        self.border = border
+    }
+}
+
 /// Consolidated color configuration with semantic groupings
 public struct ConciergeThemeColors: Codable {
     public var primary: ConciergePrimaryColors
@@ -333,6 +351,7 @@ public struct ConciergeThemeColors: Codable {
     public var productCard: ConciergeProductCardColors
     public var ctaButton: ConciergeCtaButtonColors
     public var productCardCtaButton: ConciergeProductCardCtaButtonColors
+    public var productCardSecondaryCtaButton: ConciergeProductCardSecondaryCtaButtonColors
     public var welcomePrompt: ConciergeWelcomePromptColors
     public var thinking: ConciergeThinkingColors
     public var promptSuggestion: ConciergeWelcomePromptColors
@@ -349,6 +368,7 @@ public struct ConciergeThemeColors: Codable {
         productCard: ConciergeProductCardColors = ConciergeProductCardColors(),
         ctaButton: ConciergeCtaButtonColors = ConciergeCtaButtonColors(),
         productCardCtaButton: ConciergeProductCardCtaButtonColors = ConciergeProductCardCtaButtonColors(),
+        productCardSecondaryCtaButton: ConciergeProductCardSecondaryCtaButtonColors = ConciergeProductCardSecondaryCtaButtonColors(),
         welcomePrompt: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors(),
         thinking: ConciergeThinkingColors = ConciergeThinkingColors(),
         promptSuggestion: ConciergeWelcomePromptColors = ConciergeWelcomePromptColors()
@@ -364,6 +384,7 @@ public struct ConciergeThemeColors: Codable {
         self.productCard = productCard
         self.ctaButton = ctaButton
         self.productCardCtaButton = productCardCtaButton
+        self.productCardSecondaryCtaButton = productCardSecondaryCtaButton
         self.welcomePrompt = welcomePrompt
         self.thinking = thinking
         self.promptSuggestion = promptSuggestion

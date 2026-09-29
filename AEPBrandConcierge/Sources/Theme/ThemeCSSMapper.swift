@@ -186,6 +186,9 @@ public enum CSSKeyMapper {
         "product-card-outline-color": { cssValue, theme in theme.colors.productCard.outlineColor = CSSValueConverter.parseColor(cssValue) },
         "product-card-cta-button-background-color": { cssValue, theme in theme.colors.productCardCtaButton.background = CSSValueConverter.parseColor(cssValue) },
         "product-card-cta-button-text-color": { cssValue, theme in theme.colors.productCardCtaButton.text = CSSValueConverter.parseColor(cssValue) },
+        "product-card-secondary-cta-button-background-color": { cssValue, theme in theme.colors.productCardSecondaryCtaButton.background = CSSValueConverter.parseColor(cssValue) },
+        "product-card-secondary-cta-button-text-color": { cssValue, theme in theme.colors.productCardSecondaryCtaButton.text = CSSValueConverter.parseColor(cssValue) },
+        "product-card-secondary-cta-button-border-color": { cssValue, theme in theme.colors.productCardSecondaryCtaButton.border = CSSValueConverter.parseColor(cssValue) },
 
         // Layout - Product Card
         "product-card-title-font-size": { cssValue, theme in theme.layout.productCardTitleFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 14 },
@@ -202,6 +205,7 @@ public enum CSSKeyMapper {
         "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 250 },
         "product-card-min-height": { cssValue, theme in theme.layout.productCardMinHeight = CSSValueConverter.parsePxValue(cssValue) ?? 240 },
         "product-card-max-height": { cssValue, theme in theme.layout.productCardMaxHeight = CSSValueConverter.parsePxValue(cssValue) ?? 360 },
+        "product-card-description-max-lines": { cssValue, theme in theme.layout.productCardDescriptionMaxLines = CSSValueConverter.parseMaxLines(cssValue) },
         "product-image-width": { cssValue, theme in theme.layout.productImageWidth = CSSValueConverter.parsePxValue(cssValue) ?? 190 },
         "product-image-height": { cssValue, theme in theme.layout.productImageHeight = CSSValueConverter.parsePxValue(cssValue) ?? 190 },
         "product-image-scale": { cssValue, theme in theme.layout.productImageScale = ProductImageScale(rawValue: cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) ?? .fill },
@@ -219,6 +223,7 @@ public enum CSSKeyMapper {
         "product-card-cta-button-vertical-padding": { cssValue, theme in theme.layout.productCardCtaButtonVerticalPadding = CSSValueConverter.parsePxValue(cssValue) ?? 8 },
         "product-card-cta-button-font-size": { cssValue, theme in theme.layout.productCardCtaButtonFontSize = CSSValueConverter.parsePxValue(cssValue) ?? 12 },
         "product-card-cta-button-font-weight": { cssValue, theme in theme.layout.productCardCtaButtonFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "product-card-secondary-cta-button-border-width": { cssValue, theme in theme.layout.productCardSecondaryCtaButtonBorderWidth = CSSValueConverter.parsePxValue(cssValue) ?? 1 },
 
         // Colors - CTA Button
         "cta-button-background-color": { cssValue, theme in theme.colors.ctaButton.background = CSSValueConverter.parseColor(cssValue) },
