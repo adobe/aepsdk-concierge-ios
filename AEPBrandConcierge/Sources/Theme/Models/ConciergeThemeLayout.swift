@@ -90,8 +90,7 @@ public struct ConciergeLayout: Codable {
     public var productCardMinHeight: CGFloat
     public var productCardMaxHeight: CGFloat
     /// Maximum number of lines the product card description renders before truncating with an
-    /// ellipsis. `nil` lets the description grow unbounded (the card's height clamp still applies,
-    /// so an unbounded description scrolls internally once it exceeds `productCardMaxHeight`).
+    /// ellipsis. `nil` means unset, and the card falls back to its built-in default of 2 lines.
     public var productCardDescriptionMaxLines: Int?
     public var productImageWidth: CGFloat
     public var productImageHeight: CGFloat
@@ -209,7 +208,7 @@ public struct ConciergeLayout: Codable {
         productCardWidth: CGFloat = 250,
         productCardMinHeight: CGFloat = 240,
         productCardMaxHeight: CGFloat = 360,
-        productCardDescriptionMaxLines: Int? = 2,
+        productCardDescriptionMaxLines: Int? = nil,
         productImageWidth: CGFloat = 190,
         productImageHeight: CGFloat = 190,
         productImageScale: ProductImageScale = .fill,

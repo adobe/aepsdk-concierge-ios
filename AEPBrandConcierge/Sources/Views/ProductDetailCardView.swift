@@ -20,6 +20,8 @@ private enum ProductDetailCardDimensions {
     static let priceLineHeight: CGFloat = 17
     static let wasPriceLineHeight: CGFloat = 14
     static let subtitleLetterSpacing: CGFloat = -0.5
+    /// Used when `productCardDescriptionMaxLines` is unset.
+    static let defaultDescriptionMaxLines = 2
     static let priceLetterSpacing: CGFloat = -0.5
     static let badgeHorizontalPadding: CGFloat = 12
     static let badgeVerticalPadding: CGFloat = 4
@@ -275,7 +277,8 @@ private extension ProductDetailCardView {
                         fontSize: theme.layout.productCardSubtitleFontSize,
                         lineHeight: ProductDetailCardDimensions.subtitleLineHeight
                     ))
-                    .lineLimit(theme.layout.productCardDescriptionMaxLines)
+                    .lineLimit(theme.layout.productCardDescriptionMaxLines
+                        ?? ProductDetailCardDimensions.defaultDescriptionMaxLines)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }

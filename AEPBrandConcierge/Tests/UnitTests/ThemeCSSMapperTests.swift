@@ -780,10 +780,11 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardMaxHeight, 360)
     }
 
-    /// Default is 2, so a theme that never sets the key keeps the description clamped exactly as it
-    /// was before the key existed.
-    func test_productCardDescriptionMaxLines_defaultsToTwo() {
-        XCTAssertEqual(ConciergeTheme().layout.productCardDescriptionMaxLines, 2)
+    /// Unset by default, like every other optional layout token, leaving the card to apply its own
+    /// two-line default. A theme that never sets the key therefore clamps exactly as it did before
+    /// the key existed.
+    func test_productCardDescriptionMaxLines_defaultsToUnset() {
+        XCTAssertNil(ConciergeTheme().layout.productCardDescriptionMaxLines)
     }
 
     func test_productCardDescriptionMaxLines_mapsToLayout() {
@@ -797,8 +798,8 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardDescriptionMaxLines, 6)
     }
 
-    /// `none` is the CSS spelling for an unclamped description; it must produce `nil` so the view
-    /// applies no `lineLimit` at all rather than clamping to some number.
+    /// `none` is not a supported clamp value, so it leaves the token unset and the card keeps its
+    /// own default rather than rendering an unbounded description.
     func test_productCardDescriptionMaxLines_none_mapsToNil() {
         // Given
         var theme = ConciergeTheme()
@@ -810,8 +811,8 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertNil(theme.layout.productCardDescriptionMaxLines)
     }
 
-    /// Zero, negatives and junk are all meaningless as a line clamp; each must fall back to
-    /// unbounded rather than silently hiding the description (a `lineLimit(0)` renders nothing).
+    /// Zero, negatives and junk are all meaningless as a line clamp; each must leave the token
+    /// unset rather than being passed through, since a `lineLimit(0)` renders nothing at all.
     func test_productCardDescriptionMaxLines_invalidValues_mapToNil() {
         for value in ["0", "-3", "abc", ""] {
             // Given

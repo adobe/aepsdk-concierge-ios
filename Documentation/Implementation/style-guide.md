@@ -117,8 +117,8 @@ On iOS, prefer the `*-mobile` token names for input height and corner radius; `-
 
 ### Line clamp values
 
-Line-clamp tokens mirror CSS `-webkit-line-clamp`: a positive integer limits the text to that many
-lines and truncates the overflow with an ellipsis, while `none` leaves it unbounded.
+Line-clamp tokens take a positive integer, limiting the text to that many lines and truncating the
+overflow with an ellipsis.
 
 ```json
 {
@@ -126,8 +126,10 @@ lines and truncates the overflow with an ellipsis, while `none` leaves it unboun
 }
 ```
 
-`0`, negative numbers, and unparseable values are all treated as `none` rather than as a clamp — a
-zero-line clamp would render the text invisible.
+`0`, negative numbers, `none`, and unparseable values all leave the token unset, so the component
+applies its own default clamp — they are not a way to request unbounded text. (A zero-line clamp
+would render the text invisible, so it is never passed through.) To approximate an unbounded
+description, set a large value such as `"99"` and raise `--product-card-max-height` to match.
 
 Clamping only limits the text; it does not reserve space. A description shorter than the clamp takes
 only the lines it needs, and in a carousel the surrounding card still stretches to the tallest card's
@@ -820,7 +822,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--product-card-height` | `layout.productCardHeight` | `CGFloat` | `300` | Card height in points |
 | `--product-card-min-height` | `layout.productCardMinHeight` | `CGFloat` | `240` | Minimum product-detail card height. Cards shorter than this are padded out to it. |
 | `--product-card-max-height` | `layout.productCardMaxHeight` | `CGFloat` | `360` | Maximum product-detail card height. Content taller than this scrolls inside the card, which clips the bottom inset (and the bottom-anchored price/CTA block) below the fold. |
-| `--product-card-description-max-lines` | `layout.productCardDescriptionMaxLines` | `Int?` | `2` | Maximum number of lines the card description renders before truncating with an ellipsis. Accepts a positive integer, or `none` for an unbounded description. See [Line clamp values](#line-clamp-values). Raising this usually requires raising `--product-card-max-height` too, or the extra lines push the card past its cap and it scrolls internally instead of growing. |
+| `--product-card-description-max-lines` | `layout.productCardDescriptionMaxLines` | `Int?` | unset (renders 2 lines) | Maximum number of lines the card description renders before truncating with an ellipsis. Accepts a positive integer; anything else leaves the token unset and the card clamps to 2 lines. See [Line clamp values](#line-clamp-values). Raising this usually requires raising `--product-card-max-height` too, or the extra lines push the card past its cap and it scrolls internally instead of growing. |
 | `--product-card-title-font-size` | `layout.productCardTitleFontSize` | `CGFloat` | `14` | Title font size |
 | `--product-card-title-font-weight` | `layout.productCardTitleFontWeight` | `FontWeight` | `bold` | Title font weight |
 | `--product-card-subtitle-font-size` | `layout.productCardSubtitleFontSize` | `CGFloat` | `12` | Subtitle font size |
@@ -1419,7 +1421,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--product-card-width` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
 | `--product-card-min-height` | ✅ | Floor applied by `ProductDetailCardView.clampedHeight` |
 | `--product-card-max-height` | ✅ | Cap applied by `ProductDetailCardView.clampedHeight`; content beyond it scrolls internally |
-| `--product-card-description-max-lines` | ✅ | Applied as the `lineLimit` on the description in `ProductDetailCardView.productCardTitleSubtitleBlock` |
+| `--product-card-description-max-lines` | ✅ | Applied as the `lineLimit` on the description in `ProductDetailCardView.productCardTitleSubtitleBlock`, falling back to `ProductDetailCardDimensions.defaultDescriptionMaxLines` when unset |
 | `--product-card-height` | ✅ | Used in ProductDetailCardView, CarouselGroupView |
 | `--product-card-title-font-size` | ✅ | Used in ProductDetailCardView |
 | `--product-card-title-font-weight` | ✅ | Used in ProductDetailCardView |

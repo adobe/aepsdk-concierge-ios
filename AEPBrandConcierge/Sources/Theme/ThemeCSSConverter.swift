@@ -209,9 +209,9 @@ public enum CSSValueConverter {
 
     /// Parses a line-clamp value into a `lineLimit`.
     ///
-    /// Mirrors CSS `-webkit-line-clamp`: a positive integer clamps to that many lines, while
-    /// `none` (and any non-positive or unparseable value) means unbounded, returning `nil` so the
-    /// caller applies no limit.
+    /// A positive integer clamps to that many lines. Any other value — non-positive, unparseable,
+    /// or the CSS keyword `none` — returns `nil`, leaving the property unset so the view falls
+    /// back to its own default, as it does for every other optional layout token.
     public static func parseMaxLines(_ cssValue: String) -> Int? {
         let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard trimmed != "none", let parsed = Int(trimmed), parsed > 0 else { return nil }
