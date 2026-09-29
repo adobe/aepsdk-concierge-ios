@@ -780,6 +780,51 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.productCardMaxHeight, 360)
     }
 
+    /// Default is 2, so a theme that never sets the key keeps the description clamped exactly as it
+    /// was before the key existed.
+    func test_productCardDescriptionMaxLines_defaultsToTwo() {
+        XCTAssertEqual(ConciergeTheme().layout.productCardDescriptionMaxLines, 2)
+    }
+
+    func test_productCardDescriptionMaxLines_mapsToLayout() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: "6", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.layout.productCardDescriptionMaxLines, 6)
+    }
+
+    /// `none` is the CSS spelling for an unclamped description; it must produce `nil` so the view
+    /// applies no `lineLimit` at all rather than clamping to some number.
+    func test_productCardDescriptionMaxLines_none_mapsToNil() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: "none", to: &theme)
+
+        // Then
+        XCTAssertNil(theme.layout.productCardDescriptionMaxLines)
+    }
+
+    /// Zero, negatives and junk are all meaningless as a line clamp; each must fall back to
+    /// unbounded rather than silently hiding the description (a `lineLimit(0)` renders nothing).
+    func test_productCardDescriptionMaxLines_invalidValues_mapToNil() {
+        for value in ["0", "-3", "abc", ""] {
+            // Given
+            var theme = ConciergeTheme()
+
+            // When
+            CSSKeyMapper.apply(cssKey: "product-card-description-max-lines", cssValue: value, to: &theme)
+
+            // Then
+            XCTAssertNil(theme.layout.productCardDescriptionMaxLines, "expected nil for \(value.isEmpty ? "empty string" : value)")
+        }
+    }
+
     func test_productImageWidth_mapsToLayout() {
         // Given
         var theme = ConciergeTheme()

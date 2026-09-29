@@ -274,7 +274,7 @@ private extension ProductDetailCardView {
                         fontSize: theme.layout.productCardSubtitleFontSize,
                         lineHeight: ProductDetailCardDimensions.subtitleLineHeight
                     ))
-                    .lineLimit(2)
+                    .lineLimit(theme.layout.productCardDescriptionMaxLines)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }

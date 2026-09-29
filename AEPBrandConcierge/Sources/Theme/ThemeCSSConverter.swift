@@ -207,6 +207,17 @@ public enum CSSValueConverter {
         return Int(trimmed) ?? 0
     }
 
+    /// Parses a line-clamp value into a `lineLimit`.
+    ///
+    /// Mirrors CSS `-webkit-line-clamp`: a positive integer clamps to that many lines, while
+    /// `none` (and any non-positive or unparseable value) means unbounded, returning `nil` so the
+    /// caller applies no limit.
+    public static func parseMaxLines(_ cssValue: String) -> Int? {
+        let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard trimmed != "none", let parsed = Int(trimmed), parsed > 0 else { return nil }
+        return parsed
+    }
+
     /// Parses CSS font-family string (takes first font name, ignores font stack)
     public static func parseFontFamily(_ cssValue: String) -> String {
         let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines)

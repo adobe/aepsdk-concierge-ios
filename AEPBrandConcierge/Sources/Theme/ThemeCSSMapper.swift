@@ -205,6 +205,7 @@ public enum CSSKeyMapper {
         "product-card-width": { cssValue, theme in theme.layout.productCardWidth = CSSValueConverter.parsePxValue(cssValue) ?? 250 },
         "product-card-min-height": { cssValue, theme in theme.layout.productCardMinHeight = CSSValueConverter.parsePxValue(cssValue) ?? 240 },
         "product-card-max-height": { cssValue, theme in theme.layout.productCardMaxHeight = CSSValueConverter.parsePxValue(cssValue) ?? 360 },
+        "product-card-description-max-lines": { cssValue, theme in theme.layout.productCardDescriptionMaxLines = CSSValueConverter.parseMaxLines(cssValue) },
         "product-image-width": { cssValue, theme in theme.layout.productImageWidth = CSSValueConverter.parsePxValue(cssValue) ?? 190 },
         "product-image-height": { cssValue, theme in theme.layout.productImageHeight = CSSValueConverter.parsePxValue(cssValue) ?? 190 },
         "product-image-scale": { cssValue, theme in theme.layout.productImageScale = ProductImageScale(rawValue: cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) ?? .fill },
