@@ -15,8 +15,91 @@ import XCTest
 @testable import AEPBrandConcierge
 
 final class SharedStateResultConciergeTests: XCTestCase {
-    
+
+    // identityMap Tests
+
+    func test_identityMap_withFullMap_returnsVerbatim() {
+        // Given
+        let value: [String: Any] = [
+            "identityMap": [
+                "ECID": [
+                    ["id": "test-ecid-12345", "authenticatedState": "ambiguous", "primary": false]
+                ],
+                "hashedEmail": [
+                    ["id": "hashed-email-value", "authenticatedState": "authenticated", "primary": true]
+                ],
+                "CRMID": [
+                    ["id": "crm-id-value"]
+                ]
+            ]
+        ]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let identityMap = result.identityMap
+
+        // Then
+        XCTAssertEqual(identityMap?.keys.sorted(), ["CRMID", "ECID", "hashedEmail"])
+
+        let ecidEntries = identityMap?["ECID"] as? [[String: Any]]
+        XCTAssertEqual(ecidEntries?.first?["id"] as? String, "test-ecid-12345")
+        XCTAssertEqual(ecidEntries?.first?["authenticatedState"] as? String, "ambiguous")
+        XCTAssertEqual(ecidEntries?.first?["primary"] as? Bool, false)
+
+        let hashedEmailEntries = identityMap?["hashedEmail"] as? [[String: Any]]
+        XCTAssertEqual(hashedEmailEntries?.first?["id"] as? String, "hashed-email-value")
+        XCTAssertEqual(hashedEmailEntries?.first?["authenticatedState"] as? String, "authenticated")
+        XCTAssertEqual(hashedEmailEntries?.first?["primary"] as? Bool, true)
+
+        let crmEntries = identityMap?["CRMID"] as? [[String: Any]]
+        XCTAssertEqual(crmEntries?.first?["id"] as? String, "crm-id-value")
+    }
+
+    func test_identityMap_withNoIdentityMap_returnsNil() {
+        // Given
+        let value: [String: Any] = [:]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let identityMap = result.identityMap
+
+        // Then
+        XCTAssertNil(identityMap)
+    }
+
+    func test_identityMap_withNilValue_returnsNil() {
+        // Given
+        let result = SharedStateResult(status: .set, value: nil)
+
+        // When
+        let identityMap = result.identityMap
+
+        // Then
+        XCTAssertNil(identityMap)
+    }
+
     // MARK: - ECID Tests
+
+    func test_ecid_withFullIdentityMapIncludingOtherNamespaces_returnsEcid() {
+        // Regression: ECID extraction is unaffected by other namespaces present in the map
+        let value: [String: Any] = [
+            "identityMap": [
+                "ECID": [
+                    ["id": "test-ecid-12345"]
+                ],
+                "hashedEmail": [
+                    ["id": "hashed-email-value"]
+                ]
+            ]
+        ]
+        let result = SharedStateResult(status: .set, value: value)
+
+        // When
+        let ecid = result.ecid
+
+        // Then
+        XCTAssertEqual(ecid, "test-ecid-12345")
+    }
     
     func test_ecid_withValidIdentityMap_returnsEcid() {
         // Given

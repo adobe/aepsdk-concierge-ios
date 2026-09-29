@@ -15,9 +15,14 @@ import AEPCore
 
 /// SharedStateResult extensions for accessing Concierge configuration values.
 extension SharedStateResult {
-    /// Extracts the ECID from the Edge Identity shared state.
+    /// Extracts the identity map verbatim (all namespaces, e.g. ECID, hashedEmail, CRMID) from the Edge Identity shared state.
+    var identityMap: [String: Any]? {
+        value?[ConciergeConstants.SharedState.EdgeIdentity.IDENTITY_MAP] as? [String: Any]
+    }
+
+    /// Extracts the ECID from the Edge Identity shared state; used only as the identity readiness signal.
     var ecid: String? {
-        guard let identityMap = value?[ConciergeConstants.SharedState.EdgeIdentity.IDENTITY_MAP] as? [AnyHashable: Any] else {
+        guard let identityMap = identityMap else {
             return nil
         }
 

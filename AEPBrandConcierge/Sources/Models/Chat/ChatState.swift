@@ -44,5 +44,15 @@ public enum ChatError: Error, Equatable {
 public enum ChatState: Equatable {
     case idle
     case processing
+
+    /// - Important: No production code path produces this case. A failed turn is a *finished* turn:
+    ///   it surfaces the failure and returns to `.idle`. Parking here would deadlock the chat, since
+    ///   `sendMessage`, `sendEnabled` and `micEnabled` all require `.idle` and the only route back
+    ///   runs inside a turn those guards prevent from starting.
+    ///
+    ///   The case is kept because removing it is a breaking API change, and the views still reason
+    ///   about it - `MessageListView.shouldFillRemainingHeight` deliberately refuses to fill an
+    ///   `.error` bubble so the guard stays correct if a producer is ever reintroduced. Today the
+    ///   only writer is the `DEBUG`-only `ChatController.setChatStateForTesting`.
     case error(ChatError)
 }

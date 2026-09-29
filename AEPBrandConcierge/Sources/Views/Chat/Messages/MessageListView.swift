@@ -88,8 +88,6 @@ struct MessageListView: View {
                     .padding(.bottom, -4)
                 }
 
-                let fillHeight: CGFloat? = shouldFillRemainingHeight(at: index) ? max(0, geometry.size.height - theme.layout.messageBlockerHeight) : nil
-
                 ChatMessageView(
                     messageId: message.id,
                     template: message.template,
@@ -106,18 +104,32 @@ struct MessageListView: View {
                 )
                     .id(message.id)
                     .padding(horizontalPadding(for: message.template))
-                    // The in-progress response bubble fills the remaining screen height while
-                    // it's the last thing on screen, so it appears to "fill in" below the user's
-                    // message as it streams. The instant anything is appended after it (prompt
-                    // suggestions, cards, a new user message), this no longer applies to it and
-                    // it settles back to its natural size — so completed turns never leave a
-                    // permanent empty gap below the last message.
-                    .frame(minHeight: fillHeight, alignment: .top)
                     .onAppear {
                         if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
                             onSpeak(messageBody)
                         }
                     }
+            }
+
+            // Scroll room for the turn that's in flight. The anchor can only come to rest at the
+            // top of the viewport if there's at least a screenful of content beneath it, so the
+            // shortfall is reserved here.
+            //
+            // This is deliberately *additive* — a sibling below the whole turn rather than a
+            // minimum height on the response bubble — because the distance between the anchor and
+            // the bubble isn't fixed: a typed turn anchors on the user's message above the bubble,
+            // while a `sendDataHandoff(...)` turn with no local message anchors on the bubble
+            // itself. A minimum height on the bubble only reserves correctly for the first case
+            // and leaves the second a full `messageBlockerHeight` short. As a sibling it holds for
+            // both, without anyone having to measure the anchor.
+            //
+            // The turn's own messages already contribute roughly `messageBlockerHeight` toward
+            // that screenful, so only the remainder is reserved and the list doesn't over-scroll.
+            // The gate collapses this the moment the turn settles, so a completed turn never
+            // leaves a permanent gap below the last message.
+            if shouldFillRemainingHeight(at: messages.count - 1) {
+                Spacer(minLength: 0)
+                    .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
             }
         }
     }
@@ -186,15 +198,32 @@ struct MessageListView: View {
     /// the error path leaves one as the last message (today it doesn't, but that's an accident of
     /// `ChatController`'s error handling, not something this guard should rely on).
     /// Internal (not private) so `shouldFillRemainingHeight` can be unit tested directly — a
-    /// snapshot alone can't detect an inverted or broken condition here, since `.frame(minHeight:)`
+    /// snapshot alone can't detect an inverted or broken condition here, since the reserved space
     /// only affects scrollable content height, which is invisible in a single fixed-frame capture.
     func shouldFillRemainingHeight(at index: Int) -> Bool {
         guard chatState == .processing,
+              messages.indices.contains(index),
               index == messages.count - 1,
               case .basic(let isUserMessage) = messages[index].template,
-              !isUserMessage,
-              let lastUserIndex = messages.lastIndex(where: { if case .basic(true) = $0.template { return true }; return false })
+              !isUserMessage
+        else { return false }
+
+        // Either the placeholder sits directly below this turn's anchor, or - for a handoff with no
+        // local message - the placeholder *is* the anchor. Without the filler there's nothing below
+        // the anchor to scroll against, so the scroll clamps part-way.
+        if isTurnAnchor(at: index - 1) || isTurnAnchor(at: index) { return true }
+
+        guard let lastUserIndex = messages.lastIndex(where: { if case .basic(true) = $0.template { return true }; return false })
         else { return false }
         return lastUserIndex == index - 1
+    }
+
+    /// Returns true when the message at `index` is the anchor the controller scrolled to the top.
+    ///
+    /// A typed turn anchors on the user's own message; a `sendDataHandoff(...)` turn anchors on its
+    /// local message, which is rendered as an agent message. Asking the controller covers both.
+    private func isTurnAnchor(at index: Int) -> Bool {
+        guard let anchorId = userMessageToScrollId, messages.indices.contains(index) else { return false }
+        return messages[index].id == anchorId
     }
 }

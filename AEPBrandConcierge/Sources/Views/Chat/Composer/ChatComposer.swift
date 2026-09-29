@@ -56,7 +56,7 @@ struct ChatComposer: View {
                         onSend: onSend
                     )
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, ChatComposer.inputInnerHorizontalPadding)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(minHeight: theme.layout.inputHeight)
@@ -76,7 +76,7 @@ struct ChatComposer: View {
                         // Focus outline (theme-driven)
                         if isFocused {
                             RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
-                                .stroke(theme.colors.input.outlineFocus.color, lineWidth: theme.layout.inputFocusOutlineWidth)
+                                .stroke(focusBorderStyle, lineWidth: theme.layout.inputFocusOutlineWidth)
                         }
                         // Recording glow border (configurable via theme)
                         if case .recording = inputState, theme.behavior.input.enableRecordingAnimation {
@@ -96,6 +96,23 @@ struct ChatComposer: View {
         .onAppear { startOrStopGlow() }
         .onChange(of: inputState) { _ in startOrStopGlow() }
     }
+
+    /// Horizontal inset between the input pill's border and its content. Hardcoded for the same
+    /// reason as `ComposerEditingView.leadingIconSpacing`: the leading icon's distance from the
+    /// pill edge is a fixed layout constant, not a brand value a theme should be able to drift.
+    static let inputInnerHorizontalPadding: CGFloat = 12
+
+    /// Resolves which style the focused input's outline ring should use. A renderable border
+    /// gradient wins over `--input-focus-outline-color` so that focusing never flattens a
+    /// gradient border into a solid ring. Pulled out as a pure, non-private function because
+    /// `AnyShapeStyle` exposes no way to read back what it was built from, so the precedence rule
+    /// is only assertable through this enum (same reason `ConciergeResolvedStyle` exists).
+    static func focusOutlineStyle(
+        border: ConciergeBorderStyle,
+        focusColor: CodableColor
+    ) -> ConciergeResolvedStyle {
+        resolveConciergeStyle(color: focusColor, gradient: border.gradient)
+    }
 }
 
 private extension ChatComposer {
@@ -107,6 +124,25 @@ private extension ChatComposer {
             return AnyShapeStyle(gradient.linearGradient)
         }
         return AnyShapeStyle(border.color.color)
+    }
+
+    /// Style for the focus ring drawn on top of the base border.
+    ///
+    /// A gradient border stays a gradient while focused: the ring reuses the base border's
+    /// gradient rather than flattening it to the solid `--input-focus-outline-color`, so focusing
+    /// only changes the ring's *width* (`--input-focus-outline-width`). Themes with a solid border
+    /// are unaffected and still get `--input-focus-outline-color`.
+    var focusBorderStyle: AnyShapeStyle {
+        // Border gradient when renderable, otherwise `--input-focus-outline-color`.
+        // `focusOutlineStyle` cannot report `.fallback` here because `outlineFocus` is
+        // non-optional, so there is no unresolved case to handle.
+        if case .gradient(let gradient) = Self.focusOutlineStyle(
+            border: theme.components.inputBar.border,
+            focusColor: theme.colors.input.outlineFocus
+        ) {
+            return AnyShapeStyle(gradient.linearGradient)
+        }
+        return AnyShapeStyle(theme.colors.input.outlineFocus.color)
     }
 
     func startOrStopGlow() {
