@@ -34,12 +34,27 @@ private struct CarouselEqualizedHeightKey: EnvironmentKey {
     static let defaultValue: CGFloat? = nil
 }
 
+private struct CarouselReservesCtaSlotKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
 extension EnvironmentValues {
     /// When non-nil, the shared height (the tallest card's clamped height) that every card in the
     /// current carousel should adopt. `nil` for standalone cards, which self-size to their content.
     var carouselEqualizedHeight: CGFloat? {
         get { self[CarouselEqualizedHeightKey.self] }
         set { self[CarouselEqualizedHeightKey.self] = newValue }
+    }
+
+    /// True when at least one card in the current carousel has a CTA, so the cards that don't must
+    /// still reserve the button's slot. Without it, a CTA-less card's pricing block drops to the
+    /// bottom of the card and its price row no longer lines up with its neighbours'.
+    ///
+    /// False for standalone cards, and for carousels where no card has a CTA — neither should
+    /// reserve space for a button that is never going to appear.
+    var carouselReservesCtaSlot: Bool {
+        get { self[CarouselReservesCtaSlotKey.self] }
+        set { self[CarouselReservesCtaSlotKey.self] = newValue }
     }
 }
 
@@ -84,6 +99,20 @@ struct CarouselGroupView: View {
         max(maxCardHeight, theme.layout.productCardMinHeight)
     }
 
+    /// Whether any card in this carousel has a CTA. Read straight from the items rather than
+    /// collected from the rendered cards via a preference, so it is known before the first layout
+    /// pass and cannot oscillate.
+    private var anyCardHasCta: Bool {
+        items.contains { message in
+            switch message.template {
+            case .productCarouselCard(let data), .productCard(let data):
+                return !data.ctas.isEmpty
+            default:
+                return false
+            }
+        }
+    }
+
     /// Leading offset applied inside the scroll content so the first card aligns correctly
     /// while the ScrollView itself spans the full width (preventing clipping on scroll).
     ///
@@ -121,6 +150,7 @@ struct CarouselGroupView: View {
                 }
             }
             .environment(\.carouselEqualizedHeight, equalizedHeight)
+            .environment(\.carouselReservesCtaSlot, anyCardHasCta)
             .onPreferenceChange(CardHeightKey.self) { maxCardHeight = $0 }
             .frame(height: equalizedHeight)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -157,6 +187,7 @@ struct CarouselGroupView: View {
                 }
             }
             .environment(\.carouselEqualizedHeight, equalizedHeight)
+            .environment(\.carouselReservesCtaSlot, anyCardHasCta)
             .onPreferenceChange(CardHeightKey.self) { maxCardHeight = $0 }
             .padding(.leading, scrollContentLeadingInset)
             .padding(.trailing, theme.layout.productCardCarouselHorizontalPadding ?? theme.layout.chatHistoryPadding)

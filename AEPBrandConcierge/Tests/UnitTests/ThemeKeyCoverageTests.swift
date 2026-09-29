@@ -270,6 +270,7 @@ private extension ThemeKeyCoverageTests {
         "product-card-width": "layout.productCardWidth",
         "product-card-min-height": "layout.productCardMinHeight",
         "product-card-max-height": "layout.productCardMaxHeight",
+        "product-card-description-max-lines": "layout.productCardDescriptionMaxLines",
         "product-image-width": "layout.productImageWidth",
         "product-image-height": "layout.productImageHeight",
         "product-image-scale": "layout.productImageScale",

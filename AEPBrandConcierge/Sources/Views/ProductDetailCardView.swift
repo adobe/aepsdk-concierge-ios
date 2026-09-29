@@ -20,6 +20,8 @@ private enum ProductDetailCardDimensions {
     static let priceLineHeight: CGFloat = 17
     static let wasPriceLineHeight: CGFloat = 14
     static let subtitleLetterSpacing: CGFloat = -0.5
+    /// Used when `productCardDescriptionMaxLines` is unset.
+    static let defaultDescriptionMaxLines = 2
     static let priceLetterSpacing: CGFloat = -0.5
     static let badgeHorizontalPadding: CGFloat = 12
     static let badgeVerticalPadding: CGFloat = 4
@@ -45,6 +47,7 @@ struct ProductDetailCardView: View {
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
     @Environment(\.conciergeCardTapHandler) private var cardTapHandler
     @Environment(\.carouselEqualizedHeight) private var carouselEqualizedHeight
+    @Environment(\.carouselReservesCtaSlot) private var carouselReservesCtaSlot
 
     let data: ProductCardData
     let cardWidth: CGFloat
@@ -274,7 +277,8 @@ private extension ProductDetailCardView {
                         fontSize: theme.layout.productCardSubtitleFontSize,
                         lineHeight: ProductDetailCardDimensions.subtitleLineHeight
                     ))
-                    .lineLimit(2)
+                    .lineLimit(theme.layout.productCardDescriptionMaxLines
+                        ?? ProductDetailCardDimensions.defaultDescriptionMaxLines)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -339,6 +343,15 @@ private extension ProductDetailCardView {
     }
 
     /// Renders `data.ctas` side by side: primary filled, secondary outlined.
+    ///
+    /// When this card has no CTA but a sibling in the same carousel does, an invisible stand-in
+    /// button holds the slot open so the pricing block above it stays on the same baseline as the
+    /// neighbouring cards', leaving the blank space at the bottom of the card rather than between
+    /// the description and the price.
+    ///
+    /// The stand-in is built with `ctaButton` (rather than a hand-rolled spacer) so it picks up the
+    /// real button's font, padding and line limit automatically and cannot drift out of sync with
+    /// it. A single space keeps it to exactly one line, matching the `lineLimit(1)` real buttons.
     @ViewBuilder
     var ctaButtonView: some View {
         let ctas = data.ctas
@@ -350,6 +363,11 @@ private extension ProductDetailCardView {
                     ctaButton(for: cta, fillWidth: fillWidth)
                 }
             }
+        } else if carouselReservesCtaSlot {
+            ctaButton(for: ProductCardCTA(text: " ", url: "", role: .primary), fillWidth: false)
+                .hidden()
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
         }
     }
 

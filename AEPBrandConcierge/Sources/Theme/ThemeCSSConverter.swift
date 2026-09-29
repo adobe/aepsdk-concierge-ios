@@ -207,6 +207,17 @@ public enum CSSValueConverter {
         return Int(trimmed) ?? 0
     }
 
+    /// Parses a line-clamp value into a `lineLimit`.
+    ///
+    /// A positive integer clamps to that many lines. Any other value — non-positive, unparseable,
+    /// or the CSS keyword `none` — returns `nil`, leaving the property unset so the view falls
+    /// back to its own default, as it does for every other optional layout token.
+    public static func parseMaxLines(_ cssValue: String) -> Int? {
+        let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard trimmed != "none", let parsed = Int(trimmed), parsed > 0 else { return nil }
+        return parsed
+    }
+
     /// Parses CSS font-family string (takes first font name, ignores font stack)
     public static func parseFontFamily(_ cssValue: String) -> String {
         let trimmed = cssValue.trimmingCharacters(in: .whitespacesAndNewlines)

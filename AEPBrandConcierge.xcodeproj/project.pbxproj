@@ -202,6 +202,7 @@
 		B283F5767264476781252EEC /* ConciergeCardTapHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49180BEE1E2A4439AC75F403 /* ConciergeCardTapHandler.swift */; };
 		B6B082EF543410FE5586506E /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */; };
 		CCA3039F65F45F6F18B0801D /* WhiteSpaceReservationSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB8A6DBE18A82A94A689AF8E /* WhiteSpaceReservationSnapshotTests.swift */; };
+		D41A7C9E3B2F48A15E6C0917 /* ProductCardCarouselSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */; };
 		D000ECC120251120000000A1 /* ConciergeEventTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000ECC120251120000000A0 /* ConciergeEventTracker.swift */; };
 		D680B287B96F87A9860DFCD4 /* TestingHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908306C0ADD3A3C6A0992252 /* TestingHubView.swift */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
@@ -438,6 +439,7 @@
 		B83AC8F6176F39468E33F051 /* ChatComposerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposerTests.swift; sourceTree = "<group>"; };
 		C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_UnitTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB8A6DBE18A82A94A689AF8E /* WhiteSpaceReservationSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteSpaceReservationSnapshotTests.swift; sourceTree = "<group>"; };
+		E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardCarouselSnapshotTests.swift; sourceTree = "<group>"; };
 		D000ECC120251120000000A0 /* ConciergeEventTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeEventTracker.swift; sourceTree = "<group>"; };
 		D593F447E7FFCBE0208FC8B5 /* Pods-ConciergeDemoApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.debug.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.debug.xcconfig"; sourceTree = "<group>"; };
 		E21378B0B68D3623005C3C79 /* ProductDetailCardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardViewTests.swift; sourceTree = "<group>"; };
@@ -568,6 +570,7 @@
 				244E69E72F22DF8300ADF1AA /* FeedbackOverlaySnapshotTests.swift */,
 				244E69E82F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift */,
 				CB8A6DBE18A82A94A689AF8E /* WhiteSpaceReservationSnapshotTests.swift */,
+				E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */,
 				244E69E92F22DF8300ADF1AA /* MessageBubbleSnapshotTests.swift */,
 				244E69EA2F22DF8300ADF1AA /* PermissionDialogSnapshotTests.swift */,
 				244E69EB2F22DF8300ADF1AA /* SourcesProbeSnapshotTests.swift */,
@@ -1341,6 +1344,7 @@
 				4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */,
 				244E69ED2F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift in Sources */,
 				CCA3039F65F45F6F18B0801D /* WhiteSpaceReservationSnapshotTests.swift in Sources */,
+				D41A7C9E3B2F48A15E6C0917 /* ProductCardCarouselSnapshotTests.swift in Sources */,
 				244E69EE2F22DF8300ADF1AA /* FeedbackOverlaySnapshotTests.swift in Sources */,
 				4CC11B232F5F900100EEF226 /* ProductCardDataTests.swift in Sources */,
 				3BC69E9C64052B6BBCA4AE99 /* ProductDetailCardViewTests.swift in Sources */,
