@@ -19,20 +19,32 @@ final class ConciergeXDMContextStore {
 
     private let lock = NSLock()
     private var held: [String: Any] = [:]
+    private var sessionID: String?
 
     /// Applies an RFC 7396 JSON Merge Patch. Throws if `fields` is not JSON-serializable or
     /// contains a top-level `identityMap` key.
     func update(_ fields: [String: Any]) throws {
         try Self.validate(fields)
         lock.lock()
-        held = Self.mergePatch(target: held, patch: fields)
+        held = Self.mergePatch(target: held, patch: Self.copyJSONObject(fields))
         lock.unlock()
     }
 
     /// Snapshot of the currently held context, read synchronously at turn-send time.
     func snapshot() -> [String: Any] {
         lock.lock(); defer { lock.unlock() }
-        return held
+        return Self.copyJSONObject(held)
+    }
+
+    /// Returns context for `sessionID`, discarding it when the backend session has rolled over.
+    /// Context set before the first request is preserved because there is no prior session ID yet.
+    func snapshot(for sessionID: String) -> [String: Any] {
+        lock.lock(); defer { lock.unlock() }
+        if let previousSessionID = self.sessionID, previousSessionID != sessionID {
+            held = [:]
+        }
+        self.sessionID = sessionID
+        return Self.copyJSONObject(held)
     }
 
     /// Clears all held context. Internal only - invoked by `Concierge.resolveSession(...)` when a
@@ -40,6 +52,13 @@ final class ConciergeXDMContextStore {
     func clear() {
         lock.lock(); defer { lock.unlock() }
         held = [:]
+        sessionID = nil
+    }
+
+    /// Deep-merges a per-turn patch over a context snapshot using the same RFC 7396 semantics as
+    /// `update(_:)`. Patch values win at their leaf paths while sibling fields are retained.
+    static func merging(_ patch: [String: Any], over target: [String: Any]) -> [String: Any] {
+        mergePatch(target: target, patch: copyJSONObject(patch))
     }
 
     private static func validate(_ fields: [String: Any]) throws {
@@ -69,6 +88,23 @@ final class ConciergeXDMContextStore {
             }
         }
         return result
+    }
+
+    private static func copyJSONObject(_ object: [String: Any]) -> [String: Any] {
+        object.mapValues(copyJSONValue)
+    }
+
+    private static func copyJSONValue(_ value: Any) -> Any {
+        if let object = value as? [String: Any] {
+            return copyJSONObject(object)
+        }
+        if let array = value as? [Any] {
+            return array.map(copyJSONValue)
+        }
+        if let string = value as? String {
+            return String(string)
+        }
+        return value
     }
 }
 

@@ -82,6 +82,7 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(fakeService.lastQuery != nil)
 
         XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+        XCTAssertEqual(fakeService.lastSessionID, mockConciergeConfiguration.sessionId)
     }
 
     func test_sendMessage_withNoHeldXDMContext_sendsNilExtraXDMFields() {
@@ -98,7 +99,10 @@ final class ChatControllerTests: XCTestCase {
     func test_handleDataHandoff_mergesHeldXDMContext_withItsOwnFieldsWinningOnCollision() throws {
         try ConciergeXDMContextStore.shared.update([
             "loyalty": ["tier": "gold"],
-            "commerce": ["order": ["purchaseID": "held-should-lose"]]
+            "commerce": [
+                "order": ["purchaseID": "held-should-lose", "currency": "USD"],
+                "cart": ["cartID": "cart-123"]
+            ]
         ])
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
@@ -109,7 +113,10 @@ final class ChatControllerTests: XCTestCase {
 
         let expected: [String: Any] = [
             "loyalty": ["tier": "gold"],
-            "commerce": ["order": ["purchaseID": "abc123"]]
+            "commerce": [
+                "order": ["purchaseID": "abc123", "currency": "USD"],
+                "cart": ["cartID": "cart-123"]
+            ]
         ]
         XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
     }

@@ -35,6 +35,39 @@ final class ConciergeXDMContextStoreTests: XCTestCase {
         assertEqual(store.snapshot(), ["fan": ["seatSection": "112"]])
     }
 
+    func test_update_detachesMutableFoundationValuesFromCaller() throws {
+        let nested = NSMutableDictionary(dictionary: ["tier": "gold"])
+        let items = NSMutableArray(array: ["first"])
+        try store.update(["loyalty": nested, "items": items])
+
+        nested["tier"] = "platinum"
+        items.add("second")
+
+        assertEqual(store.snapshot(), ["loyalty": ["tier": "gold"], "items": ["first"]])
+    }
+
+    func test_snapshot_detachesMutableFoundationValuesFromStore() throws {
+        try store.update(["loyalty": ["tier": "gold"]])
+        var snapshot = store.snapshot()
+        guard var loyalty = snapshot["loyalty"] as? [String: Any] else {
+            XCTFail("Expected a nested dictionary in the snapshot")
+            return
+        }
+        loyalty["tier"] = "platinum"
+        snapshot["loyalty"] = loyalty
+
+        assertEqual(store.snapshot(), ["loyalty": ["tier": "gold"]])
+    }
+
+    func test_snapshotForNewBackendSession_clearsContextOnlyAfterPriorSessionWasObserved() throws {
+        try store.update(["loggedIn": true])
+        assertEqual(store.snapshot(for: "session-1"), ["loggedIn": true])
+
+        try store.update(["loyalty": ["tier": "gold"]])
+        assertEqual(store.snapshot(for: "session-1"), ["loggedIn": true, "loyalty": ["tier": "gold"]])
+        assertEqual(store.snapshot(for: "session-2"), [:])
+    }
+
     func test_secondUpdate_addsNewTopLevelKey_withoutDisturbingTheFirst() throws {
         try store.update(["fan": ["seatSection": "112"]])
         try store.update(["loyalty": ["tier": "gold"]])

@@ -167,6 +167,30 @@ Brand Concierge forwards the full Edge Identity `identityMap` on every chat and 
 
 Namespace priority and identity-graph rules are configured server-side in Adobe Experience Platform; the SDK does not interpret or relabel namespaces.
 
+## XDM context
+
+Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM fields for subsequent chat turns
+and data handoffs:
+
+```swift
+try Concierge.updateXDMContext([
+    "loyalty": ["tier": "gold"],
+    "commerce": ["currencyCode": "USD"]
+])
+```
+
+Updates use RFC 7396 JSON Merge Patch semantics: nested dictionaries merge recursively, scalar
+values and arrays replace existing values, and `NSNull()` removes the matching key. For example,
+`try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])` removes only
+`loyalty.tier`, preserving other loyalty fields. The top-level `identityMap` key is reserved for
+the SDK and cannot be supplied through this API.
+
+The context is held in memory for the current backend session. You can set it before the first
+chat turn; it is cleared when a new backend session ID is created, including after session expiry.
+The app is responsible for setting it again after a rollover. Data handoff fields are recursively
+merged over the held context, with handoff values taking precedence at matching leaf paths while
+preserving sibling fields. Feedback submissions do not include this context.
+
 ---
 
 ## Authentication

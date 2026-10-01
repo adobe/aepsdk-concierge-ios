@@ -559,6 +559,15 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(queryItems?.first(where: { $0.name == "configId" })?.value, "ds-123")
     }
 
+    func test_createUrl_usesResolvedSessionIDForTheTurn() throws {
+        let service = ConciergeChatService(configuration: makeConfigurationForUrl())
+
+        let url = try service.createUrl(sessionID: "resolved-session-id")
+
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        XCTAssertEqual(queryItems?.first(where: { $0.name == "sessionId" })?.value, "resolved-session-id")
+    }
+
     func test_createUrl_withNilServer_throwsInvalidEndpointError() {
         // Given
         let configuration = makeConfigurationForUrl(server: nil)
