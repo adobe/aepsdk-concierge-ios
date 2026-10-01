@@ -227,6 +227,23 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(order?["purchaseID"] as? String, "abc123")
     }
 
+    func test_createChatPayload_withHandoffNull_serializesJsonNull() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration())
+        let handoff = ConciergeXDMContextStore.merging(
+            ["commerce": ["order": ["purchaseID": NSNull()]]],
+            over: ["commerce": ["order": ["purchaseID": "old", "currency": "USD"]]]
+        )
+
+        let data = try service.createChatPayload(query: "checkout", extraXDMFields: handoff)
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+        let commerce = try XCTUnwrap(xdm["commerce"] as? [String: Any])
+        let order = try XCTUnwrap(commerce["order"] as? [String: Any])
+
+        XCTAssertTrue(order["purchaseID"] is NSNull)
+        XCTAssertEqual(order["currency"] as? String, "USD")
+    }
+
     func test_createChatPayload_withExtraXDMFieldsContainingIdentityMap_doesNotOverwriteRealIdentityMap() throws {
         // Given
         let configuration = makeConfiguration(ecid: "real-ecid")

@@ -186,10 +186,13 @@ values and arrays replace existing values, and `NSNull()` removes the matching k
 the SDK and cannot be supplied through this API.
 
 The context is held in memory for the current backend session. You can set it before the first
-chat turn; it is cleared when a new backend session ID is created, including after session expiry.
-The app is responsible for setting it again after a rollover. Data handoff fields are recursively
-merged over the held context, with handoff values taking precedence at matching leaf paths while
-preserving sibling fields. Feedback submissions do not include this context.
+chat turn; an update resolves the backend session ID, clears fields from a previous session, and
+then applies the new fields. If the session expires, context is cleared before the next update
+or turn. Fields set after expiry therefore survive into the new session; older fields do not.
+Data handoff fields are recursively merged over the held context, with handoff values taking
+precedence at matching leaf paths while preserving sibling fields. `NSNull()` in a handoff is
+sent as JSON null, not treated as a deletion; it does not change the held context. Feedback
+submissions do not include this context.
 
 ---
 

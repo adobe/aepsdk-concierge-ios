@@ -60,11 +60,11 @@ public extension Concierge {
     /// context at that nesting level — e.g. `["fan": ["seatSection": NSNull()]]` removes only
     /// `fan.seatSection`, leaving the rest of `fan` untouched.
     ///
-    /// Settable at any time, including before the first message of a conversation — there is no
-    /// session yet to attach it to; it's held independently and applied whenever a turn is next
-    /// sent. Held for the lifetime of the current conversation session; automatically cleared when
-    /// a genuinely new session begins — there is no separate reset API. To clear specific data
-    /// proactively (e.g. on logout), call this again with `NSNull()` values for the keys to remove.
+    /// Settable at any time, including before the first message of a conversation. The update
+    /// resolves the backend session ID and clears any context from a prior session before applying
+    /// the new fields. Held for the lifetime of that session; there is no separate reset API.
+    /// To clear specific data proactively (e.g. on logout), call this again with `NSNull()`
+    /// values for the keys to remove.
     ///
     /// Synchronous and local to the SDK — no network round trip, no timeout. Validated
     /// immediately and throws if `fields` is not JSON-serializable or uses the reserved
@@ -86,7 +86,8 @@ public extension Concierge {
     ///     forwards alongside the routing hint - an ordinary nested dictionary, e.g.
     ///     `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, JSON-serializable
     ///     (see `JSONSerialization.isValidJSONObject`), and must not use `identityMap` as a
-    ///     top-level key.
+    ///     top-level key. Unlike `updateXDMContext`, `NSNull()` values in handoff fields are sent
+    ///     as JSON null rather than removing keys from the held context.
     ///   - localMessage: Optional text to render immediately in the chat transcript as a local,
     ///     non-networked message. `nil`/empty -> nothing shown locally; the conversation only gets
     ///     whatever Product Advisor eventually replies with.
@@ -282,27 +283,34 @@ extension Concierge {
     static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
         let resolvedTitle = chatTitle
         let resolvedSubtitle = chatSubtitle
+        let sessionWasActive = SessionManager.shared.isSessionActive
+        let sessionID = configuration.sessionId
 
         if let existing = currentSession,
-           SessionManager.shared.isSessionActive,
+           sessionWasActive,
+           existing.sessionID == sessionID,
            existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
             return existing
         }
 
-        // A genuinely new session *replacing* a prior one (TTL expiry, or a change in chat
-        // identity) starts without whatever context that prior session had accumulated via
-        // `updateXDMContext(_:)` - the app is responsible for re-establishing it. But the very
-        // first session ever resolved (`currentSession == nil`) isn't replacing anything, so it
-        // must not clear context an app already set via `updateXDMContext(_:)` before its first
-        // `show()` call - the API's primary supported use case.
+        // A change of chat identity clears context. On backend session rollover, the store
+        // discards old context but preserves updates already bound to the new session ID.
+        // The first session must preserve context set before the first show().
         if currentSession != nil {
-            ConciergeXDMContextStore.shared.clear()
+            if let existing = currentSession,
+               existing.sessionID != sessionID,
+               existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
+                _ = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
+            } else {
+                ConciergeXDMContextStore.shared.clear()
+            }
         }
 
         let urlSessionConfiguration = resolvedURLSessionConfiguration()
 
         let session = ConciergeChatSession(
             configuration: configuration,
+            sessionID: sessionID,
             title: resolvedTitle,
             subtitle: resolvedSubtitle,
             speechCapturer: speechCapturer,

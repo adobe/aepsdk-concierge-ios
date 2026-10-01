@@ -157,9 +157,7 @@ class ConciergeChatService: NSObject {
             URLQueryItem(name: ConciergeConstants.Request.Keys.CONFIG_ID, value: datastream)
         ]
 
-        if let sessionID = sessionID ?? configuration.sessionId {
-            queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionID))
-        }
+        queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionID ?? configuration.sessionId))
 
         if let conversationId = configuration.conversationId {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
@@ -183,7 +181,7 @@ class ConciergeChatService: NSObject {
     /// Resolves the backend session ID once so the context snapshot and request URL use the
     /// same session even if the persisted session expires while a turn is being prepared.
     func resolveSessionID() -> String {
-        configuration.sessionId ?? SessionManager.shared.getOrCreateSessionId()
+        configuration.sessionId
     }
 
     /// Creates the JSON payload for a chat request.

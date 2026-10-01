@@ -11,6 +11,7 @@
  */
 
 import XCTest
+@testable import AEPServices
 @testable import AEPBrandConcierge
 
 /// Verifies `Concierge.resolveSession(configuration:)`'s reuse-vs-new-session decision, and its
@@ -57,13 +58,28 @@ final class ConciergeResolveSessionTests: XCTestCase {
 
     func test_expiredTTL_createsANewSession_andClearsHeldContext() throws {
         let first = Concierge.resolveSession(configuration: configuration)
-        SessionManager.shared.clearSession() // no LAST_ACTIVITY recorded -> isSessionActive is false
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        SessionManager.shared.clearSession() // no LAST_ACTIVITY recorded -> isSessionActive is false
 
         let second = Concierge.resolveSession(configuration: configuration)
 
         XCTAssertFalse(first === second)
         XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [:]))
+    }
+
+    func test_updateAfterExpiryBeforeShow_preservesNewContextAndReplacesOldController() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        try ConciergeXDMContextStore.shared.update(["old": true])
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        XCTAssertFalse(SessionManager.shared.isSessionActive)
+
+        try Concierge.updateXDMContext(["new": true])
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertFalse(first === second)
+        XCTAssertNotEqual(first.sessionID, second.sessionID)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["new": true]))
     }
 
     func test_changedChatServiceIdentity_createsANewSession_andClearsHeldContext() throws {

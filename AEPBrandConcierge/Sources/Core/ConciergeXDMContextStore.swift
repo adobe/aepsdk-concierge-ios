@@ -18,16 +18,22 @@ final class ConciergeXDMContextStore {
     static let shared = ConciergeXDMContextStore()
 
     private let lock = NSLock()
+    private let sessionIDProvider: () -> String
     private var held: [String: Any] = [:]
     private var sessionID: String?
+
+    init(sessionIDProvider: @escaping () -> String = { SessionManager.shared.getOrCreateSessionId() }) {
+        self.sessionIDProvider = sessionIDProvider
+    }
 
     /// Applies an RFC 7396 JSON Merge Patch. Throws if `fields` is not JSON-serializable or
     /// contains a top-level `identityMap` key.
     func update(_ fields: [String: Any]) throws {
         try Self.validate(fields)
-        lock.lock()
+        lock.lock(); defer { lock.unlock() }
+        let currentSessionID = sessionIDProvider()
+        discardPreviousSession(ifNeededFor: currentSessionID)
         held = Self.mergePatch(target: held, patch: Self.copyJSONObject(fields))
-        lock.unlock()
     }
 
     /// Snapshot of the currently held context, read synchronously at turn-send time.
@@ -36,15 +42,18 @@ final class ConciergeXDMContextStore {
         return Self.copyJSONObject(held)
     }
 
-    /// Returns context for `sessionID`, discarding it when the backend session has rolled over.
-    /// Context set before the first request is preserved because there is no prior session ID yet.
+    /// Returns context for `sessionID`, discarding only fields bound to a previous session.
     func snapshot(for sessionID: String) -> [String: Any] {
         lock.lock(); defer { lock.unlock() }
-        if let previousSessionID = self.sessionID, previousSessionID != sessionID {
+        discardPreviousSession(ifNeededFor: sessionID)
+        return Self.copyJSONObject(held)
+    }
+
+    private func discardPreviousSession(ifNeededFor currentSessionID: String) {
+        if let sessionID, sessionID != currentSessionID {
             held = [:]
         }
-        self.sessionID = sessionID
-        return Self.copyJSONObject(held)
+        sessionID = currentSessionID
     }
 
     /// Clears all held context. Internal only - invoked by `Concierge.resolveSession(...)` when a
@@ -55,10 +64,9 @@ final class ConciergeXDMContextStore {
         sessionID = nil
     }
 
-    /// Deep-merges a per-turn patch over a context snapshot using the same RFC 7396 semantics as
-    /// `update(_:)`. Patch values win at their leaf paths while sibling fields are retained.
+    /// Deep-merges handoff fields, preserving JSON nulls as literal values (not deletions).
     static func merging(_ patch: [String: Any], over target: [String: Any]) -> [String: Any] {
-        mergePatch(target: target, patch: copyJSONObject(patch))
+        mergePatch(target: target, patch: copyJSONObject(patch), nullDeletes: false)
     }
 
     private static func validate(_ fields: [String: Any]) throws {
@@ -70,19 +78,19 @@ final class ConciergeXDMContextStore {
         }
     }
 
-    /// RFC 7396 JSON Merge Patch: https://www.rfc-editor.org/rfc/rfc7396
-    /// - `patch` values of `NSNull()` remove the corresponding key from `target`.
+    /// RFC 7396 JSON Merge Patch for updates; handoff merges preserve literal JSON nulls.
+    /// - `patch` values of `NSNull()` remove the corresponding key only when `nullDeletes` is true.
     /// - Nested `[String: Any]` values are merged recursively.
     /// - Any other value (including arrays) replaces `target`'s value wholesale (per spec - arrays
     ///   are not merged element-wise).
-    private static func mergePatch(target: [String: Any], patch: [String: Any]) -> [String: Any] {
+    private static func mergePatch(target: [String: Any], patch: [String: Any], nullDeletes: Bool = true) -> [String: Any] {
         var result = target
         for (key, value) in patch {
-            if value is NSNull {
+            if nullDeletes && value is NSNull {
                 result.removeValue(forKey: key)
             } else if let nestedPatch = value as? [String: Any] {
                 let nestedTarget = result[key] as? [String: Any] ?? [:]
-                result[key] = mergePatch(target: nestedTarget, patch: nestedPatch)
+                result[key] = mergePatch(target: nestedTarget, patch: nestedPatch, nullDeletes: nullDeletes)
             } else {
                 result[key] = value
             }

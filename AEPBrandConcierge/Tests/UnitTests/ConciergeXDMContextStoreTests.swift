@@ -19,7 +19,7 @@ final class ConciergeXDMContextStoreTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        store = ConciergeXDMContextStore()
+        store = ConciergeXDMContextStore(sessionIDProvider: { "session-1" })
     }
 
     private func assertEqual(_ lhs: [String: Any], _ rhs: [String: Any], file: StaticString = #filePath, line: UInt = #line) {
@@ -66,6 +66,31 @@ final class ConciergeXDMContextStoreTests: XCTestCase {
         try store.update(["loyalty": ["tier": "gold"]])
         assertEqual(store.snapshot(for: "session-1"), ["loggedIn": true, "loyalty": ["tier": "gold"]])
         assertEqual(store.snapshot(for: "session-2"), [:])
+    }
+
+    func test_updateAfterSessionRollover_preservesOnlyNewFields() throws {
+        var currentSessionID = "session-1"
+        let store = ConciergeXDMContextStore(sessionIDProvider: { currentSessionID })
+        try store.update(["old": true, "shared": "previous"])
+        assertEqual(store.snapshot(for: currentSessionID), ["old": true, "shared": "previous"])
+
+        currentSessionID = "session-2"
+        try store.update(["new": true, "shared": "current"])
+
+        assertEqual(store.snapshot(for: currentSessionID), ["new": true, "shared": "current"])
+    }
+
+    func test_snapshotAfterRolloverWithoutUpdate_dropsPreviousFields() throws {
+        try store.update(["old": true])
+        assertEqual(store.snapshot(for: "session-2"), [:])
+    }
+
+    func test_handoffMerge_keepsNestedNullsAsValuesAndPreservesSiblings() {
+        let merged = ConciergeXDMContextStore.merging(
+            ["commerce": ["order": ["purchaseID": NSNull()], "cart": NSNull()]],
+            over: ["commerce": ["order": ["purchaseID": "old", "currency": "USD"], "cart": ["id": "123"]]]
+        )
+        assertEqual(merged, ["commerce": ["order": ["purchaseID": NSNull(), "currency": "USD"], "cart": NSNull()]])
     }
 
     func test_secondUpdate_addsNewTopLevelKey_withoutDisturbingTheFirst() throws {

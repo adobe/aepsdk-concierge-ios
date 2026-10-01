@@ -121,6 +121,22 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
     }
 
+    func test_handleDataHandoff_preservesNullAsAValueWithoutDeletingHeldContext() throws {
+        try ConciergeXDMContextStore.shared.update(["commerce": ["order": ["purchaseID": "held", "currency": "USD"]]])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.handleDataHandoff(routingHint: "checkout",
+                                     xdmFields: ["commerce": ["order": ["purchaseID": NSNull()]]])
+        spinUntil(fakeService.lastQuery != nil)
+
+        let expected: [String: Any] = ["commerce": ["order": ["purchaseID": NSNull(), "currency": "USD"]]]
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [
+            "commerce": ["order": ["purchaseID": "held", "currency": "USD"]]
+        ]))
+    }
+
     func test_sendMessage_withHeldXDMContext_includesItOnTheQuerySubmittedEvent_forAssuranceVisibility() throws {
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])
         var dispatchedEvents: [Event] = []
