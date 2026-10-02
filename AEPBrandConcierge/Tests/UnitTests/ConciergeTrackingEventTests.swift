@@ -41,13 +41,14 @@ final class ConciergeTrackingEventTests: XCTestCase {
     // MARK: - querySubmitted
 
     func test_querySubmitted_createsCorrectEvent() {
-        let event = ConciergeTrackingEvent.querySubmitted(query: "What tools do you offer?").toEvent()
+        let event = ConciergeTrackingEvent.querySubmitted(query: "What tools do you offer?", xdmFields: [:]).toEvent()
 
         assertCommonEventProperties(event,
             expectedName: ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED,
             expectedXDMType: ConciergeConstants.TrackingEvent.XDMType.QUERY_SUBMITTED
         )
         XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.QUERY] as? String, "What tools do you offer?")
+        XCTAssertNil(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS], "an empty snapshot should not add a key at all")
     }
 
     // MARK: - promptSuggestionClicked
@@ -160,6 +161,15 @@ final class ConciergeTrackingEventTests: XCTestCase {
         )
         XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.URL] as? String, "https://adobe.com/photoshop")
         XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.ORIGIN] as? String, "citation")
+    }
+
+    func test_querySubmitted_withHeldXDMContext_includesItForAssuranceVisibility() {
+        let xdmFields: [String: Any] = ["loggedIn": true, "commerce": ["order": ["purchaseID": "abc123"]]]
+        let event = ConciergeTrackingEvent.querySubmitted(query: "hi", xdmFields: xdmFields).toEvent()
+
+        XCTAssertEqual(event.data?[ConciergeConstants.TrackingEvent.EventData.Key.QUERY] as? String, "hi")
+        let sentXDM = event.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        XCTAssertTrue((sentXDM as NSDictionary?)?.isEqual(to: xdmFields) ?? false)
     }
 
     // MARK: - errorOccurred

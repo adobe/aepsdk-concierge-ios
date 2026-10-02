@@ -51,6 +51,7 @@ final class ChatController: ObservableObject {
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
     private let dispatch: ((_ event: Event) -> Void)?
+    private(set) var lastTurnSessionID: String?
 
     private var welcomeMessagesLoaded: Bool = false
 
@@ -281,8 +282,14 @@ final class ChatController: ObservableObject {
         }
 
         if isUser {
-            dispatchTrackingEvent(.querySubmitted(query: text))
-            streamAgentResponse(for: text)
+            // Reads the store synchronously (no async work involved) so the same snapshot
+            // `streamAgentResponse` sends over the wire moments later is what's visible in
+            // Assurance on this event - the SDK's chat turns bypass the Event Hub entirely, so
+            // this is the only place the outbound XDM is ever observable outside local debug logs.
+            let sessionID = chatService.resolveSessionID()
+            let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
+            dispatchTrackingEvent(.querySubmitted(query: text, xdmFields: xdmContext))
+            streamAgentResponse(for: text, heldXDMFields: xdmContext, sessionID: sessionID)
         } else {
             clearState()
         }
@@ -583,7 +590,9 @@ final class ChatController: ObservableObject {
     /// bounded. See `TurnKind`.
     @discardableResult
     private func streamAgentResponse(for query: String,
+                                     heldXDMFields: [String: Any]? = nil,
                                      extraXDMFields: [String: Any]? = nil,
+                                     sessionID: String? = nil,
                                      kind: TurnKind = .typed,
                                      completion: ((ConciergeError?) -> Void)? = nil) -> ChatTurn {
         let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
@@ -595,6 +604,15 @@ final class ChatController: ObservableObject {
         // Armed from submission, so it also bounds the auth-token wait below.
         turn.armCeiling { [weak self] interval in
             self?.cap(turn, after: interval, reason: "exceeded its wall-clock cap")
+        }
+
+        // Freeze the context before the asynchronous token-provider wait, so the request carries
+        // the same snapshot a typed turn already exposed in its query-submitted event.
+        let resolvedSessionID = sessionID ?? chatService.resolveSessionID()
+        lastTurnSessionID = resolvedSessionID
+        var mergedXDMFields = heldXDMFields ?? ConciergeXDMContextStore.shared.snapshot(for: resolvedSessionID)
+        if let extraXDMFields {
+            mergedXDMFields = ConciergeXDMContextStore.merging(extraXDMFields, over: mergedXDMFields)
         }
 
         // Accumulators are used to handle the progressive building up of response content from the server
@@ -624,7 +642,8 @@ final class ChatController: ObservableObject {
             turn.armNoResponseCap { [weak self] interval in
                 self?.cap(turn, after: interval, reason: "produced no response")
             }
-            self.chatService.streamChat(query, token: token, extraXDMFields: extraXDMFields,
+            self.chatService.streamChat(query, token: token, extraXDMFields: mergedXDMFields.isEmpty ? nil : mergedXDMFields,
+            sessionID: resolvedSessionID,
             onChunk: { [weak self] payload in
                 Task { @MainActor in
                     guard let self = self, self.activeTurn === turn else { return }

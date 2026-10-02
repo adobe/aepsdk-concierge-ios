@@ -58,10 +58,11 @@ class ConciergeChatService: NSObject {
     /// and attached to the request body; pass `nil` to send the turn without one. `extraXDMFields`,
     /// if provided, is merged into the request's `xdm` object alongside `identityMap`.
     func streamChat(_ query: String, token: String?, extraXDMFields: [String: Any]? = nil,
+                    sessionID: String? = nil,
                     onChunk: @escaping (ConversationPayload) -> Void,
                     onComplete: @escaping (ConciergeError?) -> Void) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(sessionID: sessionID)
 
             // Register handlers for this streaming session
             onChunkHandler = onChunk
@@ -138,7 +139,7 @@ class ConciergeChatService: NSObject {
 
     /// Creates the URL for a request to the Concierge Service.
     /// - Note: Internal visibility for testing
-    func createUrl() throws -> URL {
+    func createUrl(sessionID: String? = nil) throws -> URL {
         // TODO: Remove prior to release
         if USE_TEMPS {
             return URL(string: TEMP_serviceEndpoint)!
@@ -156,9 +157,7 @@ class ConciergeChatService: NSObject {
             URLQueryItem(name: ConciergeConstants.Request.Keys.CONFIG_ID, value: datastream)
         ]
 
-        if let sessionId = configuration.sessionId {
-            queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionId))
-        }
+        queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionID ?? configuration.sessionId))
 
         if let conversationId = configuration.conversationId {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
@@ -177,6 +176,12 @@ class ConciergeChatService: NSObject {
         }
 
         return url
+    }
+
+    /// Resolves the backend session ID once so the context snapshot and request URL use the
+    /// same session even if the persisted session expires while a turn is being prepared.
+    func resolveSessionID() -> String {
+        configuration.sessionId
     }
 
     /// Creates the JSON payload for a chat request.
