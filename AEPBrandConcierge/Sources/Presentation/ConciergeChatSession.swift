@@ -19,7 +19,7 @@ import Foundation
 final class ConciergeChatSession {
     let controller: ChatController
     let configuration: ConciergeConfiguration
-    let sessionID: String
+    private(set) var sessionID: String
     let title: String
     let subtitle: String?
 
@@ -50,5 +50,9 @@ final class ConciergeChatSession {
         self.title == title
             && self.subtitle == subtitle
             && self.configuration.hasSameChatServiceIdentity(as: configuration)
+    }
+
+    func rebind(to sessionID: String) {
+        self.sessionID = sessionID
     }
 }

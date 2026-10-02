@@ -51,6 +51,7 @@ final class ChatController: ObservableObject {
     private let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
     private let dispatch: ((_ event: Event) -> Void)?
+    private(set) var lastTurnSessionID: String?
 
     private var welcomeMessagesLoaded: Bool = false
 
@@ -608,6 +609,7 @@ final class ChatController: ObservableObject {
         // Freeze the context before the asynchronous token-provider wait, so the request carries
         // the same snapshot a typed turn already exposed in its query-submitted event.
         let resolvedSessionID = sessionID ?? chatService.resolveSessionID()
+        lastTurnSessionID = resolvedSessionID
         var mergedXDMFields = heldXDMFields ?? ConciergeXDMContextStore.shared.snapshot(for: resolvedSessionID)
         if let extraXDMFields {
             mergedXDMFields = ConciergeXDMContextStore.merging(extraXDMFields, over: mergedXDMFields)

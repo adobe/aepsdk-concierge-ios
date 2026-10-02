@@ -189,6 +189,10 @@ The context is held in memory for the current backend session. You can set it be
 chat turn; an update resolves the backend session ID, clears fields from a previous session, and
 then applies the new fields. If the session expires, context is cleared before the next update
 or turn. Fields set after expiry therefore survive into the new session; older fields do not.
+If an already-open chat sends a turn after expiry, reopening it while that new backend session
+is active keeps the transcript and binds the chat to the new session ID. If only a context
+update creates the new session, with no turn from the open chat, reopening starts a fresh
+transcript; context already set for the new session is preserved.
 Data handoff fields are recursively merged over the held context, with handoff values taking
 precedence at matching leaf paths while preserving sibling fields. `NSNull()` in a handoff is
 sent as JSON null, not treated as a deletion; it does not change the held context. Feedback

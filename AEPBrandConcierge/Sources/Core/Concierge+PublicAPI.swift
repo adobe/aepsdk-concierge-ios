@@ -301,6 +301,11 @@ extension Concierge {
                existing.sessionID != sessionID,
                existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
                 _ = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
+                // An XDM update can also mint a new ID; only a turn from this chat carries its transcript forward.
+                if sessionWasActive, existing.controller.lastTurnSessionID == sessionID {
+                    existing.rebind(to: sessionID)
+                    return existing
+                }
             } else {
                 ConciergeXDMContextStore.shared.clear()
             }

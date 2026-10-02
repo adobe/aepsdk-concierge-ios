@@ -82,6 +82,94 @@ final class ConciergeResolveSessionTests: XCTestCase {
         XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["new": true]))
     }
 
+    func test_turnAfterExpiry_rebindsActiveChatWithoutLosingTranscriptOrNewContext() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        let originalSessionID = first.sessionID
+        try ConciergeXDMContextStore.shared.update(["old": true])
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        XCTAssertFalse(SessionManager.shared.isSessionActive)
+
+        first.controller.applyTextChange("A turn after expiry")
+        first.controller.sendMessage(isUser: true)
+        let newSessionID = configuration.sessionId
+        XCTAssertNotEqual(originalSessionID, newSessionID)
+        XCTAssertEqual(first.controller.lastTurnSessionID, newSessionID)
+        try Concierge.updateXDMContext(["new": true])
+        SessionManager.shared.refreshSessionActivity()
+        let messageIDs = first.controller.messages.map(\.id)
+
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertTrue(first === second)
+        XCTAssertTrue(first.controller === second.controller)
+        XCTAssertEqual(second.sessionID, newSessionID)
+        XCTAssertEqual(second.controller.messages.map(\.id), messageIDs)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: newSessionID) as NSDictionary).isEqual(to: ["new": true]))
+        second.controller.abandonActiveTurn()
+    }
+
+    func test_inactiveChatAfterRollover_startsFreshAndClearsExpiredContext() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        first.controller.applyTextChange("A turn after expiry")
+        first.controller.sendMessage(isUser: true)
+        let newSessionID = configuration.sessionId
+        try Concierge.updateXDMContext(["new": true])
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        XCTAssertFalse(SessionManager.shared.isSessionActive)
+
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertFalse(first === second)
+        XCTAssertFalse(first.controller === second.controller)
+        XCTAssertNotEqual(second.sessionID, newSessionID)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: [:]))
+        first.controller.abandonActiveTurn()
+    }
+
+    func test_handoffAfterExpiry_rebindsActiveChatAndKeepsLocalMessage() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        let originalSessionID = first.sessionID
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+
+        XCTAssertTrue(first.controller.handleDataHandoff(
+            routingHint: "checkout",
+            xdmFields: ["purchase": true],
+            localMessage: "Order placed"
+        ))
+        let newSessionID = configuration.sessionId
+        SessionManager.shared.refreshSessionActivity()
+        let messageIDs = first.controller.messages.map(\.id)
+
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertNotEqual(originalSessionID, newSessionID)
+        XCTAssertTrue(first === second)
+        XCTAssertEqual(second.sessionID, newSessionID)
+        XCTAssertEqual(second.controller.messages.map(\.id), messageIDs)
+        second.controller.abandonActiveTurn()
+    }
+
+    func test_identityChangeAfterTurnRollover_startsFreshAndClearsContext() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        first.controller.applyTextChange("A turn after expiry")
+        first.controller.sendMessage(isUser: true)
+        SessionManager.shared.refreshSessionActivity()
+        try Concierge.updateXDMContext(["new": true])
+
+        let differentIdentity = ConciergeConfiguration(datastream: "ds-1", ecid: "ecid-2", server: "server.example", surfaces: ["surface-a"])
+        let second = Concierge.resolveSession(configuration: differentIdentity)
+
+        XCTAssertFalse(first === second)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [:]))
+        first.controller.abandonActiveTurn()
+    }
+
     func test_changedChatServiceIdentity_createsANewSession_andClearsHeldContext() throws {
         let first = Concierge.resolveSession(configuration: configuration)
         SessionManager.shared.refreshSessionActivity()
