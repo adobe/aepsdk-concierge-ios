@@ -15,8 +15,8 @@ import XCTest
 @testable import AEPBrandConcierge
 
 /// Verifies `Concierge.resolveSession(configuration:)`'s reuse-vs-new-session decision, and its
-/// interaction with `ConciergeXDMContextStore` - a genuinely new session must start with a clean
-/// slate, while a reused session must leave whatever context an app already accumulated intact.
+/// interaction with `ConciergeXDMContextStore` - context is scoped to the backend session and
+/// survives presentation-only changes, but expires with the session or service identity.
 @MainActor
 final class ConciergeResolveSessionTests: XCTestCase {
 
@@ -25,38 +25,58 @@ final class ConciergeResolveSessionTests: XCTestCase {
     override func setUp() {
         super.setUp()
         Concierge.currentSession = nil
+        Concierge.chatTitle = ConciergeConstants.Defaults.TITLE
+        Concierge.chatSubtitle = ConciergeConstants.Defaults.SUBTITLE
         SessionManager.shared.clearSession()
         ConciergeXDMContextStore.shared.clear()
     }
 
     override func tearDown() {
         Concierge.currentSession = nil
+        Concierge.chatTitle = ConciergeConstants.Defaults.TITLE
+        Concierge.chatSubtitle = ConciergeConstants.Defaults.SUBTITLE
         SessionManager.shared.clearSession()
         ConciergeXDMContextStore.shared.clear()
         super.tearDown()
     }
 
     func test_noPriorSession_createsANewSession_andPreservesContextSetBeforeTheFirstShow() throws {
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        let initialSessionID: String? = dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID)
+        let initialActivity: Date? = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
+        XCTAssertNil(initialSessionID)
+        XCTAssertNil(initialActivity)
+
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        XCTAssertFalse(SessionManager.shared.isSessionActive, "Updating context must not create a backend session")
+        let sessionIDAfterUpdate: String? = dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID)
+        let activityAfterUpdate: Date? = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
+        XCTAssertNil(sessionIDAfterUpdate)
+        XCTAssertNil(activityAfterUpdate)
 
         let session = Concierge.resolveSession(configuration: configuration)
 
         XCTAssertTrue(session === Concierge.currentSession)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: ["loggedIn": true]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: session.sessionID) as NSDictionary).isEqual(to: ["loggedIn": true]))
     }
 
     func test_matchingConfigurationWithinTTL_reusesTheExistingSession_andPreservesHeldContext() throws {
         let first = Concierge.resolveSession(configuration: configuration)
         SessionManager.shared.refreshSessionActivity()
+        let activityBeforeUpdate: Date? = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+            .getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        let activityAfterUpdate: Date? = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+            .getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
+        XCTAssertEqual(activityAfterUpdate, activityBeforeUpdate, "Updating context must not refresh the session TTL")
 
         let second = Concierge.resolveSession(configuration: configuration)
 
         XCTAssertTrue(first === second)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: ["loggedIn": true]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["loggedIn": true]))
     }
 
-    func test_expiredTTL_createsANewSession_andClearsHeldContext() throws {
+    func test_expiredTTL_createsANewSession_andClearsPreviousContext() throws {
         let first = Concierge.resolveSession(configuration: configuration)
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])
         SessionManager.shared.clearSession() // no LAST_ACTIVITY recorded -> isSessionActive is false
@@ -64,22 +84,73 @@ final class ConciergeResolveSessionTests: XCTestCase {
         let second = Concierge.resolveSession(configuration: configuration)
 
         XCTAssertFalse(first === second)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [:]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: [:]))
     }
 
-    func test_updateAfterExpiryBeforeShow_preservesNewContextAndReplacesOldController() throws {
+    func test_updateAfterExpiryBeforeShow_replacesStaleContextAndOldController() throws {
         let first = Concierge.resolveSession(configuration: configuration)
         try ConciergeXDMContextStore.shared.update(["old": true])
         let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
-        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        let expiredAt = Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: expiredAt)
         XCTAssertFalse(SessionManager.shared.isSessionActive)
 
         try Concierge.updateXDMContext(["new": true])
+        XCTAssertFalse(SessionManager.shared.isSessionActive, "Updating context after expiry must not create a backend session")
+        let persistedSessionID: String? = dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID)
+        let persistedActivity: Date? = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
+        XCTAssertEqual(persistedSessionID, first.sessionID, "Updating context must not replace the expired backend session")
+        XCTAssertEqual(persistedActivity, expiredAt, "Updating context must not refresh an expired session")
         let second = Concierge.resolveSession(configuration: configuration)
 
         XCTAssertFalse(first === second)
         XCTAssertNotEqual(first.sessionID, second.sessionID)
         XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["new": true]))
+    }
+
+    func test_pendingContextAfterExpiry_survivesReopeningAndAnotherExpiryBeforeFirstTurn() async throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        try Concierge.updateXDMContext(["old": true])
+        let dataStore = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        let expiredAt = Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: expiredAt)
+        try Concierge.updateXDMContext(["fresh": true])
+
+        let second = Concierge.resolveSession(configuration: configuration)
+        XCTAssertNotEqual(first.sessionID, second.sessionID)
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: expiredAt)
+
+        let third = Concierge.resolveSession(configuration: configuration)
+        XCTAssertNotEqual(second.sessionID, third.sessionID)
+        let requestSent = expectation(description: "First turn reaches the service")
+        let service = MockChatService(configuration: third.configuration)
+        service.onStreamChat = { requestSent.fulfill() }
+        let controller = ChatController(
+            configuration: third.configuration,
+            chatService: service,
+            speechCapturer: nil,
+            speaker: nil
+        )
+        defer { controller.abandonActiveTurn() }
+        controller.applyTextChange("First turn after reopening")
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [requestSent], timeout: 2)
+
+        XCTAssertEqual(service.streamChatCallCount, 1)
+        XCTAssertEqual(service.lastSessionID, third.sessionID)
+        let fields = try XCTUnwrap(service.lastExtraXDMFields)
+        XCTAssertTrue((fields as NSDictionary).isEqual(to: ["fresh": true]))
+        let data = try service.createChatPayload(query: try XCTUnwrap(service.lastQuery), extraXDMFields: fields)
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let events = try XCTUnwrap(payload["events"] as? [[String: Any]])
+        let xdm = try XCTUnwrap(events.first?["xdm"] as? [String: Any])
+        XCTAssertEqual(xdm["fresh"] as? Bool, true)
+        XCTAssertNil(xdm["old"], "The outbound request must not carry expired context")
+
+        dataStore.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY, value: expiredAt)
+        let fourth = Concierge.resolveSession(configuration: configuration)
+        XCTAssertTrue(ConciergeXDMContextStore.shared.snapshot(for: fourth.sessionID).isEmpty,
+                      "Once adopted by a turn snapshot, context must expire with its session")
     }
 
     func test_turnAfterExpiry_rebindsActiveChatWithoutLosingTranscriptOrNewContext() throws {
@@ -105,7 +176,7 @@ final class ConciergeResolveSessionTests: XCTestCase {
         XCTAssertTrue(first.controller === second.controller)
         XCTAssertEqual(second.sessionID, newSessionID)
         XCTAssertEqual(second.controller.messages.map(\.id), messageIDs)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: newSessionID) as NSDictionary).isEqual(to: ["new": true]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["new": true]))
         second.controller.abandonActiveTurn()
     }
 
@@ -166,7 +237,7 @@ final class ConciergeResolveSessionTests: XCTestCase {
         let second = Concierge.resolveSession(configuration: differentIdentity)
 
         XCTAssertFalse(first === second)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [:]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: [:]))
         first.controller.abandonActiveTurn()
     }
 
@@ -179,6 +250,35 @@ final class ConciergeResolveSessionTests: XCTestCase {
         let second = Concierge.resolveSession(configuration: differentServer)
 
         XCTAssertFalse(first === second)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [:]))
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: [:]))
+
+        try ConciergeXDMContextStore.shared.update(["account": "new-user"])
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["account": "new-user"]))
+    }
+
+    func test_changedTitleRecreatesPresentationButPreservesContext() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        try ConciergeXDMContextStore.shared.update(["page": "pdp-123"])
+        Concierge.chatTitle = "Product X"
+
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertFalse(first === second)
+        XCTAssertTrue(first.controller !== second.controller)
+        XCTAssertEqual(first.sessionID, second.sessionID)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["page": "pdp-123"]))
+    }
+
+    func test_changedSubtitleRecreatesPresentationButPreservesContext() throws {
+        let first = Concierge.resolveSession(configuration: configuration)
+        try ConciergeXDMContextStore.shared.update(["page": "pdp-123"])
+        Concierge.chatSubtitle = "Special offers"
+
+        let second = Concierge.resolveSession(configuration: configuration)
+
+        XCTAssertFalse(first === second)
+        XCTAssertTrue(first.controller !== second.controller)
+        XCTAssertEqual(first.sessionID, second.sessionID)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: second.sessionID) as NSDictionary).isEqual(to: ["page": "pdp-123"]))
     }
 }

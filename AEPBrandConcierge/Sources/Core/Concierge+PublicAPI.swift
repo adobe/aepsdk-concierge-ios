@@ -56,15 +56,18 @@ public extension Concierge {
     ///
     /// Existing keys in the held context are recursively merged with (and overwritten by)
     /// `fields`' values; new top-level or nested keys are added without disturbing sibling data.
-    /// A value of `NSNull()` anywhere in `fields` removes the corresponding key from the held
+    /// A value of `NSNull()` for an object key in `fields` removes that key from the held
     /// context at that nesting level — e.g. `["fan": ["seatSection": NSNull()]]` removes only
-    /// `fan.seatSection`, leaving the rest of `fan` untouched.
+    /// `fan.seatSection`, leaving the rest of `fan` untouched. Arrays replace wholesale;
+    /// `NSNull()` values inside arrays are preserved as JSON null, not treated as deletions.
     ///
-    /// Settable at any time, including before the first message of a conversation. The update
-    /// resolves the backend session ID and clears any context from a prior session before applying
-    /// the new fields. Held for the lifetime of that session; there is no separate reset API.
-    /// To clear specific data proactively (e.g. on logout), call this again with `NSNull()`
-    /// values for the keys to remove.
+    /// Settable at any time, including before the first message of a conversation. Updates are
+    /// local and do not create or refresh a backend session. Context is scoped to the active
+    /// backend session and is discarded when that session expires or the chat-service identity
+    /// changes. An update made after expiry clears stale fields and is held for the next session.
+    /// Reopening alone does not bind pending context. A subsequent update binds context to an
+    /// existing active session; otherwise, a turn adopts the pending context.
+    /// Use `NSNull()` patches to clear sensitive fields proactively (e.g. on logout).
     ///
     /// Synchronous and local to the SDK — no network round trip, no timeout. Validated
     /// immediately and throws if `fields` is not JSON-serializable or uses the reserved
@@ -271,7 +274,8 @@ extension Concierge {
 
     /// Returns the current `ConciergeChatSession` if its service identity (ECID, server, datastream, surfaces),
     /// title, and subtitle all match the incoming values, and the server session has not expired;
-    /// otherwise creates and stores a new session.
+    /// otherwise creates and stores a new session. A presentation-only title/subtitle change
+    /// creates a new chat session but does not clear held XDM context.
     ///
     /// This is the single decision point for chat reuse across both SwiftUI and UIKit presentation paths.
     /// The `ChatController` inside the returned session retains all messages and the chat
@@ -293,21 +297,18 @@ extension Concierge {
             return existing
         }
 
-        // A change of chat identity clears context. On backend session rollover, the store
-        // discards old context but preserves updates already bound to the new session ID.
-        // The first session must preserve context set before the first show().
-        if currentSession != nil {
-            if let existing = currentSession,
-               existing.sessionID != sessionID,
-               existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
-                _ = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
-                // An XDM update can also mint a new ID; only a turn from this chat carries its transcript forward.
-                if sessionWasActive, existing.controller.lastTurnSessionID == sessionID {
+        if let existing = currentSession {
+            let sameServiceIdentity = existing.configuration.hasSameChatServiceIdentity(as: configuration)
+            if !sameServiceIdentity {
+                ConciergeXDMContextStore.shared.clear()
+            } else if existing.sessionID != sessionID {
+                ConciergeXDMContextStore.shared.discardExpiredContext(for: sessionID)
+                if sessionWasActive,
+                   existing.controller.lastTurnSessionID == sessionID,
+                   existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
                     existing.rebind(to: sessionID)
                     return existing
                 }
-            } else {
-                ConciergeXDMContextStore.shared.clear()
             }
         }
 

@@ -161,6 +161,36 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertFalse(sessionManager.isSessionActive)
     }
 
+    // MARK: - currentSessionIdIfActive Tests
+
+    func test_currentSessionIdIfActive_withoutSession_returnsNilWithoutCreatingOne() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+
+        XCTAssertNil(sessionManager.currentSessionIdIfActive)
+        XCTAssertNil(testDataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID))
+        let lastActivity: Date? = testDataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY)
+        XCTAssertNil(lastActivity)
+    }
+
+    func test_currentSessionIdIfActive_withValidSession_returnsExistingID() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+        let sessionID = sessionManager.getOrCreateSessionId()
+
+        XCTAssertEqual(sessionManager.currentSessionIdIfActive, sessionID)
+    }
+
+    func test_currentSessionIdIfActive_withExpiredSession_returnsNilWithoutReplacingIt() {
+        let sessionManager = SessionManager(dataStore: testDataStore)
+        let sessionID = sessionManager.getOrCreateSessionId()
+        testDataStore.setObject(
+            key: ConciergeConstants.Session.Keys.LAST_ACTIVITY,
+            value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1)
+        )
+
+        XCTAssertNil(sessionManager.currentSessionIdIfActive)
+        XCTAssertEqual(testDataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID), sessionID)
+    }
+
     // MARK: - Multiple SessionManager Instances Tests
     
     func test_multipleInstances_shareDataStore_returnSameSession() {

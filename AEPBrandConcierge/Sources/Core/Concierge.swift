@@ -37,7 +37,7 @@ public class Concierge: NSObject, Extension {
     static var presentedUIKitController: UIViewController?
 
     /// The active chat session, shared by both SwiftUI and UIKit presentation paths.
-    /// Cleared and replaced when the server session expires or the chat identity changes.
+    /// Rebound on active-turn backend session rollover; replaced after idle expiry or chat identity changes.
     @MainActor static var currentSession: ConciergeChatSession?
 
     #if DEBUG

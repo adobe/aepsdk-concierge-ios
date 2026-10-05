@@ -132,7 +132,7 @@ final class ChatControllerTests: XCTestCase {
 
         let expected: [String: Any] = ["commerce": ["order": ["purchaseID": NSNull(), "currency": "USD"]]]
         XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
-        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot() as NSDictionary).isEqual(to: [
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: fakeService.lastSessionID!) as NSDictionary).isEqual(to: [
             "commerce": ["order": ["purchaseID": "held", "currency": "USD"]]
         ]))
     }
@@ -563,6 +563,22 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(fakeService.lastFeedbackToken, "feedback-token",
                        "the resolved auth token must be forwarded to sendFeedback")
         XCTAssertNotNil(fakeService.lastFeedbackData, "feedback event data should be forwarded")
+    }
+
+    func test_sendFeedbackFor_doesNotIncludeHeldXDMContext() throws {
+        try ConciergeXDMContextStore.shared.update(["page": "pdp-123"])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+        let messageId = appendFeedbackEligibleMessage(to: controller)
+
+        controller.sendFeedbackFor(
+            messageId: messageId,
+            with: FeedbackPayload(sentiment: .positive, selectedOptions: [], notes: "")
+        )
+        spinUntil(fakeService.sendFeedbackCallCount == 1)
+
+        let xdm = fakeService.lastFeedbackData?[ConciergeConstants.Request.Keys.XDM] as? [String: Any]
+        XCTAssertNil(xdm?["page"], "Held chat context must not be attached to feedback submissions")
     }
 
     func test_streaming_error_replaces_placeholder_with_error_message_and_returns_to_idle() {

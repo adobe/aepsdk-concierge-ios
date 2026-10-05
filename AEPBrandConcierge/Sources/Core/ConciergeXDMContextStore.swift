@@ -12,17 +12,17 @@
 
 import Foundation
 
-/// Backs `Concierge.updateXDMContext(_:)`. Holds a single merged XDM object across the lifetime
-/// of the current conversation session, read fresh on every outbound turn.
+/// Backs `Concierge.updateXDMContext(_:)`. Holds app-provided XDM for the current backend session
+/// and reads a fresh snapshot for every outbound turn.
 final class ConciergeXDMContextStore {
     static let shared = ConciergeXDMContextStore()
 
     private let lock = NSLock()
-    private let sessionIDProvider: () -> String
+    private let sessionIDProvider: () -> String?
     private var held: [String: Any] = [:]
     private var sessionID: String?
 
-    init(sessionIDProvider: @escaping () -> String = { SessionManager.shared.getOrCreateSessionId() }) {
+    init(sessionIDProvider: @escaping () -> String? = { SessionManager.shared.currentSessionIdIfActive }) {
         self.sessionIDProvider = sessionIDProvider
     }
 
@@ -33,31 +33,32 @@ final class ConciergeXDMContextStore {
         lock.lock(); defer { lock.unlock() }
         let currentSessionID = sessionIDProvider()
         discardPreviousSession(ifNeededFor: currentSessionID)
+        sessionID = currentSessionID
         held = Self.mergePatch(target: held, patch: Self.copyJSONObject(fields))
     }
 
-    /// Snapshot of the currently held context, read synchronously at turn-send time.
-    func snapshot() -> [String: Any] {
-        lock.lock(); defer { lock.unlock() }
-        return Self.copyJSONObject(held)
-    }
-
-    /// Returns context for `sessionID`, discarding only fields bound to a previous session.
+    /// Returns context for `sessionID`, discarding context bound to a different backend session.
     func snapshot(for sessionID: String) -> [String: Any] {
         lock.lock(); defer { lock.unlock() }
         discardPreviousSession(ifNeededFor: sessionID)
+        self.sessionID = sessionID
         return Self.copyJSONObject(held)
     }
 
-    private func discardPreviousSession(ifNeededFor currentSessionID: String) {
-        if let sessionID, sessionID != currentSessionID {
-            held = [:]
-        }
-        sessionID = currentSessionID
+    /// Clears stale bound context on presentation without adopting pending context into a session.
+    func discardExpiredContext(for sessionID: String) {
+        lock.lock(); defer { lock.unlock() }
+        discardPreviousSession(ifNeededFor: sessionID)
     }
 
-    /// Clears all held context. Internal only - invoked by `Concierge.resolveSession(...)` when a
-    /// genuinely new session is created. Not exposed as a public API.
+    private func discardPreviousSession(ifNeededFor currentSessionID: String?) {
+        if let sessionID, sessionID != currentSessionID {
+            held = [:]
+            self.sessionID = nil
+        }
+    }
+
+    /// Clears all held context when the chat-service identity changes.
     func clear() {
         lock.lock(); defer { lock.unlock() }
         held = [:]
@@ -110,7 +111,7 @@ final class ConciergeXDMContextStore {
             return array.map(copyJSONValue)
         }
         if let string = value as? String {
-            return String(string)
+            return string
         }
         return value
     }
