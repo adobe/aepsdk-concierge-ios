@@ -310,6 +310,7 @@ public enum ConciergeConstants {
                 public static let ERROR_MESSAGE = "errorMessage"
                 public static let LABEL = "label"
                 public static let ORIGIN = "origin"
+                public static let XDM_FIELDS = "xdmFields"
             }
         }
 

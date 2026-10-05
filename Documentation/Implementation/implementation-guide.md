@@ -167,6 +167,42 @@ Brand Concierge forwards the full Edge Identity `identityMap` on every chat and 
 
 Namespace priority and identity-graph rules are configured server-side in Adobe Experience Platform; the SDK does not interpret or relabel namespaces.
 
+## XDM context
+
+Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM fields for subsequent chat turns
+and data handoffs:
+
+```swift
+try Concierge.updateXDMContext([
+    "loyalty": ["tier": "gold"],
+    "commerce": ["currencyCode": "USD"]
+])
+```
+
+Updates use RFC 7396 JSON Merge Patch semantics: nested dictionaries merge recursively, scalar
+values and arrays replace existing values, and `NSNull()` for an object key removes that key.
+Nulls inside arrays remain JSON null values, not deletions. For example,
+`try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])` removes only
+`loyalty.tier`, preserving other loyalty fields. The top-level `identityMap` key is reserved for
+the SDK and cannot be supplied through this API.
+
+The context is held in memory for the current backend session and can be set before the first chat
+turn. Updating it does not create or refresh a backend session. If the session expires, its held
+context is discarded when the next session is resolved. An update made after expiry clears stale
+context and remains pending. Reopening chat alone does not bind pending context to the presentation's
+backend session. A subsequent context update binds it to an existing active session; otherwise,
+a turn adopts the pending context. Context from the expired session is not carried forward.
+A change in chat-service identity also clears held context. Clear sensitive fields
+proactively on logout.
+If an already-open chat sends a turn after expiry, reopening it while that new backend session
+is active keeps the transcript and binds the chat to the new session ID. If the chat remains idle
+through expiry, reopening starts a fresh transcript and clears context bound to the expired session,
+but preserves fresh pending context supplied after expiry.
+Data handoff fields are recursively merged over the held context, with handoff values taking
+precedence at matching leaf paths while preserving sibling fields. `NSNull()` in a handoff is
+sent as JSON null, not treated as a deletion; it does not change the held context. Feedback
+submissions do not include this context.
+
 ---
 
 ## Authentication

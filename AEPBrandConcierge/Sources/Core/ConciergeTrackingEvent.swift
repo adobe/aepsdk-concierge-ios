@@ -24,7 +24,11 @@ enum ConciergeTrackingEvent {
     case sessionInitialized
     case chatOpened(epochTime: Int64)
     case chatClosed(epochTime: Int64, durationMillis: Int64)
-    case querySubmitted(query: String)
+    /// `xdmFields` is the resolved XDM (held `updateXDMContext` snapshot) at the moment the turn is
+    /// sent - included so it's visible in Assurance, since the turn itself bypasses the Event Hub
+    /// entirely (`ConciergeChatService` sends it via a direct `URLSession` call). Not forwarded to
+    /// Edge - see the sanitization note on `ConciergeEventTracker.trackEvent`'s `QUERY_SUBMITTED` case.
+    case querySubmitted(query: String, xdmFields: [String: Any])
     case promptSuggestionClicked(suggestion: String)
     case welcomePromptSuggestionClicked(suggestion: String)
     case cardClicked(element: [String: Any])
@@ -140,8 +144,11 @@ enum ConciergeTrackingEvent {
             data[Key.EPOCH_TIME] = epochTime
             data[Key.DURATION_MILLIS] = durationMillis
 
-        case .querySubmitted(let query):
+        case .querySubmitted(let query, let xdmFields):
             data[Key.QUERY] = query
+            if !xdmFields.isEmpty {
+                data[Key.XDM_FIELDS] = xdmFields
+            }
 
         case .promptSuggestionClicked(let suggestion),
              .welcomePromptSuggestionClicked(let suggestion):
