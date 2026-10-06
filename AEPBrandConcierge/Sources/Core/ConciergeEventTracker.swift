@@ -210,6 +210,8 @@ internal enum ConciergeEventTracker {
             }
             dispatchEdge(xdmType: xdmType, data: payload)
 
+        case Types.CONVERSATION_ENDED:
+            return
         case Types.LINK_CLICKED:
             var payload: [String: Any] = [:]
             if let url = data[Key.URL] as? String {

@@ -14,4 +14,11 @@ import Foundation
 
 public protocol TextSpeaking {
     func utter(text: String)
+    /// Cancels active and scheduled speech when the conversation ends.
+    func stopSpeaking()
+}
+
+public extension TextSpeaking {
+    /// Existing custom speakers remain source-compatible. Implement to cancel native output.
+    func stopSpeaking() {}
 }

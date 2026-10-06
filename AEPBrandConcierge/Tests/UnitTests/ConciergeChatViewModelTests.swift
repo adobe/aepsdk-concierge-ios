@@ -17,6 +17,25 @@ import XCTest
 // MARK: - Fakes
 private final class NoopSpeaker: TextSpeaking { func utter(text: String) {} }
 
+private actor ResetTokenGate {
+    private var continuation: CheckedContinuation<String?, Never>?
+    private var released = false
+
+    func wait(_ entered: XCTestExpectation) async -> String? {
+        if released { return "test-token" }
+        return await withCheckedContinuation {
+            continuation = $0
+            entered.fulfill()
+        }
+    }
+
+    func release() {
+        released = true
+        continuation?.resume(returning: "test-token")
+        continuation = nil
+    }
+}
+
 @MainActor
 final class ChatControllerTests: XCTestCase {
     
@@ -71,6 +90,94 @@ final class ChatControllerTests: XCTestCase {
     }
 
     // MARK: - updateXDMContext merge
+
+    func test_identityReset_cancelsStalledReply_clearsDraftAndTranscript_andAllowsNewController() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.completesOnCancel = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        var callbackCount = 0
+        controller.handleDataHandoff(routingHint: "old-turn", xdmFields: ["order": "old-order"]) { _ in
+            callbackCount += 1
+        }
+        spinUntil(service.streamChatCallCount == 1)
+        let started = Date()
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: started)
+        controller.endConversationForIdentityReset()
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+        XCTAssertEqual(callbackCount, 1)
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertFalse(controller.sendEnabled)
+        XCTAssertFalse(controller.micEnabled)
+        service.triggerCompletion()
+        spinUntil(controller.chatState == .idle)
+        XCTAssertEqual(callbackCount, 1)
+        XCTAssertTrue(controller.messages.isEmpty)
+        boundary.complete(generation)
+        controller.applyTextChange("must not revive old controller")
+        XCTAssertTrue(controller.inputText.isEmpty)
+        let nextService = MockChatService(configuration: mockConciergeConfiguration)
+        let next = makeController(configuration: mockConciergeConfiguration, service: nextService)
+        next.applyTextChange("new user")
+        next.sendMessage(isUser: true)
+        spinUntil(nextService.streamChatCallCount == 1)
+        XCTAssertEqual(nextService.lastQuery, "new user")
+    }
+
+    func test_identityReset_clearsUnsentDraft() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("private unsent draft")
+        controller.endConversationForIdentityReset()
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertEqual(service.streamChatCallCount, 0)
+    }
+
+    func test_identityReset_pendingAuth_cannotSendOldCapturedContext_andRetainsProvider() async throws {
+        let gate = ResetTokenGate()
+        let entered = expectation(description: "Old turn is waiting for auth")
+        ConciergeAuthTokenResolver.shared.setProvider({ await gate.wait(entered) }, timeout: 5)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+        try ConciergeXDMContextStore.shared.update(["oldUser": true])
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("old query")
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [entered], timeout: 2)
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: Date())
+        controller.endConversationForIdentityReset()
+        ConciergeXDMContextStore.shared.clear()
+        try ConciergeXDMContextStore.shared.update(["newUser": true])
+        boundary.complete(generation)
+        await gate.release()
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(service.streamChatCallCount, 0)
+        XCTAssertTrue(controller.messages.isEmpty)
+        let retainedToken = await ConciergeAuthTokenResolver.shared.resolveToken()
+        XCTAssertEqual(retainedToken, "test-token", "Reset must not erase the host's provider registration.")
+    }
+
+    func test_identityReset_stopsSpeech_andRejectsLatePartialTranscript() async throws {
+        let capturer = MockSpeechCapturer()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service, capturer: capturer)
+        controller.startRecording(currentSelectionLocation: 0)
+        let oldPartial = capturer.responseProcessor
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: Date())
+        controller.endConversationForIdentityReset()
+        boundary.complete(generation)
+        oldPartial?("old speech")
+        try await Task.sleep(nanoseconds: 10_000_000)
+        XCTAssertEqual(capturer.endCaptures, 1)
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertFalse(controller.isRecording)
+    }
 
     func test_sendMessage_mergesHeldXDMContext_intoTheOutboundTurn() throws {
         try ConciergeXDMContextStore.shared.update(["loggedIn": true])

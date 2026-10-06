@@ -40,6 +40,9 @@ class ConciergeChatService: NSObject {
     private var dataTask: URLSessionDataTask?
     private var onChunkHandler: ((ConversationPayload) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
+    private let feedbackLock = NSLock()
+    private var feedbackTasks: [UUID: URLSessionDataTask] = [:]
+    private var feedbackEndedForIdentityReset = false
 
     // MARK: - Initialization
 
@@ -103,6 +106,12 @@ class ConciergeChatService: NSObject {
     /// Builds and sends a feedback request. `token` is resolved by the caller and attached to the
     /// request body; pass `nil` to send without one.
     func sendFeedback(data: [String: Any], token: String?) {
+        feedbackLock.lock()
+        defer { feedbackLock.unlock() }
+        guard !feedbackEndedForIdentityReset else {
+            Log.warning(label: LOG_TAG, "Feedback rejected because identity reset ended the conversation.")
+            return
+        }
         do {
             let url = try createUrl()
             let payload = try createFeedbackPayload(data: data, token: token)
@@ -119,7 +128,11 @@ class ConciergeChatService: NSObject {
             // Refresh session activity timestamp when sending feedback
             SessionManager.shared.refreshSessionActivity()
 
-            session.dataTask(with: request) { _, response, error in
+            let feedbackID = UUID()
+            let task = session.dataTask(with: request) { _, response, error in
+                self.feedbackLock.lock()
+                self.feedbackTasks.removeValue(forKey: feedbackID)
+                self.feedbackLock.unlock()
                 if let error = error {
                     Log.warning(label: self.LOG_TAG, error.localizedDescription)
                     return
@@ -128,7 +141,9 @@ class ConciergeChatService: NSObject {
                 if let httpResponse = response as? HTTPURLResponse {
                     Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
                 }
-            }.resume()
+            }
+            feedbackTasks[feedbackID] = task
+            task.resume()
         } catch {
             let conciergeError = (error as? ConciergeError) ?? .unknown
             Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
@@ -296,6 +311,15 @@ class ConciergeChatService: NSObject {
     /// caller unwinds through its normal failure path.
     func cancelActiveStream() {
         disconnect()
+    }
+
+    func endFeedbackForIdentityReset() {
+        feedbackLock.lock()
+        feedbackEndedForIdentityReset = true
+        let tasks = Array(feedbackTasks.values)
+        feedbackTasks.removeAll()
+        feedbackLock.unlock()
+        tasks.forEach { $0.cancel() }
     }
 
     private func disconnect() {
