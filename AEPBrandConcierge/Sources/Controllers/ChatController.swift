@@ -52,9 +52,7 @@ final class ChatController: ObservableObject {
     private let speechController: SpeechController
     private let dispatch: ((_ event: Event) -> Void)?
     private(set) var lastTurnSessionID: String?
-    private let identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
-        ConciergeIdentityBoundary.shared.generation
-    }
+    private let identityGeneration: Int
     @Published private(set) var endedForIdentityReset = false
     var conversationID: String? { messages.compactMap { $0.payload?.conversationId }.last }
     private var identityReady: Bool {
@@ -111,10 +109,14 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil) {
+        let generation = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
+        self.identityGeneration = generation
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
-        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: generation)
         self.dispatch = dispatch
         self.handoffTurnTimeout = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT
         self.handoffFirstChunkTimeout = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT
@@ -126,9 +128,12 @@ final class ChatController: ObservableObject {
     #if DEBUG
     // Internal for testing only
     init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT) {
+        self.identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
         self.configuration = configuration
         self.chatService = chatService
-        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: identityGeneration)
         self.dispatch = dispatch
         self.handoffTurnTimeout = handoffTurnTimeout
         self.handoffFirstChunkTimeout = handoffFirstChunkTimeout
@@ -439,6 +444,7 @@ final class ChatController: ObservableObject {
         endedForIdentityReset = true
         abandonActiveTurn()
         chatService.endFeedbackForIdentityReset()
+        chatService.invalidateTransportForIdentityReset()
         speechController.stopSpeaking()
         speechController.endCapture { _, _ in }
         inputController.apply(.reset)

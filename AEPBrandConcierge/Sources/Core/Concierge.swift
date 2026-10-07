@@ -96,6 +96,11 @@ public class Concierge: NSObject, Extension {
     var handoffTaskGateForTesting: ((Event) async -> Void)?
     var handoffTaskFinishedForTesting: ((Event) -> Void)?
     var identityResetReadinessCheckedForTesting: (() -> Void)?
+    var identityResetSessionsPreparedForTesting: (([ConciergeChatSession]) -> Void)?
+
+    var identityResetWarningTaskForTesting: Task<Void, Never>? {
+        ConciergeIdentityBoundary.shared.synchronized { resetWarning }
+    }
 
     func flushPendingRequestsForTesting(completion: @escaping () -> Void) {
         pendingRequestQueue.async(execute: completion)
@@ -286,20 +291,56 @@ public class Concierge: NSObject, Extension {
         let parent = Concierge.presentedUIKitController?.parent
         let uikitHidden = Concierge.presentedUIKitController?.viewIfLoaded?.isHidden ?? false
         let boundary = ConciergeIdentityBoundary.shared
-        let sessions = boundary.synchronized { () -> (overlay: ConciergeChatSession?, uikit: ConciergeChatSession?)? in
-            guard !Task.isCancelled, boundary.generation == generation, !boundary.ready else { return nil }
-            @MainActor func session(_ surfaces: [String]) -> ConciergeChatSession {
-                Concierge.resolveSession(configuration: ConciergeConfiguration(
-                    consentCollectValue: consent, datastream: datastream, ecid: ecid,
-                    identityMap: identity?.identityMap, server: server,
-                    region: configState?.conciergeRegion, surfaces: surfaces), preservingContext: true)
-            }
-            return (Concierge.resetOverlaySurfaces.map(session),
-                    parent == nil ? nil : Concierge.resetUIKitSurfaces.map(session))
+        if Concierge.resetOverlaySurfaces == nil && (parent == nil || Concierge.resetUIKitSurfaces == nil) {
+            _ = completeIdentityResetReadiness(generation: generation)
+            return
         }
-        guard let sessions else { return }
-        // Prepared controllers retain this generation. A reset during layout invalidates them
-        // immediately, and its MainActor teardown runs before its own replacement is prepared.
+        let sessionID = boundary.synchronized { () -> String? in
+            guard !Task.isCancelled, boundary.generation == generation, !boundary.ready,
+                  !readinessCheckPending else { return nil }
+            return SessionManager.shared.getOrCreateSessionId()
+        }
+        guard let sessionID else { return }
+        @MainActor func configuration(_ surfaces: [String]) -> ConciergeConfiguration {
+            ConciergeConfiguration(
+                    consentCollectValue: consent, datastream: datastream, ecid: ecid,
+                    identityMap: identity?.identityMap, server: server, sessionId: sessionID,
+                    region: configState?.conciergeRegion, surfaces: surfaces)
+        }
+        @MainActor func session(_ surfaces: [String]) -> ConciergeChatSession {
+            Concierge.makeSession(configuration: configuration(surfaces), sessionID: sessionID, identityGeneration: generation)
+        }
+        let overlaySession = Concierge.resetOverlaySurfaces.map(session)
+        let uikitSession = parent == nil ? nil : Concierge.resetUIKitSurfaces.map { surfaces in
+            if let overlaySession, overlaySession.matches(configuration: configuration(surfaces),
+                                                          title: Concierge.chatTitle, subtitle: Concierge.chatSubtitle) {
+                return overlaySession
+            }
+            return session(surfaces)
+        }
+        let sessions = (overlay: overlaySession, uikit: uikitSession)
+        #if DEBUG
+        identityResetSessionsPreparedForTesting?([sessions.overlay, sessions.uikit].compactMap { $0 })
+        #endif
+        var becameReady = false
+        defer {
+            if !becameReady {
+                sessions.overlay?.controller.endConversationForIdentityReset()
+                if let session = sessions.uikit, session !== sessions.overlay {
+                    session.controller.endConversationForIdentityReset()
+                }
+                if Concierge.currentSession === sessions.overlay || Concierge.currentSession === sessions.uikit {
+                    Concierge.currentSession = nil
+                }
+            }
+        }
+        let canAttach = boundary.synchronized {
+            guard !Task.isCancelled, boundary.generation == generation, !boundary.ready,
+                  !readinessCheckPending else { return false }
+            Concierge.currentSession = sessions.uikit ?? sessions.overlay
+            return true
+        }
+        guard canAttach else { return }
         if let session = sessions.overlay {
             overlay.replaceChat(Concierge.makeChatView(session: session))
         }
@@ -307,19 +348,25 @@ public class Concierge: NSObject, Extension {
             Concierge.attachConciergeUIKitHost(session: session, presentingViewController: parent)
             Concierge.presentedUIKitController?.view.isHidden = uikitHidden
         }
-        let becameReady = boundary.synchronized {
-            guard !Task.isCancelled, boundary.generation == generation else { return false }
-            boundary.complete(generation)
-            activeReset = nil
-            resetWarning?.cancel()
-            resetWarning = nil
-            return true
-        }
+        becameReady = completeIdentityResetReadiness(generation: generation)
         if becameReady {
             sessions.overlay?.controller.objectWillChange.send()
             if let session = sessions.uikit, session !== sessions.overlay {
                 session.controller.objectWillChange.send()
             }
+        }
+    }
+
+    private func completeIdentityResetReadiness(generation: Int) -> Bool {
+        let boundary = ConciergeIdentityBoundary.shared
+        return boundary.synchronized {
+            guard !Task.isCancelled, boundary.generation == generation, !boundary.ready,
+                  !readinessCheckPending else { return false }
+            boundary.complete(generation)
+            activeReset = nil
+            resetWarning?.cancel()
+            resetWarning = nil
+            return true
         }
     }
 

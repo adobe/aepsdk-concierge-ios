@@ -53,9 +53,16 @@ later eligible shared-state updates can still restore readiness. Warning output
 uses the standard SDK log level; enable warning or more verbose logging to see it.
 Outstanding reset requests retain their ordering until completions arrive, since
 expiring them could misassociate an uncorrelated late completion.
-Replacement sessions are prepared under the identity boundary, but UIKit hierarchy
-and constraint work runs outside that lock. Requests remain blocked until host
-replacement finishes and the reset generation is revalidated.
+Replacement sessions capture their generation and backend session ID under the
+identity boundary. Session construction, speech-provider initialization, and UIKit
+hierarchy/constraint work run outside that lock. Controllers and speech coordinators
+retain the captured generation even if another reset arrives during construction.
+Requests remain blocked until host replacement finishes and both the generation
+and absence of newer shared-state notifications are revalidated. A notification
+arriving during a successful check triggers a fresh check, not just notifications
+during failed checks. Stale prepared sessions are ended and their transports
+invalidated; they are never reused by the follow-up check. Host speech-output
+cancellation also runs outside the boundary lock after logical invalidation.
 Host token-provider registration, configuration, consent and surfaces are retained.
 Each retained overlay/UIKit host keeps its own surfaces and visibility, including
 a hidden overlay when a different UIKit conversation is current. Custom

@@ -933,6 +933,19 @@ final class ConciergeChatServiceTests: XCTestCase {
     }
 
     @MainActor
+    func test_identityReset_releasesTransportDelegate_withoutStartingRequest() async {
+        weak var releasedService: ConciergeChatService?
+        autoreleasepool {
+            let service = makeStubbedService()
+            releasedService = service
+            let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
+            controller.endConversationForIdentityReset()
+        }
+        await waitForCondition(timeout: 3) { releasedService == nil }
+        XCTAssertNil(releasedService, "Discarded prepared services must not be retained by an idle URLSession.")
+    }
+
+    @MainActor
     func test_identityReset_rejectsFeedbackOnEndedService_butNewServiceCanSend() async {
         StubURLProtocol.reset()
         let service = makeStubbedService()

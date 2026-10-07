@@ -31,7 +31,8 @@ final class ConciergeChatSession {
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?,
         dispatch: ((_ event: Event) -> Void)? = nil,
-        urlSessionConfiguration: URLSessionConfiguration = .default
+        urlSessionConfiguration: URLSessionConfiguration = .default,
+        identityGeneration: Int? = nil
     ) {
         self.configuration = configuration
         self.sessionID = sessionID ?? configuration.sessionId
@@ -42,7 +43,8 @@ final class ConciergeChatSession {
             speechCapturer: speechCapturer ?? SpeechCapturer(),
             speaker: textSpeaker,
             dispatch: dispatch,
-            urlSessionConfiguration: urlSessionConfiguration
+            urlSessionConfiguration: urlSessionConfiguration,
+            identityGeneration: identityGeneration
         )
     }
 

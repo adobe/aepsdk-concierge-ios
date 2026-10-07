@@ -314,20 +314,24 @@ extension Concierge {
             }
         }
 
-        let urlSessionConfiguration = resolvedURLSessionConfiguration()
+        let session = makeSession(configuration: configuration, sessionID: sessionID)
+        currentSession = session
+        return session
+    }
 
-        let session = ConciergeChatSession(
+    @MainActor
+    static func makeSession(configuration: ConciergeConfiguration, sessionID: String, identityGeneration: Int? = nil) -> ConciergeChatSession {
+        ConciergeChatSession(
             configuration: configuration,
             sessionID: sessionID,
-            title: resolvedTitle,
-            subtitle: resolvedSubtitle,
+            title: chatTitle,
+            subtitle: chatSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
             dispatch: { event in MobileCore.dispatch(event: event) },
-            urlSessionConfiguration: urlSessionConfiguration
+            urlSessionConfiguration: resolvedURLSessionConfiguration(),
+            identityGeneration: identityGeneration
         )
-        currentSession = session
-        return session
     }
 }
 

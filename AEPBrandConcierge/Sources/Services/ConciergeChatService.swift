@@ -322,6 +322,10 @@ class ConciergeChatService: NSObject {
         tasks.forEach { $0.cancel() }
     }
 
+    func invalidateTransportForIdentityReset() {
+        session.invalidateAndCancel()
+    }
+
     private func disconnect() {
         dataTask?.cancel()
         dataTask = nil

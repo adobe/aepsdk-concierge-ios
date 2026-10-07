@@ -17,12 +17,16 @@ import XCTest
 final class MockTextSpeaker: TextSpeaking {
     private(set) var spokenTexts: [String] = []
     private(set) var stopCount = 0
+    var onStop: (() -> Void)?
     
     func utter(text: String) {
         spokenTexts.append(text)
     }
 
-    func stopSpeaking() { stopCount += 1 }
+    func stopSpeaking() {
+        stopCount += 1
+        onStop?()
+    }
 }
 
 final class SpeechControllerTests: XCTestCase {
@@ -36,6 +40,26 @@ final class SpeechControllerTests: XCTestCase {
         controller.speak("late")
         XCTAssertEqual(speaker.spokenTexts, ["before"])
         XCTAssertEqual(speaker.stopCount, 1)
+    }
+
+    @MainActor
+    func test_stopSpeaking_releasesIdentityBoundaryBeforeCallingHost() {
+        let speaker = MockTextSpeaker()
+        let controller = SpeechController(capturer: nil, speaker: speaker)
+        speaker.onStop = {
+            let processed = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                let boundary = ConciergeIdentityBoundary.shared
+                _ = boundary.synchronized { boundary.generation }
+                processed.signal()
+            }
+            XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                           "Host output cancellation must not hold the identity boundary lock.")
+        }
+        controller.stopSpeaking()
+        controller.speak("late")
+        XCTAssertEqual(speaker.stopCount, 1)
+        XCTAssertTrue(speaker.spokenTexts.isEmpty)
     }
 
     @MainActor
