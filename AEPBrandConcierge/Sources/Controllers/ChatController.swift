@@ -48,10 +48,16 @@ final class ChatController: ObservableObject {
 
     private let LOG_TAG = "ChatController"
     private let chatService: ConciergeChatService
-    private let configuration: ConciergeConfiguration?
+    let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
     private let dispatch: ((_ event: Event) -> Void)?
     private(set) var lastTurnSessionID: String?
+    private let identityGeneration: Int
+    @Published private(set) var endedForIdentityReset = false
+    var conversationID: String? { messages.compactMap { $0.payload?.conversationId }.last }
+    private var identityReady: Bool {
+        !endedForIdentityReset && ConciergeIdentityBoundary.shared.admits(identityGeneration)
+    }
 
     private var welcomeMessagesLoaded: Bool = false
 
@@ -82,9 +88,9 @@ final class ChatController: ObservableObject {
 
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
-    var composerEditable: Bool { chatState != .processing }
-    var micEnabled: Bool { chatState == .idle }
-    var sendEnabled: Bool { chatState == .idle && inputController.data.canSend }
+    var composerEditable: Bool { identityReady && chatState != .processing }
+    var micEnabled: Bool { identityReady && chatState == .idle }
+    var sendEnabled: Bool { identityReady && chatState == .idle && inputController.data.canSend }
 
     /// Whether the transcript holds at least one real turn. Welcome content doesn't count.
     ///
@@ -103,10 +109,14 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil) {
+        let generation = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
+        self.identityGeneration = generation
         self.configuration = configuration
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
-        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: generation)
         self.dispatch = dispatch
         self.handoffTurnTimeout = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT
         self.handoffFirstChunkTimeout = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT
@@ -118,9 +128,12 @@ final class ChatController: ObservableObject {
     #if DEBUG
     // Internal for testing only
     init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT) {
+        self.identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
         self.configuration = configuration
         self.chatService = chatService
-        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker)
+        self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: identityGeneration)
         self.dispatch = dispatch
         self.handoffTurnTimeout = handoffTurnTimeout
         self.handoffFirstChunkTimeout = handoffFirstChunkTimeout
@@ -141,6 +154,7 @@ final class ChatController: ObservableObject {
     }
 
     func applyTextChange(_ newText: String) {
+        guard identityReady else { return }
         inputController.applyTextChange(newText)
     }
 
@@ -158,6 +172,7 @@ final class ChatController: ObservableObject {
     }
 
     func toggleMic(currentSelectionLocation: Int) {
+        guard identityReady else { return }
         if isRecording { completeMic() } else { startRecording(currentSelectionLocation: currentSelectionLocation) }
     }
 
@@ -178,16 +193,18 @@ final class ChatController: ObservableObject {
         inputController.apply(.recordingComplete)
         speechController.endCapture { [weak self] transcript, _ in
             Task { @MainActor in
+                guard let self, self.identityReady else { return }
                 if let transcript = transcript, !transcript.isEmpty {
-                    self?.inputController.apply(.transcriptionComplete(transcript))
+                    self.inputController.apply(.transcriptionComplete(transcript))
                 } else {
-                    self?.inputController.apply(.transcriptionError("empty transcript"))
+                    self.inputController.apply(.transcriptionError("empty transcript"))
                 }
             }
         }
     }
 
     func startRecording(currentSelectionLocation: Int) {
+        guard identityReady else { return }
         guard chatState == .idle else {
             Log.warning(label: LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
             return
@@ -208,7 +225,7 @@ final class ChatController: ObservableObject {
             Log.debug(label: LOG_TAG, "Requesting speech and microphone permissions for the first time.")
             speechController.requestPermissions { [weak self] in
                 Task { @MainActor in
-                    guard let self = self else { return }
+                    guard let self = self, self.identityReady else { return }
                     // After user responds to system prompts, check if permissions were granted
                     if self.speechController.isAvailable {
                         Log.debug(label: self.LOG_TAG, "Permissions granted. Starting recording.")
@@ -235,8 +252,10 @@ final class ChatController: ObservableObject {
     }
 
     private func beginCaptureSession(currentSelectionLocation: Int) {
+        guard identityReady else { return }
         speechController.setAudioLevelHandler { [weak self] level in
-            self?.audioLevel = level
+            guard let self, self.identityReady else { return }
+            self.audioLevel = level
         }
         speechController.setSilenceHandler { [weak self] in
             self?.completeMic()
@@ -258,6 +277,16 @@ final class ChatController: ObservableObject {
     // MARK: - Message Sending
 
     func sendMessage(isUser: Bool) {
+        ConciergeIdentityBoundary.shared.synchronized {
+            sendAdmittedMessage(isUser: isUser)
+        }
+    }
+
+    private func sendAdmittedMessage(isUser: Bool) {
+        guard identityReady else {
+            Log.warning(label: LOG_TAG, "Message rejected because the conversation ended or identity reset is pending.")
+            return
+        }
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             Log.warning(label: LOG_TAG, "sendMessage ignored. Expected non-empty text, but was empty.")
@@ -308,6 +337,21 @@ final class ChatController: ObservableObject {
                            xdmFields: [String: Any],
                            localMessage: String? = nil,
                            completion: ((ConciergeError?) -> Void)? = nil) -> Bool {
+        ConciergeIdentityBoundary.shared.synchronized {
+            handleAdmittedDataHandoff(routingHint: routingHint, xdmFields: xdmFields,
+                                     localMessage: localMessage, completion: completion)
+        }
+    }
+
+    private func handleAdmittedDataHandoff(routingHint: String,
+                                           xdmFields: [String: Any],
+                                           localMessage: String?,
+                                           completion: ((ConciergeError?) -> Void)?) -> Bool {
+        guard identityReady else {
+            Log.warning(label: LOG_TAG, "Data handoff rejected because identity reset is pending.")
+            completion?(.unknown)
+            return true
+        }
         guard activeTurn == nil else {
             Log.warning(label: LOG_TAG, "handleDataHandoff ignored. A Concierge turn is already in progress.")
             return false
@@ -396,6 +440,24 @@ final class ChatController: ObservableObject {
         chatService.cancelActiveStream()
     }
 
+    func endConversationForIdentityReset() {
+        endedForIdentityReset = true
+        abandonActiveTurn()
+        chatService.endFeedbackForIdentityReset()
+        chatService.invalidateTransportForIdentityReset()
+        speechController.stopSpeaking()
+        speechController.endCapture { _, _ in }
+        inputController.apply(.reset)
+        messages = []
+        latestSources = []
+        latestLinkHints = []
+        latestPromptSuggestions = []
+        lastTurnSessionID = nil
+        userMessageToScrollId = nil
+        showPermissionDialog = false
+        audioLevel = 0
+    }
+
     /// Scrolls the transcript so `messageId` sits at the top, leaving the rest of the screen for
     /// the response that follows.
     ///
@@ -413,7 +475,7 @@ final class ChatController: ObservableObject {
     /// Loads initial welcome header and examples if not already loaded.
     func loadWelcomeIfNeeded(theme: ConciergeTheme) async {
         // Prevent loading if already loaded OR if messages is not empty
-        guard !welcomeMessagesLoaded && messages.isEmpty else { return }
+        guard identityReady, !welcomeMessagesLoaded && messages.isEmpty else { return }
         welcomeMessagesLoaded = true
 
         // Prefer welcome content provided by the theme when available.
@@ -446,6 +508,10 @@ final class ChatController: ObservableObject {
     // MARK: - Feedback
 
     func sendFeedbackFor(messageId: UUID?, with feedbackPayload: FeedbackPayload) {
+        guard identityReady else {
+            Log.warning(label: LOG_TAG, "Feedback rejected because identity reset ended the conversation.")
+            return
+        }
         guard let messageId = messageId, let index = messages.firstIndex(where: { $0.id == messageId }) else {
             Log.debug(label: LOG_TAG, "Unable to send feedback, the message was not retrievable from the chat.")
             return
@@ -500,7 +566,10 @@ final class ChatController: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             let token = await ConciergeAuthTokenResolver.shared.resolveToken()
-            self.chatService.sendFeedback(data: feedbackEventData, token: token)
+            ConciergeIdentityBoundary.shared.synchronized {
+                guard self.identityReady else { return }
+                self.chatService.sendFeedback(data: feedbackEventData, token: token)
+            }
         }
 
         dispatchTrackingEvent(.feedbackSubmitted(
@@ -578,7 +647,8 @@ final class ChatController: ObservableObject {
     private func configureSpeech() {
         speechController.configureForStreaming { [weak self] text in
             Task { @MainActor in
-                self?.inputController.apply(.streamingPartial(text))
+                guard let self, self.identityReady else { return }
+                self.inputController.apply(.streamingPartial(text))
             }
         }
     }
@@ -630,11 +700,12 @@ final class ChatController: ObservableObject {
         Task { [self] in
             let token = await ConciergeAuthTokenResolver.shared.resolveToken()
 
+            ConciergeIdentityBoundary.shared.synchronized {
             // A deadline may have fired while the token resolved. Sending the request now would
             // render a reply into a turn whose caller has already been told it failed - but the
             // caller is still owed an answer either way, so the turn reports here. `resolve` is
             // idempotent, so a turn a deadline already ended keeps that more specific outcome.
-            guard self.activeTurn === turn else {
+            guard self.identityReady, self.activeTurn === turn else {
                 Log.debug(label: self.LOG_TAG, "Turn abandoned before it reached the service; not sending.")
                 turn.resolve(.unknown)
                 return
@@ -646,7 +717,7 @@ final class ChatController: ObservableObject {
             sessionID: resolvedSessionID,
             onChunk: { [weak self] payload in
                 Task { @MainActor in
-                    guard let self = self, self.activeTurn === turn else { return }
+                    guard let self = self, self.identityReady, self.activeTurn === turn else { return }
 
                     // The service is alive, so the fast "never answered" cap has done its job.
                     //
@@ -750,7 +821,7 @@ final class ChatController: ObservableObject {
                     var outcome: ConciergeError? = error
                     defer { turn.resolve(outcome) }
 
-                    guard let self = self, self.activeTurn === turn else {
+                    guard let self = self, self.identityReady, self.activeTurn === turn else {
                         // The session went away mid-stream; nothing was rendered.
                         outcome = outcome ?? .unknown
                         return
@@ -833,6 +904,7 @@ final class ChatController: ObservableObject {
                 }
             }
             )
+            }
         }
 
         return turn

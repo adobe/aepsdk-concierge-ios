@@ -73,7 +73,9 @@ public extension Concierge {
     /// immediately and throws if `fields` is not JSON-serializable or uses the reserved
     /// `identityMap` top-level key (which always wins over held context regardless).
     static func updateXDMContext(_ fields: [String: Any]) throws {
-        try ConciergeXDMContextStore.shared.update(fields)
+        try ConciergeIdentityBoundary.shared.synchronized {
+            try ConciergeXDMContextStore.shared.update(fields)
+        }
     }
 
     // MARK: - Data Handoff
@@ -147,11 +149,11 @@ public extension Concierge {
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
-        fetchChatConfiguration(forSurfaces: surfaces) { config in
+        fetchChatConfiguration(forSurfaces: surfaces) { config, generation in
             applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
-            let session = resolveSession(configuration: config)
-            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
+            guard let session = resolvePresentationSession(configuration: config, generation: generation) else { return }
+            showConciergeOverlay(session: session, generation: generation)
         }
     }
 
@@ -220,10 +222,11 @@ public extension Concierge {
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
-        fetchChatConfiguration(forSurfaces: surfaces) { config in
+        fetchChatConfiguration(forSurfaces: surfaces) { config, generation in
             applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
-            attachConciergeUIKitHost(configuration: config, presentingViewController: presentingViewController)
+            guard let session = resolvePresentationSession(configuration: config, generation: generation) else { return }
+            attachConciergeUIKitHost(session: session, presentingViewController: presentingViewController, generation: generation)
         }
     }
 }
@@ -253,9 +256,9 @@ extension Concierge {
     /// Used by the floating button and other internal re-show paths where the customer's
     /// previously configured values should be preserved.
     static func reshow() {
-        fetchChatConfiguration(forSurfaces: surfaces) { config in
-            let session = resolveSession(configuration: config)
-            ConciergeOverlayManager.shared.showChat(makeChatView(session: session))
+        fetchChatConfiguration(forSurfaces: surfaces) { config, generation in
+            guard let session = resolvePresentationSession(configuration: config, generation: generation) else { return }
+            showConciergeOverlay(session: session, generation: generation)
         }
     }
 
@@ -284,7 +287,16 @@ extension Concierge {
     /// - Parameter configuration: The freshly fetched configuration from the `SHOW_UI` response event.
     /// - Returns: An existing or newly created session.
     @MainActor
-    static func resolveSession(configuration: ConciergeConfiguration) -> ConciergeChatSession {
+    static func resolveSession(configuration: ConciergeConfiguration, preservingContext: Bool = false) -> ConciergeChatSession {
+        let preparation = prepareSession(configuration: configuration, preservingContext: preservingContext)
+        if let existing = preparation.existing { return existing }
+        let session = makeSession(configuration: configuration, sessionID: preparation.sessionID)
+        currentSession = session
+        return session
+    }
+
+    @MainActor
+    private static func prepareSession(configuration: ConciergeConfiguration, preservingContext: Bool) -> (existing: ConciergeChatSession?, sessionID: String) {
         let resolvedTitle = chatTitle
         let resolvedSubtitle = chatSubtitle
         let sessionWasActive = SessionManager.shared.isSessionActive
@@ -294,12 +306,12 @@ extension Concierge {
            sessionWasActive,
            existing.sessionID == sessionID,
            existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
-            return existing
+            return (existing, sessionID)
         }
 
         if let existing = currentSession {
             let sameServiceIdentity = existing.configuration.hasSameChatServiceIdentity(as: configuration)
-            if !sameServiceIdentity {
+            if !sameServiceIdentity && !preservingContext {
                 ConciergeXDMContextStore.shared.clear()
             } else if existing.sessionID != sessionID {
                 ConciergeXDMContextStore.shared.discardExpiredContext(for: sessionID)
@@ -307,31 +319,83 @@ extension Concierge {
                    existing.controller.lastTurnSessionID == sessionID,
                    existing.matches(configuration: configuration, title: resolvedTitle, subtitle: resolvedSubtitle) {
                     existing.rebind(to: sessionID)
-                    return existing
+                    return (existing, sessionID)
                 }
             }
         }
 
-        let urlSessionConfiguration = resolvedURLSessionConfiguration()
+        return (nil, sessionID)
+    }
 
-        let session = ConciergeChatSession(
+    @MainActor
+    static func resolvePresentationSession(configuration: ConciergeConfiguration, generation: Int) -> ConciergeChatSession? {
+        let boundary = ConciergeIdentityBoundary.shared
+        let preparation = boundary.synchronized { () -> (existing: ConciergeChatSession?, sessionID: String)? in
+            guard boundary.admits(generation) else { return nil }
+            return prepareSession(configuration: configuration, preservingContext: false)
+        }
+        guard let preparation else {
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Discarding stale chat presentation after identity reset.")
+            return nil
+        }
+        let session = preparation.existing ?? makeSession(
+            configuration: configuration, sessionID: preparation.sessionID, identityGeneration: generation)
+        let accepted = boundary.synchronized {
+            guard boundary.admits(generation) else { return false }
+            currentSession = session
+            return true
+        }
+        guard accepted else {
+            discardPresentation(session: session)
+            return nil
+        }
+        return session
+    }
+
+    @MainActor
+    private static func discardPresentation(session: ConciergeChatSession) {
+        session.controller.endConversationForIdentityReset()
+        if currentSession === session { currentSession = nil }
+        Log.warning(label: ConciergeConstants.LOG_TAG, "Discarding stale chat presentation after identity reset.")
+    }
+
+    @MainActor
+    static func showConciergeOverlay(session: ConciergeChatSession, generation: Int) {
+        guard ConciergeIdentityBoundary.shared.admits(generation) else {
+            discardPresentation(session: session)
+            return
+        }
+        let overlay = ConciergeOverlayManager.shared
+        let previousView = overlay.chatView
+        let wasVisible = overlay.showingConcierge
+        overlay.showChat(makeChatView(session: session))
+        guard ConciergeIdentityBoundary.shared.admits(generation) else {
+            discardPresentation(session: session)
+            overlay.replaceChat(previousView)
+            if !wasVisible { overlay.hideChat() }
+            return
+        }
+    }
+
+    @MainActor
+    static func makeSession(configuration: ConciergeConfiguration, sessionID: String, identityGeneration: Int? = nil) -> ConciergeChatSession {
+        ConciergeChatSession(
             configuration: configuration,
             sessionID: sessionID,
-            title: resolvedTitle,
-            subtitle: resolvedSubtitle,
+            title: chatTitle,
+            subtitle: chatSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
             dispatch: { event in MobileCore.dispatch(event: event) },
-            urlSessionConfiguration: urlSessionConfiguration
+            urlSessionConfiguration: resolvedURLSessionConfiguration(),
+            identityGeneration: identityGeneration
         )
-        currentSession = session
-        return session
     }
 }
 
 // MARK: - Shared presentation internals
 
-private extension Concierge {
+extension Concierge {
 
     /// Dispatches a `SHOW_UI` event to retrieve the `ConciergeConfiguration` needed to present the chat.
     ///
@@ -344,8 +408,11 @@ private extension Concierge {
     ///   - completion: Called on the main actor with the resolved configuration. Not called on failure.
     static func fetchChatConfiguration(
         forSurfaces surfaces: [String],
-        completion: @escaping @MainActor (ConciergeConfiguration) -> Void
+        completion: @escaping @MainActor (ConciergeConfiguration, Int) -> Void
     ) {
+        let generation = ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
         let showEvent = Event(name: ConciergeConstants.EventName.SHOW_UI,
                               type: ConciergeConstants.EventType.concierge,
                               source: EventSource.requestContent,
@@ -359,7 +426,11 @@ private extension Concierge {
                 return
             }
             Task { @MainActor in
-                completion(config)
+                guard ConciergeIdentityBoundary.shared.admits(generation) else {
+                    Log.warning(label: ConciergeConstants.LOG_TAG, "Discarding stale chat configuration after identity reset.")
+                    return
+                }
+                completion(config, generation)
             }
         }
     }
@@ -380,32 +451,46 @@ private extension Concierge {
         )
     }
 
-    /// Embeds the Concierge chat UI as a child view controller of the given `UIViewController`.
-    ///
-    /// If a previous UIKit-hosted chat is still attached, it is removed from the hierarchy first.
-    /// The method resolves or reuses a session, creates a `ChatView`, wraps it in a
-    /// `ConciergeHostingController`, and pins it edge-to-edge within the presenting view controller.
-    ///
-    /// - Parameters:
-    ///   - configuration: The configuration for this chat session.
-    ///   - presentingViewController: The UIKit view controller that will host the chat UI as a child.
+    #if DEBUG
+    /// Test-fixture setup only; normal presentation tests must use `present` to exercise generation fencing.
     @MainActor
     static func attachConciergeUIKitHost(
         configuration: ConciergeConfiguration,
-        presentingViewController: UIViewController
+        presentingViewController: UIViewController,
+        preservingContext: Bool = false
     ) {
+        removeConciergeUIKitHost()
+        let session = resolveSession(configuration: configuration, preservingContext: preservingContext)
+        attachConciergeUIKitHost(session: session, presentingViewController: presentingViewController)
+    }
+    #endif
+
+    @MainActor
+    private static func removeConciergeUIKitHost() {
         if let previousHosting = presentedUIKitController {
-            previousHosting.willMove(toParent: nil)
-            previousHosting.view.removeFromSuperview()
-            previousHosting.removeFromParent()
+            detachConciergeUIKitHost(previousHosting)
             presentedUIKitController = nil
         }
+    }
 
-        let session = resolveSession(configuration: configuration)
+    @MainActor
+    private static func detachConciergeUIKitHost(_ hosting: UIViewController) {
+        hosting.willMove(toParent: nil)
+        hosting.view.removeFromSuperview()
+        hosting.removeFromParent()
+    }
+
+    @MainActor
+    static func attachConciergeUIKitHost(session: ConciergeChatSession, presentingViewController: UIViewController, generation: Int? = nil) {
+        if let generation, !ConciergeIdentityBoundary.shared.admits(generation) {
+            discardPresentation(session: session)
+            return
+        }
+        if generation == nil { removeConciergeUIKitHost() }
         let view = makeChatView(session: session)
 
         let hosting = ConciergeHostingController(chatView: view)
-        presentedUIKitController = hosting
+        if generation == nil { presentedUIKitController = hosting }
 
         presentingViewController.addChild(hosting)
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
@@ -417,5 +502,19 @@ private extension Concierge {
             hosting.view.bottomAnchor.constraint(equalTo: presentingViewController.view.bottomAnchor)
         ])
         hosting.didMove(toParent: presentingViewController)
+        if let generation {
+            let previousHosting = presentedUIKitController
+            let accepted = ConciergeIdentityBoundary.shared.synchronized {
+                guard ConciergeIdentityBoundary.shared.admits(generation) else { return false }
+                presentedUIKitController = hosting
+                return true
+            }
+            if accepted {
+                if let previousHosting { detachConciergeUIKitHost(previousHosting) }
+            } else {
+                detachConciergeUIKitHost(hosting)
+                discardPresentation(session: session)
+            }
+        }
     }
 }

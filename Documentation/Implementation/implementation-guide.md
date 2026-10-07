@@ -17,6 +17,77 @@ Internally, `Concierge.show(...)` dispatches an event in the Adobe Experience Pl
 
 ## Pre requisites
 
+### Ending a conversation at an identity boundary
+
+Call the existing Core API when the host app changes users or signs out:
+
+```swift
+MobileCore.resetIdentities()
+```
+
+Concierge automatically clears its persisted backend session, transcript, unsent
+draft, held/pending XDM context and transient conversation UI. It stops speech
+capture and cancels active/scheduled SDK speech output, and invalidates active,
+queued and auth-pending conversation work across all retained hosts. A visible
+chat stays open; a hidden chat stays hidden. Interrupted/new data handoffs during
+reset complete once with `no_active_session`.
+Outstanding feedback requests are cancelled even when no chat turn is active.
+Ended services reject further feedback; replacement conversations can send normally.
+Cancellation cannot undo feedback already received by the server.
+
+Sending resumes only after Edge Identity `resetComplete`, resolved refreshed
+identity/configuration and local teardown. The next request uses a new `sessionId`.
+Dependency waiting for show/handoff requests does not block reset delivery in
+Core's FIFO queue. Internally, overlapping resets are matched to Edge's ordered
+completions; the active request must pass Edge's processing barrier and its
+versioned identity must match the completion and current identity. Configuration
+and consent are re-read after teardown, so a later configuration update can finish
+readiness even if the completion-time configuration was incomplete.
+Readiness checks are driven by shared-state notifications, not a polling loop;
+notifications arriving during a check are coalesced into a follow-up check.
+If reset has not become ready within five seconds, Concierge logs one warning
+for the current reset, distinguishing missing Edge Identity completion from
+unavailable matching identity/configuration or unfinished teardown. This is a
+diagnostic deadline, not a timeout that re-enables requests. Late completion and
+later eligible shared-state updates can still restore readiness. Warning output
+uses the standard SDK log level; enable warning or more verbose logging to see it.
+Outstanding reset requests retain their ordering until completions arrive, since
+expiring them could misassociate an uncorrelated late completion.
+Replacement sessions capture their generation and backend session ID under the
+identity boundary for construction; subsequent turns still resolve session IDs
+through the normal inactivity expiry check. Session construction, speech-provider initialization, and UIKit
+hierarchy/constraint work run outside that lock. Controllers and speech coordinators
+retain the captured generation even if another reset arrives during construction.
+Requests remain blocked until host replacement finishes and both the generation
+and absence of newer shared-state notifications are revalidated. A notification
+arriving during a successful check triggers a fresh check, not just notifications
+during failed checks. Stale prepared sessions are ended and their transports
+invalidated; they are never reused by the follow-up check. Host speech-output
+cancellation also runs outside the boundary lock after logical invalidation.
+Normal `show`, `present`, and internal re-show paths also perform session
+construction and UI attachment outside the boundary lock. Configuration callbacks
+carry their captured generation through preparation and host publication. If a
+reset interrupts that work, the candidate is ended and is not published as an
+active host. An existing UIKit host is retained until the replacement is validated
+and published; reset during old-host removal rebuilds the committed replacement.
+Host token-provider registration, configuration, consent and surfaces are retained.
+Each retained overlay/UIKit host keeps its own surfaces and visibility, including
+a hidden overlay when a different UIKit conversation is current. Custom
+`TextSpeaking` implementations should implement `stopSpeaking()` to cancel their
+own active and scheduled native output. Its default no-op preserves compatibility
+with existing conformers; Concierge still rejects late calls from old generations.
+The host remains responsible for sign-out and replacing or clearing its auth token.
+This does not delete server-side conversation history.
+
+After local teardown, a nonempty ended conversation emits **Brand Concierge
+Conversation Ended** (`com.adobe.eventType.concierge`,
+`com.adobe.eventSource.notification`) for Event Hub/Assurance diagnostics.
+Its `conciergeEventType` is `concierge:conversation:ended`; fields are
+`reason: identity_reset`, Unix-millisecond `epochTime`, boolean `hadActiveTurn`,
+and optional previous `sessionId`/`conversationId`. It contains no transcript, XDM,
+identity map or auth token, and is never forwarded to Edge analytics.
+It is not a server-deletion, transport-cleanup or next-conversation-readiness signal.
+
 ### Required SDK modules
 
 The host app needs these AEP modules available and registered:

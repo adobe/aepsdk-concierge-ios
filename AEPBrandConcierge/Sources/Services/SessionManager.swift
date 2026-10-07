@@ -38,6 +38,10 @@ class SessionManager {
 
     // MARK: - Public Methods
 
+    var currentSessionId: String? {
+        dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID)
+    }
+
     /// Whether a persisted session exists and its last activity is within the TTL window.
     var isSessionActive: Bool {
         guard let lastActivity: Date = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY) else {

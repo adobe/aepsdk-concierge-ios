@@ -22,6 +22,11 @@ final class ConciergeXDMContextStore {
     private var held: [String: Any] = [:]
     private var sessionID: String?
 
+    var hasContext: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return !held.isEmpty
+    }
+
     init(sessionIDProvider: @escaping () -> String? = { SessionManager.shared.currentSessionIdIfActive }) {
         self.sessionIDProvider = sessionIDProvider
     }
