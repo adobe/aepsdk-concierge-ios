@@ -304,7 +304,7 @@ public class Concierge: NSObject, Extension {
         @MainActor func configuration(_ surfaces: [String]) -> ConciergeConfiguration {
             ConciergeConfiguration(
                     consentCollectValue: consent, datastream: datastream, ecid: ecid,
-                    identityMap: identity?.identityMap, server: server, sessionId: sessionID,
+                    identityMap: identity?.identityMap, server: server,
                     region: configState?.conciergeRegion, surfaces: surfaces)
         }
         @MainActor func session(_ surfaces: [String]) -> ConciergeChatSession {

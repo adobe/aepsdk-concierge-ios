@@ -191,6 +191,46 @@ final class ConciergeTests: XCTestCase {
     }
 
     @MainActor
+    func test_resetIdentities_rebuiltHosts_rotateExpiredSessionInRequestURLs() async throws {
+        let overlay = ConciergeOverlayManager.shared
+        let session = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "example.com", surfaces: ["overlay"]))
+        overlay.showChat(Concierge.makeChatView(session: session))
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let rebuiltID = try XCTUnwrap(Concierge.currentSession?.sessionID)
+        let overlayConfiguration = try XCTUnwrap(overlay.chatView?.identityResetController.configuration)
+        let uikitConfiguration = try XCTUnwrap(
+            (Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController.configuration)
+        try ConciergeXDMContextStore.shared.update(["expiredContext": true])
+        let store = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        store.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY,
+            value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        var rotatedID: String?
+        for configuration in [overlayConfiguration, uikitConfiguration] {
+            let service = ConciergeChatService(configuration: configuration)
+            defer { service.invalidateTransportForIdentityReset() }
+            let resolvedID = service.resolveSessionID()
+            XCTAssertNotEqual(resolvedID, rebuiltID)
+            XCTAssertEqual(resolvedID, SessionManager.shared.currentSessionId)
+            if let rotatedID { XCTAssertEqual(resolvedID, rotatedID) }
+            rotatedID = resolvedID
+            let url = try service.createUrl(sessionID: resolvedID)
+            let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+            XCTAssertEqual(components.queryItems?.first {
+                $0.name == ConciergeConstants.Request.Keys.SESSION_ID
+            }?.value, resolvedID)
+            XCTAssertTrue(ConciergeXDMContextStore.shared.snapshot(for: resolvedID).isEmpty)
+        }
+        XCTAssertEqual(Concierge.currentSession?.sessionID, rebuiltID,
+                       "Expiring later turns must not mutate the ID captured during reset construction.")
+    }
+
+    @MainActor
     func test_resetIdentities_preservesContextPushedAfterBoundary() async throws {
         try ConciergeXDMContextStore.shared.update(["oldUser": true])
         resetIdentities()
@@ -1225,6 +1265,261 @@ final class ConciergeTests: XCTestCase {
     }
 
     @MainActor
+    private func withPresentationHub(_ body: @MainActor () async throws -> Void) async throws {
+        let previousHub = EventHub.shared
+        let hub = EventHub()
+        EventHub.shared = hub
+        defer {
+            hub.shutdown()
+            EventHub.shared = previousHub
+        }
+        hub.registerEventListener(type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent) { event in
+            guard event.name == ConciergeConstants.EventName.SHOW_UI else { return }
+            let configuration = ConciergeConfiguration(datastream: "config", ecid: "initial-ecid", server: "example.com",
+                surfaces: event.data?[ConciergeConstants.EventData.Key.SURFACES] as? [String] ?? [])
+            hub.dispatch(event: event.createResponseEvent(name: ConciergeConstants.EventName.SHOW_UI_RESPONSE,
+                type: ConciergeConstants.EventType.concierge, source: EventSource.responseContent,
+                data: [ConciergeConstants.EventData.Key.CONFIG: configuration]))
+        }
+        hub.start()
+        try await body()
+    }
+
+    @MainActor
+    func test_present_resetDuringNormalAttachment_doesNotBlockBoundaryOrPublishStaleHost() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            let attached = self.expectation(description: "Normal presentation attachment interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            var stale: ConciergeChatSession?
+            parent.onAddChild = {
+                parent.onAddChild = nil
+                stale = Concierge.currentSession
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during normal present",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Normal UIKit presentation must not hold the identity boundary lock.")
+                attached.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            let retired = try XCTUnwrap(stale)
+            XCTAssertTrue(retired.controller.endedForIdentityReset)
+            XCTAssertFalse(retired.controller.composerEditable)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(Concierge.presentedUIKitController)
+            XCTAssertTrue(parent.children.isEmpty)
+            self.completeReset()
+            try await self.awaitResetReady()
+            XCTAssertFalse(retired.controller.composerEditable)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(SessionManager.shared.currentSessionId)
+        }
+    }
+
+    @MainActor
+    private func assertResetDuringNormalOverlayConstruction(reshow: Bool) async throws {
+        try await withPresentationHub {
+            let initialized = self.expectation(description: "Normal session construction interrupted")
+            let capturer = MockSpeechCapturer()
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            capturer.onInitialize = {
+                capturer.onInitialize = nil
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during normal show",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Normal speech initialization must not hold the identity boundary lock.")
+                initialized.fulfill()
+            }
+            if reshow {
+                Concierge.surfaces = ["chat"]
+                Concierge.speechCapturer = capturer
+                Concierge.reshow()
+            } else {
+                Concierge.show(surfaces: ["chat"], speechCapturer: capturer)
+            }
+            await self.fulfillment(of: [initialized], timeout: 5)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(ConciergeOverlayManager.shared.chatView)
+            XCTAssertFalse(ConciergeOverlayManager.shared.showingConcierge)
+            XCTAssertNil(SessionManager.shared.currentSessionId)
+            self.completeReset()
+            try await self.awaitResetReady()
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertFalse(ConciergeOverlayManager.shared.showingConcierge)
+        }
+    }
+
+    @MainActor
+    func test_show_resetDuringNormalConstruction_discardsCandidateWithoutOpeningOverlay() async throws {
+        try await assertResetDuringNormalOverlayConstruction(reshow: false)
+    }
+
+    @MainActor
+    func test_reshow_resetDuringNormalConstruction_discardsCandidateWithoutOpeningOverlay() async throws {
+        try await assertResetDuringNormalOverlayConstruction(reshow: true)
+    }
+
+    @MainActor
+    func test_show_resetDuringOverlayPublication_restoresHiddenPresentation() async throws {
+        try await withPresentationHub {
+            let published = self.expectation(description: "Overlay publication interrupted")
+            let overlay = ConciergeOverlayManager.shared
+            var stale: ConciergeChatSession?
+            let subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in
+                stale = Concierge.currentSession
+                self.resetIdentities()
+                published.fulfill()
+            }
+            defer { subscription.cancel() }
+            Concierge.show(surfaces: ["chat"])
+            await self.fulfillment(of: [published], timeout: 5)
+            XCTAssertTrue(stale?.controller.endedForIdentityReset == true)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertFalse(overlay.showingConcierge)
+            XCTAssertNil(overlay.chatView)
+            self.completeReset()
+            try await self.awaitResetReady()
+        }
+    }
+
+    @MainActor
+    func test_present_normalPath_reusesTranscriptWithoutReset() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            let attached = self.expectation(description: "First normal attachment")
+            parent.onAddChild = { attached.fulfill() }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            let session = try XCTUnwrap(Concierge.currentSession)
+            session.controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "retained"))
+            let reattached = self.expectation(description: "Reused normal attachment")
+            parent.onAddChild = { reattached.fulfill() }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [reattached], timeout: 5)
+            XCTAssertTrue(Concierge.currentSession === session)
+            XCTAssertEqual(session.controller.messages.last?.messageBody, "retained")
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            XCTAssertTrue(session.controller.composerEditable)
+        }
+    }
+
+    @MainActor
+    func test_present_resetDuringReplacementAttachment_preservesExistingHostForFreshRebind() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+                ecid: "old", server: "example.com", surfaces: ["old-host"]), presentingViewController: parent)
+            let old = try XCTUnwrap(Concierge.currentSession)
+            let attached = self.expectation(description: "Replacement attachment interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            var candidate: ConciergeChatSession?
+            parent.onAddChild = {
+                parent.onAddChild = nil
+                candidate = Concierge.currentSession
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during replacement present",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success)
+                attached.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["replacement"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            XCTAssertTrue(candidate?.controller.endedForIdentityReset == true)
+            XCTAssertTrue((Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController === old.controller)
+            XCTAssertEqual(parent.children.count, 1)
+            self.completeReset()
+            try await self.awaitResetReady()
+            let fresh = try XCTUnwrap(Concierge.currentSession)
+            XCTAssertEqual(fresh.configuration.ecid, "new-ecid")
+            XCTAssertEqual(fresh.configuration.surfaces, ["old-host"])
+            XCTAssertTrue(fresh.controller.composerEditable)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+        }
+    }
+
+    @MainActor
+    func test_present_resetDuringPreviousHostRemoval_retainsCommittedHostForFreshRebind() async throws {
+        try await withPresentationHub {
+            let parent = UIViewController()
+            let view = ResetObservingView()
+            parent.view = view
+            Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+                ecid: "old", server: "example.com", surfaces: ["old-host"]), presentingViewController: parent)
+            let previousHost = try XCTUnwrap(Concierge.presentedUIKitController)
+            let removed = self.expectation(description: "Previous host removal interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            view.onRemoveSubview = {
+                view.onRemoveSubview = nil
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during previous host removal",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Previous-host removal must not hold the identity boundary lock.")
+                removed.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["replacement"])
+            await self.fulfillment(of: [removed], timeout: 5)
+            XCTAssertNil(previousHost.parent)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            self.completeReset()
+            try await self.awaitResetReady()
+            let fresh = try XCTUnwrap(Concierge.currentSession)
+            XCTAssertEqual(fresh.configuration.ecid, "new-ecid")
+            XCTAssertEqual(fresh.configuration.surfaces, ["replacement"])
+            XCTAssertTrue(fresh.controller.composerEditable)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            XCTAssertEqual(Concierge.presentedUIKitController?.view.isHidden, false)
+        }
+    }
+
+    @MainActor
+    func test_show_andReshow_normalPath_preservesTranscriptAndSessionExpiry() async throws {
+        try await withPresentationHub {
+            let overlay = ConciergeOverlayManager.shared
+            let shown = self.expectation(description: "Overlay shown")
+            var subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in shown.fulfill() }
+            Concierge.show(surfaces: ["chat"])
+            await self.fulfillment(of: [shown], timeout: 5)
+            subscription.cancel()
+            let first = try XCTUnwrap(Concierge.currentSession)
+            first.controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "retained"))
+            overlay.hideChat()
+            Concierge.surfaces = ["chat"]
+            let reshown = self.expectation(description: "Overlay reshown")
+            subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in reshown.fulfill() }
+            Concierge.reshow()
+            await self.fulfillment(of: [reshown], timeout: 5)
+            subscription.cancel()
+            XCTAssertTrue(Concierge.currentSession === first)
+            XCTAssertEqual(first.controller.messages.last?.messageBody, "retained")
+            let store = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+            store.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY,
+                value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+            XCTAssertNotEqual(first.configuration.sessionId, first.sessionID,
+                              "Normal presentation must not freeze later per-turn session resolution.")
+        }
+    }
+
+    @MainActor
     private func assertRetainedHostsReset(overlayVisible: Bool) async throws {
         let overlay = ConciergeOverlayManager.shared
         let first = Concierge.resolveSession(configuration: ConciergeConfiguration(
@@ -1449,6 +1744,15 @@ final class ConciergeTests: XCTestCase {
         mockRuntime.mockedSharedStates = [:]
         mockRuntime.mockedXdmSharedStates = [:]
         XCTAssertTrue(concierge.readyForEvent(event))
+    }
+
+    private final class ResetObservingView: UIView {
+        var onRemoveSubview: (() -> Void)?
+
+        override func willRemoveSubview(_ subview: UIView) {
+            super.willRemoveSubview(subview)
+            onRemoveSubview?()
+        }
     }
 
     private final class ResetObservingParent: UIViewController {

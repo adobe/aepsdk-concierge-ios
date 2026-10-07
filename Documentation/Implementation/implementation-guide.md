@@ -54,7 +54,8 @@ uses the standard SDK log level; enable warning or more verbose logging to see i
 Outstanding reset requests retain their ordering until completions arrive, since
 expiring them could misassociate an uncorrelated late completion.
 Replacement sessions capture their generation and backend session ID under the
-identity boundary. Session construction, speech-provider initialization, and UIKit
+identity boundary for construction; subsequent turns still resolve session IDs
+through the normal inactivity expiry check. Session construction, speech-provider initialization, and UIKit
 hierarchy/constraint work run outside that lock. Controllers and speech coordinators
 retain the captured generation even if another reset arrives during construction.
 Requests remain blocked until host replacement finishes and both the generation
@@ -63,6 +64,12 @@ arriving during a successful check triggers a fresh check, not just notification
 during failed checks. Stale prepared sessions are ended and their transports
 invalidated; they are never reused by the follow-up check. Host speech-output
 cancellation also runs outside the boundary lock after logical invalidation.
+Normal `show`, `present`, and internal re-show paths also perform session
+construction and UI attachment outside the boundary lock. Configuration callbacks
+carry their captured generation through preparation and host publication. If a
+reset interrupts that work, the candidate is ended and is not published as an
+active host. An existing UIKit host is retained until the replacement is validated
+and published; reset during old-host removal rebuilds the committed replacement.
 Host token-provider registration, configuration, consent and surfaces are retained.
 Each retained overlay/UIKit host keeps its own surfaces and visibility, including
 a hidden overlay when a different UIKit conversation is current. Custom
