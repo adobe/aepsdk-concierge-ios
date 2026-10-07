@@ -86,15 +86,24 @@ public class Concierge: NSObject, Extension {
     private var resetRequests: [(generation: Int, event: Event)] = []
     private var activeReset: (generation: Int, request: Event, completion: Event)?
     private var readinessRetry: Task<Void, Never>?
+    private var readinessCheckPending = false
+    private var resetWarning: Task<Void, Never>?
+    private var identityResetWarningDelayNanoseconds = ConciergeConstants.IDENTITY_RESET_WARNING_DELAY_NANOSECONDS
 
     #if DEBUG
     /// Pauses a readiness decision in deterministic concurrency tests, on the request queue.
     var pendingRequestReadinessCheckedForTesting: ((Event, Bool) -> Void)?
     var handoffTaskGateForTesting: ((Event) async -> Void)?
     var handoffTaskFinishedForTesting: ((Event) -> Void)?
+    var identityResetReadinessCheckedForTesting: (() -> Void)?
 
     func flushPendingRequestsForTesting(completion: @escaping () -> Void) {
         pendingRequestQueue.async(execute: completion)
+    }
+
+    func flushIdentityResetReadinessForTesting() async {
+        let task = ConciergeIdentityBoundary.shared.synchronized { readinessRetry }
+        await task?.value
     }
 
     /// Testing-only override for the `URLSessionConfiguration` used when creating a new chat
@@ -114,8 +123,10 @@ public class Concierge: NSObject, Extension {
     }
 
     /// Internal initializer for testing
-    init(runtime: ExtensionRuntime, conciergeChatService: ConciergeChatService? = nil) {
+    init(runtime: ExtensionRuntime, conciergeChatService: ConciergeChatService? = nil,
+         identityResetWarningDelayNanoseconds: UInt64 = ConciergeConstants.IDENTITY_RESET_WARNING_DELAY_NANOSECONDS) {
         self.runtime = runtime
+        self.identityResetWarningDelayNanoseconds = identityResetWarningDelayNanoseconds
         super.init()
     }
 
@@ -140,7 +151,13 @@ public class Concierge: NSObject, Extension {
     }
 
     public func onUnregistered() {
-        readinessRetry?.cancel()
+        ConciergeIdentityBoundary.shared.synchronized {
+            readinessRetry?.cancel()
+            readinessRetry = nil
+            readinessCheckPending = false
+            resetWarning?.cancel()
+            resetWarning = nil
+        }
         Log.debug(label: ConciergeConstants.LOG_TAG, "Extension unregistered from MobileCore: \(ConciergeConstants.FRIENDLY_NAME)")
     }
 
@@ -159,8 +176,11 @@ public class Concierge: NSObject, Extension {
             activeReset = nil
             readinessRetry?.cancel()
             readinessRetry = nil
+            readinessCheckPending = false
+            resetWarning?.cancel()
             let generation = boundary.begin(at: event.timestamp)
             resetRequests.append((generation, event))
+            scheduleIdentityResetWarning(generation: generation)
             let sessionID = SessionManager.shared.currentSessionId
             let hadContext = ConciergeXDMContextStore.shared.hasContext
             SessionManager.shared.clearSession()
@@ -216,52 +236,115 @@ public class Concierge: NSObject, Extension {
     private func attemptIdentityResetReadiness() {
         let boundary = ConciergeIdentityBoundary.shared
         boundary.synchronized {
-            guard let reset = activeReset, !boundary.ready, readinessRetry == nil else { return }
+            guard let reset = activeReset, !boundary.ready else { return }
+            readinessCheckPending = true
+            guard readinessRetry == nil else { return }
             let teardown = resetTeardown
             readinessRetry = Task { @MainActor [weak self] in
                 await teardown?.value
                 guard let self else { return }
-                // Re-read after teardown, and retry without blocking the Event Hub or UI.
-                // Configuration/consent use current state, identity retains reset provenance.
                 while !Task.isCancelled {
-                    guard boundary.synchronized({ !boundary.ready && boundary.generation == reset.generation }) else { return }
-                    let resetIdentity = self.getXDMSharedState(
-                        extensionName: ConciergeConstants.SharedState.EdgeIdentity.NAME,
-                        event: reset.request, barrier: true)
-                    let completionIdentity = self.getEdgeIdentitySharedState(for: reset.completion)
-                    let identity = self.getEdgeIdentitySharedState(for: nil)
-                    let configState = self.getConfiguration(for: nil)
-                    guard resetIdentity?.status == .set,
-                          let ecid = resetIdentity?.ecid, !ecid.isEmpty,
-                          completionIdentity?.ecid == ecid, identity?.ecid == ecid,
-                          let server = configState?.conciergeServer, !server.isEmpty,
-                          let datastream = configState?.conciergeDatastream, !datastream.isEmpty else {
-                        try? await Task.sleep(nanoseconds: 50_000_000)
-                        continue
+                    guard boundary.synchronized({
+                        guard boundary.generation == reset.generation, !boundary.ready else { return false }
+                        self.readinessCheckPending = false
+                        return true
+                    }) else { return }
+                    self.prepareIdentityResetHosts(request: reset.request, completion: reset.completion,
+                                                   generation: reset.generation)
+                    let shouldCheckAgain = boundary.synchronized {
+                        guard boundary.generation == reset.generation else { return false }
+                        if !Task.isCancelled, !boundary.ready, self.readinessCheckPending {
+                            return true
+                        }
+                        self.readinessRetry = nil
+                        self.readinessCheckPending = false
+                        return false
                     }
-                    let consent = self.getConsentSharedState(for: nil)?.collectValue ?? ConciergeConstants.Defaults.CONSENT_VALUE
-                    boundary.synchronized {
-                        guard !Task.isCancelled, boundary.generation == reset.generation, !boundary.ready else { return }
-                        let overlay = ConciergeOverlayManager.shared
-                        let parent = Concierge.presentedUIKitController?.parent
-                        let uikitHidden = Concierge.presentedUIKitController?.viewIfLoaded?.isHidden ?? false
-                        boundary.complete(reset.generation)
-                        func configuration(_ surfaces: [String]) -> ConciergeConfiguration {
-                            ConciergeConfiguration(consentCollectValue: consent, datastream: datastream,
-                                ecid: ecid, identityMap: identity?.identityMap, server: server,
-                                region: configState?.conciergeRegion, surfaces: surfaces)
-                        }
-                        if let surfaces = Concierge.resetOverlaySurfaces {
-                            let session = Concierge.resolveSession(configuration: configuration(surfaces), preservingContext: true)
-                            overlay.replaceChat(Concierge.makeChatView(session: session))
-                        }
-                        if let parent, let surfaces = Concierge.resetUIKitSurfaces {
-                            Concierge.attachConciergeUIKitHost(configuration: configuration(surfaces),
-                                presentingViewController: parent, preservingContext: true)
-                            Concierge.presentedUIKitController?.view.isHidden = uikitHidden
-                        }
-                    }
-                    return
+                    if !shouldCheckAgain { return }
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func prepareIdentityResetHosts(request: Event, completion: Event, generation: Int) {
+        let resetIdentity = getXDMSharedState(
+            extensionName: ConciergeConstants.SharedState.EdgeIdentity.NAME, event: request, barrier: true)
+        let completionIdentity = getEdgeIdentitySharedState(for: completion)
+        let identity = getEdgeIdentitySharedState(for: nil)
+        let configState = getConfiguration(for: nil)
+        #if DEBUG
+        identityResetReadinessCheckedForTesting?()
+        #endif
+        guard resetIdentity?.status == .set,
+              let ecid = resetIdentity?.ecid, !ecid.isEmpty,
+              completionIdentity?.ecid == ecid, identity?.ecid == ecid,
+              let server = configState?.conciergeServer, !server.isEmpty,
+              let datastream = configState?.conciergeDatastream, !datastream.isEmpty else { return }
+        let consent = getConsentSharedState(for: nil)?.collectValue ?? ConciergeConstants.Defaults.CONSENT_VALUE
+        let overlay = ConciergeOverlayManager.shared
+        let parent = Concierge.presentedUIKitController?.parent
+        let uikitHidden = Concierge.presentedUIKitController?.viewIfLoaded?.isHidden ?? false
+        let boundary = ConciergeIdentityBoundary.shared
+        let sessions = boundary.synchronized { () -> (overlay: ConciergeChatSession?, uikit: ConciergeChatSession?)? in
+            guard !Task.isCancelled, boundary.generation == generation, !boundary.ready else { return nil }
+            @MainActor func session(_ surfaces: [String]) -> ConciergeChatSession {
+                Concierge.resolveSession(configuration: ConciergeConfiguration(
+                    consentCollectValue: consent, datastream: datastream, ecid: ecid,
+                    identityMap: identity?.identityMap, server: server,
+                    region: configState?.conciergeRegion, surfaces: surfaces), preservingContext: true)
+            }
+            return (Concierge.resetOverlaySurfaces.map(session),
+                    parent == nil ? nil : Concierge.resetUIKitSurfaces.map(session))
+        }
+        guard let sessions else { return }
+        // Prepared controllers retain this generation. A reset during layout invalidates them
+        // immediately, and its MainActor teardown runs before its own replacement is prepared.
+        if let session = sessions.overlay {
+            overlay.replaceChat(Concierge.makeChatView(session: session))
+        }
+        if let parent, let session = sessions.uikit {
+            Concierge.attachConciergeUIKitHost(session: session, presentingViewController: parent)
+            Concierge.presentedUIKitController?.view.isHidden = uikitHidden
+        }
+        let becameReady = boundary.synchronized {
+            guard !Task.isCancelled, boundary.generation == generation else { return false }
+            boundary.complete(generation)
+            activeReset = nil
+            resetWarning?.cancel()
+            resetWarning = nil
+            return true
+        }
+        if becameReady {
+            sessions.overlay?.controller.objectWillChange.send()
+            if let session = sessions.uikit, session !== sessions.overlay {
+                session.controller.objectWillChange.send()
+            }
+        }
+    }
+
+    private func scheduleIdentityResetWarning(generation: Int) {
+        let delay = identityResetWarningDelayNanoseconds
+        resetWarning = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: delay)
+            } catch is CancellationError {
+                return
+            } catch {
+                Log.error(label: ConciergeConstants.LOG_TAG, "Unable to schedule identity reset warning: \(error)")
+                return
+            }
+            guard let self else { return }
+            ConciergeIdentityBoundary.shared.synchronized {
+                let boundary = ConciergeIdentityBoundary.shared
+                guard !Task.isCancelled, boundary.generation == generation, !boundary.ready else { return }
+                self.resetWarning = nil
+                if self.activeReset == nil {
+                    Log.warning(label: ConciergeConstants.LOG_TAG,
+                        "Identity reset is waiting for Edge Identity resetComplete. Ensure a supported AEPEdgeIdentity extension is registered. Concierge requests remain blocked.")
+                } else {
+                    Log.warning(label: ConciergeConstants.LOG_TAG,
+                        "Identity reset is waiting for matching refreshed identity, Concierge configuration, or local teardown. Concierge requests remain blocked; later shared-state updates can restore readiness.")
                 }
             }
         }
@@ -361,7 +444,7 @@ public class Concierge: NSObject, Extension {
             errorMessage = "Unable to show Brand Concierge UI - datastream information is unavailable from configuration."
             return
         }
-        
+
         let region = configSharedState.conciergeRegion
 
         guard let surfaces = event.data?[ConciergeConstants.EventData.Key.SURFACES] as? [String], !surfaces.isEmpty else {

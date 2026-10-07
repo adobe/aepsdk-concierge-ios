@@ -43,6 +43,19 @@ completions; the active request must pass Edge's processing barrier and its
 versioned identity must match the completion and current identity. Configuration
 and consent are re-read after teardown, so a later configuration update can finish
 readiness even if the completion-time configuration was incomplete.
+Readiness checks are driven by shared-state notifications, not a polling loop;
+notifications arriving during a check are coalesced into a follow-up check.
+If reset has not become ready within five seconds, Concierge logs one warning
+for the current reset, distinguishing missing Edge Identity completion from
+unavailable matching identity/configuration or unfinished teardown. This is a
+diagnostic deadline, not a timeout that re-enables requests. Late completion and
+later eligible shared-state updates can still restore readiness. Warning output
+uses the standard SDK log level; enable warning or more verbose logging to see it.
+Outstanding reset requests retain their ordering until completions arrive, since
+expiring them could misassociate an uncorrelated late completion.
+Replacement sessions are prepared under the identity boundary, but UIKit hierarchy
+and constraint work runs outside that lock. Requests remain blocked until host
+replacement finishes and the reset generation is revalidated.
 Host token-provider registration, configuration, consent and surfaces are retained.
 Each retained overlay/UIKit host keeps its own surfaces and visibility, including
 a hidden overlay when a different UIKit conversation is current. Custom

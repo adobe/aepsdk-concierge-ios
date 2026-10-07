@@ -406,14 +406,24 @@ extension Concierge {
         presentingViewController: UIViewController,
         preservingContext: Bool = false
     ) {
+        removeConciergeUIKitHost()
+        let session = resolveSession(configuration: configuration, preservingContext: preservingContext)
+        attachConciergeUIKitHost(session: session, presentingViewController: presentingViewController)
+    }
+
+    @MainActor
+    private static func removeConciergeUIKitHost() {
         if let previousHosting = presentedUIKitController {
             previousHosting.willMove(toParent: nil)
             previousHosting.view.removeFromSuperview()
             previousHosting.removeFromParent()
             presentedUIKitController = nil
         }
+    }
 
-        let session = resolveSession(configuration: configuration, preservingContext: preservingContext)
+    @MainActor
+    static func attachConciergeUIKitHost(session: ConciergeChatSession, presentingViewController: UIViewController) {
+        removeConciergeUIKitHost()
         let view = makeChatView(session: session)
 
         let hosting = ConciergeHostingController(chatView: view)
