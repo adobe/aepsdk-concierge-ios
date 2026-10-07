@@ -451,15 +451,8 @@ extension Concierge {
         )
     }
 
-    /// Embeds the Concierge chat UI as a child view controller of the given `UIViewController`.
-    ///
-    /// If a previous UIKit-hosted chat is still attached, it is removed from the hierarchy first.
-    /// The method resolves or reuses a session, creates a `ChatView`, wraps it in a
-    /// `ConciergeHostingController`, and pins it edge-to-edge within the presenting view controller.
-    ///
-    /// - Parameters:
-    ///   - configuration: The configuration for this chat session.
-    ///   - presentingViewController: The UIKit view controller that will host the chat UI as a child.
+    #if DEBUG
+    /// Test-fixture setup only; normal presentation tests must use `present` to exercise generation fencing.
     @MainActor
     static func attachConciergeUIKitHost(
         configuration: ConciergeConfiguration,
@@ -470,6 +463,7 @@ extension Concierge {
         let session = resolveSession(configuration: configuration, preservingContext: preservingContext)
         attachConciergeUIKitHost(session: session, presentingViewController: presentingViewController)
     }
+    #endif
 
     @MainActor
     private static func removeConciergeUIKitHost() {
