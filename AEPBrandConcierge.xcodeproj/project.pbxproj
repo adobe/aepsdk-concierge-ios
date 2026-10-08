@@ -46,6 +46,7 @@
 		24037AE02EF364B000FF4031 /* CitationMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AC72EF364B000FF4031 /* CitationMarker.swift */; };
 		24037AE12EF364B000FF4031 /* ConciergeError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AD12EF364B000FF4031 /* ConciergeError.swift */; };
 		24037AE22EF364B000FF4031 /* ConversationResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AD42EF364B000FF4031 /* ConversationResponse.swift */; };
+		C5F4EAFBB41CC4351E3AB9D5 /* VoicePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D5B019AE7B2AEA4B6032C3 /* VoicePayload.swift */; };
 		24037AE32EF364B000FF4031 /* MessageTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AC92EF364B000FF4031 /* MessageTemplate.swift */; };
 		24037AE42EF364B000FF4031 /* WelcomePromptSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037ACC2EF364B000FF4031 /* WelcomePromptSuggestion.swift */; };
 		24037AE92EF364D800FF4031 /* ConciergeOverlayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */; };
@@ -280,6 +281,7 @@
 		24037AD22EF364B000FF4031 /* ConversationHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationHandle.swift; sourceTree = "<group>"; };
 		24037AD32EF364B000FF4031 /* ConversationPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationPayload.swift; sourceTree = "<group>"; };
 		24037AD42EF364B000FF4031 /* ConversationResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationResponse.swift; sourceTree = "<group>"; };
+		14D5B019AE7B2AEA4B6032C3 /* VoicePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoicePayload.swift; sourceTree = "<group>"; };
 		24037AD52EF364B000FF4031 /* Source.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Source.swift; sourceTree = "<group>"; };
 		24037AE52EF364D800FF4031 /* ConciergeHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeHostingController.swift; sourceTree = "<group>"; };
 		24037AE62EF364D800FF4031 /* ConciergeOverlayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeOverlayManager.swift; sourceTree = "<group>"; };
@@ -546,6 +548,7 @@
 				0F1601712FADD63D0032EFD0 /* LinkHint.swift */,
 				24037AD32EF364B000FF4031 /* ConversationPayload.swift */,
 				24037AD42EF364B000FF4031 /* ConversationResponse.swift */,
+				14D5B019AE7B2AEA4B6032C3 /* VoicePayload.swift */,
 				24037AD52EF364B000FF4031 /* Source.swift */,
 			);
 			path = Network;
@@ -1288,6 +1291,7 @@
 				0F1601752FAF7FA80032EFD0 /* MessageFeedbackView.swift in Sources */,
 				4C29834B2F870A430057C927 /* ConciergeChatSession.swift in Sources */,
 				24037AE22EF364B000FF4031 /* ConversationResponse.swift in Sources */,
+				C5F4EAFBB41CC4351E3AB9D5 /* VoicePayload.swift in Sources */,
 				24037AE32EF364B000FF4031 /* MessageTemplate.swift in Sources */,
 				24037AE42EF364B000FF4031 /* WelcomePromptSuggestion.swift in Sources */,
 				4C3A65E12E5E989E00EEEF3B /* MarkdownBlockView.swift in Sources */,

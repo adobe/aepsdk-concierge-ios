@@ -411,4 +411,80 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertNotNil(response.feedback)
         XCTAssertEqual(response.feedback?.eligible, false)
     }
+
+    // MARK: - VoicePayload decoding
+
+    func test_voicePayload_livekitSession_decodesUrlAndToken() throws {
+        // Given
+        let json = """
+        {
+            "type": "livekit_session",
+            "livekitUrl": "wss://rtc.example.com",
+            "token": "session-abc"
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let voice = try JSONDecoder().decode(VoicePayload.self, from: json)
+
+        // Then
+        XCTAssertEqual(voice.type, VoicePayload.SessionType.livekitSession)
+        XCTAssertEqual(voice.livekitUrl, "wss://rtc.example.com")
+        XCTAssertEqual(voice.token, "session-abc")
+    }
+
+    func test_voicePayload_otherType_decodesWithNilCredentials() throws {
+        // Given — a non-session payload the client ignores must still decode
+        let json = """
+        { "type": "done" }
+        """.data(using: .utf8)!
+
+        // When
+        let voice = try JSONDecoder().decode(VoicePayload.self, from: json)
+
+        // Then
+        XCTAssertEqual(voice.type, "done")
+        XCTAssertNil(voice.livekitUrl)
+        XCTAssertNil(voice.token)
+    }
+
+    func test_conversationResponse_withVoice_decodesVoicePayload() throws {
+        // Given
+        let json = """
+        {
+            "message": "",
+            "voice": {
+                "type": "livekit_session",
+                "livekitUrl": "wss://rtc.example.com",
+                "token": "session-abc"
+            }
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        // Then
+        XCTAssertEqual(response.voice?.type, VoicePayload.SessionType.livekitSession)
+        XCTAssertEqual(response.voice?.livekitUrl, "wss://rtc.example.com")
+        XCTAssertEqual(response.voice?.token, "session-abc")
+    }
+
+    func test_conversationResponse_withoutVoice_decodesAsNil() throws {
+        // Given — an ordinary text-turn response
+        let json = """
+        {
+            "message": "Hi there",
+            "promptSuggestions": ["a", "b"]
+        }
+        """.data(using: .utf8)!
+
+        // When
+        let response = try JSONDecoder().decode(ConversationResponse.self, from: json)
+
+        // Then
+        XCTAssertEqual(response.message, "Hi there")
+        XCTAssertEqual(response.promptSuggestions, ["a", "b"])
+        XCTAssertNil(response.voice)
+    }
 }

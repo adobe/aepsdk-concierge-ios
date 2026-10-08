@@ -445,7 +445,7 @@ final class DataHandoffTurnContractTests: XCTestCase {
     private func payload(state: String, message: String? = nil) -> ConversationPayload {
         let response = message.map {
             ConversationResponse(message: $0, promptSuggestions: nil, multimodalElements: nil,
-                                 sources: nil, linkHints: nil, state: nil, feedback: nil)
+                                 sources: nil, linkHints: nil, state: nil, feedback: nil, voice: nil)
         }
         return ConversationPayload(conversationId: nil, interactionId: nil, request: nil,
                                    response: response, state: state,
