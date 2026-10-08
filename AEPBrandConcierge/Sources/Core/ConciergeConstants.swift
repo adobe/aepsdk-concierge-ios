@@ -187,6 +187,12 @@ public enum ConciergeConstants {
                 static let PAYLOAD = "payload"
                 static let TOKEN = "token"
             }
+
+            /// Keys for the voice-bootstrap `data` part. See `Values.VoiceBootstrap` for the `type` value.
+            enum VoiceBootstrap {
+                static let DATA = "data"
+                static let TYPE = "type"
+            }
         }
 
         enum Values {
@@ -201,6 +207,11 @@ public enum ConciergeConstants {
 
             enum AuthData {
                 static let TYPE_AUTH = "auth"
+            }
+
+            enum VoiceBootstrap {
+                /// `conversation.data.type` value requesting voice session credentials.
+                static let TYPE_LIVEKIT_BOOTSTRAP = "livekit-bootstrap"
             }
         }
     }

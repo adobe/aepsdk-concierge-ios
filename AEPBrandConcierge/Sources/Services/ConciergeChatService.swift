@@ -27,6 +27,7 @@ class ConciergeChatService: NSObject {
 
     private let LOG_TAG = "ConciergeChatService"
     private let serviceName = "/brand-concierge"
+    private let voiceServiceName = "/brand-concierge-voice"
     private let conversationsApiName = "/conversations"
 
     // MARK: - Private Properties
@@ -97,6 +98,61 @@ class ConciergeChatService: NSObject {
         }
     }
 
+    // MARK: - Voice Bootstrap
+
+    /// Requests voice session credentials with a `livekit-bootstrap` conversation event on the voice
+    /// endpoint. `onBootstrap` fires at most once, for the first `response.voice` of type
+    /// `livekit_session` carrying both `livekitUrl` and `token`. `onComplete` has the same semantics
+    /// as in `streamChat`: an error on failure, `nil` when the stream closes. A stream that closes
+    /// without a session payload completes with `nil`; callers treat that as a failed bootstrap.
+    ///
+    /// Shares the per-request streaming state with `streamChat`, so callers must not run a bootstrap
+    /// and a chat turn on the same instance at the same time.
+    func bootstrapVoiceSession(onBootstrap: @escaping (LiveKitSessionBootstrap) -> Void,
+                               onComplete: @escaping (ConciergeError?) -> Void) {
+        do {
+            let url = try createUrl(voice: true)
+
+            var didBootstrap = false
+            onChunkHandler = { payload in
+                guard !didBootstrap,
+                      let voice = payload.response?.voice,
+                      voice.type == VoicePayload.SessionType.livekitSession,
+                      let livekitUrl = voice.livekitUrl,
+                      let token = voice.token else {
+                    return
+                }
+                didBootstrap = true
+                onBootstrap(LiveKitSessionBootstrap(livekitUrl: livekitUrl, token: token))
+            }
+            onCompleteHandler = onComplete
+
+            let payload = try createVoiceBootstrapPayload()
+
+            var request = URLRequest(url: url)
+            request.httpMethod = ConciergeConstants.HTTPMethods.POST
+            request.httpBody = payload
+            request.setValue(ConciergeConstants.ContentTypes.APPLICATION_JSON, forHTTPHeaderField: ConciergeConstants.HeaderFields.CONTENT_TYPE)
+            request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
+            request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
+
+            dataTask = session.dataTask(with: request)
+            Log.debug(label: LOG_TAG, "Sending voice bootstrap request to Concierge Service: \(url)")
+
+            SessionManager.shared.refreshSessionActivity()
+
+            dataTask?.resume()
+        } catch {
+            // Same reasoning as `streamChat`: a prior task's delegate callback must not reach these handlers.
+            onChunkHandler = nil
+            onCompleteHandler = nil
+
+            let conciergeError = (error as? ConciergeError) ?? .unknown
+            Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
+            onComplete(conciergeError)
+        }
+    }
+
     // MARK: - Feedback reporting
 
     /// Builds and sends a feedback request. `token` is resolved by the caller and attached to the
@@ -137,8 +193,10 @@ class ConciergeChatService: NSObject {
     // MARK: - Private Methods
 
     /// Creates the URL for a request to the Concierge Service.
+    /// - Parameter voice: When `true`, targets the voice service path. The voice path has no region
+    ///   segment, matching the Web SDK's `voiceEnabled` routing.
     /// - Note: Internal visibility for testing
-    func createUrl() throws -> URL {
+    func createUrl(voice: Bool = false) throws -> URL {
         // TODO: Remove prior to release
         if USE_TEMPS {
             return URL(string: TEMP_serviceEndpoint)!
@@ -164,12 +222,12 @@ class ConciergeChatService: NSObject {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
         }
         
-        var region = ""
-        if let configRegion = configuration.region, !configRegion.isEmpty {
-            region = "/\(configRegion)"
+        var servicePath = voice ? voiceServiceName : serviceName
+        if !voice, let configRegion = configuration.region, !configRegion.isEmpty {
+            servicePath += "/\(configRegion)"
         }
-        
-        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(serviceName)\(region)\(conversationsApiName)")
+
+        var urlComponents = URLComponents(string: "\(ConciergeConstants.Request.HTTPS)\(endpoint)\(servicePath)\(conversationsApiName)")
         urlComponents?.queryItems = queryItems
 
         guard let url = urlComponents?.url else {
@@ -188,16 +246,7 @@ class ConciergeChatService: NSObject {
     /// - Returns: JSON data for the request body
     /// - Note: Internal visibility for testing
     func createChatPayload(query: String, token: String? = nil, extraXDMFields: [String: Any]? = nil) throws -> Data {
-        // ECID here is only the readiness gate; the full identityMap is forwarded below
-        guard configuration.ecid != nil else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
-        guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
-
-        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
-
-        // Forward identityMap verbatim; falls back to an ECID-only map
-        let identityMapPayload: [String: Any] = USE_TEMPS
-            ? [ConciergeConstants.Request.Keys.ECID: [[ConciergeConstants.Request.Keys.ID: TEMP_ecid]]]
-            : configuration.identityMapPayload
+        try requireConversationPrerequisites()
 
         var conversation: [String: Any] = [
             ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
@@ -206,6 +255,55 @@ class ConciergeChatService: NSObject {
         if let dataPart = Self.authDataPart(for: token) {
             conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
         }
+
+        let payload = makeConversationEventPayload(conversation: conversation, extraXDMFields: extraXDMFields)
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
+        }
+        return jsonData
+    }
+
+    /// Creates the JSON payload for a voice-bootstrap request. Same envelope as `createChatPayload`
+    /// (surfaces, identity map, consent), but `conversation` carries `data: { type: "livekit-bootstrap" }`
+    /// instead of `message`. No auth token is attached: the `data` slot holds the bootstrap
+    /// discriminator, and the voice endpoint identifies the user through the identity map.
+    /// - Returns: JSON data for the request body.
+    /// - Note: Internal visibility for testing.
+    func createVoiceBootstrapPayload() throws -> Data {
+        try requireConversationPrerequisites()
+
+        let conversation: [String: Any] = [
+            ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
+            ConciergeConstants.Request.Keys.VoiceBootstrap.DATA: [
+                ConciergeConstants.Request.Keys.VoiceBootstrap.TYPE: ConciergeConstants.Request.Values.VoiceBootstrap.TYPE_LIVEKIT_BOOTSTRAP
+            ]
+        ]
+
+        let payload = makeConversationEventPayload(conversation: conversation)
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge voice bootstrap request.")
+        }
+        return jsonData
+    }
+
+    /// Throws if the configuration cannot yet produce a conversation request.
+    private func requireConversationPrerequisites() throws {
+        // ECID here is only the readiness gate; the full identityMap is forwarded in the payload
+        guard configuration.ecid != nil else { throw ConciergeError.invalidEcid("Unable to create concierge request payload. ECID is nil.") }
+        guard !configuration.surfaces.isEmpty else { throw ConciergeError.invalidSurfaces("Unable to create concierge request payload. No surfaces were provided.") }
+    }
+
+    /// Wraps a `conversation` object in the single-event envelope (xdm identity map and consent
+    /// meta) shared by chat-turn and voice-bootstrap requests.
+    private func makeConversationEventPayload(conversation: [String: Any], extraXDMFields: [String: Any]? = nil) -> [String: Any] {
+        let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
+
+        // Forward identityMap verbatim; falls back to an ECID-only map
+        let identityMapPayload: [String: Any] = USE_TEMPS
+            ? [ConciergeConstants.Request.Keys.ECID: [[ConciergeConstants.Request.Keys.ID: TEMP_ecid]]]
+            : configuration.identityMapPayload
 
         var xdm: [String: Any] = [
             ConciergeConstants.Request.Keys.IDENTITY_MAP: identityMapPayload
@@ -216,7 +314,7 @@ class ConciergeChatService: NSObject {
             xdm.merge(extraXDMFields) { current, _ in current }
         }
 
-        let payload: [String: Any] = [
+        return [
             ConciergeConstants.Request.Keys.EVENTS: [
                 [
                     ConciergeConstants.Request.Keys.QUERY: [
@@ -231,11 +329,6 @@ class ConciergeChatService: NSObject {
                 ]
             ]
         ]
-
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-            throw ConciergeError.invalidData("Unable to create JSON payload for request to Brand Concierge chat service.")
-        }
-        return jsonData
     }
 
     /// Creates the JSON payload for a feedback request.
