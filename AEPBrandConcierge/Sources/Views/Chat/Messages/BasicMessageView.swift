@@ -193,6 +193,7 @@ struct BasicMessageView: View {
                 // The icon can still diverge when `citations.linkIconStyle.color` overrides it.
                 linkColor: UIColor(theme.colors.message.conciergeLink.color),
                 baseFont: resolvedAgentFont,
+                spacing: resolvedAgentFont.lineHeight,
                 citationMarkers: markers,
                 citationStyle: .init(
                     backgroundColor: UIColor(theme.colors.citation.background.color),
