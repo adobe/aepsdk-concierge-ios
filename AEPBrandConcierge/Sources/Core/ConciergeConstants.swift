@@ -20,9 +20,10 @@ import Foundation
 public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.9.0"
+    static let EXTENSION_VERSION = "5.10.0"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
+    static let IDENTITY_RESET_WARNING_DELAY_NANOSECONDS: UInt64 = 5_000_000_000
 
     // MARK: - HTTP
 
@@ -257,6 +258,7 @@ public enum ConciergeConstants {
             static let SESSION_INITIALIZED = "Brand Concierge Session Initialized"
             static let CHAT_OPENED = "Brand Concierge Chat Opened"
             static let CHAT_CLOSED = "Brand Concierge Chat Closed"
+            static let CONVERSATION_ENDED = "Brand Concierge Conversation Ended"
             static let QUERY_SUBMITTED = "Brand Concierge Query Submitted"
             static let PROMPT_SUGGESTION_CLICKED = "Brand Concierge Prompt Suggestion Clicked"
             static let WELCOME_PROMPT_SUGGESTION_CLICKED = "Brand Concierge Welcome Prompt Suggestion Clicked"
@@ -276,6 +278,7 @@ public enum ConciergeConstants {
             public static let SESSION_INITIALIZED = "concierge:session:initialized"
             public static let CHAT_OPENED = "concierge:chat:opened"
             public static let CHAT_CLOSED = "concierge:chat:closed"
+            public static let CONVERSATION_ENDED = "concierge:conversation:ended"
             public static let QUERY_SUBMITTED = "concierge:query:submitted"
             public static let PROMPT_SUGGESTION_CLICKED = "concierge:promptSuggestion:clicked"
             public static let WELCOME_PROMPT_SUGGESTION_CLICKED = "concierge:welcomePromptSuggestion:clicked"
@@ -295,6 +298,9 @@ public enum ConciergeConstants {
             public enum Key {
                 public static let EVENT_TYPE = "conciergeEventType"
                 public static let EPOCH_TIME = "epochTime"
+                static let REASON = "reason"
+                static let SESSION_ID = "sessionId"
+                static let HAD_ACTIVE_TURN = "hadActiveTurn"
                 public static let DURATION_MILLIS = "durationMillis"
                 public static let QUERY = "query"
                 public static let SUGGESTION = "suggestion"
@@ -310,6 +316,7 @@ public enum ConciergeConstants {
                 public static let ERROR_MESSAGE = "errorMessage"
                 public static let LABEL = "label"
                 public static let ORIGIN = "origin"
+                public static let XDM_FIELDS = "xdmFields"
             }
         }
 

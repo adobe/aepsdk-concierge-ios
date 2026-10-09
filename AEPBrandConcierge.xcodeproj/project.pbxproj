@@ -103,6 +103,7 @@
 		24CAB3A62F45085400CEE013 /* View+WebViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CAB3A52F45083A00CEE013 /* View+WebViewPresenter.swift */; };
 		24CC5AB72F11CF2800484C0B /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CC5AB62F11CF2800484C0B /* SessionManager.swift */; };
 		2907A6419462F5F908EAF7F9 /* MessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5EE8AC6DB678C5F5BEA41F8 /* MessageTests.swift */; };
+		303532C5E36667560B8E3352 /* ConciergeXDMContextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C8A8D300235DCA7C2130A1 /* ConciergeXDMContextStore.swift */; };
 		3523A0148F1C41662548C065 /* BuyNowMockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4274A7A6D620553F44A2B4CD /* BuyNowMockView.swift */; };
 		41DAE6E472994C298C2E140A /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F083DD30445434A872EF78A /* CheckoutView.swift */; };
 		3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */; };
@@ -193,6 +194,7 @@
 		4CF60C122F000001008CE4F0 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 4CF60C112F000001008CE4F0 /* SnapshotTesting */; };
 		530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB42E7AE9D05AC522020848C /* Pods_ConciergeDemoApp.framework */; };
 		55C58A59A70A4F50B92C86CE /* ConciergeTrackingEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9C260CABEC46C3A3D97218 /* ConciergeTrackingEventTests.swift */; };
+		5C6490E414BE8CEB6D219998 /* ConciergeXDMContextStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */; };
 		600E9EA5E91D0A6999BFA625 /* SpeechCapturerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78116DF64B3E7886464E3576 /* SpeechCapturerTests.swift */; };
 		942FC5542F55AABBD1818D06 /* MessageListViewShouldFillRemainingHeightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62777C5A2D1238AD286ECB85 /* MessageListViewShouldFillRemainingHeightTests.swift */; };
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPBrandConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */; };
@@ -257,6 +259,7 @@
 		0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
 		0F1601712FADD63D0032EFD0 /* LinkHint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkHint.swift; sourceTree = "<group>"; };
 		0F1601742FAF7FA80032EFD0 /* MessageFeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFeedbackView.swift; sourceTree = "<group>"; };
+		0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeXDMContextStoreTests.swift; sourceTree = "<group>"; };
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
 		24037AB72EF3645E00FF4031 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -435,6 +438,7 @@
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPBrandConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPBrandConciergeTests/Pods-AEPBrandConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
 		AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicMessageView.swift; sourceTree = "<group>"; };
 		AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AEPBrandConcierge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B6C8A8D300235DCA7C2130A1 /* ConciergeXDMContextStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeXDMContextStore.swift; sourceTree = "<group>"; };
 		B83AC8F6176F39468E33F041 /* ComposerEditingViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerEditingViewTests.swift; sourceTree = "<group>"; };
 		B83AC8F6176F39468E33F051 /* ChatComposerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposerTests.swift; sourceTree = "<group>"; };
 		C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_UnitTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -442,6 +446,7 @@
 		E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardCarouselSnapshotTests.swift; sourceTree = "<group>"; };
 		D000ECC120251120000000A0 /* ConciergeEventTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeEventTracker.swift; sourceTree = "<group>"; };
 		D593F447E7FFCBE0208FC8B5 /* Pods-ConciergeDemoApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.debug.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.debug.xcconfig"; sourceTree = "<group>"; };
+		DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeResolveSessionTests.swift; sourceTree = "<group>"; };
 		E21378B0B68D3623005C3C79 /* ProductDetailCardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardViewTests.swift; sourceTree = "<group>"; };
 		E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPBrandConcierge.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConcierge.debug.xcconfig"; path = "Target Support Files/Pods-AEPBrandConcierge/Pods-AEPBrandConcierge.debug.xcconfig"; sourceTree = "<group>"; };
 		E5EE8AC6DB678C5F5BEA41F8 /* MessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTests.swift; sourceTree = "<group>"; };
@@ -501,6 +506,7 @@
 				2B07E78363AE9961331E4702 /* ConciergeAuthTokenResolver.swift */,
 				D000ECC120251120000000A0 /* ConciergeEventTracker.swift */,
 				24070DF09312406A88B8F60F /* ConciergeTrackingEvent.swift */,
+				B6C8A8D300235DCA7C2130A1 /* ConciergeXDMContextStore.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -786,6 +792,8 @@
 				4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */,
 				4CDB0DCE2EC82CA2000B85D0 /* ThemeLoaderTests.swift */,
 				FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */,
+				0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */,
+				DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */,
 			);
 			path = UnitTests;
 			sourceTree = "<group>";
@@ -1326,6 +1334,7 @@
 				247BA82A2EBD311700EFE7C6 /* PermissionDialogView.swift in Sources */,
 				B6B082EF543410FE5586506E /* AudioWaveformView.swift in Sources */,
 				44D3D2BA6FCA570474FBD2B5 /* GeoURLConverter.swift in Sources */,
+				303532C5E36667560B8E3352 /* ConciergeXDMContextStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1382,6 +1391,8 @@
 				24CAB3712F5E000100CEE071 /* ConciergeServiceIdentityTests.swift in Sources */,
 				ABDEBF4434DB0A9044A9E92E /* GeoURLConverterTests.swift in Sources */,
 				8FF3F9C5826960C024A007F2 /* ConciergeTests.swift in Sources */,
+				5C6490E414BE8CEB6D219998 /* ConciergeXDMContextStoreTests.swift in Sources */,
+				75DDC0EEF67378753C51DA39 /* ConciergeResolveSessionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1487,7 +1498,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.9.0;
+				MARKETING_VERSION = 5.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -1528,7 +1539,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.9.0;
+				MARKETING_VERSION = 5.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;

@@ -27,6 +27,7 @@ struct ChatView: View {
     // MARK: - State
 
     @ObservedObject private var controller: ChatController
+    var identityResetController: ChatController { controller }
     @State private var showAgentSend: Bool = false
     @State private var selectedTextRange: NSRange = NSRange(location: 0, length: 0)
     @State private var composerHeight: CGFloat = 0
@@ -179,6 +180,15 @@ struct ChatView: View {
         }
         .onDisappear {
             controller.trackChatClosed()
+        }
+        .onChange(of: controller.endedForIdentityReset) { ended in
+            guard ended else { return }
+            showFeedbackOverlay = false
+            feedbackMessageId = nil
+            showWebViewPopover = false
+            webViewURL = nil
+            selectedTextRange = NSRange(location: 0, length: 0)
+            isInputFocused = false
         }
         // Provide a presenter to child views via environment
         .conciergeFeedbackPresenter(ConciergeFeedbackPresenter { sentiment, messageId in

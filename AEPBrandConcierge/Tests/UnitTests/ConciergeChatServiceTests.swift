@@ -227,6 +227,23 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(order?["purchaseID"] as? String, "abc123")
     }
 
+    func test_createChatPayload_withHandoffNull_serializesJsonNull() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration())
+        let handoff = ConciergeXDMContextStore.merging(
+            ["commerce": ["order": ["purchaseID": NSNull()]]],
+            over: ["commerce": ["order": ["purchaseID": "old", "currency": "USD"]]]
+        )
+
+        let data = try service.createChatPayload(query: "checkout", extraXDMFields: handoff)
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+        let commerce = try XCTUnwrap(xdm["commerce"] as? [String: Any])
+        let order = try XCTUnwrap(commerce["order"] as? [String: Any])
+
+        XCTAssertTrue(order["purchaseID"] is NSNull)
+        XCTAssertEqual(order["currency"] as? String, "USD")
+    }
+
     func test_createChatPayload_withExtraXDMFieldsContainingIdentityMap_doesNotOverwriteRealIdentityMap() throws {
         // Given
         let configuration = makeConfiguration(ecid: "real-ecid")
@@ -559,6 +576,15 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(queryItems?.first(where: { $0.name == "configId" })?.value, "ds-123")
     }
 
+    func test_createUrl_usesResolvedSessionIDForTheTurn() throws {
+        let service = ConciergeChatService(configuration: makeConfigurationForUrl())
+
+        let url = try service.createUrl(sessionID: "resolved-session-id")
+
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        XCTAssertEqual(queryItems?.first(where: { $0.name == "sessionId" })?.value, "resolved-session-id")
+    }
+
     func test_createUrl_withNilServer_throwsInvalidEndpointError() {
         // Given
         let configuration = makeConfigurationForUrl(server: nil)
@@ -885,6 +911,56 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(StubURLProtocol.count, 1, "the request was issued; a network error is handled quietly")
     }
 
+    @MainActor
+    func test_identityReset_cancelsAllFeedbackRequests_withoutActiveChatTurn() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldHold = true
+        let service = makeStubbedService()
+        let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
+        let feedback: [String: Any] = ["xdm": ["conversation": ["turnID": "old-turn"]]]
+
+        service.sendFeedback(data: feedback, token: nil)
+        service.sendFeedback(data: feedback, token: nil)
+        await waitForCondition(timeout: 3) { StubURLProtocol.count == 2 }
+        XCTAssertEqual(StubURLProtocol.count, 2)
+        XCTAssertFalse(controller.isProcessing)
+
+        controller.endConversationForIdentityReset()
+        await waitForCondition(timeout: 3) { StubURLProtocol.stoppedCount == 2 }
+        XCTAssertEqual(StubURLProtocol.stoppedCount, 2, "Reset must cancel every feedback request even without a chat turn.")
+        controller.endConversationForIdentityReset()
+        XCTAssertEqual(StubURLProtocol.stoppedCount, 2)
+    }
+
+    @MainActor
+    func test_identityReset_releasesTransportDelegate_withoutStartingRequest() async {
+        weak var releasedService: ConciergeChatService?
+        autoreleasepool {
+            let service = makeStubbedService()
+            releasedService = service
+            let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
+            controller.endConversationForIdentityReset()
+        }
+        await waitForCondition(timeout: 3) { releasedService == nil }
+        XCTAssertNil(releasedService, "Discarded prepared services must not be retained by an idle URLSession.")
+    }
+
+    @MainActor
+    func test_identityReset_rejectsFeedbackOnEndedService_butNewServiceCanSend() async {
+        StubURLProtocol.reset()
+        let service = makeStubbedService()
+        let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
+        controller.endConversationForIdentityReset()
+
+        service.sendFeedback(data: ["xdm": ["conversation": ["turnID": "old-turn"]]], token: nil)
+        let freshService = makeStubbedService()
+        freshService.sendFeedback(data: ["xdm": ["conversation": ["turnID": "new-turn"]]], token: nil)
+        await waitForCondition(timeout: 3) { StubURLProtocol.count >= 1 }
+        try? await Task.sleep(nanoseconds: 300_000_000)
+
+        XCTAssertEqual(StubURLProtocol.count, 1, "Only the replacement conversation may submit feedback.")
+    }
+
     func test_streamChat_withUnbuildableURL_completesWithError() async {
         // makeConfiguration() has no server, so createUrl() throws — exercising streamChat's catch.
         let service = ConciergeChatService(configuration: makeConfiguration())
@@ -949,13 +1025,28 @@ private final class StubURLProtocol: URLProtocol {
     private static let lock = NSLock()
     private static var requests: [URLRequest] = []
     private static var _shouldFail = false
+    private static var _shouldHold = false
+    private static var _stoppedCount = 0
+    private var held = false
 
-    static func reset() { lock.lock(); requests = []; _shouldFail = false; lock.unlock() }
+    static func reset() {
+        lock.lock()
+        requests = []
+        _shouldFail = false
+        _shouldHold = false
+        _stoppedCount = 0
+        lock.unlock()
+    }
     static var count: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
     static var last: URLRequest? { lock.lock(); defer { lock.unlock() }; return requests.last }
+    static var stoppedCount: Int { lock.lock(); defer { lock.unlock() }; return _stoppedCount }
     static var shouldFail: Bool {
         get { lock.lock(); defer { lock.unlock() }; return _shouldFail }
         set { lock.lock(); defer { lock.unlock() }; _shouldFail = newValue }
+    }
+    static var shouldHold: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _shouldHold }
+        set { lock.lock(); defer { lock.unlock() }; _shouldHold = newValue }
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -965,8 +1056,10 @@ private final class StubURLProtocol: URLProtocol {
         StubURLProtocol.lock.lock()
         StubURLProtocol.requests.append(request)
         let shouldFail = StubURLProtocol._shouldFail
+        held = StubURLProtocol._shouldHold
         StubURLProtocol.lock.unlock()
 
+        if held { return }
         if shouldFail {
             client?.urlProtocol(self, didFailWithError: NSError(domain: "StubURLProtocol", code: -1))
             return
@@ -979,7 +1072,14 @@ private final class StubURLProtocol: URLProtocol {
         client?.urlProtocolDidFinishLoading(self)
     }
 
-    override func stopLoading() {}
+    override func stopLoading() {
+        StubURLProtocol.lock.lock()
+        if held {
+            StubURLProtocol._stoppedCount += 1
+            held = false
+        }
+        StubURLProtocol.lock.unlock()
+    }
 }
 
 /// Thread-safe box for capturing a callback value from a background task in a test.

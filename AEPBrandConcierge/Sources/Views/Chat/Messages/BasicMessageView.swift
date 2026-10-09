@@ -73,6 +73,19 @@ struct BasicMessageView: View {
         return max(0, targetLineHeight - baseFont.lineHeight)
     }
 
+    /// Vertical gap between markdown blocks (paragraphs, lists, etc.). Equal to one rendered line of
+    /// message text so a paragraph break reads as a blank line, matching Android and web.
+    private var messageBlockSpacing: CGFloat {
+        Self.markdownBlockSpacing(font: resolvedAgentFont, lineHeightMultiplier: theme.typography.lineHeight)
+    }
+
+    /// One rendered line of text for `font` under the theme's line-height multiplier: the larger of the
+    /// font's natural line height and `pointSize * lineHeightMultiplier`.
+    static func markdownBlockSpacing(font: UIFont, lineHeightMultiplier: CGFloat) -> CGFloat {
+        guard lineHeightMultiplier.isFinite, lineHeightMultiplier > 0 else { return font.lineHeight }
+        return max(font.lineHeight, font.pointSize * lineHeightMultiplier)
+    }
+
     /// Builds a link icon resolver closure from the message's `linkHints` and the theme's
     /// `citations` icon config.
     private var resolvedLinkIconResolver: ((URL) -> (assetName: String, sfSymbol: String, image: UIImage?))? {

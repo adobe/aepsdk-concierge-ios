@@ -167,6 +167,64 @@ Brand Concierge forwards the full Edge Identity `identityMap` on every chat and 
 
 Namespace priority and identity-graph rules are configured server-side in Adobe Experience Platform; the SDK does not interpret or relabel namespaces.
 
+### Resetting identities
+
+Call the following Core API when the host app changes users or signs out:
+
+```swift
+MobileCore.resetIdentities()
+```
+
+Concierge then ends the current conversation locally:
+
+- **Cleared:** backend session, transcript, unsent draft, held XDM context and in-flight work (chat, data handoff, feedback, speech capture and speech output). Nothing is retried under the new identity.
+- **Retained:** token-provider registration, configuration, consent, surfaces and server-side conversation history. The host remains responsible for sign-out and clearing its auth token.
+- **UI:** a visible chat stays open with input disabled until Concierge is ready again; a hidden chat stays hidden. `show`/`present` calls made during reset are ignored, and data handoffs during reset complete with `noActiveSession`.
+
+Sending resumes, with a new `sessionId`, once Edge Identity reports reset complete and refreshed identity and configuration are available. This requires the **AEPEdgeIdentity** extension to be registered. If reset is still pending after five seconds, Concierge logs a warning describing what it is waiting on.
+
+**Custom components:**
+- Custom `TextSpeaking` implementations should implement `stopSpeaking()` to cancel active and scheduled speech output. The default implementation does nothing.
+
+After reset, if a conversation was in progress, Concierge dispatches a **Brand Concierge Conversation Ended** event (`com.adobe.eventType.concierge` / `com.adobe.eventSource.notification`, `conciergeEventType: concierge:conversation:ended`) for Event Hub/Assurance diagnostics. It includes `reason: identity_reset`, `epochTime` (Unix ms), `hadActiveTurn`, and the previous `sessionId`/`conversationId` when available. It contains no transcript, XDM, identity or token data, and is not sent to Edge.
+
+## XDM context
+
+Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
+later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
+requests don't include it.
+
+```swift
+try Concierge.updateXDMContext([
+    "loyalty": ["tier": "gold"],
+    "commerce": ["currencyCode": "USD"]
+])
+
+// Remove a key
+try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
+```
+
+- **Merging:** Each update is applied as an RFC 7396 JSON Merge Patch. Dictionaries merge
+  recursively, arrays and scalar values replace the existing value, and an `NSNull()` dictionary
+  value removes that key. There is no reset API. To remove context, send `NSNull()` values.
+- **Allowed values:** anything `JSONSerialization.isValidJSONObject` accepts: strings, finite
+  numbers, booleans, dictionaries with `String` keys, and arrays of these values. An `NSNull()`
+  inside an array is sent as JSON null. The top-level `identityMap` key is reserved for the SDK.
+  Invalid input throws `ConciergeXDMContextError.invalidValue` or `.reservedKeyCollision`.
+- **Lifetime:** Context is held in memory for the current Concierge session (30 minutes of
+  inactivity). Updating it doesn't start or extend a session. If no session exists yet, the next
+  chat message adopts the context. When a session expires, its context is not sent with later
+  requests, and the next update starts from an empty context. `MobileCore.resetIdentities()` also
+  clears it, as does showing chat with a different ECID, server, datastream, region or surfaces.
+- **Timing:** A chat message captures the context when it's sent. Updates made after that don't
+  change a message that's already in flight.
+- **Data handoffs:** The handoff's `xdmFields` are deep-merged over the held context, and the
+  handoff values win. `NSNull()` in a handoff is sent as JSON null rather than removing a key. The
+  held context itself isn't changed.
+- **Visibility:** The context is included in the **Brand Concierge Query Submitted** Event Hub
+  event, so Assurance and other listening extensions can read it. The SDK doesn't forward it to
+  Edge tracking.
+
 ---
 
 ## Authentication
@@ -224,7 +282,7 @@ Concierge.sendDataHandoff(
 #### `Concierge.sendDataHandoff(routingHint:xdmFields:localMessage:completion:)`
 
 - **`routingHint`**: A keyword consumed only by Brand Concierge's current phrase-based router (e.g. `"successful-checkout"`) — the end user never sees it, and it is not conversational content. Defaults to empty, which is appropriate when `xdmFields` carries the routing context on its own.
-- **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, JSON-serializable, and must not use `identityMap` as a top-level key (reserved by the SDK).
+- **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, follow the [XDM context](#xdm-context) value rules, and must not use `identityMap` as a top-level key (reserved by the SDK). These fields are deep-merged over any held XDM context.
 - **`localMessage`**: Optional text rendered immediately in the chat transcript as a local, non-networked message, distinct from the data forwarded to Brand Concierge. `nil`/empty -> nothing shown locally; the conversation only gets whatever Product Advisor eventually replies with.
 - **`completion`**: Optional closure called exactly once with the outcome, on the main actor, and always within 60 seconds — a handoff turn is bounded on both ends, so the callback can't be left hanging by a slow or stalled backend. It receives a `Result<Void, ConciergeDataHandoffError>`. `.success` means Brand Concierge completed the turn and its response was rendered into the transcript — not merely that the payload passed validation. On `.failure`, the error is a typed `ConciergeDataHandoffError`:
 

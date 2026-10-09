@@ -40,6 +40,9 @@ class ConciergeChatService: NSObject {
     private var dataTask: URLSessionDataTask?
     private var onChunkHandler: ((ConversationPayload) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
+    private let feedbackLock = NSLock()
+    private var feedbackTasks: [UUID: URLSessionDataTask] = [:]
+    private var feedbackEndedForIdentityReset = false
 
     // MARK: - Initialization
 
@@ -58,10 +61,11 @@ class ConciergeChatService: NSObject {
     /// and attached to the request body; pass `nil` to send the turn without one. `extraXDMFields`,
     /// if provided, is merged into the request's `xdm` object alongside `identityMap`.
     func streamChat(_ query: String, token: String?, extraXDMFields: [String: Any]? = nil,
+                    sessionID: String? = nil,
                     onChunk: @escaping (ConversationPayload) -> Void,
                     onComplete: @escaping (ConciergeError?) -> Void) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(sessionID: sessionID)
 
             // Register handlers for this streaming session
             onChunkHandler = onChunk
@@ -102,6 +106,12 @@ class ConciergeChatService: NSObject {
     /// Builds and sends a feedback request. `token` is resolved by the caller and attached to the
     /// request body; pass `nil` to send without one.
     func sendFeedback(data: [String: Any], token: String?) {
+        feedbackLock.lock()
+        defer { feedbackLock.unlock() }
+        guard !feedbackEndedForIdentityReset else {
+            Log.warning(label: LOG_TAG, "Feedback rejected because identity reset ended the conversation.")
+            return
+        }
         do {
             let url = try createUrl()
             let payload = try createFeedbackPayload(data: data, token: token)
@@ -118,7 +128,11 @@ class ConciergeChatService: NSObject {
             // Refresh session activity timestamp when sending feedback
             SessionManager.shared.refreshSessionActivity()
 
-            session.dataTask(with: request) { _, response, error in
+            let feedbackID = UUID()
+            let task = session.dataTask(with: request) { _, response, error in
+                self.feedbackLock.lock()
+                self.feedbackTasks.removeValue(forKey: feedbackID)
+                self.feedbackLock.unlock()
                 if let error = error {
                     Log.warning(label: self.LOG_TAG, error.localizedDescription)
                     return
@@ -127,7 +141,9 @@ class ConciergeChatService: NSObject {
                 if let httpResponse = response as? HTTPURLResponse {
                     Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
                 }
-            }.resume()
+            }
+            feedbackTasks[feedbackID] = task
+            task.resume()
         } catch {
             let conciergeError = (error as? ConciergeError) ?? .unknown
             Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
@@ -138,7 +154,7 @@ class ConciergeChatService: NSObject {
 
     /// Creates the URL for a request to the Concierge Service.
     /// - Note: Internal visibility for testing
-    func createUrl() throws -> URL {
+    func createUrl(sessionID: String? = nil) throws -> URL {
         // TODO: Remove prior to release
         if USE_TEMPS {
             return URL(string: TEMP_serviceEndpoint)!
@@ -156,9 +172,7 @@ class ConciergeChatService: NSObject {
             URLQueryItem(name: ConciergeConstants.Request.Keys.CONFIG_ID, value: datastream)
         ]
 
-        if let sessionId = configuration.sessionId {
-            queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionId))
-        }
+        queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.SESSION_ID, value: sessionID ?? configuration.sessionId))
 
         if let conversationId = configuration.conversationId {
             queryItems.append(URLQueryItem(name: ConciergeConstants.Request.Keys.CONVERSATION_ID, value: conversationId))
@@ -177,6 +191,12 @@ class ConciergeChatService: NSObject {
         }
 
         return url
+    }
+
+    /// Resolves the backend session ID once so the context snapshot and request URL use the
+    /// same session even if the persisted session expires while a turn is being prepared.
+    func resolveSessionID() -> String {
+        configuration.sessionId
     }
 
     /// Creates the JSON payload for a chat request.
@@ -291,6 +311,19 @@ class ConciergeChatService: NSObject {
     /// caller unwinds through its normal failure path.
     func cancelActiveStream() {
         disconnect()
+    }
+
+    func endFeedbackForIdentityReset() {
+        feedbackLock.lock()
+        feedbackEndedForIdentityReset = true
+        let tasks = Array(feedbackTasks.values)
+        feedbackTasks.removeAll()
+        feedbackLock.unlock()
+        tasks.forEach { $0.cancel() }
+    }
+
+    func invalidateTransportForIdentityReset() {
+        session.invalidateAndCancel()
     }
 
     private func disconnect() {

@@ -28,6 +28,8 @@ final class MockChatService: ConciergeChatService {
     private(set) var streamChatCallCount = 0
     private(set) var lastQuery: String? = nil
     private(set) var lastExtraXDMFields: [String: Any]? = nil
+    private(set) var lastSessionID: String? = nil
+    var onStreamChat: (() -> Void)?
 
     override func sendFeedback(data: [String: Any], token: String?) {
         sendFeedbackCallCount += 1
@@ -35,10 +37,12 @@ final class MockChatService: ConciergeChatService {
         lastFeedbackToken = token
     }
 
-    override func streamChat(_ query: String, token: String?, extraXDMFields: [String: Any]? = nil, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
+    override func streamChat(_ query: String, token: String?, extraXDMFields: [String: Any]? = nil, sessionID: String? = nil, onChunk: @escaping (ConversationPayload) -> Void, onComplete: @escaping (ConciergeError?) -> Void) {
         streamChatCallCount += 1
         lastQuery = query
         lastExtraXDMFields = extraXDMFields
+        lastSessionID = sessionID
+        onStreamChat?()
 
         // Immediately emit planned chunks then complete
         for chunk in plannedChunks {

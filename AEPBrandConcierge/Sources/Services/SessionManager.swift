@@ -38,12 +38,27 @@ class SessionManager {
 
     // MARK: - Public Methods
 
+    var currentSessionId: String? {
+        dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID)
+    }
+
     /// Whether a persisted session exists and its last activity is within the TTL window.
     var isSessionActive: Bool {
         guard let lastActivity: Date = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY) else {
             return false
         }
         return Date().timeIntervalSince(lastActivity) < sessionTTL
+    }
+
+    /// Returns the current session ID only while the persisted session is active.
+    /// Unlike `getOrCreateSessionId()`, this never creates or refreshes a session.
+    var currentSessionIdIfActive: String? {
+        guard let sessionId = dataStore.getString(key: ConciergeConstants.Session.Keys.SESSION_ID),
+              let lastActivity: Date = dataStore.getObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY),
+              Date().timeIntervalSince(lastActivity) < sessionTTL else {
+            return nil
+        }
+        return sessionId
     }
 
     /// Retrieves the current valid session ID, or creates a new one if the existing session has expired.
