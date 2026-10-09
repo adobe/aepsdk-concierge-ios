@@ -759,6 +759,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-border-radius` | `layout.messageBorderRadius` | `CGFloat` | `10` | Message bubble corner radius |
 | `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding |
 | `--message-max-width` | `layout.messageMaxWidth` | `CGFloat?` | `nil` | Max message width |
+| `--markdown-block-spacing` | `layout.markdownBlockSpacing` | `CGFloat?` | `8` | Vertical spacing between top-level Markdown blocks; falls back to 8 when omitted |
 | `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. When set, product cards and prompt suggestion chips are automatically offset to align with the agent message text column. |
 | `--agent-icon-spacing` | `layout.agentIconSpacing` | `CGFloat` | `12` | Horizontal gap in points between the agent icon and the message bubble. Contributes to the text column offset applied to product cards and prompt suggestion chips. |
 
@@ -1046,6 +1047,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
     "--message-max-width": "100%",
+    "--markdown-block-spacing": "8px",
     "--chat-interface-max-width": "768px",
     "--chat-history-padding": "16px",
     "--chat-history-padding-top-expanded": "0",
@@ -1383,6 +1385,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-border-radius` | ✅ | Used in ChatMessageView, SourcesListView |
 | `--message-padding` | ✅ | Used in ChatMessageView |
 | `--message-max-width` | ✅ | Used in ChatMessageView |
+| `--markdown-block-spacing` | ✅ | Used in MarkdownBlockView; falls back to 8 when omitted |
 | `--chat-interface-max-width` | ✅ | Used in ChatView |
 | `--chat-history-padding` | ✅ | Applied per-message in MessageListView; also used as fallback for carousel horizontal padding |
 | `--chat-history-padding-top-expanded` | ✅ | Used in MessageListView |

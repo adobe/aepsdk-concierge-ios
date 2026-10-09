@@ -47,6 +47,8 @@ public struct ConciergeLayout: Codable {
     public var messageBorderRadius: CGFloat
     public var messagePadding: ConciergePadding
     public var messageMaxWidth: CGFloat? // nil = no max width, value = max width in points
+    /// Vertical spacing between top-level Markdown blocks. `nil` uses the view's built-in fallback.
+    public var markdownBlockSpacing: CGFloat?
     public var chatInterfaceMaxWidth: CGFloat
     public var chatHistoryPadding: CGFloat
     public var chatHistoryPaddingTopExpanded: CGFloat
@@ -159,6 +161,7 @@ public struct ConciergeLayout: Codable {
         messageBorderRadius: CGFloat = 10,
         messagePadding: ConciergePadding = ConciergePadding(vertical: 8, horizontal: 16),
         messageMaxWidth: CGFloat? = nil,
+        markdownBlockSpacing: CGFloat? = nil,
         chatInterfaceMaxWidth: CGFloat = 768,
         chatHistoryPadding: CGFloat = 16,
         // Keep defaults aligned with the current message list layout.
@@ -263,6 +266,7 @@ public struct ConciergeLayout: Codable {
         self.messageBorderRadius = messageBorderRadius
         self.messagePadding = messagePadding
         self.messageMaxWidth = messageMaxWidth
+        self.markdownBlockSpacing = markdownBlockSpacing
         self.chatInterfaceMaxWidth = chatInterfaceMaxWidth
         self.chatHistoryPadding = chatHistoryPadding
         self.chatHistoryPaddingTopExpanded = chatHistoryPaddingTopExpanded

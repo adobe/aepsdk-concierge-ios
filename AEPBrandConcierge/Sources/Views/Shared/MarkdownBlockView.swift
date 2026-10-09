@@ -16,13 +16,14 @@ import UIKit
 /// SwiftUI component that renders markdown using the markdown block renderer.
 /// It composes `MarkdownText` and native SwiftUI elements to support full markdown rendering.
 struct MarkdownBlockView: View {
+    @Environment(\.conciergeTheme) private var theme
+
     let markdown: String
     var textColor: UIColor
     /// Foreground color applied to inline hyperlink text. Defaults to the system link color.
     /// (Underlining is applied separately by `MarkdownText`, always-on.)
     var linkColor: UIColor = .link
     var baseFont: UIFont = .preferredFont(forTextStyle: .body)
-    var spacing: CGFloat = 8
     var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
     /// When non-nil, a small icon is appended after every inline hyperlink in the rendered text.
@@ -48,7 +49,7 @@ struct MarkdownBlockView: View {
         )
         let transformedBlocks = blocks.map(transformBlock)
 
-        return VStack(alignment: .leading, spacing: spacing) {
+        return VStack(alignment: .leading, spacing: theme.layout.markdownBlockSpacing ?? 8) {
             ForEach(Array(transformedBlocks.enumerated()), id: \.0) { _, block in
                 switch block {
                 case .text(let ns):
