@@ -1047,7 +1047,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
     "--message-max-width": "100%",
-    "--markdown-block-spacing": "19.09375px",
+    "--markdown-block-spacing": "8px",
     "--chat-interface-max-width": "768px",
     "--chat-history-padding": "16px",
     "--chat-history-padding-top-expanded": "0",
