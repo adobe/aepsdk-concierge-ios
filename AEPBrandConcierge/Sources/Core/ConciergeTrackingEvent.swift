@@ -22,9 +22,14 @@ import Foundation
 ///    - Each case maps to a web client event type (see `ConciergeConstants.TrackingEventSubtype`)
 enum ConciergeTrackingEvent {
     case sessionInitialized
+    case conversationEnded(epochTime: Int64, sessionId: String?, conversationId: String?, hadActiveTurn: Bool)
     case chatOpened(epochTime: Int64)
     case chatClosed(epochTime: Int64, durationMillis: Int64)
-    case querySubmitted(query: String)
+    /// `xdmFields` is the resolved XDM (held `updateXDMContext` snapshot) at the moment the turn is
+    /// sent - included so it's visible in Assurance, since the turn itself bypasses the Event Hub
+    /// entirely (`ConciergeChatService` sends it via a direct `URLSession` call). Not forwarded to
+    /// Edge - see the sanitization note on `ConciergeEventTracker.trackEvent`'s `QUERY_SUBMITTED` case.
+    case querySubmitted(query: String, xdmFields: [String: Any])
     case promptSuggestionClicked(suggestion: String)
     case welcomePromptSuggestionClicked(suggestion: String)
     case cardClicked(element: [String: Any])
@@ -52,6 +57,8 @@ enum ConciergeTrackingEvent {
         switch self {
         case .sessionInitialized:
             return ConciergeConstants.TrackingEvent.Name.SESSION_INITIALIZED
+        case .conversationEnded:
+            return ConciergeConstants.TrackingEvent.Name.CONVERSATION_ENDED
         case .chatOpened:
             return ConciergeConstants.TrackingEvent.Name.CHAT_OPENED
         case .chatClosed:
@@ -89,6 +96,8 @@ enum ConciergeTrackingEvent {
         switch self {
         case .sessionInitialized:
             return ConciergeConstants.TrackingEvent.XDMType.SESSION_INITIALIZED
+        case .conversationEnded:
+            return ConciergeConstants.TrackingEvent.XDMType.CONVERSATION_ENDED
         case .chatOpened:
             return ConciergeConstants.TrackingEvent.XDMType.CHAT_OPENED
         case .chatClosed:
@@ -132,6 +141,12 @@ enum ConciergeTrackingEvent {
         switch self {
         case .sessionInitialized:
             break
+        case .conversationEnded(let epochTime, let sessionId, let conversationId, let hadActiveTurn):
+            data[Key.EPOCH_TIME] = epochTime
+            data[Key.REASON] = "identity_reset"
+            data[Key.SESSION_ID] = sessionId
+            data[Key.CONVERSATION_ID] = conversationId
+            data[Key.HAD_ACTIVE_TURN] = hadActiveTurn
 
         case .chatOpened(let epochTime):
             data[Key.EPOCH_TIME] = epochTime
@@ -140,8 +155,11 @@ enum ConciergeTrackingEvent {
             data[Key.EPOCH_TIME] = epochTime
             data[Key.DURATION_MILLIS] = durationMillis
 
-        case .querySubmitted(let query):
+        case .querySubmitted(let query, let xdmFields):
             data[Key.QUERY] = query
+            if !xdmFields.isEmpty {
+                data[Key.XDM_FIELDS] = xdmFields
+            }
 
         case .promptSuggestionClicked(let suggestion),
              .welcomePromptSuggestionClicked(let suggestion):

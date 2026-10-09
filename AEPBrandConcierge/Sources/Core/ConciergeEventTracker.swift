@@ -27,8 +27,8 @@ import Foundation
 /// ignored. No compile-time coupling.
 ///
 /// Sanitization rules (per agreement with team):
-/// - `query` (QuerySubmitted) and `notes` (FeedbackSubmitted) are dropped: free-form user text,
-///   PII risk.
+/// - `query` and `xdmFields` (QuerySubmitted) and `notes` (FeedbackSubmitted) are dropped:
+///   free-form user text and app-supplied XDM (potentially PII) respectively.
 /// - `element` (CardClicked) and entries in `elements` (CardsRendered) are filtered down to
 ///   product-identifier fields (`productName`, `productPageURL`); display-only fields like
 ///   `productDescription`, `productPrice`, `productBadge` are stripped.
@@ -105,7 +105,8 @@ internal enum ConciergeEventTracker {
             dispatchEdge(xdmType: xdmType, data: payload)
 
         case Types.QUERY_SUBMITTED:
-            // `query` is dropped (free-form user-typed text — PII risk).
+            // `query` (free-form user-typed text) and `xdmFields` (app-supplied XDM, potentially
+            // PII) are both dropped — neither belongs in the customer's production Edge pipeline.
             dispatchEdge(xdmType: xdmType, data: [:])
 
         case Types.PROMPT_SUGGESTION_CLICKED:
@@ -209,6 +210,8 @@ internal enum ConciergeEventTracker {
             }
             dispatchEdge(xdmType: xdmType, data: payload)
 
+        case Types.CONVERSATION_ENDED:
+            return
         case Types.LINK_CLICKED:
             var payload: [String: Any] = [:]
             if let url = data[Key.URL] as? String {

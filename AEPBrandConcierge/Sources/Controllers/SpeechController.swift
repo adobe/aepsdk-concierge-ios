@@ -16,8 +16,13 @@ import Foundation
 final class SpeechController {
     private let capturer: SpeechCapturing?
     private let speaker: TextSpeaking?
+    private let identityGeneration: Int
+    private var outputEnded = false
 
-    init(capturer: SpeechCapturing?, speaker: TextSpeaking?) {
+    init(capturer: SpeechCapturing?, speaker: TextSpeaking?, identityGeneration: Int? = nil) {
+        self.identityGeneration = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
+            ConciergeIdentityBoundary.shared.generation
+        }
         self.capturer = capturer
         self.speaker = speaker
     }
@@ -69,6 +74,16 @@ final class SpeechController {
     // MARK: - Speech Output
 
     func speak(_ text: String) {
-        speaker?.utter(text: text)
+        ConciergeIdentityBoundary.shared.synchronized {
+            guard !outputEnded, ConciergeIdentityBoundary.shared.admits(identityGeneration) else { return }
+            speaker?.utter(text: text)
+        }
+    }
+
+    func stopSpeaking() {
+        ConciergeIdentityBoundary.shared.synchronized {
+            outputEnded = true
+        }
+        speaker?.stopSpeaking()
     }
 }

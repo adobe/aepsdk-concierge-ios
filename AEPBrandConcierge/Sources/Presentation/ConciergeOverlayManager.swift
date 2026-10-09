@@ -40,4 +40,9 @@ final class ConciergeOverlayManager: ObservableObject {
     func hideChat() {
         self.showingConcierge = false
     }
+
+    /// Rebinds a retained host after identity reset without changing its visibility.
+    func replaceChat(_ chatView: ChatView?) {
+        self.chatView = chatView
+    }
 }
