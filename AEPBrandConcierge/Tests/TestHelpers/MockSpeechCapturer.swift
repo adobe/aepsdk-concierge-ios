@@ -24,9 +24,11 @@ final class MockSpeechCapturer: SpeechCapturing {
     private(set) var endCaptures: Int = 0
     private(set) var permissionRequests: Int = 0
     var transcriptToReturn: String? = nil
+    var onInitialize: (() -> Void)?
 
     func initialize(responseProcessor: ((String) -> Void)?) {
         self.responseProcessor = responseProcessor
+        onInitialize?()
     }
     func isAvailable() -> Bool { available }
     func hasPermissionBeenDenied() -> Bool { denied }

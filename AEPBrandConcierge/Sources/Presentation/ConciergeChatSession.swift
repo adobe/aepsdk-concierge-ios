@@ -19,19 +19,23 @@ import Foundation
 final class ConciergeChatSession {
     let controller: ChatController
     let configuration: ConciergeConfiguration
+    private(set) var sessionID: String
     let title: String
     let subtitle: String?
 
     init(
         configuration: ConciergeConfiguration,
+        sessionID: String? = nil,
         title: String,
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?,
         dispatch: ((_ event: Event) -> Void)? = nil,
-        urlSessionConfiguration: URLSessionConfiguration = .default
+        urlSessionConfiguration: URLSessionConfiguration = .default,
+        identityGeneration: Int? = nil
     ) {
         self.configuration = configuration
+        self.sessionID = sessionID ?? configuration.sessionId
         self.title = title
         self.subtitle = subtitle
         self.controller = ChatController(
@@ -39,7 +43,8 @@ final class ConciergeChatSession {
             speechCapturer: speechCapturer ?? SpeechCapturer(),
             speaker: textSpeaker,
             dispatch: dispatch,
-            urlSessionConfiguration: urlSessionConfiguration
+            urlSessionConfiguration: urlSessionConfiguration,
+            identityGeneration: identityGeneration
         )
     }
 
@@ -47,5 +52,9 @@ final class ConciergeChatSession {
         self.title == title
             && self.subtitle == subtitle
             && self.configuration.hasSameChatServiceIdentity(as: configuration)
+    }
+
+    func rebind(to sessionID: String) {
+        self.sessionID = sessionID
     }
 }

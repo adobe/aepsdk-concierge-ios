@@ -17,11 +17,42 @@ import XCTest
 // MARK: - Fakes
 private final class NoopSpeaker: TextSpeaking { func utter(text: String) {} }
 
+private actor ResetTokenGate {
+    private var continuation: CheckedContinuation<String?, Never>?
+    private var released = false
+
+    func wait(_ entered: XCTestExpectation) async -> String? {
+        if released { return "test-token" }
+        return await withCheckedContinuation {
+            continuation = $0
+            entered.fulfill()
+        }
+    }
+
+    func release() {
+        released = true
+        continuation?.resume(returning: "test-token")
+        continuation = nil
+    }
+}
+
 @MainActor
 final class ChatControllerTests: XCTestCase {
     
     private var mockConciergeConfiguration = ConciergeConfiguration()
-    
+
+    // Both a sent turn and a data handoff read the store fresh at send-time, so every test in
+    // this file needs it empty going in, and must not leak state into the next test's controller.
+    override func setUp() {
+        super.setUp()
+        ConciergeXDMContextStore.shared.clear()
+    }
+
+    override func tearDown() {
+        ConciergeXDMContextStore.shared.clear()
+        super.tearDown()
+    }
+
     func test_sendMessage_ignores_when_text_empty_or_not_idle() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
@@ -58,6 +89,227 @@ final class ChatControllerTests: XCTestCase {
         }
     }
 
+    // MARK: - updateXDMContext merge
+
+    func test_identityReset_cancelsStalledReply_clearsDraftAndTranscript_andAllowsNewController() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.completesOnCancel = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        var callbackCount = 0
+        controller.handleDataHandoff(routingHint: "old-turn", xdmFields: ["order": "old-order"]) { _ in
+            callbackCount += 1
+        }
+        spinUntil(service.streamChatCallCount == 1)
+        let started = Date()
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: started)
+        controller.endConversationForIdentityReset()
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+        XCTAssertEqual(callbackCount, 1)
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertFalse(controller.sendEnabled)
+        XCTAssertFalse(controller.micEnabled)
+        service.triggerCompletion()
+        spinUntil(controller.chatState == .idle)
+        XCTAssertEqual(callbackCount, 1)
+        XCTAssertTrue(controller.messages.isEmpty)
+        boundary.complete(generation)
+        controller.applyTextChange("must not revive old controller")
+        XCTAssertTrue(controller.inputText.isEmpty)
+        let nextService = MockChatService(configuration: mockConciergeConfiguration)
+        let next = makeController(configuration: mockConciergeConfiguration, service: nextService)
+        next.applyTextChange("new user")
+        next.sendMessage(isUser: true)
+        spinUntil(nextService.streamChatCallCount == 1)
+        XCTAssertEqual(nextService.lastQuery, "new user")
+    }
+
+    func test_identityReset_clearsUnsentDraft() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("private unsent draft")
+        controller.endConversationForIdentityReset()
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertEqual(service.streamChatCallCount, 0)
+    }
+
+    func test_identityReset_pendingAuth_cannotSendOldCapturedContext_andRetainsProvider() async throws {
+        let gate = ResetTokenGate()
+        let entered = expectation(description: "Old turn is waiting for auth")
+        ConciergeAuthTokenResolver.shared.setProvider({ await gate.wait(entered) }, timeout: 5)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+        try ConciergeXDMContextStore.shared.update(["oldUser": true])
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("old query")
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [entered], timeout: 2)
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: Date())
+        controller.endConversationForIdentityReset()
+        ConciergeXDMContextStore.shared.clear()
+        try ConciergeXDMContextStore.shared.update(["newUser": true])
+        boundary.complete(generation)
+        await gate.release()
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(service.streamChatCallCount, 0)
+        XCTAssertTrue(controller.messages.isEmpty)
+        let retainedToken = await ConciergeAuthTokenResolver.shared.resolveToken()
+        XCTAssertEqual(retainedToken, "test-token", "Reset must not erase the host's provider registration.")
+    }
+
+    func test_identityReset_stopsSpeech_andRejectsLatePartialTranscript() async throws {
+        let capturer = MockSpeechCapturer()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service, capturer: capturer)
+        controller.startRecording(currentSelectionLocation: 0)
+        let oldPartial = capturer.responseProcessor
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: Date())
+        controller.endConversationForIdentityReset()
+        boundary.complete(generation)
+        oldPartial?("old speech")
+        try await Task.sleep(nanoseconds: 10_000_000)
+        XCTAssertEqual(capturer.endCaptures, 1)
+        XCTAssertTrue(controller.inputText.isEmpty)
+        XCTAssertFalse(controller.isRecording)
+    }
+
+    func test_sendMessage_mergesHeldXDMContext_intoTheOutboundTurn() throws {
+        try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+        XCTAssertEqual(fakeService.lastSessionID, mockConciergeConfiguration.sessionId)
+    }
+
+    func test_sendMessage_withNoHeldXDMContext_sendsNilExtraXDMFields() {
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        XCTAssertNil(fakeService.lastExtraXDMFields)
+    }
+
+    func test_handleDataHandoff_mergesHeldXDMContext_withItsOwnFieldsWinningOnCollision() throws {
+        try ConciergeXDMContextStore.shared.update([
+            "loyalty": ["tier": "gold"],
+            "commerce": [
+                "order": ["purchaseID": "held-should-lose", "currency": "USD"],
+                "cart": ["cartID": "cart-123"]
+            ]
+        ])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.handleDataHandoff(routingHint: "successful-checkout",
+                                     xdmFields: ["commerce": ["order": ["purchaseID": "abc123"]]])
+        spinUntil(fakeService.lastQuery != nil)
+
+        let expected: [String: Any] = [
+            "loyalty": ["tier": "gold"],
+            "commerce": [
+                "order": ["purchaseID": "abc123", "currency": "USD"],
+                "cart": ["cartID": "cart-123"]
+            ]
+        ]
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
+    }
+
+    func test_handleDataHandoff_preservesNullAsAValueWithoutDeletingHeldContext() throws {
+        try ConciergeXDMContextStore.shared.update(["commerce": ["order": ["purchaseID": "held", "currency": "USD"]]])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        controller.handleDataHandoff(routingHint: "checkout",
+                                     xdmFields: ["commerce": ["order": ["purchaseID": NSNull()]]])
+        spinUntil(fakeService.lastQuery != nil)
+
+        let expected: [String: Any] = ["commerce": ["order": ["purchaseID": NSNull(), "currency": "USD"]]]
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
+        XCTAssertTrue((ConciergeXDMContextStore.shared.snapshot(for: fakeService.lastSessionID!) as NSDictionary).isEqual(to: [
+            "commerce": ["order": ["purchaseID": "held", "currency": "USD"]]
+        ]))
+    }
+
+    func test_sendMessage_withHeldXDMContext_includesItOnTheQuerySubmittedEvent_forAssuranceVisibility() throws {
+        try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        let queryEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        XCTAssertEqual(queryEvents.count, 1)
+        let sentXDM = queryEvents.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        XCTAssertTrue((sentXDM as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+    }
+
+    func test_sendMessage_withNoHeldXDMContext_querySubmittedEventOmitsXdmFieldsKey() {
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        spinUntil(fakeService.lastQuery != nil)
+
+        let queryEvent = dispatchedEvents.first { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        XCTAssertNil(queryEvent?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS])
+    }
+
+    func test_sendMessage_usesTheSameXDMContextSnapshotForAssuranceAndRequest() async throws {
+        let providerEntered = expectation(description: "auth token provider started")
+        ConciergeAuthTokenResolver.shared.setProvider({
+            providerEntered.fulfill()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            return "test-token"
+        }, timeout: 5)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "gold"]])
+        var dispatchedEvents: [Event] = []
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService) { event in
+            dispatchedEvents.append(event)
+        }
+
+        controller.applyTextChange("hi")
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [providerEntered], timeout: 2)
+
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "platinum"]])
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(fakeService.streamChatCallCount, 1, "the turn should reach the service after the token is released")
+
+        let queryEvent = dispatchedEvents.first { $0.name == ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED }
+        let assuranceXDM = queryEvent?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        let expected: [String: Any] = ["loyalty": ["tier": "gold"]]
+        XCTAssertTrue((assuranceXDM as NSDictionary?)?.isEqual(to: expected) ?? false,
+                      "Assurance XDM was \(String(describing: assuranceXDM))")
+        XCTAssertTrue((fakeService.lastExtraXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false,
+                      "Request XDM was \(String(describing: fakeService.lastExtraXDMFields))")
+    }
+
     func test_handleDataHandoff_withLocalMessage_appendsItBeforeStreamingPlaceholder() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
@@ -72,6 +324,7 @@ final class ChatControllerTests: XCTestCase {
         } else {
             XCTFail("Expected a basic message template")
         }
+
     }
 
     func test_handleDataHandoff_withNilOrEmptyLocalMessage_appendsOnlyStreamingPlaceholder() {
@@ -417,6 +670,22 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(fakeService.lastFeedbackToken, "feedback-token",
                        "the resolved auth token must be forwarded to sendFeedback")
         XCTAssertNotNil(fakeService.lastFeedbackData, "feedback event data should be forwarded")
+    }
+
+    func test_sendFeedbackFor_doesNotIncludeHeldXDMContext() throws {
+        try ConciergeXDMContextStore.shared.update(["page": "pdp-123"])
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+        let messageId = appendFeedbackEligibleMessage(to: controller)
+
+        controller.sendFeedbackFor(
+            messageId: messageId,
+            with: FeedbackPayload(sentiment: .positive, selectedOptions: [], notes: "")
+        )
+        spinUntil(fakeService.sendFeedbackCallCount == 1)
+
+        let xdm = fakeService.lastFeedbackData?[ConciergeConstants.Request.Keys.XDM] as? [String: Any]
+        XCTAssertNil(xdm?["page"], "Held chat context must not be attached to feedback submissions")
     }
 
     func test_streaming_error_replaces_placeholder_with_error_message_and_returns_to_idle() {

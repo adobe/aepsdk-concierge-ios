@@ -13,6 +13,9 @@
 import XCTest
 import AEPCore
 import AEPTestUtils
+import Combine
+import AEPServices
+@testable import AEPCore
 @testable import AEPBrandConcierge
 
 /// Verifies the `Concierge` extension's app-facing data-handoff listener: decodes a
@@ -28,14 +31,38 @@ final class ConciergeTests: XCTestCase {
         // These cases all assert the "no active session" branch, so make that precondition
         // explicit rather than depending on no other test having left a session behind.
         Concierge.currentSession = nil
+        ConciergeOverlayManager.shared.hideChat()
+        ConciergeOverlayManager.shared.replaceChat(nil)
+        let boundary = ConciergeIdentityBoundary.shared
+        boundary.complete(boundary.synchronized { boundary.generation })
+        ConciergeXDMContextStore.shared.clear()
+        SessionManager.shared.clearSession()
         mockRuntime = TestableExtensionRuntime()
         concierge = Concierge(runtime: mockRuntime)
         concierge.onRegistered()
+        setConfiguration()
+        setIdentity("initial-ecid")
     }
 
     @MainActor
     override func tearDown() async throws {
+        concierge.onUnregistered()
+        concierge.identityResetReadinessCheckedForTesting = nil
+        concierge.identityResetSessionsPreparedForTesting = nil
+        Concierge.speechCapturer = nil
         Concierge.currentSession = nil
+        ConciergeOverlayManager.shared.hideChat()
+        ConciergeOverlayManager.shared.replaceChat(nil)
+        if let hosted = Concierge.presentedUIKitController {
+            hosted.willMove(toParent: nil)
+            hosted.view.removeFromSuperview()
+            hosted.removeFromParent()
+        }
+        Concierge.presentedUIKitController = nil
+        let boundary = ConciergeIdentityBoundary.shared
+        boundary.complete(boundary.synchronized { boundary.generation })
+        ConciergeXDMContextStore.shared.clear()
+        SessionManager.shared.clearSession()
         try await super.tearDown()
     }
 
@@ -72,6 +99,202 @@ final class ConciergeTests: XCTestCase {
     }
 
     // MARK: - Tests
+
+    private func resetIdentities() {
+        mockRuntime.simulateComingEvents(Event(name: "Reset identities", type: EventType.genericIdentity,
+                                              source: EventSource.requestReset, data: nil))
+    }
+
+    private func completeReset(status: SharedStateStatus = .set) {
+        setConfiguration()
+        setIdentity("new-ecid", status: status)
+        mockRuntime.simulateComingEvents(Event(name: "Reset complete", type: EventType.edgeIdentity,
+                                              source: EventSource.resetComplete, data: nil))
+    }
+
+    private func setConfiguration(event: Event? = nil, server: String? = "https://example.com", datastream: String? = "config") {
+        var value: [String: Any] = [:]
+        value[ConciergeConstants.SharedState.Configuration.Concierge.SERVER] = server
+        value[ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM] = datastream
+        if let event {
+            mockRuntime.simulateSharedState(for: (ConciergeConstants.SharedState.Configuration.NAME, event),
+                                            data: (value: value, status: .set))
+            return
+        }
+        mockRuntime.simulateSharedState(for: ConciergeConstants.SharedState.Configuration.NAME, data: (
+            value: value, status: .set
+        ))
+    }
+
+    private func setIdentity(_ ecid: String, event: Event? = nil, status: SharedStateStatus = .set) {
+        let value: [String: Any] = ["identityMap": ["ECID": [["id": ecid]]]]
+        if let event {
+            mockRuntime.simulateXDMSharedState(for: (ConciergeConstants.SharedState.EdgeIdentity.NAME, event),
+                                               data: (value: value, status: status))
+            return
+        }
+        mockRuntime.simulateXDMSharedState(for: ConciergeConstants.SharedState.EdgeIdentity.NAME, data: (
+            value: value, status: status
+        ))
+    }
+
+    @MainActor
+    private func awaitResetReady() async throws {
+        let deadline = Date().addingTimeInterval(5)
+        while !ConciergeIdentityBoundary.shared.synchronized({ ConciergeIdentityBoundary.shared.ready }),
+              Date() < deadline {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_rotatesUnexpiredSession_andClearsHeldContext() async throws {
+        let oldSession = SessionManager.shared.getOrCreateSessionId()
+        try ConciergeXDMContextStore.shared.update(["oldUser": true])
+        resetIdentities()
+        XCTAssertNil(SessionManager.shared.currentSessionId)
+        XCTAssertFalse(ConciergeXDMContextStore.shared.hasContext)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertNotEqual(SessionManager.shared.getOrCreateSessionId(), oldSession)
+        XCTAssertNil(Concierge.currentSession, "Hidden chat must stay hidden.")
+    }
+
+    @MainActor
+    func test_resetIdentities_rebuildsVisibleUIKitHost_withFreshIdentityAndSession() async throws {
+        let parent = UIViewController()
+        parent.loadViewIfNeeded()
+        let oldConfiguration = ConciergeConfiguration(
+            ecid: "old-ecid", server: "https://example.com", surfaces: ["mobileapp://test/chat"]
+        )
+        Concierge.attachConciergeUIKitHost(configuration: oldConfiguration, presentingViewController: parent)
+        let oldSession = try XCTUnwrap(Concierge.currentSession)
+        oldSession.controller.applyTextChange("old draft")
+        oldSession.controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "old transcript"))
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let next = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertFalse(next === oldSession)
+        XCTAssertNotEqual(next.sessionID, oldSession.sessionID)
+        XCTAssertEqual(next.configuration.ecid, "new-ecid")
+        XCTAssertTrue(oldSession.controller.messages.isEmpty)
+        XCTAssertTrue(oldSession.controller.inputText.isEmpty)
+        XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+        let hosted = try XCTUnwrap(Concierge.presentedUIKitController)
+        hosted.willMove(toParent: nil)
+        hosted.view.removeFromSuperview()
+        hosted.removeFromParent()
+        Concierge.presentedUIKitController = nil
+    }
+
+    @MainActor
+    func test_resetIdentities_rebuiltHosts_rotateExpiredSessionInRequestURLs() async throws {
+        let overlay = ConciergeOverlayManager.shared
+        let session = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "example.com", surfaces: ["overlay"]))
+        overlay.showChat(Concierge.makeChatView(session: session))
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let rebuiltID = try XCTUnwrap(Concierge.currentSession?.sessionID)
+        let overlayConfiguration = try XCTUnwrap(overlay.chatView?.identityResetController.configuration)
+        let uikitConfiguration = try XCTUnwrap(
+            (Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController.configuration)
+        try ConciergeXDMContextStore.shared.update(["expiredContext": true])
+        let store = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+        store.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY,
+            value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+        var rotatedID: String?
+        for configuration in [overlayConfiguration, uikitConfiguration] {
+            let service = ConciergeChatService(configuration: configuration)
+            defer { service.invalidateTransportForIdentityReset() }
+            let resolvedID = service.resolveSessionID()
+            XCTAssertNotEqual(resolvedID, rebuiltID)
+            XCTAssertEqual(resolvedID, SessionManager.shared.currentSessionId)
+            if let rotatedID { XCTAssertEqual(resolvedID, rotatedID) }
+            rotatedID = resolvedID
+            let url = try service.createUrl(sessionID: resolvedID)
+            let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+            XCTAssertEqual(components.queryItems?.first {
+                $0.name == ConciergeConstants.Request.Keys.SESSION_ID
+            }?.value, resolvedID)
+            XCTAssertTrue(ConciergeXDMContextStore.shared.snapshot(for: resolvedID).isEmpty)
+        }
+        XCTAssertEqual(Concierge.currentSession?.sessionID, rebuiltID,
+                       "Expiring later turns must not mutate the ID captured during reset construction.")
+    }
+
+    @MainActor
+    func test_resetIdentities_preservesContextPushedAfterBoundary() async throws {
+        try ConciergeXDMContextStore.shared.update(["oldUser": true])
+        resetIdentities()
+        try ConciergeXDMContextStore.shared.update(["newUser": true])
+        completeReset()
+        try await awaitResetReady()
+        let context = ConciergeXDMContextStore.shared.snapshot(for: SessionManager.shared.getOrCreateSessionId())
+        XCTAssertEqual(context["newUser"] as? Bool, true)
+        XCTAssertNil(context["oldUser"])
+    }
+
+    @MainActor
+    func test_resetIdentities_blocksHandoffUntilCompletion_withoutQueuing() async throws {
+        resetIdentities()
+        let response = await dispatchDataHandoff(payload: ConciergeDataHandoffEvent(
+            routingHint: "checkout", xdmFields: ["order": "old-user-order"]
+        ))
+        XCTAssertEqual(errorCode(of: response), "no_active_session")
+        XCTAssertEqual(accepted(response), false)
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(mockRuntime.dispatchedEvents.filter {
+            $0.name == ConciergeConstants.EventName.DATA_HANDOFF_RESPONSE
+        }.count, 1)
+    }
+
+    @MainActor
+    func test_resetIdentities_pendingIdentity_waitsForResolvedCompletionState() async throws {
+        resetIdentities()
+        completeReset(status: .pending)
+        try await Task.sleep(nanoseconds: 10_000_000)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        mockRuntime.simulateXDMSharedState(for: ConciergeConstants.SharedState.EdgeIdentity.NAME, data: (
+            value: ["identityMap": ["ECID": [["id": "new-ecid"]]]], status: .set
+        ))
+        mockRuntime.simulateComingEvents(Event(name: "State changed", type: EventType.hub,
+                                              source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_endedEvent_hasExactDiagnosticSchema_oncePerConversation() async throws {
+        let oldSession = SessionManager.shared.getOrCreateSessionId()
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let events = mockRuntime.dispatchedEvents.filter { $0.name == "Brand Concierge Conversation Ended" }
+        XCTAssertEqual(events.count, 1)
+        let event = try XCTUnwrap(events.first)
+        let data = try XCTUnwrap(event.data)
+        XCTAssertEqual(event.type, ConciergeConstants.EventType.concierge)
+        XCTAssertEqual(event.source, EventSource.notification)
+        XCTAssertEqual(Set(data.keys), Set(["conciergeEventType", "reason", "epochTime", "sessionId", "hadActiveTurn"]))
+        XCTAssertEqual(data["conciergeEventType"] as? String, "concierge:conversation:ended")
+        XCTAssertEqual(data["reason"] as? String, "identity_reset")
+        XCTAssertEqual(data["sessionId"] as? String, oldSession)
+        XCTAssertEqual(data["hadActiveTurn"] as? Bool, false)
+        XCTAssertNotNil(data["epochTime"] as? Int64)
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(mockRuntime.dispatchedEvents.filter { $0.name == event.name }.count, 1)
+        XCTAssertNil(SessionManager.shared.currentSessionId)
+    }
 
     func test_validPayload_withoutActiveSession_respondsNoActiveSession() async {
         let payload = ConciergeDataHandoffEvent(routingHint: "successful-checkout",
@@ -223,14 +446,15 @@ final class ConciergeTests: XCTestCase {
 
     // MARK: - handleRequestContentEvent routing
 
-    func test_showUiEvent_routesToShowUiHandler_notDataHandoff() {
+    func test_showUiEvent_routesToShowUiHandler_notDataHandoff() async {
         let event = Event(name: ConciergeConstants.EventName.SHOW_UI,
                           type: ConciergeConstants.EventType.concierge,
                           source: EventSource.requestContent,
                           data: nil)
 
         mockRuntime.simulateComingEvents(event)
-        let response = mockRuntime.firstEvent
+        await flushPendingRequests()
+        let response = mockRuntime.dispatchedEvents.first
 
         XCTAssertEqual(response?.name, ConciergeConstants.EventName.SHOW_UI_RESPONSE)
         XCTAssertNil(response?.data?[ConciergeConstants.DataHandoffEventData.Key.ACCEPTED])
@@ -247,14 +471,1382 @@ final class ConciergeTests: XCTestCase {
 
     // MARK: - readyForEvent
 
-    func test_readyForEvent_dataHandoffEvent_stillRequiresConfigurationAndEdgeIdentity() {
-        // No Configuration/EdgeIdentity shared state has been set up on mockRuntime at all -
-        // data-handoff events are not exempted from the extension's hard dependency on both.
+    private func waitingShowRequests(count: Int) -> [Event] {
+        (0..<count).map { index in
+            Event(name: ConciergeConstants.EventName.SHOW_UI,
+                  type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+                  data: [ConciergeConstants.EventData.Key.SURFACES: ["surface-\(index)"]])
+        }
+    }
+
+    private func flushPendingRequests() async {
+        let flushed = expectation(description: "Pending request owner drained scheduled work")
+        concierge.flushPendingRequestsForTesting { flushed.fulfill() }
+        await fulfillment(of: [flushed], timeout: 5)
+    }
+
+    @MainActor
+    func test_pendingRequests_concurrentTeardownAndSharedStateDrains_respondExactlyOnce() async throws {
+        let old = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["chat"]))
+        mockRuntime.mockedSharedStates = [:]
+        let requests = (0..<12).map { index in
+            Event(name: ConciergeConstants.EventName.DATA_HANDOFF,
+                  type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+                  data: [ConciergeConstants.DataHandoffEventData.Key.PAYLOAD: ConciergeDataHandoffEvent(
+                    routingHint: "handoff-\(index)", xdmFields: ["value": index])])
+        }
+        for request in requests { mockRuntime.simulateComingEvents(request) }
+        await flushPendingRequests()
+        XCTAssertTrue(mockRuntime.dispatchedEvents.isEmpty)
+
+        let checking = expectation(description: "Drain paused after reading pending readiness")
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        var paused = false // Accessed only by the dedicated request owner.
+        concierge.pendingRequestReadinessCheckedForTesting = { _, waiting in
+            guard !paused else { return }
+            paused = true
+            XCTAssertTrue(waiting)
+            checking.fulfill()
+            XCTAssertEqual(release.wait(timeout: .now() + 5), .success)
+        }
+        let changed = Event(name: "State changed", type: EventType.hub, source: EventSource.sharedState, data: nil)
+        mockRuntime.simulateComingEvents(changed)
+        await fulfillment(of: [checking], timeout: 5)
+
+        let tornDown = expectation(description: "MainActor teardown ran while drain was paused")
+        let observer = old.controller.$endedForIdentityReset.filter { $0 }.sink { _ in tornDown.fulfill() }
+        defer { observer.cancel() }
+        resetIdentities()
+        let notified = expectation(description: "Concurrent shared-state drains enqueued")
+        let runtime = try XCTUnwrap(mockRuntime)
+        DispatchQueue.global().async {
+            for _ in 0..<12 { runtime.simulateComingEvents(changed) }
+            notified.fulfill()
+        }
+        await fulfillment(of: [tornDown, notified], timeout: 5)
+        XCTAssertTrue(old.controller.endedForIdentityReset)
+        completeReset()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        XCTAssertFalse(mockRuntime.dispatchedEvents.contains { $0.name == "Brand Concierge Conversation Ended" },
+                       "Local controller teardown alone must not publish ended while deferred handoffs are unsettled.")
+        release.signal()
+        await flushPendingRequests()
+        try await awaitResetReady()
+
+        let events = mockRuntime.dispatchedEvents
+        let responses = events.filter { $0.name == ConciergeConstants.EventName.DATA_HANDOFF_RESPONSE }
+        XCTAssertEqual(responses.count, requests.count)
+        for request in requests {
+            XCTAssertEqual(responses.filter { $0.parentID == request.id }.count, 1)
+        }
+        XCTAssertTrue(responses.allSatisfy { errorCode(of: $0) == "no_active_session" && accepted($0) == false })
+        let endedIndex = try XCTUnwrap(events.firstIndex { $0.name == "Brand Concierge Conversation Ended" })
+        for (index, event) in events.enumerated() where event.name == ConciergeConstants.EventName.DATA_HANDOFF_RESPONSE {
+            XCTAssertLessThan(index, endedIndex, "Every old deferred handoff must settle before Conversation Ended.")
+        }
+    }
+
+    @MainActor
+    func test_pendingRequests_readinessNotificationDuringDrain_isNotLost() async throws {
+        mockRuntime.mockedSharedStates = [:]
+        let requests = waitingShowRequests(count: 12)
+        for request in requests { mockRuntime.simulateComingEvents(request) }
+        await flushPendingRequests()
+        XCTAssertTrue(mockRuntime.dispatchedEvents.isEmpty)
+
+        let checking = expectation(description: "Pending readiness decision paused")
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        var paused = false // Accessed only by the dedicated request owner.
+        concierge.pendingRequestReadinessCheckedForTesting = { _, waiting in
+            guard !paused else { return }
+            paused = true
+            XCTAssertTrue(waiting)
+            checking.fulfill()
+            XCTAssertEqual(release.wait(timeout: .now() + 5), .success)
+        }
+        let changed = Event(name: "State changed", type: EventType.hub, source: EventSource.sharedState, data: nil)
+        mockRuntime.simulateComingEvents(changed)
+        await fulfillment(of: [checking], timeout: 5)
+        // The paused drain already captured waiting=true. Only this queued notification,
+        // not an additional request or polling, can wake the existing requests afterward.
+        setConfiguration()
+        let notified = expectation(description: "Ready-state notification enqueued during drain")
+        let runtime = try XCTUnwrap(mockRuntime)
+        DispatchQueue.global().async {
+            runtime.simulateComingEvents(changed)
+            notified.fulfill()
+        }
+        await fulfillment(of: [notified], timeout: 5)
+        release.signal()
+        await flushPendingRequests()
+
+        let responses = mockRuntime.dispatchedEvents.filter { $0.name == ConciergeConstants.EventName.SHOW_UI_RESPONSE }
+        XCTAssertEqual(responses.count, requests.count)
+        for request in requests {
+            XCTAssertEqual(responses.filter { $0.parentID == request.id }.count, 1)
+        }
+        XCTAssertTrue(responses.allSatisfy { $0.data?[ConciergeConstants.EventData.Key.CONFIG] != nil })
+    }
+
+    @MainActor
+    func test_resetIdentities_settlesClaimedMainActorPendingHandoff_beforeEndedAndReadiness() async throws {
+        let old = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["chat"]))
+        let gate = ClaimedHandoffGate()
+        defer { Task { await gate.release() } }
+        let claimed = expectation(description: "Admitted handoff transferred to paused MainActor task")
+        let finished = expectation(description: "Released old MainActor task finishes without new work")
+        concierge.handoffTaskGateForTesting = { _ in await gate.pause(claimed) }
+        concierge.handoffTaskFinishedForTesting = { _ in finished.fulfill() }
+        let request = Event(name: ConciergeConstants.EventName.DATA_HANDOFF,
+            type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+            data: [ConciergeConstants.DataHandoffEventData.Key.PAYLOAD: ConciergeDataHandoffEvent(
+                routingHint: "old", xdmFields: ["oldHandoff": true], localMessage: "old handoff")])
+        mockRuntime.simulateComingEvents(request)
+        await fulfillment(of: [claimed], timeout: 5)
+        await flushPendingRequests()
+        XCTAssertTrue(mockRuntime.dispatchedEvents.isEmpty)
+        XCTAssertFalse(old.controller.isProcessing)
+
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let events = mockRuntime.dispatchedEvents
+        let responses = events.filter { $0.parentID == request.id }
+        XCTAssertEqual(responses.count, 1, "Claimed handoff must settle without waiting for its paused MainActor task.")
+        XCTAssertEqual(errorCode(of: responses.first), "no_active_session")
+        XCTAssertEqual(accepted(responses.first), false)
+        let responseIndex = try XCTUnwrap(events.firstIndex { $0.parentID == request.id })
+        let endedIndex = try XCTUnwrap(events.firstIndex { $0.name == "Brand Concierge Conversation Ended" })
+        XCTAssertLessThan(responseIndex, endedIndex)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+
+        let fresh = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "new-ecid", server: "https://example.com", surfaces: ["chat"]))
+        await gate.release()
+        await fulfillment(of: [finished], timeout: 5)
+        await flushPendingRequests()
+        XCTAssertEqual(mockRuntime.dispatchedEvents.filter { $0.parentID == request.id }.count, 1)
+        XCTAssertTrue(old.controller.messages.isEmpty)
+        XCTAssertTrue(fresh.controller.messages.isEmpty, "Resumed old handoff must not start transport in the fresh controller.")
+        XCTAssertFalse(old.controller.isProcessing)
+        XCTAssertFalse(fresh.controller.isProcessing)
+        XCTAssertNil(ConciergeXDMContextStore.shared.snapshot(for: fresh.sessionID)["oldHandoff"])
+    }
+
+    @MainActor
+    func test_resetIdentities_unblocksDependencyWaitingRequests_andRejectsOldController() async throws {
+        let session = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["overlay"]))
+        mockRuntime.mockedSharedStates = [:]
+        let waiting = Event(name: ConciergeConstants.EventName.SHOW_UI,
+            type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+            data: [ConciergeConstants.EventData.Key.SURFACES: ["overlay"]])
+        mockRuntime.simulateComingEvents(waiting)
+        XCTAssertTrue(mockRuntime.dispatchedEvents.isEmpty)
+        resetIdentities()
+        XCTAssertFalse(session.controller.composerEditable)
+        completeReset()
+        try await awaitResetReady()
+        await flushPendingRequests()
+        XCTAssertTrue(mockRuntime.dispatchedEvents.contains { $0.parentID == waiting.id })
+        XCTAssertFalse(session.controller.composerEditable)
+    }
+
+    @MainActor
+    func test_resetIdentities_earlierCompletionCannotReleaseLatestGeneration() async throws {
+        let first = Event(name: "Reset 1", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let second = Event(name: "Reset 2", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        mockRuntime.simulateComingEvents(first, second)
+        setIdentity("first", event: first)
+        setIdentity("second", event: second)
+        setIdentity("second")
+        let firstCompletion = Event(name: "Complete 1", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("first", event: firstCompletion)
+        mockRuntime.simulateComingEvents(firstCompletion)
+        await Task.yield()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        let secondCompletion = Event(name: "Complete 2", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("second", event: secondCompletion)
+        mockRuntime.simulateComingEvents(secondCompletion)
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_staleCompletionDoesNotConsumeActiveRequest() async throws {
+        let stale = Event(name: "Old complete", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        let reset = Event(name: "Reset", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        setIdentity("old", event: stale)
+        setIdentity("fresh", event: reset)
+        setIdentity("fresh")
+        mockRuntime.simulateComingEvents(reset, stale)
+        await Task.yield()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        mockRuntime.simulateComingEvents(Event(name: "Fresh complete", type: EventType.edgeIdentity,
+            source: EventSource.resetComplete, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_waitsForActiveRequestState_andRejectsMismatchedCompletionIdentity() async throws {
+        let reset = Event(name: "Reset", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let complete = Event(name: "Complete", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("fresh", event: reset, status: .pending)
+        setIdentity("fresh")
+        setIdentity("old", event: complete)
+        mockRuntime.simulateComingEvents(reset, complete)
+        await Task.yield()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setIdentity("fresh", event: reset)
+        mockRuntime.simulateComingEvents(Event(name: "State", type: EventType.hub, source: EventSource.sharedState, data: nil))
+        // Even after the reset request state resolves, an old completion's identity cannot release it.
+        try await Task.sleep(nanoseconds: 70_000_000)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setIdentity("fresh", event: complete)
+        mockRuntime.simulateComingEvents(Event(name: "Completion identity resolved", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_usesCurrentConfiguration_afterIncompleteCompletionSnapshot() async throws {
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        resetIdentities()
+        let complete = Event(name: "Complete", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setConfiguration(event: complete, server: nil, datastream: nil)
+        setConfiguration(server: nil, datastream: nil)
+        setIdentity("fresh", event: complete)
+        setIdentity("fresh")
+        mockRuntime.simulateComingEvents(complete)
+        await Task.yield()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setConfiguration(server: "https://updated.example.com", datastream: "updated")
+        mockRuntime.simulateComingEvents(Event(name: "Updated config", type: EventType.hub, source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+        XCTAssertEqual(Concierge.currentSession?.configuration.server, "https://updated.example.com")
+        XCTAssertEqual(Concierge.currentSession?.configuration.datastream, "updated")
+    }
+
+    @MainActor
+    func test_resetIdentities_revalidatesConfigurationAfterTeardown() async throws {
+        resetIdentities()
+        completeReset()
+        // MainActor teardown/readiness cannot run until this synchronous actor turn returns.
+        setConfiguration(server: nil, datastream: nil)
+        await Task.yield()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setConfiguration()
+        mockRuntime.simulateComingEvents(Event(name: "Configuration resolved", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_missingConfiguration_doesNotPoll_andRecoversOnPublication() async throws {
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = { checks += 1 }
+        resetIdentities()
+        completeReset()
+        setConfiguration(server: nil, datastream: nil)
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 1)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        try await Task.sleep(nanoseconds: 120_000_000)
+        XCTAssertEqual(checks, 1, "Unavailable configuration must not leave a polling task running.")
+        setConfiguration()
+        mockRuntime.simulateComingEvents(Event(name: "Configuration available", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 2)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_mismatchedIdentity_doesNotPoll_andRecoversOnPublication() async throws {
+        let reset = Event(name: "Reset", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let completion = Event(name: "Complete", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("fresh", event: reset)
+        setIdentity("old", event: completion)
+        setIdentity("fresh")
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = { checks += 1 }
+        mockRuntime.simulateComingEvents(reset, completion)
+        await concierge.flushIdentityResetReadinessForTesting()
+        try await Task.sleep(nanoseconds: 120_000_000)
+        XCTAssertEqual(checks, 1)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setIdentity("fresh", event: completion)
+        mockRuntime.simulateComingEvents(Event(name: "Identity resolved", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 2)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_publicationDuringReadinessCheck_isNotLost() async throws {
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = {
+            checks += 1
+            guard checks == 1 else { return }
+            self.setConfiguration()
+            self.mockRuntime.simulateComingEvents(Event(name: "Concurrent configuration", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        setConfiguration(server: nil, datastream: nil)
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 2)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_validSnapshotInvalidatedDuringCheck_staysBlockedUntilLaterPublication() async throws {
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = {
+            checks += 1
+            guard checks == 1 else { return }
+            self.setConfiguration(server: nil, datastream: nil)
+            self.mockRuntime.simulateComingEvents(Event(name: "Configuration unavailable", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 2)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        XCTAssertNil(Concierge.currentSession)
+        setConfiguration()
+        mockRuntime.simulateComingEvents(Event(name: "Configuration restored", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_validSnapshotChangedDuringCheck_rebuildsFromLatestConfiguration() async throws {
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = {
+            checks += 1
+            guard checks == 1 else { return }
+            self.setConfiguration(server: "https://latest.example.com", datastream: "latest")
+            self.mockRuntime.simulateComingEvents(Event(name: "New configuration", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(checks, 2)
+        XCTAssertEqual(Concierge.currentSession?.configuration.server, "https://latest.example.com")
+        XCTAssertEqual(Concierge.currentSession?.configuration.datastream, "latest")
+    }
+
+    @MainActor
+    func test_resetIdentities_configurationChangedDuringAttachment_retiresPreparedSession() async throws {
+        let parent = ResetObservingParent()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        var stale: ConciergeChatSession?
+        parent.onAddChild = {
+            parent.onAddChild = nil
+            stale = Concierge.currentSession
+            self.setConfiguration(server: "https://latest.example.com", datastream: "latest")
+            self.mockRuntime.simulateComingEvents(Event(name: "Configuration during attachment", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let abandoned = try XCTUnwrap(stale)
+        let fresh = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertFalse(fresh === abandoned)
+        XCTAssertTrue(abandoned.controller.endedForIdentityReset)
+        XCTAssertFalse(abandoned.controller.composerEditable)
+        XCTAssertEqual(fresh.configuration.server, "https://latest.example.com")
+        XCTAssertTrue((Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController === fresh.controller)
+    }
+
+    @MainActor
+    func test_resetIdentities_configurationUnavailableDuringAttachment_keepsPreparedHostEndedUntilRecovery() async throws {
+        let parent = ResetObservingParent()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        var stale: ConciergeChatSession?
+        parent.onAddChild = {
+            parent.onAddChild = nil
+            stale = Concierge.currentSession
+            self.setConfiguration(server: nil, datastream: nil)
+            self.mockRuntime.simulateComingEvents(Event(name: "Unavailable during attachment", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        await concierge.flushIdentityResetReadinessForTesting()
+        let abandoned = try XCTUnwrap(stale)
+        XCTAssertTrue(abandoned.controller.endedForIdentityReset)
+        XCTAssertFalse(abandoned.controller.composerEditable)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        XCTAssertNil(Concierge.currentSession)
+        XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+        setConfiguration()
+        mockRuntime.simulateComingEvents(Event(name: "Configuration restored", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+        XCTAssertFalse(Concierge.currentSession === abandoned)
+        XCTAssertTrue(Concierge.currentSession?.controller.composerEditable == true)
+    }
+
+    @MainActor
+    func test_resetIdentities_configurationChangedDuringSpeechInitialization_discardsUnattachedSession() async throws {
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        let capturer = MockSpeechCapturer()
+        Concierge.speechCapturer = capturer
+        var prepared: [ConciergeChatSession] = []
+        concierge.identityResetSessionsPreparedForTesting = { prepared.append(contentsOf: $0) }
+        capturer.onInitialize = {
+            capturer.onInitialize = nil
+            self.setConfiguration(server: "https://latest.example.com", datastream: "latest")
+            self.mockRuntime.simulateComingEvents(Event(name: "Configuration during initialization", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(prepared.count, 2)
+        let abandoned = try XCTUnwrap(prepared.first)
+        let fresh = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertTrue(abandoned.controller.endedForIdentityReset)
+        XCTAssertFalse(abandoned.controller.composerEditable)
+        XCTAssertFalse(fresh === abandoned)
+        XCTAssertEqual(fresh.configuration.server, "https://latest.example.com")
+        XCTAssertTrue((Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController === fresh.controller)
+    }
+
+    @MainActor
+    func test_resetIdentities_identityInvalidatedDuringCheck_staysBlockedUntilMatchingPublication() async throws {
+        let reset = Event(name: "Reset", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let completion = Event(name: "Complete", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("new-ecid", event: reset)
+        setIdentity("new-ecid", event: completion)
+        setIdentity("new-ecid")
+        var checks = 0
+        concierge.identityResetReadinessCheckedForTesting = {
+            checks += 1
+            guard checks == 1 else { return }
+            self.setIdentity("mismatched")
+            self.mockRuntime.simulateComingEvents(Event(name: "Identity changed", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        mockRuntime.simulateComingEvents(reset, completion)
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertEqual(checks, 2)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setIdentity("new-ecid")
+        mockRuntime.simulateComingEvents(Event(name: "Matching identity", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_authenticatedIdentityPublishedDuringAttachment_isUsedByReplacement() async throws {
+        let parent = ResetObservingParent()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        var stale: ConciergeChatSession?
+        parent.onAddChild = {
+            parent.onAddChild = nil
+            stale = Concierge.currentSession
+            self.mockRuntime.simulateXDMSharedState(for: ConciergeConstants.SharedState.EdgeIdentity.NAME, data: (
+                value: ["identityMap": ["ECID": [["id": "new-ecid"]], "CRMID": [["id": "current-account"]]]],
+                status: .set))
+            self.mockRuntime.simulateComingEvents(Event(name: "Authenticated identity", type: EventType.hub,
+                                                        source: EventSource.sharedState, data: nil))
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let fresh = try XCTUnwrap(Concierge.currentSession)
+        let crm = fresh.configuration.identityMap?["CRMID"] as? [[String: String]]
+        XCTAssertEqual(crm?.first?["id"], "current-account")
+        XCTAssertTrue(stale?.controller.endedForIdentityReset == true)
+        XCTAssertFalse(fresh === stale)
+    }
+
+    @MainActor
+    func test_resetIdentities_speechInitialization_allowsConcurrentContextUpdate() async throws {
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        let capturer = MockSpeechCapturer()
+        Concierge.speechCapturer = capturer
+        var initialized = false
+        capturer.onInitialize = {
+            capturer.onInitialize = nil
+            initialized = true
+            let processed = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                do {
+                    try Concierge.updateXDMContext(["postReset": true])
+                } catch {
+                    XCTFail("Concurrent context update failed: \(error)")
+                }
+                processed.signal()
+            }
+            XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                           "A host speech initializer must not hold the identity boundary lock.")
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let fresh = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertTrue(initialized)
+        XCTAssertEqual(ConciergeXDMContextStore.shared.snapshot(for: fresh.sessionID)["postReset"] as? Bool, true)
+    }
+
+    @MainActor
+    func test_resetIdentities_resetDuringSpeechInitialization_doesNotAdoptNewGeneration() async throws {
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://old.example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        let capturer = MockSpeechCapturer()
+        Concierge.speechCapturer = capturer
+        let runtime = try XCTUnwrap(mockRuntime)
+        var prepared: [ConciergeChatSession] = []
+        concierge.identityResetSessionsPreparedForTesting = { prepared.append(contentsOf: $0) }
+        capturer.onInitialize = {
+            capturer.onInitialize = nil
+            let processed = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                self.setIdentity("latest-reset")
+                runtime.simulateComingEvents(
+                    Event(name: "Reset during initializer", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil),
+                    Event(name: "Complete latest reset", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil))
+                processed.signal()
+            }
+            XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                           "Edge reset processing must not wait for the speech initializer.")
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(prepared.count, 2)
+        let abandoned = try XCTUnwrap(prepared.first)
+        let fresh = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertEqual(abandoned.configuration.ecid, "new-ecid")
+        XCTAssertTrue(abandoned.controller.endedForIdentityReset)
+        XCTAssertFalse(abandoned.controller.composerEditable)
+        XCTAssertEqual(fresh.configuration.ecid, "latest-reset")
+        XCTAssertNotEqual(fresh.sessionID, abandoned.sessionID)
+        XCTAssertEqual(SessionManager.shared.currentSessionId, fresh.sessionID)
+        XCTAssertTrue(fresh.controller.composerEditable)
+    }
+
+    @MainActor
+    private func useShortResetWarningDelay(_ nanoseconds: UInt64 = 200_000_000) {
+        concierge.onUnregistered()
+        mockRuntime = TestableExtensionRuntime()
+        concierge = Concierge(runtime: mockRuntime, identityResetWarningDelayNanoseconds: nanoseconds)
+        concierge.onRegistered()
+        setConfiguration()
+        setIdentity("initial-ecid")
+    }
+
+    @MainActor
+    func test_resetIdentities_missingCompletion_warnsOnce_andLateCompletionRecovers() async throws {
+        useShortResetWarningDelay()
+        let warning = expectation(description: "Missing completion warning")
+        let logging = ResetWarningLogging { warning.fulfill() }
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .warning
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        resetIdentities()
+        await fulfillment(of: [warning], timeout: 2)
+        XCTAssertEqual(logging.messages.count, 1)
+        XCTAssertTrue(logging.messages.first?.contains("waiting for Edge Identity resetComplete") == true)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        let response = await dispatchDataHandoff(payload: ConciergeDataHandoffEvent(routingHint: "blocked", xdmFields: [:]))
+        XCTAssertEqual(errorCode(of: response), "no_active_session")
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(logging.messages.count, 1, "The diagnostic must not become another polling loop.")
+        completeReset()
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_incompleteConfiguration_warns_andLaterPublicationRecovers() async throws {
+        useShortResetWarningDelay()
+        let warning = expectation(description: "Readiness warning")
+        let logging = ResetWarningLogging { warning.fulfill() }
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .warning
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        resetIdentities()
+        completeReset()
+        setConfiguration(server: nil, datastream: nil)
+        await concierge.flushIdentityResetReadinessForTesting()
+        await fulfillment(of: [warning], timeout: 2)
+        XCTAssertTrue(logging.messages.first?.contains("waiting for matching refreshed identity") == true)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        setConfiguration()
+        mockRuntime.simulateComingEvents(Event(name: "Configuration available", type: EventType.hub,
+                                               source: EventSource.sharedState, data: nil))
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_success_cancelsWarningWithoutAnotherReset() async throws {
+        useShortResetWarningDelay(200_000_000)
+        let warning = expectation(description: "No warning after successful readiness")
+        warning.isInverted = true
+        let logging = ResetWarningLogging { warning.fulfill() }
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .warning
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        resetIdentities()
+        let watchdog = try XCTUnwrap(concierge.identityResetWarningTaskForTesting)
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertTrue(watchdog.isCancelled)
+        XCTAssertNil(concierge.identityResetWarningTaskForTesting)
+        await watchdog.value
+        await fulfillment(of: [warning], timeout: 0.3)
+        XCTAssertTrue(logging.messages.isEmpty)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_unregistration_cancelsWarningWhileReadinessIsBlocked() async throws {
+        useShortResetWarningDelay(200_000_000)
+        let warning = expectation(description: "No warning after unregistration")
+        warning.isInverted = true
+        let logging = ResetWarningLogging { warning.fulfill() }
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .warning
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        resetIdentities()
+        let watchdog = try XCTUnwrap(concierge.identityResetWarningTaskForTesting)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        concierge.onUnregistered()
+        XCTAssertTrue(watchdog.isCancelled)
+        XCTAssertNil(concierge.identityResetWarningTaskForTesting)
+        await watchdog.value
+        await fulfillment(of: [warning], timeout: 0.3)
+        XCTAssertTrue(logging.messages.isEmpty)
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_warningDoesNotExpireOrderedOverlappingRequests() async throws {
+        useShortResetWarningDelay(200_000_000)
+        let warning = expectation(description: "Latest reset warning")
+        let logging = ResetWarningLogging { warning.fulfill() }
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .warning
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        let first = Event(name: "Reset 1", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let second = Event(name: "Reset 2", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        setIdentity("first", event: first)
+        setIdentity("second", event: second)
+        setIdentity("second")
+        mockRuntime.simulateComingEvents(first)
+        let supersededWatchdog = try XCTUnwrap(concierge.identityResetWarningTaskForTesting)
+        mockRuntime.simulateComingEvents(second)
+        XCTAssertTrue(supersededWatchdog.isCancelled)
+        await supersededWatchdog.value
+        await fulfillment(of: [warning], timeout: 2)
+        XCTAssertEqual(logging.messages.count, 1)
+        let firstCompletion = Event(name: "Complete 1", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("first", event: firstCompletion)
+        mockRuntime.simulateComingEvents(firstCompletion)
+        await concierge.flushIdentityResetReadinessForTesting()
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        let secondCompletion = Event(name: "Complete 2", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil)
+        setIdentity("second", event: secondCompletion)
+        mockRuntime.simulateComingEvents(secondCompletion)
+        try await awaitResetReady()
+    }
+
+    @MainActor
+    func test_resetIdentities_publishesReadiness_afterUIKitAttachment() async throws {
+        let parent = ResetObservingParent()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        let refreshed = expectation(description: "Replacement host observes readiness")
+        var subscription: AnyCancellable?
+        parent.onAddChild = {
+            parent.onAddChild = nil
+            guard let controller = Concierge.currentSession?.controller else {
+                XCTFail("Replacement controller must be prepared before attachment.")
+                return
+            }
+            XCTAssertFalse(controller.composerEditable)
+            subscription = controller.objectWillChange.first().sink {
+                XCTAssertTrue(controller.composerEditable)
+                refreshed.fulfill()
+            }
+        }
+        defer { subscription?.cancel() }
+        resetIdentities()
+        completeReset()
+        await fulfillment(of: [refreshed], timeout: 5)
+        XCTAssertTrue(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+    }
+
+    @MainActor
+    func test_resetIdentities_resetDuringUIKitAttachment_doesNotBlockHubOrAdmitStaleHost() async throws {
+        let parent = ResetObservingParent()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        var interruptedController: ChatController?
+        let runtime = try XCTUnwrap(mockRuntime)
+        parent.onAddChild = {
+            parent.onAddChild = nil
+            interruptedController = Concierge.currentSession?.controller
+            XCTAssertFalse(interruptedController?.composerEditable ?? true,
+                           "Readiness must stay closed until attachment is finished.")
+            let processed = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                self.setIdentity("second")
+                runtime.simulateComingEvents(
+                    Event(name: "Concurrent reset", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil),
+                    Event(name: "Concurrent completion", type: EventType.edgeIdentity, source: EventSource.resetComplete, data: nil))
+                processed.signal()
+            }
+            XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                           "UIKit attachment must not hold the lock needed by the Event Hub.")
+            XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+            XCTAssertFalse(interruptedController?.composerEditable ?? true)
+        }
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        let next = try XCTUnwrap(Concierge.currentSession)
+        XCTAssertNotNil(interruptedController)
+        XCTAssertEqual(next.configuration.ecid, "second")
+        XCTAssertFalse(next.controller === interruptedController)
+        XCTAssertTrue(interruptedController?.endedForIdentityReset == true)
+        XCTAssertTrue(next.controller.composerEditable)
+        XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+    }
+
+    @MainActor
+    private func withPresentationHub(_ body: @MainActor () async throws -> Void) async throws {
+        let previousHub = EventHub.shared
+        let hub = EventHub()
+        EventHub.shared = hub
+        defer {
+            hub.shutdown()
+            EventHub.shared = previousHub
+        }
+        hub.registerEventListener(type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent) { event in
+            guard event.name == ConciergeConstants.EventName.SHOW_UI else { return }
+            let configuration = ConciergeConfiguration(datastream: "config", ecid: "initial-ecid", server: "example.com",
+                surfaces: event.data?[ConciergeConstants.EventData.Key.SURFACES] as? [String] ?? [])
+            hub.dispatch(event: event.createResponseEvent(name: ConciergeConstants.EventName.SHOW_UI_RESPONSE,
+                type: ConciergeConstants.EventType.concierge, source: EventSource.responseContent,
+                data: [ConciergeConstants.EventData.Key.CONFIG: configuration]))
+        }
+        hub.start()
+        try await body()
+    }
+
+    @MainActor
+    func test_present_resetDuringNormalAttachment_doesNotBlockBoundaryOrPublishStaleHost() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            let attached = self.expectation(description: "Normal presentation attachment interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            var stale: ConciergeChatSession?
+            parent.onAddChild = {
+                parent.onAddChild = nil
+                stale = Concierge.currentSession
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during normal present",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Normal UIKit presentation must not hold the identity boundary lock.")
+                attached.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            let retired = try XCTUnwrap(stale)
+            XCTAssertTrue(retired.controller.endedForIdentityReset)
+            XCTAssertFalse(retired.controller.composerEditable)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(Concierge.presentedUIKitController)
+            XCTAssertTrue(parent.children.isEmpty)
+            self.completeReset()
+            try await self.awaitResetReady()
+            XCTAssertFalse(retired.controller.composerEditable)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(SessionManager.shared.currentSessionId)
+        }
+    }
+
+    @MainActor
+    private func assertResetDuringNormalOverlayConstruction(reshow: Bool) async throws {
+        try await withPresentationHub {
+            let initialized = self.expectation(description: "Normal session construction interrupted")
+            let capturer = MockSpeechCapturer()
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            capturer.onInitialize = {
+                capturer.onInitialize = nil
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during normal show",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Normal speech initialization must not hold the identity boundary lock.")
+                initialized.fulfill()
+            }
+            if reshow {
+                Concierge.surfaces = ["chat"]
+                Concierge.speechCapturer = capturer
+                Concierge.reshow()
+            } else {
+                Concierge.show(surfaces: ["chat"], speechCapturer: capturer)
+            }
+            await self.fulfillment(of: [initialized], timeout: 5)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertNil(ConciergeOverlayManager.shared.chatView)
+            XCTAssertFalse(ConciergeOverlayManager.shared.showingConcierge)
+            XCTAssertNil(SessionManager.shared.currentSessionId)
+            self.completeReset()
+            try await self.awaitResetReady()
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertFalse(ConciergeOverlayManager.shared.showingConcierge)
+        }
+    }
+
+    @MainActor
+    func test_show_resetDuringNormalConstruction_discardsCandidateWithoutOpeningOverlay() async throws {
+        try await assertResetDuringNormalOverlayConstruction(reshow: false)
+    }
+
+    @MainActor
+    func test_reshow_resetDuringNormalConstruction_discardsCandidateWithoutOpeningOverlay() async throws {
+        try await assertResetDuringNormalOverlayConstruction(reshow: true)
+    }
+
+    @MainActor
+    func test_show_resetDuringOverlayPublication_restoresHiddenPresentation() async throws {
+        try await withPresentationHub {
+            let published = self.expectation(description: "Overlay publication interrupted")
+            let overlay = ConciergeOverlayManager.shared
+            var stale: ConciergeChatSession?
+            let subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in
+                stale = Concierge.currentSession
+                self.resetIdentities()
+                published.fulfill()
+            }
+            defer { subscription.cancel() }
+            Concierge.show(surfaces: ["chat"])
+            await self.fulfillment(of: [published], timeout: 5)
+            XCTAssertTrue(stale?.controller.endedForIdentityReset == true)
+            XCTAssertNil(Concierge.currentSession)
+            XCTAssertFalse(overlay.showingConcierge)
+            XCTAssertNil(overlay.chatView)
+            self.completeReset()
+            try await self.awaitResetReady()
+        }
+    }
+
+    @MainActor
+    func test_present_normalPath_reusesTranscriptWithoutReset() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            let attached = self.expectation(description: "First normal attachment")
+            parent.onAddChild = { attached.fulfill() }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            let session = try XCTUnwrap(Concierge.currentSession)
+            session.controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "retained"))
+            let reattached = self.expectation(description: "Reused normal attachment")
+            parent.onAddChild = { reattached.fulfill() }
+            Concierge.present(on: parent, surfaces: ["chat"])
+            await self.fulfillment(of: [reattached], timeout: 5)
+            XCTAssertTrue(Concierge.currentSession === session)
+            XCTAssertEqual(session.controller.messages.last?.messageBody, "retained")
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            XCTAssertTrue(session.controller.composerEditable)
+        }
+    }
+
+    @MainActor
+    func test_present_resetDuringReplacementAttachment_preservesExistingHostForFreshRebind() async throws {
+        try await withPresentationHub {
+            let parent = ResetObservingParent()
+            Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+                ecid: "old", server: "example.com", surfaces: ["old-host"]), presentingViewController: parent)
+            let old = try XCTUnwrap(Concierge.currentSession)
+            let attached = self.expectation(description: "Replacement attachment interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            var candidate: ConciergeChatSession?
+            parent.onAddChild = {
+                parent.onAddChild = nil
+                candidate = Concierge.currentSession
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during replacement present",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success)
+                attached.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["replacement"])
+            await self.fulfillment(of: [attached], timeout: 5)
+            XCTAssertTrue(candidate?.controller.endedForIdentityReset == true)
+            XCTAssertTrue((Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController === old.controller)
+            XCTAssertEqual(parent.children.count, 1)
+            self.completeReset()
+            try await self.awaitResetReady()
+            let fresh = try XCTUnwrap(Concierge.currentSession)
+            XCTAssertEqual(fresh.configuration.ecid, "new-ecid")
+            XCTAssertEqual(fresh.configuration.surfaces, ["old-host"])
+            XCTAssertTrue(fresh.controller.composerEditable)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+        }
+    }
+
+    @MainActor
+    func test_present_resetDuringPreviousHostRemoval_retainsCommittedHostForFreshRebind() async throws {
+        try await withPresentationHub {
+            let parent = UIViewController()
+            let view = ResetObservingView()
+            parent.view = view
+            Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+                ecid: "old", server: "example.com", surfaces: ["old-host"]), presentingViewController: parent)
+            let previousHost = try XCTUnwrap(Concierge.presentedUIKitController)
+            let removed = self.expectation(description: "Previous host removal interrupted")
+            let runtime = try XCTUnwrap(self.mockRuntime)
+            view.onRemoveSubview = {
+                view.onRemoveSubview = nil
+                let processed = DispatchSemaphore(value: 0)
+                DispatchQueue.global().async {
+                    runtime.simulateComingEvents(Event(name: "Reset during previous host removal",
+                        type: EventType.genericIdentity, source: EventSource.requestReset, data: nil))
+                    processed.signal()
+                }
+                XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                               "Previous-host removal must not hold the identity boundary lock.")
+                removed.fulfill()
+            }
+            Concierge.present(on: parent, surfaces: ["replacement"])
+            await self.fulfillment(of: [removed], timeout: 5)
+            XCTAssertNil(previousHost.parent)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            self.completeReset()
+            try await self.awaitResetReady()
+            let fresh = try XCTUnwrap(Concierge.currentSession)
+            XCTAssertEqual(fresh.configuration.ecid, "new-ecid")
+            XCTAssertEqual(fresh.configuration.surfaces, ["replacement"])
+            XCTAssertTrue(fresh.controller.composerEditable)
+            XCTAssertEqual(parent.children.count, 1)
+            XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+            XCTAssertEqual(Concierge.presentedUIKitController?.view.isHidden, false)
+        }
+    }
+
+    @MainActor
+    func test_show_andReshow_normalPath_preservesTranscriptAndSessionExpiry() async throws {
+        try await withPresentationHub {
+            let overlay = ConciergeOverlayManager.shared
+            let shown = self.expectation(description: "Overlay shown")
+            var subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in shown.fulfill() }
+            Concierge.show(surfaces: ["chat"])
+            await self.fulfillment(of: [shown], timeout: 5)
+            subscription.cancel()
+            let first = try XCTUnwrap(Concierge.currentSession)
+            first.controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "retained"))
+            overlay.hideChat()
+            Concierge.surfaces = ["chat"]
+            let reshown = self.expectation(description: "Overlay reshown")
+            subscription = overlay.$showingConcierge.filter { $0 }.first().sink { _ in reshown.fulfill() }
+            Concierge.reshow()
+            await self.fulfillment(of: [reshown], timeout: 5)
+            subscription.cancel()
+            XCTAssertTrue(Concierge.currentSession === first)
+            XCTAssertEqual(first.controller.messages.last?.messageBody, "retained")
+            let store = NamedCollectionDataStore(name: ConciergeConstants.Session.DATA_STORE_NAME)
+            store.setObject(key: ConciergeConstants.Session.Keys.LAST_ACTIVITY,
+                value: Date().addingTimeInterval(-ConciergeConstants.Session.TTL_SECONDS - 1))
+            XCTAssertNotEqual(first.configuration.sessionId, first.sessionID,
+                              "Normal presentation must not freeze later per-turn session resolution.")
+        }
+    }
+
+    @MainActor
+    private func assertRetainedHostsReset(overlayVisible: Bool) async throws {
+        let overlay = ConciergeOverlayManager.shared
+        let first = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["overlay"]))
+        overlay.showChat(Concierge.makeChatView(session: first))
+        if !overlayVisible { overlay.hideChat() }
+        let parent = UIViewController()
+        Concierge.attachConciergeUIKitHost(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["uikit"]), presentingViewController: parent)
+        let second = try XCTUnwrap(Concierge.currentSession)
+        Concierge.presentedUIKitController?.view.isHidden = !overlayVisible
+        XCTAssertFalse(first.controller === second.controller)
+        for controller in [first.controller, second.controller] {
+            controller.messages.append(Message(template: .basic(isUserMessage: true), messageBody: "private"))
+            controller.applyTextChange("private draft")
+        }
+        resetIdentities()
+        try ConciergeXDMContextStore.shared.update(["newUser": true])
+        completeReset()
+        try await awaitResetReady()
+        for controller in [first.controller, second.controller] {
+            XCTAssertTrue(controller.endedForIdentityReset)
+            XCTAssertTrue(controller.messages.isEmpty)
+            XCTAssertTrue(controller.inputText.isEmpty)
+        }
+        let nextOverlay = try XCTUnwrap(overlay.chatView?.identityResetController)
+        let nextUIKit = try XCTUnwrap((Concierge.presentedUIKitController as? ConciergeHostingController)?.chatController)
+        XCTAssertFalse(nextOverlay === first.controller)
+        XCTAssertFalse(nextUIKit === second.controller)
+        XCTAssertEqual(nextOverlay.configuration?.surfaces, ["overlay"])
+        XCTAssertEqual(nextUIKit.configuration?.surfaces, ["uikit"])
+        XCTAssertEqual(nextOverlay.configuration?.ecid, "new-ecid")
+        XCTAssertEqual(nextUIKit.configuration?.ecid, "new-ecid")
+        XCTAssertEqual(overlay.showingConcierge, overlayVisible)
+        XCTAssertTrue(Concierge.presentedUIKitController?.parent === parent)
+        XCTAssertEqual(Concierge.presentedUIKitController?.view.isHidden, !overlayVisible)
+        XCTAssertEqual(ConciergeXDMContextStore.shared.snapshot(for: SessionManager.shared.getOrCreateSessionId())["newUser"] as? Bool, true)
+    }
+
+    @MainActor
+    func test_resetIdentities_clearsAndRebuildsHiddenOverlay_andDistinctUIKitHost() async throws {
+        try await assertRetainedHostsReset(overlayVisible: false)
+    }
+
+    @MainActor
+    func test_resetIdentities_clearsAndRebuildsVisibleOverlay_andDistinctUIKitHost() async throws {
+        try await assertRetainedHostsReset(overlayVisible: true)
+    }
+
+    @MainActor
+    func test_resetIdentities_cancelsWorkInEveryRetainedHost_andDeduplicatesSharedController() async throws {
+        let configuration = ConciergeConfiguration(ecid: "old", server: "https://example.com", surfaces: ["chat"])
+        let service = MockChatService(configuration: configuration)
+        service.shouldCallComplete = false
+        service.completesOnCancel = false
+        let capturer = MockSpeechCapturer()
+        let speaker = MockTextSpeaker()
+        let old = ChatController(configuration: configuration, chatService: service,
+                                 speechCapturer: capturer, speaker: speaker)
+        let secondService = MockChatService(configuration: configuration)
+        secondService.shouldCallComplete = false
+        secondService.completesOnCancel = false
+        let secondSpeaker = MockTextSpeaker()
+        let second = ChatController(configuration: configuration, chatService: secondService,
+                                    speechCapturer: nil, speaker: secondSpeaker)
+        let overlay = ConciergeOverlayManager.shared
+        overlay.showChat(ChatView(controller: old))
+        overlay.hideChat()
+        let parent = UIViewController()
+        let hosting = ConciergeHostingController(chatView: ChatView(controller: second))
+        parent.addChild(hosting)
+        parent.view.addSubview(hosting.view)
+        hosting.didMove(toParent: parent)
+        Concierge.presentedUIKitController = hosting
+        let settled = expectation(description: "Retained handoffs settled")
+        settled.expectedFulfillmentCount = 2
+        XCTAssertTrue(old.handleDataHandoff(routingHint: "old", xdmFields: [:]) { _ in settled.fulfill() })
+        XCTAssertTrue(second.handleDataHandoff(routingHint: "old", xdmFields: [:]) { _ in settled.fulfill() })
+        let deadline = Date().addingTimeInterval(5)
+        while (service.streamChatCallCount != 1 || secondService.streamChatCallCount != 1), Date() < deadline {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        XCTAssertEqual(service.streamChatCallCount, 1)
+        XCTAssertEqual(secondService.streamChatCallCount, 1)
+        resetIdentities()
+        completeReset()
+        await fulfillment(of: [settled], timeout: 5)
+        try await awaitResetReady()
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
+        XCTAssertEqual(secondService.cancelActiveStreamCallCount, 1)
+        XCTAssertEqual(speaker.stopCount, 1)
+        XCTAssertEqual(secondSpeaker.stopCount, 1)
+        XCTAssertEqual(capturer.endCaptures, 1)
+        XCTAssertTrue(old.messages.isEmpty)
+        XCTAssertTrue(second.messages.isEmpty)
+
+        // The same controller can be retained by both hosts. Teardown must run only once.
+        overlay.showChat(ChatView(controller: old))
+        Concierge.presentedUIKitController = ConciergeHostingController(chatView: ChatView(controller: old))
+        resetIdentities()
+        completeReset()
+        try await awaitResetReady()
+        XCTAssertEqual(speaker.stopCount, 2)
+    }
+
+    @MainActor
+    func test_resetIdentities_realCoreFIFO_pendingConfigureCannotStrandReset() async throws {
+        let hub = EventHub()
+        let registered = expectation(description: "Real Core extensions registered")
+        registered.expectedFulfillmentCount = 2
+        hub.registerExtension(PendingResetConfiguration.self) { error in
+            XCTAssertNil(error)
+            registered.fulfill()
+        }
+        hub.registerExtension(Concierge.self) { error in
+            XCTAssertNil(error)
+            registered.fulfill()
+        }
+        await fulfillment(of: [registered], timeout: 5)
+        hub.start()
+        let old = Concierge.resolveSession(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["overlay"]))
+        let generation = ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.generation }
+        hub.dispatch(event: Event(name: "Configure with App ID", type: EventType.configuration,
+            source: EventSource.requestContent, data: ["config.appId": "pending-app-id"]))
+        let waiting = Event(name: ConciergeConstants.EventName.SHOW_UI,
+            type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+            data: [ConciergeConstants.EventData.Key.SURFACES: ["overlay"]])
+        let rejected = expectation(description: "Queued show rejected across boundary")
+        hub.registerResponseListener(triggerEvent: waiting, timeout: 5) { response in
+            XCTAssertNotNil(response)
+            rejected.fulfill()
+        }
+        let handoff = Event(name: ConciergeConstants.EventName.DATA_HANDOFF,
+            type: ConciergeConstants.EventType.concierge, source: EventSource.requestContent,
+            data: [ConciergeConstants.DataHandoffEventData.Key.PAYLOAD: ConciergeDataHandoffEvent(
+                routingHint: "old", xdmFields: ["value": "old"])])
+        let handoffSettled = expectation(description: "Deferred handoff callback settled")
+        let ended = expectation(description: "Ended notification follows callback settlement")
+        let settlementLock = NSLock()
+        var sawHandoffCallback = false
+        hub.registerResponseListener(triggerEvent: handoff, timeout: 5) { response in
+            XCTAssertEqual(response?.data?[ConciergeConstants.DataHandoffEventData.Key.ERROR_CODE] as? String, "no_active_session")
+            settlementLock.lock()
+            sawHandoffCallback = true
+            settlementLock.unlock()
+            handoffSettled.fulfill()
+        }
+        hub.registerEventListener(type: ConciergeConstants.EventType.concierge, source: EventSource.notification) { event in
+            guard event.name == "Brand Concierge Conversation Ended" else { return }
+            settlementLock.lock()
+            let settled = sawHandoffCallback
+            settlementLock.unlock()
+            XCTAssertTrue(settled, "Real Core must deliver the deferred handoff callback before Conversation Ended.")
+            ended.fulfill()
+        }
+        hub.dispatch(event: waiting)
+        hub.dispatch(event: handoff)
+        hub.dispatch(event: Event(name: "Reset", type: EventType.genericIdentity,
+            source: EventSource.requestReset, data: nil))
+        await fulfillment(of: [rejected, handoffSettled, ended], timeout: 5)
+        XCTAssertGreaterThan(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.generation }, generation)
+        XCTAssertFalse(old.controller.composerEditable)
+        // Exercise the real ExtensionContainer/OperationOrderer, not simulateComingEvents.
+        hub.shutdown()
+    }
+
+    @MainActor
+    func test_resetIdentities_realCoreVersions_overlapAndLaterConfigurationRecovery() async throws {
+        let hub = EventHub()
+        let registered = expectation(description: "Versioned Core fixtures registered")
+        registered.expectedFulfillmentCount = 3
+        for type in [PendingResetConfiguration.self, VersionedResetIdentity.self, Concierge.self] as [Extension.Type] {
+            hub.registerExtension(type) { error in
+                XCTAssertNil(error)
+                registered.fulfill()
+            }
+        }
+        await fulfillment(of: [registered], timeout: 5)
+        hub.createSharedState(extensionName: ConciergeConstants.SharedState.Configuration.NAME, data: [:], event: nil)
+        let completed = expectation(description: "Edge's two ordered completions")
+        completed.expectedFulfillmentCount = 2
+        hub.registerEventListener(type: EventType.edgeIdentity, source: EventSource.resetComplete) { _ in completed.fulfill() }
+        hub.start()
+        let first = Event(name: "Reset 1", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let second = Event(name: "Reset 2", type: EventType.genericIdentity, source: EventSource.requestReset, data: nil)
+        let generation = ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.generation }
+        hub.dispatch(event: first)
+        hub.dispatch(event: second)
+        await fulfillment(of: [completed], timeout: 5)
+        let deadline = Date().addingTimeInterval(5)
+        while ConciergeIdentityBoundary.shared.synchronized({ ConciergeIdentityBoundary.shared.generation }) < generation + 2,
+              Date() < deadline {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        XCTAssertFalse(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.ready })
+        let firstState = try XCTUnwrap(hub.getSharedState(
+            extensionName: ConciergeConstants.SharedState.EdgeIdentity.NAME, event: first,
+            barrier: true, sharedStateType: .xdm))
+        let secondState = try XCTUnwrap(hub.getSharedState(
+            extensionName: ConciergeConstants.SharedState.EdgeIdentity.NAME, event: second,
+            barrier: true, sharedStateType: .xdm))
+        XCTAssertEqual(firstState.status, .set)
+        XCTAssertEqual(secondState.status, .set)
+        XCTAssertEqual(firstState.ecid, "reset-1")
+        XCTAssertEqual(secondState.ecid, "reset-2")
+        // Completion snapshots remain SET but incomplete; only the current version can recover.
+        hub.createSharedState(extensionName: ConciergeConstants.SharedState.Configuration.NAME,
+            data: [ConciergeConstants.SharedState.Configuration.Concierge.SERVER: "https://updated.example.com",
+                   ConciergeConstants.SharedState.Configuration.Concierge.DATASTREAM: "updated"], event: nil)
+        try await awaitResetReady()
+        XCTAssertEqual(ConciergeIdentityBoundary.shared.synchronized { ConciergeIdentityBoundary.shared.generation }, generation + 2)
+        hub.shutdown()
+    }
+
+    func test_readyForEvent_neverBlocksCoreFIFO() {
         let event = Event(name: ConciergeConstants.EventName.DATA_HANDOFF,
                           type: ConciergeConstants.EventType.concierge,
                           source: EventSource.requestContent,
                           data: nil)
 
-        XCTAssertFalse(concierge.readyForEvent(event))
+        mockRuntime.mockedSharedStates = [:]
+        mockRuntime.mockedXdmSharedStates = [:]
+        XCTAssertTrue(concierge.readyForEvent(event))
+    }
+
+    private final class ResetObservingView: UIView {
+        var onRemoveSubview: (() -> Void)?
+
+        override func willRemoveSubview(_ subview: UIView) {
+            super.willRemoveSubview(subview)
+            onRemoveSubview?()
+        }
+    }
+
+    private final class ResetObservingParent: UIViewController {
+        var onAddChild: (() -> Void)?
+
+        override func addChild(_ childController: UIViewController) {
+            super.addChild(childController)
+            onAddChild?()
+        }
+    }
+
+    private final class ResetWarningLogging: NSObject, Logging {
+        private let lock = NSLock()
+        private var recordedMessages: [String] = []
+        private let onWarning: () -> Void
+
+        init(onWarning: @escaping () -> Void) {
+            self.onWarning = onWarning
+        }
+
+        var messages: [String] {
+            lock.lock()
+            defer { lock.unlock() }
+            return recordedMessages
+        }
+
+        func log(level: LogLevel, label: String, message: String) {
+            guard level == .warning, label == ConciergeConstants.LOG_TAG,
+                  message.hasPrefix("Identity reset is waiting") else { return }
+            lock.lock()
+            recordedMessages.append(message)
+            lock.unlock()
+            onWarning()
+        }
+    }
+
+    private actor ClaimedHandoffGate {
+        private var continuation: CheckedContinuation<Void, Never>?
+        private var released = false
+
+        func pause(_ entered: XCTestExpectation) async {
+            guard !released else { return }
+            await withCheckedContinuation {
+                continuation = $0
+                entered.fulfill()
+            }
+        }
+
+        func release() {
+            released = true
+            continuation?.resume()
+            continuation = nil
+        }
+    }
+
+    private final class PendingResetConfiguration: NSObject, Extension {
+        static let extensionVersion = "test"
+        let name = ConciergeConstants.SharedState.Configuration.NAME
+        let friendlyName = "Pending configuration fixture"
+        let metadata: [String: String]? = nil
+        let runtime: ExtensionRuntime
+
+        required init?(runtime: ExtensionRuntime) { self.runtime = runtime }
+        func onRegistered() {
+            _ = createPendingSharedState(event: nil)
+            registerListener(type: EventType.configuration, source: EventSource.requestContent) { [weak self] event in
+                _ = self?.createPendingSharedState(event: event)
+            }
+        }
+        func onUnregistered() {}
+        func readyForEvent(_ event: Event) -> Bool { true }
+    }
+
+    private final class VersionedResetIdentity: NSObject, Extension {
+        static let extensionVersion = "test"
+        let name = ConciergeConstants.SharedState.EdgeIdentity.NAME
+        let friendlyName = "Versioned Edge reset fixture"
+        let metadata: [String: String]? = nil
+        let runtime: ExtensionRuntime
+        private var resets = 0
+
+        required init?(runtime: ExtensionRuntime) { self.runtime = runtime }
+        func onRegistered() {
+            createXDMSharedState(data: ["identityMap": ["ECID": [["id": "old"]]]], event: nil)
+            registerListener(type: EventType.genericIdentity, source: EventSource.requestReset) { [weak self] event in
+                guard let self else { return }
+                self.resets += 1
+                let resolve = self.createPendingXDMSharedState(event: event)
+                resolve(["identityMap": ["ECID": [["id": "reset-\(self.resets)"]]]])
+                self.dispatch(event: Event(name: "Reset complete", type: EventType.edgeIdentity,
+                    source: EventSource.resetComplete, data: nil))
+            }
+        }
+        func onUnregistered() {}
+        func readyForEvent(_ event: Event) -> Bool { true }
     }
 }

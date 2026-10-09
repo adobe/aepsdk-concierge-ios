@@ -17,8 +17,10 @@ import UIKit
 /// A UIKit wrapper that presents the SwiftUI `ChatView` from a
 /// UIKit context (ex: pushing or presenting modally).
 final class ConciergeHostingController: UIHostingController<AnyView> {
+    let chatController: ChatController
     /// Creates a hosting controller wrapping a resolved `ChatView` (new or reused).
     init(chatView: ChatView) {
+        chatController = chatView.identityResetController
         let view = chatView
             .environment(\.conciergeLinkInterceptor, Concierge.linkInterceptor)
         super.init(rootView: AnyView(view))

@@ -16,13 +16,107 @@ import XCTest
 /// Mock text speaker for testing speech output.
 final class MockTextSpeaker: TextSpeaking {
     private(set) var spokenTexts: [String] = []
+    private(set) var stopCount = 0
+    var onStop: (() -> Void)?
     
     func utter(text: String) {
         spokenTexts.append(text)
     }
+
+    func stopSpeaking() {
+        stopCount += 1
+        onStop?()
+    }
 }
 
 final class SpeechControllerTests: XCTestCase {
+
+    @MainActor
+    func test_identityReset_stopsSpeaker_andRejectsLateSpeak() {
+        let speaker = MockTextSpeaker()
+        let controller = SpeechController(capturer: nil, speaker: speaker)
+        controller.speak("before")
+        controller.stopSpeaking()
+        controller.speak("late")
+        XCTAssertEqual(speaker.spokenTexts, ["before"])
+        XCTAssertEqual(speaker.stopCount, 1)
+    }
+
+    @MainActor
+    func test_stopSpeaking_releasesIdentityBoundaryBeforeCallingHost() {
+        let speaker = MockTextSpeaker()
+        let controller = SpeechController(capturer: nil, speaker: speaker)
+        speaker.onStop = {
+            let processed = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async {
+                let boundary = ConciergeIdentityBoundary.shared
+                _ = boundary.synchronized { boundary.generation }
+                processed.signal()
+            }
+            XCTAssertEqual(processed.wait(timeout: .now() + 2), .success,
+                           "Host output cancellation must not hold the identity boundary lock.")
+        }
+        controller.stopSpeaking()
+        controller.speak("late")
+        XCTAssertEqual(speaker.stopCount, 1)
+        XCTAssertTrue(speaker.spokenTexts.isEmpty)
+    }
+
+    @MainActor
+    func test_identityBoundary_rejectsSpeakEvenBeforeLocalTeardown() {
+        let boundary = ConciergeIdentityBoundary.shared
+        let speaker = MockTextSpeaker()
+        let controller = SpeechController(capturer: nil, speaker: speaker)
+        let generation = boundary.begin(at: Date())
+        defer { boundary.complete(generation) }
+        controller.speak("late")
+        boundary.complete(generation)
+        controller.speak("old-generation")
+        XCTAssertTrue(speaker.spokenTexts.isEmpty)
+    }
+
+    @MainActor
+    func test_textSpeaker_cancelsQueuedAndActiveOutput_withoutResurrectingOldUtterances() {
+        var scheduled: [() -> Void] = []
+        var spoken: [String] = []
+        var stops = 0
+        let speaker = TextSpeaker(schedule: { scheduled.append($0) },
+            speak: { spoken.append($0.speechString) }, stop: { stops += 1 })
+        speaker.utter(text: "active")
+        scheduled.removeFirst()()
+        speaker.utter(text: "queued")
+        speaker.stopSpeaking()
+        scheduled.removeFirst()()
+        XCTAssertEqual(stops, 1)
+        XCTAssertEqual(spoken, ["active"])
+        speaker.utter(text: "fresh")
+        scheduled.removeFirst()()
+        XCTAssertEqual(spoken, ["active", "fresh"])
+    }
+
+    @MainActor
+    func test_textSpeaker_identityGenerationRejectsScheduledOutput_beforeStopArrives() {
+        var scheduled: [() -> Void] = []
+        var spoken: [String] = []
+        let speaker = TextSpeaker(schedule: { scheduled.append($0) },
+            speak: { spoken.append($0.speechString) }, stop: {})
+        speaker.utter(text: "old")
+        let boundary = ConciergeIdentityBoundary.shared
+        let generation = boundary.begin(at: Date())
+        boundary.complete(generation)
+        scheduled.removeFirst()()
+        XCTAssertTrue(spoken.isEmpty)
+    }
+
+    @MainActor
+    func test_chatController_resetStopsNativeSpeaker() {
+        let speaker = MockTextSpeaker()
+        let controller = ChatController(configuration: ConciergeConfiguration(
+            ecid: "old", server: "https://example.com", surfaces: ["chat"]),
+            speechCapturer: nil, speaker: speaker)
+        controller.endConversationForIdentityReset()
+        XCTAssertEqual(speaker.stopCount, 1)
+    }
     
     // MARK: - Initialization Tests
     

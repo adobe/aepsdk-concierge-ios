@@ -28,7 +28,7 @@ public struct ConciergeConfiguration: Codable {
     /// The session ID for this configuration.
     /// On first access, retrieves an existing valid session from persistence or creates a new one.
     /// Sessions have a TTL of 30 minutes from the last network activity.
-    var sessionId: String? {
+    var sessionId: String {
         get {
             // If we have a locally set session ID, use it
             if let localSessionId = _sessionId {
