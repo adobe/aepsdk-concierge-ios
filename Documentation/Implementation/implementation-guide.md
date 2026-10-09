@@ -17,77 +17,6 @@ Internally, `Concierge.show(...)` dispatches an event in the Adobe Experience Pl
 
 ## Pre requisites
 
-### Ending a conversation at an identity boundary
-
-Call the existing Core API when the host app changes users or signs out:
-
-```swift
-MobileCore.resetIdentities()
-```
-
-Concierge automatically clears its persisted backend session, transcript, unsent
-draft, held/pending XDM context and transient conversation UI. It stops speech
-capture and cancels active/scheduled SDK speech output, and invalidates active,
-queued and auth-pending conversation work across all retained hosts. A visible
-chat stays open; a hidden chat stays hidden. Interrupted/new data handoffs during
-reset complete once with `no_active_session`.
-Outstanding feedback requests are cancelled even when no chat turn is active.
-Ended services reject further feedback; replacement conversations can send normally.
-Cancellation cannot undo feedback already received by the server.
-
-Sending resumes only after Edge Identity `resetComplete`, resolved refreshed
-identity/configuration and local teardown. The next request uses a new `sessionId`.
-Dependency waiting for show/handoff requests does not block reset delivery in
-Core's FIFO queue. Internally, overlapping resets are matched to Edge's ordered
-completions; the active request must pass Edge's processing barrier and its
-versioned identity must match the completion and current identity. Configuration
-and consent are re-read after teardown, so a later configuration update can finish
-readiness even if the completion-time configuration was incomplete.
-Readiness checks are driven by shared-state notifications, not a polling loop;
-notifications arriving during a check are coalesced into a follow-up check.
-If reset has not become ready within five seconds, Concierge logs one warning
-for the current reset, distinguishing missing Edge Identity completion from
-unavailable matching identity/configuration or unfinished teardown. This is a
-diagnostic deadline, not a timeout that re-enables requests. Late completion and
-later eligible shared-state updates can still restore readiness. Warning output
-uses the standard SDK log level; enable warning or more verbose logging to see it.
-Outstanding reset requests retain their ordering until completions arrive, since
-expiring them could misassociate an uncorrelated late completion.
-Replacement sessions capture their generation and backend session ID under the
-identity boundary for construction; subsequent turns still resolve session IDs
-through the normal inactivity expiry check. Session construction, speech-provider initialization, and UIKit
-hierarchy/constraint work run outside that lock. Controllers and speech coordinators
-retain the captured generation even if another reset arrives during construction.
-Requests remain blocked until host replacement finishes and both the generation
-and absence of newer shared-state notifications are revalidated. A notification
-arriving during a successful check triggers a fresh check, not just notifications
-during failed checks. Stale prepared sessions are ended and their transports
-invalidated; they are never reused by the follow-up check. Host speech-output
-cancellation also runs outside the boundary lock after logical invalidation.
-Normal `show`, `present`, and internal re-show paths also perform session
-construction and UI attachment outside the boundary lock. Configuration callbacks
-carry their captured generation through preparation and host publication. If a
-reset interrupts that work, the candidate is ended and is not published as an
-active host. An existing UIKit host is retained until the replacement is validated
-and published; reset during old-host removal rebuilds the committed replacement.
-Host token-provider registration, configuration, consent and surfaces are retained.
-Each retained overlay/UIKit host keeps its own surfaces and visibility, including
-a hidden overlay when a different UIKit conversation is current. Custom
-`TextSpeaking` implementations should implement `stopSpeaking()` to cancel their
-own active and scheduled native output. Its default no-op preserves compatibility
-with existing conformers; Concierge still rejects late calls from old generations.
-The host remains responsible for sign-out and replacing or clearing its auth token.
-This does not delete server-side conversation history.
-
-After local teardown, a nonempty ended conversation emits **Brand Concierge
-Conversation Ended** (`com.adobe.eventType.concierge`,
-`com.adobe.eventSource.notification`) for Event Hub/Assurance diagnostics.
-Its `conciergeEventType` is `concierge:conversation:ended`; fields are
-`reason: identity_reset`, Unix-millisecond `epochTime`, boolean `hadActiveTurn`,
-and optional previous `sessionId`/`conversationId`. It contains no transcript, XDM,
-identity map or auth token, and is never forwarded to Edge analytics.
-It is not a server-deletion, transport-cleanup or next-conversation-readiness signal.
-
 ### Required SDK modules
 
 The host app needs these AEP modules available and registered:
@@ -238,41 +167,63 @@ Brand Concierge forwards the full Edge Identity `identityMap` on every chat and 
 
 Namespace priority and identity-graph rules are configured server-side in Adobe Experience Platform; the SDK does not interpret or relabel namespaces.
 
+### Resetting identities
+
+Call the following Core API when the host app changes users or signs out:
+
+```swift
+MobileCore.resetIdentities()
+```
+
+Concierge then ends the current conversation locally:
+
+- **Cleared:** backend session, transcript, unsent draft, held XDM context and in-flight work (chat, data handoff, feedback, speech capture and speech output). Nothing is retried under the new identity.
+- **Retained:** token-provider registration, configuration, consent, surfaces and server-side conversation history. The host remains responsible for sign-out and clearing its auth token.
+- **UI:** a visible chat stays open with input disabled until Concierge is ready again; a hidden chat stays hidden. `show`/`present` calls made during reset are ignored, and data handoffs during reset complete with `noActiveSession`.
+
+Sending resumes, with a new `sessionId`, once Edge Identity reports reset complete and refreshed identity and configuration are available. This requires the **AEPEdgeIdentity** extension to be registered. If reset is still pending after five seconds, Concierge logs a warning describing what it is waiting on.
+
+**Custom components:**
+- Custom `TextSpeaking` implementations should implement `stopSpeaking()` to cancel active and scheduled speech output. The default implementation does nothing.
+
+After reset, if a conversation was in progress, Concierge dispatches a **Brand Concierge Conversation Ended** event (`com.adobe.eventType.concierge` / `com.adobe.eventSource.notification`, `conciergeEventType: concierge:conversation:ended`) for Event Hub/Assurance diagnostics. It includes `reason: identity_reset`, `epochTime` (Unix ms), `hadActiveTurn`, and the previous `sessionId`/`conversationId` when available. It contains no transcript, XDM, identity or token data, and is not sent to Edge.
+
 ## XDM context
 
-Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM fields for subsequent chat turns
-and data handoffs:
+Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
+later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
+requests don't include it.
 
 ```swift
 try Concierge.updateXDMContext([
     "loyalty": ["tier": "gold"],
     "commerce": ["currencyCode": "USD"]
 ])
+
+// Remove a key
+try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
 ```
 
-Updates use RFC 7396 JSON Merge Patch semantics: nested dictionaries merge recursively, scalar
-values and arrays replace existing values, and `NSNull()` for an object key removes that key.
-Nulls inside arrays remain JSON null values, not deletions. For example,
-`try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])` removes only
-`loyalty.tier`, preserving other loyalty fields. The top-level `identityMap` key is reserved for
-the SDK and cannot be supplied through this API.
-
-The context is held in memory for the current backend session and can be set before the first chat
-turn. Updating it does not create or refresh a backend session. If the session expires, its held
-context is discarded when the next session is resolved. An update made after expiry clears stale
-context and remains pending. Reopening chat alone does not bind pending context to the presentation's
-backend session. A subsequent context update binds it to an existing active session; otherwise,
-a turn adopts the pending context. Context from the expired session is not carried forward.
-A change in chat-service identity also clears held context. Clear sensitive fields
-proactively on logout.
-If an already-open chat sends a turn after expiry, reopening it while that new backend session
-is active keeps the transcript and binds the chat to the new session ID. If the chat remains idle
-through expiry, reopening starts a fresh transcript and clears context bound to the expired session,
-but preserves fresh pending context supplied after expiry.
-Data handoff fields are recursively merged over the held context, with handoff values taking
-precedence at matching leaf paths while preserving sibling fields. `NSNull()` in a handoff is
-sent as JSON null, not treated as a deletion; it does not change the held context. Feedback
-submissions do not include this context.
+- **Merging:** Each update is applied as an RFC 7396 JSON Merge Patch. Dictionaries merge
+  recursively, arrays and scalar values replace the existing value, and an `NSNull()` dictionary
+  value removes that key. There is no reset API. To remove context, send `NSNull()` values.
+- **Allowed values:** anything `JSONSerialization.isValidJSONObject` accepts: strings, finite
+  numbers, booleans, dictionaries with `String` keys, and arrays of these values. An `NSNull()`
+  inside an array is sent as JSON null. The top-level `identityMap` key is reserved for the SDK.
+  Invalid input throws `ConciergeXDMContextError.invalidValue` or `.reservedKeyCollision`.
+- **Lifetime:** Context is held in memory for the current Concierge session (30 minutes of
+  inactivity). Updating it doesn't start or extend a session. If no session exists yet, the next
+  chat message adopts the context. When a session expires, its context is not sent with later
+  requests, and the next update starts from an empty context. `MobileCore.resetIdentities()` also
+  clears it, as does showing chat with a different ECID, server, datastream, region or surfaces.
+- **Timing:** A chat message captures the context when it's sent. Updates made after that don't
+  change a message that's already in flight.
+- **Data handoffs:** The handoff's `xdmFields` are deep-merged over the held context, and the
+  handoff values win. `NSNull()` in a handoff is sent as JSON null rather than removing a key. The
+  held context itself isn't changed.
+- **Visibility:** The context is included in the **Brand Concierge Query Submitted** Event Hub
+  event, so Assurance and other listening extensions can read it. The SDK doesn't forward it to
+  Edge tracking.
 
 ---
 
@@ -331,7 +282,7 @@ Concierge.sendDataHandoff(
 #### `Concierge.sendDataHandoff(routingHint:xdmFields:localMessage:completion:)`
 
 - **`routingHint`**: A keyword consumed only by Brand Concierge's current phrase-based router (e.g. `"successful-checkout"`) — the end user never sees it, and it is not conversational content. Defaults to empty, which is appropriate when `xdmFields` carries the routing context on its own.
-- **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, JSON-serializable, and must not use `identityMap` as a top-level key (reserved by the SDK).
+- **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, follow the [XDM context](#xdm-context) value rules, and must not use `identityMap` as a top-level key (reserved by the SDK). These fields are deep-merged over any held XDM context.
 - **`localMessage`**: Optional text rendered immediately in the chat transcript as a local, non-networked message, distinct from the data forwarded to Brand Concierge. `nil`/empty -> nothing shown locally; the conversation only gets whatever Product Advisor eventually replies with.
 - **`completion`**: Optional closure called exactly once with the outcome, on the main actor, and always within 60 seconds — a handoff turn is bounded on both ends, so the callback can't be left hanging by a slow or stalled backend. It receives a `Result<Void, ConciergeDataHandoffError>`. `.success` means Brand Concierge completed the turn and its response was rendered into the transcript — not merely that the payload passed validation. On `.failure`, the error is a typed `ConciergeDataHandoffError`:
 
