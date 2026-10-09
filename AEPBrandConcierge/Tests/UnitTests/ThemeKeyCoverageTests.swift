@@ -197,6 +197,7 @@ private extension ThemeKeyCoverageTests {
         "message-border-radius": "layout.messageBorderRadius",
         "message-padding": "layout.messagePadding",
         "message-max-width": "layout.messageMaxWidth",
+        "markdown-block-spacing": "layout.markdownBlockSpacing",
 
         // Layout - Chat
         "chat-interface-max-width": "layout.chatInterfaceMaxWidth",

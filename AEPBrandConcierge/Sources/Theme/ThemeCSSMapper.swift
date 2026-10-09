@@ -126,6 +126,9 @@ public enum CSSKeyMapper {
         "message-max-width": { cssValue, theme in
             theme.layout.messageMaxWidth = CSSValueConverter.parseWidth(cssValue)
         },
+        "markdown-block-spacing": { cssValue, theme in
+            theme.layout.markdownBlockSpacing = CSSValueConverter.parsePxValue(cssValue)
+        },
 
         // Layout - Chat
         "chat-interface-max-width": { cssValue, theme in theme.layout.chatInterfaceMaxWidth = CSSValueConverter.parsePxValue(cssValue) ?? 768 },

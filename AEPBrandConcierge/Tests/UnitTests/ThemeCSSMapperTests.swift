@@ -279,7 +279,19 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertNotNil(theme.layout.messageMaxWidth)
         XCTAssertEqual(theme.layout.messageMaxWidth!, 768, accuracy: 0.0001)
     }
-    
+
+    func test_markdownBlockSpacing_mapsToLayout() {
+        var theme = ConciergeTheme()
+
+        CSSKeyMapper.apply(
+            cssKey: "markdown-block-spacing",
+            cssValue: "19.09375px",
+            to: &theme
+        )
+
+        XCTAssertEqual(theme.layout.markdownBlockSpacing ?? -1, 19.09375, accuracy: 0.0001)
+    }
+
     func test_citationsTextFontWeight_mapsToLayout() {
         // Given
         var theme = ConciergeTheme()
@@ -1349,4 +1361,3 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertNil(theme.layout.thinkingDotVerticalAlignment)
     }
 }
-
