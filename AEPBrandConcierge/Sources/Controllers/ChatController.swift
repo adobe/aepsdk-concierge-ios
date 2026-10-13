@@ -39,7 +39,6 @@ private struct RecoveryRequest {
     /// The failure that triggered recovery; surfaced if the resend is skipped.
     let error: ConciergeError
     let attemptStartedAt: Date
-    let responseStartedDispatched: Bool
 }
 
 /// Main controller orchestrating chat functionality.
@@ -477,9 +476,10 @@ final class ChatController: ObservableObject {
         latestSources = []
         latestLinkHints = []
         latestPromptSuggestions = []
+        // The resend is a new request with its own interaction ID, so it reports its own
+        // responseStarted/responseCompleted pair rather than completing the failed attempt's.
         _ = streamAgentResponse(for: request.query, heldXDMFields: request.xdmFields, sessionID: request.sessionID,
-                                kind: .typed, allowsBackgroundRecovery: false,
-                                responseStartedAlreadyDispatched: request.responseStartedDispatched)
+                                kind: .typed, allowsBackgroundRecovery: false)
     }
 
     /// Removes `turn`'s streaming placeholder from the transcript, if it is still there.
@@ -762,7 +762,6 @@ final class ChatController: ObservableObject {
                                      sessionID: String? = nil,
                                      kind: TurnKind = .typed,
                                      allowsBackgroundRecovery: Bool = true,
-                                     responseStartedAlreadyDispatched: Bool = false,
                                      completion: ((ConciergeError?) -> Void)? = nil) -> ChatTurn {
         let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
         messages.append(placeholder)
@@ -794,9 +793,7 @@ final class ChatController: ObservableObject {
         // and to be able to effectively do a diff of what has already been received and what is new.
         var accumulatedContent = ""
         var latestElements: [MultimodalElement] = []
-        // A recovery resend continues the user's original turn, so it must not re-announce a start
-        // the failed attempt already reported.
-        var responseStartedDispatched = responseStartedAlreadyDispatched
+        var responseStartedDispatched = false
         let attemptStartedAt = Date()
         let callbackSequencer = MainActorCallbackSequencer()
 
@@ -948,8 +945,7 @@ final class ChatController: ObservableObject {
                             xdmFields: mergedXDMFields,
                             sessionID: resolvedSessionID,
                             error: effectiveError,
-                            attemptStartedAt: attemptStartedAt,
-                            responseStartedDispatched: responseStartedDispatched
+                            attemptStartedAt: attemptStartedAt
                         ))
                         return
                     }

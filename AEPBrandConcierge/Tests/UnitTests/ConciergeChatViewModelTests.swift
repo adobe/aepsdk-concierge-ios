@@ -754,18 +754,20 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
     }
 
-    func test_streamingBackgroundRecovery_dispatchesResponseStartedOnceAcrossResend() {
+    func test_streamingBackgroundRecovery_resendReportsItsOwnPairedResponseEvents() {
         var dispatchedEvents: [Event] = []
         let appState = ConciergeAppState()
         let service = MockChatService(configuration: mockConciergeConfiguration)
         service.shouldCallComplete = false
         service.plannedChunks = [
-            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Partial answer")
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Partial answer",
+                        conversationId: "conv-1", interactionId: "int-1")
         ]
         service.onStreamChat = { [weak service] in
             guard let service = service, service.streamChatCallCount == 2 else { return }
             service.plannedChunks = [
-                self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer")
+                self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer",
+                                 conversationId: "conv-1", interactionId: "int-2")
             ]
             service.plannedError = nil
             service.shouldCallComplete = true
@@ -785,11 +787,17 @@ final class ChatControllerTests: XCTestCase {
         postAppForegroundNotification()
         spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
 
-        let startedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }.count
-        let completedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }.count
+        let key = ConciergeConstants.TrackingEvent.EventData.Key.self
+        let startedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }
+        let completedEvents = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }
         XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
-        XCTAssertEqual(startedCount, 1, "a resend continues the original turn and must not re-announce its start")
-        XCTAssertEqual(completedCount, 1, "responseCompleted must stay paired with responseStarted")
+        XCTAssertEqual(startedEvents.compactMap { $0.data?[key.INTERACTION_ID] as? String }, ["int-1", "int-2"],
+                       "each attempt reports responseStarted under its own interaction ID")
+        XCTAssertEqual(completedEvents.count, 1, "only the resend completes")
+        XCTAssertEqual(completedEvents.first?.data?[key.INTERACTION_ID] as? String, "int-2",
+                       "responseCompleted must match the resend's responseStarted")
+        XCTAssertEqual(completedEvents.first?.data?[key.CONVERSATION_ID] as? String,
+                       startedEvents.last?.data?[key.CONVERSATION_ID] as? String)
     }
 
     func test_streamingBackgroundRecovery_skipsResendWhenSessionWindowElapsed() {
