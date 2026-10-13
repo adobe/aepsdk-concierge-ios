@@ -12,6 +12,7 @@
 
 import AEPCore
 import XCTest
+import UIKit
 @testable import AEPBrandConcierge
 
 // MARK: - Fakes
@@ -711,6 +712,211 @@ final class ChatControllerTests: XCTestCase {
         }
         XCTAssertEqual(controller.chatState, .idle,
                        "a failed turn must return to idle - parking in .error deadlocks the composer")
+    }
+
+    func test_streamingErrorAfterBackground_waitsForForegroundThenRetriesOnce() {
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Partial answer")
+        ]
+        service.onStreamChat = { [weak service] in
+            guard let service = service, service.streamChatCallCount == 2 else { return }
+            service.plannedChunks = [
+                self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer")
+            ]
+            service.plannedError = nil
+            service.shouldCallComplete = true
+        }
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1 && controller.messages.last?.messageBody == "Partial answer")
+
+        postAppBackgroundNotification()
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+
+        XCTAssertEqual(service.streamChatCallCount, 1, "the retry must wait until UIKit reports foreground")
+        XCTAssertEqual(controller.chatState, .processing)
+        XCTAssertFalse(controller.messages.contains { $0.messageBody == "Partial answer" },
+                       "partial output from the failed attempt must be discarded")
+
+        postAppForegroundNotification()
+        spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
+
+        XCTAssertEqual(service.lastQuery, "question")
+        XCTAssertEqual(service.streamChatCallCount, 2, "a failed recovery attempt must not retry again")
+        XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
+    }
+
+    func test_streamingBackgroundRecovery_dispatchesResponseStartedOnceAcrossResend() {
+        var dispatchedEvents: [Event] = []
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.IN_PROGRESS, message: "Partial answer")
+        ]
+        service.onStreamChat = { [weak service] in
+            guard let service = service, service.streamChatCallCount == 2 else { return }
+            service.plannedChunks = [
+                self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer")
+            ]
+            service.plannedError = nil
+            service.shouldCallComplete = true
+        }
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        dispatch: { dispatchedEvents.append($0) },
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.messages.last?.messageBody == "Partial answer")
+
+        postAppBackgroundNotification()
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+        postAppForegroundNotification()
+        spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
+
+        let startedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_STARTED }.count
+        let completedCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.RESPONSE_COMPLETED }.count
+        XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
+        XCTAssertEqual(startedCount, 1, "a resend continues the original turn and must not re-announce its start")
+        XCTAssertEqual(completedCount, 1, "responseCompleted must stay paired with responseStarted")
+    }
+
+    func test_streamingBackgroundRecovery_skipsResendWhenSessionWindowElapsed() {
+        var dispatchedEvents: [Event] = []
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        dispatch: { dispatchedEvents.append($0) },
+                                        appState: appState,
+                                        backgroundRecoveryMaxAge: 0)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1)
+
+        postAppBackgroundNotification()
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+        XCTAssertEqual(controller.chatState, .processing, "recovery is still pending while backgrounded")
+
+        postAppForegroundNotification()
+        spinUntil(controller.chatState == .idle)
+
+        let errorCount = dispatchedEvents.filter { $0.name == ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED }.count
+        XCTAssertEqual(service.streamChatCallCount, 1, "an expired session window must not be resent")
+        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertEqual(controller.messages.last?.messageBody, controller.networkErrorMessage)
+        XCTAssertEqual(errorCount, 1)
+    }
+
+    func test_streamingBackgroundRecoveryFailure_rendersErrorWithoutFurtherRetry() {
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.onStreamChat = { [weak service] in
+            guard let service = service else { return }
+            if service.streamChatCallCount == 2 {
+                service.plannedError = .unreachable
+                service.shouldCallComplete = true
+            }
+        }
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1)
+
+        postAppBackgroundNotification()
+        service.plannedError = .timeout(30)
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+        postAppForegroundNotification()
+        spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
+
+        XCTAssertEqual(service.streamChatCallCount, 2)
+        XCTAssertEqual(controller.messages.last?.messageBody, controller.networkErrorMessage)
+    }
+
+    func test_streamingCompletedResponse_followedByTransportError_isPreserved() {
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.plannedChunks = [
+            makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Finished answer")
+        ]
+        service.plannedError = .unreachable
+        postAppBackgroundNotification()
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        XCTAssertEqual(service.streamChatCallCount, 1, "a completed response must not be resent")
+        XCTAssertEqual(controller.messages.last?.messageBody, "Finished answer")
+    }
+
+    func test_streamingFailureWithoutBackgroundOverlap_doesNotRetry() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.plannedError = .unreachable
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(controller.chatState == .idle)
+
+        XCTAssertEqual(service.streamChatCallCount, 1)
+        XCTAssertEqual(controller.messages.last?.messageBody, controller.networkErrorMessage)
+    }
+
+    func test_identityResetWhileWaitingForForeground_preventsRecoveryRetry() {
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1)
+
+        postAppBackgroundNotification()
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+        controller.endConversationForIdentityReset()
+        postAppForegroundNotification()
+        spinUntil(timeout: 0.1, false)
+
+        XCTAssertEqual(service.streamChatCallCount, 1)
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertFalse(controller.isProcessing)
+    }
+
+    func test_backgroundRecoveryEligibility_excludesNonTransportErrors_andAllowsOneTransportRetry() {
+        let turn = ChatTurn(placeholderId: UUID(), kind: .typed)
+        turn.noteAppBackgrounded()
+
+        XCTAssertFalse(turn.reserveBackgroundRecovery(for: .invalidResponseData))
+        XCTAssertFalse(turn.reserveBackgroundRecovery(for: .unknown))
+        XCTAssertFalse(turn.hasUsedBackgroundRecovery)
+        XCTAssertTrue(turn.reserveBackgroundRecovery(for: .timeout(30)))
+        XCTAssertFalse(turn.reserveBackgroundRecovery(for: .unreachable))
     }
 
     /// Regression guard for the deadlock: every composer affordance is gated on `.idle`, so if a
@@ -1913,8 +2119,17 @@ final class ChatControllerTests: XCTestCase {
     }
 
     // MARK: - Helpers
-    private func makeController(configuration: ConciergeConfiguration, service: MockChatService, capturer: MockSpeechCapturer? = nil, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT) -> ChatController {
-        ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker(), dispatch: dispatch, handoffTurnTimeout: handoffTurnTimeout, handoffFirstChunkTimeout: handoffFirstChunkTimeout)
+    private func makeController(
+        configuration: ConciergeConfiguration,
+        service: MockChatService,
+        capturer: MockSpeechCapturer? = nil,
+        dispatch: ((_ event: Event) -> Void)? = nil,
+        handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT,
+        handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT,
+        appState: ConciergeAppState = .shared,
+        backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS
+    ) -> ChatController {
+        ChatController(configuration: configuration, chatService: service, speechCapturer: capturer, speaker: NoopSpeaker(), dispatch: dispatch, handoffTurnTimeout: handoffTurnTimeout, handoffFirstChunkTimeout: handoffFirstChunkTimeout, appState: appState, backgroundRecoveryMaxAge: backgroundRecoveryMaxAge)
     }
 
     private func makePayload(state: String, message: String? = nil, sources: [Source]? = nil, conversationId: String? = nil, interactionId: String? = nil) -> ConversationPayload {
@@ -1988,5 +2203,13 @@ final class ChatControllerTests: XCTestCase {
         while !predicate() && Date() < end {
             RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
         }
+    }
+
+    private func postAppBackgroundNotification() {
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+    }
+
+    private func postAppForegroundNotification() {
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 }
