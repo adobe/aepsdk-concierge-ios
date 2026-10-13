@@ -78,20 +78,56 @@ final class ChatTurn {
     let placeholderId: UUID
 
     let kind: TurnKind
+    let allowsBackgroundRecovery: Bool
 
     /// Whether a failed turn leaves a notice in the transcript. See `TurnKind`.
     var rendersFailures: Bool { kind.rendersFailures }
 
     private(set) var isResolved = false
+    private(set) var hasOverlappedBackground = false
+    private(set) var hasCompletedResponse = false
+    private(set) var hasUsedBackgroundRecovery = false
 
     private var outcome: ((ConciergeError?) -> Void)?
     private var noResponseDeadline: DispatchWorkItem?
     private var ceilingDeadline: DispatchWorkItem?
 
-    init(placeholderId: UUID, kind: TurnKind, outcome: ((ConciergeError?) -> Void)? = nil) {
+    init(placeholderId: UUID,
+         kind: TurnKind,
+         allowsBackgroundRecovery: Bool = true,
+         outcome: ((ConciergeError?) -> Void)? = nil) {
         self.placeholderId = placeholderId
         self.kind = kind
+        self.allowsBackgroundRecovery = allowsBackgroundRecovery
         self.outcome = outcome
+    }
+
+    func noteAppBackgrounded() {
+        guard case .typed = kind else { return }
+        hasOverlappedBackground = true
+    }
+
+    func noteResponseCompleted() {
+        hasCompletedResponse = true
+    }
+
+    /// Consumes the sole recovery attempt before scheduling or starting its resend.
+    func reserveBackgroundRecovery(for error: ConciergeError) -> Bool {
+        guard case .typed = kind,
+              allowsBackgroundRecovery,
+              hasOverlappedBackground,
+              !hasCompletedResponse,
+              !hasUsedBackgroundRecovery else {
+            return false
+        }
+
+        switch error {
+        case .timeout, .unreachable:
+            hasUsedBackgroundRecovery = true
+            return true
+        default:
+            return false
+        }
     }
 
     /// Reports this turn's outcome to its caller and disarms its deadlines.
