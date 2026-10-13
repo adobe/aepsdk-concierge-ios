@@ -830,6 +830,85 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(errorCount, 1)
     }
 
+    func test_streamingBackgroundRecovery_resendCarriesOriginalSessionIDAndXDMContext() throws {
+        try ConciergeXDMContextStore.shared.update(["loggedIn": true])
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        var attempts: [(sessionID: String?, xdmFields: [String: Any]?)] = []
+        service.onStreamChat = { [weak service] in
+            guard let service = service else { return }
+            attempts.append((service.lastSessionID, service.lastExtraXDMFields))
+            if service.streamChatCallCount == 2 {
+                service.plannedChunks = [
+                    self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer")
+                ]
+                service.plannedError = nil
+                service.shouldCallComplete = true
+            }
+        }
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1)
+
+        postAppBackgroundNotification()
+        service.plannedError = .timeout(30)
+        service.triggerCompletion()
+        spinUntil(controller.messages.count == 1)
+
+        // Context changing while backgrounded must not leak into the resend of the original question.
+        ConciergeXDMContextStore.shared.clear()
+        try ConciergeXDMContextStore.shared.update(["loggedIn": false])
+
+        postAppForegroundNotification()
+        spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
+
+        XCTAssertEqual(attempts.count, 2)
+        XCTAssertNotNil(attempts.first?.sessionID)
+        XCTAssertEqual(attempts.last?.sessionID, attempts.first?.sessionID,
+                       "the resend must reuse the original attempt's session ID")
+        XCTAssertTrue((attempts.first?.xdmFields as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false)
+        XCTAssertTrue((attempts.last?.xdmFields as NSDictionary?)?.isEqual(to: ["loggedIn": true]) ?? false,
+                      "the resend must reuse the original attempt's XDM context, not a fresh snapshot")
+        XCTAssertEqual(service.lastQuery, "question")
+    }
+
+    func test_streamingBackgroundRecovery_resendsImmediatelyWhenForegroundedBeforeFailureArrives() {
+        let appState = ConciergeAppState()
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        service.onStreamChat = { [weak service] in
+            guard let service = service, service.streamChatCallCount == 2 else { return }
+            service.plannedChunks = [
+                self.makePayload(state: ConciergeConstants.StreamState.COMPLETED, message: "Recovered answer")
+            ]
+            service.plannedError = nil
+            service.shouldCallComplete = true
+        }
+        let controller = makeController(configuration: mockConciergeConfiguration,
+                                        service: service,
+                                        appState: appState)
+        controller.applyTextChange("question")
+        controller.sendMessage(isUser: true)
+        spinUntil(service.streamChatCallCount == 1)
+
+        postAppBackgroundNotification()
+        postAppForegroundNotification()
+        spinUntil(appState.state == .foreground)
+
+        // The failure from the suspended request only arrives after the app is already back.
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(service.streamChatCallCount == 2 && controller.chatState == .idle)
+
+        XCTAssertEqual(service.streamChatCallCount, 2,
+                       "the resend must start without waiting for another foreground notification")
+        XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
+    }
+
     func test_streamingBackgroundRecoveryFailure_rendersErrorWithoutFurtherRetry() {
         let appState = ConciergeAppState()
         let service = MockChatService(configuration: mockConciergeConfiguration)
