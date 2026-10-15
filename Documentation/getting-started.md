@@ -89,3 +89,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 ```
+
+### Optional: voice conversations
+
+Brand Concierge can hold a spoken conversation through a voice plugin. It depends only on the plugin contract in `AEPPluginSupport`, so apps that don't use voice ship no voice or WebRTC code.
+
+To enable voice, add a voice plugin such as `AEPVoice` to your app and register it before the chat opens:
+
+```swift
+import AEPPluginSupport
+import AEPVoice
+
+AEPPlugins.add(LiveKitVoicePlugin())
+```
+
+When a voice plugin is registered, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. The app must provide `NSMicrophoneUsageDescription` in its `Info.plist`.

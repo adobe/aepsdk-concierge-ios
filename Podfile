@@ -40,14 +40,21 @@ $dev_branch = 'dev'
 # ==================
 # SHARED POD GROUPS
 # ==================
+# Local path until aepsdk-plugin-ios is public and published to CocoaPods trunk.
+def plugin_support
+    pod 'AEPPluginSupport', :path => '../aepsdk-plugin-ios'
+end
+
 def lib_main
     pod 'AEPCore'
     pod 'AEPServices'
+    plugin_support
 end
 
 def lib_dev
     pod 'AEPCore', :git => $dev_repo, :branch => $dev_branch
     pod 'AEPServices', :git => $dev_repo, :branch => $dev_branch
+    plugin_support
 end
 
 def app_main

@@ -14,6 +14,7 @@ import Foundation
 import SwiftUI
 import Combine
 import AEPCore
+import AEPPluginSupport
 import AEPServices
 
 /// Main controller orchestrating chat functionality.
@@ -65,13 +66,39 @@ final class ChatController: ObservableObject {
     /// `ConciergeChatService` keeps a single `dataTask`/handler pair per instance, so a second
     /// concurrent turn would strand the first one's completion.
     ///
-    /// This is the controller's single source of truth for "is a turn running", and the only writer
-    /// of `chatState`. Chat state used to be assigned from every path that started or ended a turn,
-    /// and a path that ended one without assigning left the chat parked in `.processing` with a
-    /// dead composer - the failure mode behind several of this feature's bugs. Deriving it here
-    /// makes that state unreachable: there is nowhere left to end a turn without also going idle.
+    /// Together with `activeVoice`, this is the controller's single source of truth for "is the chat
+    /// busy", and `updateChatState()` is the only writer of `chatState`. Chat state used to be
+    /// assigned from every path that started or ended a turn, and a path that ended one without
+    /// assigning left the chat parked in `.processing` with a dead composer - the failure mode
+    /// behind several of this feature's bugs. Deriving it here makes that state unreachable: there
+    /// is nowhere left to end a turn without also going idle.
     private var activeTurn: ChatTurn? {
-        didSet { chatState = activeTurn == nil ? .idle : .processing }
+        didSet { updateChatState() }
+    }
+
+    // MARK: - Voice
+
+    /// The voice plugin the app registered with `AEPPlugins`, or `nil` when voice is not installed.
+    /// Brand Concierge depends only on the contract; the implementation is the app's choice.
+    private let voicePlugin: VoicePlugin?
+
+    /// The voice conversation currently running, or `nil`. Same role as `activeTurn`: callbacks
+    /// that do not belong to this run are stale and dropped.
+    private var activeVoice: VoiceRun? {
+        didSet { updateChatState() }
+    }
+
+    /// True from the voice tap until the plugin reports the conversation is live.
+    @Published private(set) var isVoiceConnecting = false
+
+    private func updateChatState() {
+        if activeTurn != nil {
+            chatState = .processing
+        } else if activeVoice != nil {
+            chatState = .voiceSession
+        } else {
+            chatState = .idle
+        }
     }
 
     /// Injectable so tests can exercise the caps without waiting out the production values.
@@ -88,7 +115,13 @@ final class ChatController: ObservableObject {
 
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
-    var composerEditable: Bool { identityReady && chatState != .processing }
+    var composerEditable: Bool { identityReady && chatState != .processing && chatState != .voiceSession }
+    var isVoiceAvailable: Bool { voicePlugin != nil }
+    var isVoiceSessionActive: Bool { activeVoice != nil }
+    var voiceEnabled: Bool {
+        guard identityReady, voicePlugin != nil else { return false }
+        return isVoiceSessionActive || (chatState == .idle && !isRecording)
+    }
     var micEnabled: Bool { identityReady && chatState == .idle }
     var sendEnabled: Bool { identityReady && chatState == .idle && inputController.data.canSend }
 
@@ -118,6 +151,7 @@ final class ChatController: ObservableObject {
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: generation)
         self.dispatch = dispatch
+        self.voicePlugin = AEPPlugins.get(VoicePlugin.self)
         self.handoffTurnTimeout = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT
         self.handoffFirstChunkTimeout = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT
 
@@ -135,6 +169,7 @@ final class ChatController: ObservableObject {
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: identityGeneration)
         self.dispatch = dispatch
+        self.voicePlugin = AEPPlugins.get(VoicePlugin.self)
         self.handoffTurnTimeout = handoffTurnTimeout
         self.handoffFirstChunkTimeout = handoffFirstChunkTimeout
 
@@ -329,9 +364,9 @@ final class ChatController: ObservableObject {
     /// scrolled to the top like `sendMessage` does, since a handoff is triggered from app UI rather
     /// than the composer and the transcript would otherwise stay where the user left it.
     ///
-    /// Returns `false` without starting anything when a turn is already in flight:
-    /// `ConciergeChatService` keeps a single `dataTask`/handler pair per instance, so a second
-    /// concurrent turn would strand the first one's completion. `.error` is *not* in flight.
+    /// Returns `false` without starting anything when a turn is already in flight or a voice session
+    /// is running: only one conversation activity runs at a time, so the caller can retry once the
+    /// chat is idle again. `.error` is *not* in flight.
     @discardableResult
     func handleDataHandoff(routingHint: String,
                            xdmFields: [String: Any],
@@ -354,6 +389,10 @@ final class ChatController: ObservableObject {
         }
         guard activeTurn == nil else {
             Log.warning(label: LOG_TAG, "handleDataHandoff ignored. A Concierge turn is already in progress.")
+            return false
+        }
+        guard activeVoice == nil else {
+            Log.warning(label: LOG_TAG, "handleDataHandoff ignored. A voice session is in progress.")
             return false
         }
 
@@ -443,6 +482,7 @@ final class ChatController: ObservableObject {
     func endConversationForIdentityReset() {
         endedForIdentityReset = true
         abandonActiveTurn()
+        stopVoiceSession()
         chatService.endFeedbackForIdentityReset()
         chatService.invalidateTransportForIdentityReset()
         speechController.stopSpeaking()
@@ -467,6 +507,148 @@ final class ChatController: ObservableObject {
         userMessageToScrollId = messageId
         DispatchQueue.main.async {
             self.userScrollTick &+= 1
+        }
+    }
+
+    // MARK: - Voice Session
+
+    /// Starts or stops a voice conversation, whichever applies.
+    func toggleVoiceSession() {
+        if isVoiceSessionActive { stopVoiceSession() } else { startVoiceSession() }
+    }
+
+    /// Starts a voice conversation: fetches session credentials from the Concierge service, then
+    /// hands them to the registered voice plugin. Does nothing when no plugin is registered or the
+    /// chat is busy.
+    func startVoiceSession() {
+        ConciergeIdentityBoundary.shared.synchronized {
+            startAdmittedVoiceSession()
+        }
+    }
+
+    private func startAdmittedVoiceSession() {
+        guard identityReady, let plugin = voicePlugin else { return }
+        guard chatState == .idle, !isRecording else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored. Expected an idle chat, but chatState was '\(chatState)' and inputState was '\(inputState)'.")
+            return
+        }
+
+        let run = VoiceRun()
+        activeVoice = run
+        isVoiceConnecting = true
+        // Read-aloud would otherwise talk over the voice agent and leak into its microphone.
+        speechController.stopSpeaking()
+
+        chatService.bootstrapVoiceSession(
+            onBootstrap: { [weak self] bootstrap in
+                Task { @MainActor in
+                    guard let self, self.identityReady, self.activeVoice === run else { return }
+                    self.connect(run, plugin: plugin, bootstrap: bootstrap)
+                }
+            },
+            onComplete: { [weak self] error in
+                Task { @MainActor in
+                    guard let self, self.activeVoice === run else { return }
+                    run.bootstrapFinished = true
+                    // Once the plugin has a session, it reports the conversation's own outcome.
+                    guard run.session == nil else { return }
+                    self.failVoiceSession(run, reason: error?.localizedDescription ?? "no voice session in the bootstrap response")
+                }
+            }
+        )
+    }
+
+    /// Ends the running voice conversation, if any, and returns the chat to idle right away.
+    ///
+    /// The plugin's own `.ended` report arrives after the run is released and is dropped as stale.
+    func stopVoiceSession() {
+        guard let run = activeVoice else { return }
+        finishVoiceSession(run)
+    }
+
+    private func connect(_ run: VoiceRun, plugin: VoicePlugin, bootstrap: LiveKitSessionBootstrap) {
+        // The plugin owns the meaning of these fields; Brand Concierge only maps the backend's names.
+        let connection = [
+            VoiceConnectionKeys.url: bootstrap.livekitUrl,
+            VoiceConnectionKeys.token: bootstrap.token
+        ]
+        run.isStartingSession = true
+        let session = plugin.startSession(connection: connection, listener: self)
+        run.isStartingSession = false
+        // A synchronous `.ended`/`.failed` during `startSession` already released the run.
+        guard activeVoice === run else {
+            session.stop()
+            return
+        }
+        run.session = session
+    }
+
+    /// Releases `run` if it is still the live one: stops its session, cancels a still-open
+    /// bootstrap request and returns the chat to idle.
+    private func finishVoiceSession(_ run: VoiceRun) {
+        guard activeVoice === run else { return }
+        activeVoice = nil
+        isVoiceConnecting = false
+        run.session?.stop()
+        if !run.bootstrapFinished {
+            // No typed turn can start during voice, so the bootstrap is the request in flight.
+            chatService.cancelActiveStream()
+        }
+    }
+
+    private func failVoiceSession(_ run: VoiceRun, reason: String) {
+        guard activeVoice === run else { return }
+        Log.error(label: LOG_TAG, "Voice session failed: \(reason)")
+        dispatchTrackingEvent(.errorOccurred(errorMessage: reason))
+        finishVoiceSession(run)
+        messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
+    }
+
+    /// Returns the live run when `session` belongs to it, adopting the session if the plugin calls
+    /// back before `startSession` has returned it.
+    private func voiceRun(for session: VoiceSession) -> VoiceRun? {
+        guard identityReady, let run = activeVoice else { return nil }
+        if run.session == nil, run.isStartingSession {
+            run.session = session
+        }
+        return run.session === session ? run : nil
+    }
+
+    fileprivate func handleVoiceState(_ state: VoiceSessionState, of session: VoiceSession) {
+        guard let run = voiceRun(for: session) else { return }
+        switch state {
+        case .connecting:
+            break
+        case .listening:
+            isVoiceConnecting = false
+        case .ended:
+            finishVoiceSession(run)
+        case .failed(let reason):
+            failVoiceSession(run, reason: reason)
+        @unknown default:
+            break
+        }
+    }
+
+    /// Renders a transcript update. Text is cumulative per turn, so the role's open bubble is
+    /// rewritten in place; `isFinal` closes it and the next update for that role opens a new one.
+    fileprivate func handleVoiceTranscript(_ text: String, role: VoiceTranscriptRole, isFinal: Bool, of session: VoiceSession) {
+        guard let run = voiceRun(for: session) else { return }
+
+        if let openId = run.openMessageIds[role],
+           let index = messages.firstIndex(where: { $0.id == openId }) {
+            messages[index].messageBody = text
+        } else if !text.isEmpty {
+            let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
+            messages.append(message)
+            run.openMessageIds[role] = message.id
+            if role == .user {
+                scrollToTop(messageId: message.id)
+            }
+        }
+
+        if isFinal {
+            run.openMessageIds[role] = nil
         }
     }
 
@@ -996,4 +1178,47 @@ extension Array {
     subscript(safe index: Int) -> Element? {
         return indices.contains(index) ? self[index] : nil
     }
+}
+
+// MARK: - Voice Session Listener
+
+extension ChatController: VoiceSessionListener {
+    // The contract promises main-thread callbacks; the hop only guards against a plugin that breaks
+    // that promise.
+    nonisolated func voiceSession(_ session: VoiceSession, didChangeState state: VoiceSessionState) {
+        onMain { $0.handleVoiceState(state, of: session) }
+    }
+
+    nonisolated func voiceSession(_ session: VoiceSession, didUpdateTranscript text: String, role: VoiceTranscriptRole, isFinal: Bool) {
+        onMain { $0.handleVoiceTranscript(text, role: role, isFinal: isFinal, of: session) }
+    }
+
+    private nonisolated func onMain(_ work: @escaping @MainActor (ChatController) -> Void) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { work(self) }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                MainActor.assumeIsolated { work(self) }
+            }
+        }
+    }
+}
+
+/// Connection fields Brand Concierge passes to the voice plugin.
+enum VoiceConnectionKeys {
+    static let url = "url"
+    static let token = "token"
+}
+
+/// One voice conversation, from the voice tap until it ends.
+private final class VoiceRun {
+    /// The plugin's session, set once the bootstrap delivered credentials.
+    var session: VoiceSession?
+    /// True while `startSession` runs, so a callback that arrives before it returns is still matched.
+    var isStartingSession = false
+    /// True once the bootstrap request completed; an open one is cancelled when the run ends.
+    var bootstrapFinished = false
+    /// The transcript bubble each role is still speaking into.
+    var openMessageIds: [VoiceTranscriptRole: UUID] = [:]
 }

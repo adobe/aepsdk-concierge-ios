@@ -34,10 +34,20 @@ struct ChatComposer: View {
     let onComplete: () -> Void
     let onSend: () -> Void
     var onLinkTap: ((URL) -> Void)?
+    /// Voice conversation entry point, shown only when a voice plugin is registered. Defaults keep
+    /// existing call sites valid.
+    var isVoiceAvailable: Bool = false
+    var isVoiceSessionActive: Bool = false
+    var isVoiceConnecting: Bool = false
+    var voiceEnabled: Bool = false
+    var onVoiceTap: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
+                if isVoiceAvailable {
+                    voiceSessionButton
+                }
                 HStack(spacing: 8) {
                     ComposerEditingView(
                         inputText: $inputText,
@@ -116,6 +126,29 @@ struct ChatComposer: View {
 }
 
 private extension ChatComposer {
+    /// Starts a voice conversation, or ends the running one. Filled while a session runs, with a
+    /// spinner while it connects.
+    var voiceSessionButton: some View {
+        Button(action: onVoiceTap) {
+            ZStack {
+                Image(systemName: isVoiceSessionActive ? "waveform.circle.fill" : "waveform.circle")
+                    .font(.system(size: theme.layout.inputButtonHeight))
+                    .foregroundColor(voiceEnabled
+                                     ? theme.colors.primary.primary.color
+                                     : Color.secondary.opacity(0.5))
+                if isVoiceConnecting {
+                    ProgressView()
+                }
+            }
+            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .disabled(!voiceEnabled)
+        .accessibilityLabel(isVoiceSessionActive ? "Stop voice conversation" : "Start voice conversation")
+        .accessibilityIdentifier("voiceSessionToggle")
+    }
+
     var borderStyle: AnyShapeStyle {
         // border.color is always non-optional, so conciergeShapeStyle's `fallback` branch would be
         // dead code here -- resolve the gradient/solid choice directly instead.

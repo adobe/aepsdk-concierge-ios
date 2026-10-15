@@ -73,9 +73,37 @@ final class MockChatService: ConciergeChatService {
     override func cancelActiveStream() {
         cancelActiveStreamCallCount += 1
         pendingOnChunk = nil
+        if completesOnCancel, pendingBootstrapComplete != nil {
+            completeBootstrap(.unreachable)
+        }
         guard completesOnCancel, let complete = pendingOnComplete else { return }
         pendingOnComplete = nil
         complete(.unreachable)
+    }
+
+    // Captures for the voice bootstrap path. Handlers are held so a test decides when the backend
+    // answers and closes the stream.
+    private(set) var bootstrapVoiceSessionCallCount = 0
+    private var pendingOnBootstrap: ((LiveKitSessionBootstrap) -> Void)?
+    private var pendingBootstrapComplete: ((ConciergeError?) -> Void)?
+
+    override func bootstrapVoiceSession(onBootstrap: @escaping (LiveKitSessionBootstrap) -> Void,
+                                        onComplete: @escaping (ConciergeError?) -> Void) {
+        bootstrapVoiceSessionCallCount += 1
+        pendingOnBootstrap = onBootstrap
+        pendingBootstrapComplete = onComplete
+    }
+
+    func emitBootstrap(livekitUrl: String = "wss://livekit.example", token: String = "room-token") {
+        pendingOnBootstrap?(LiveKitSessionBootstrap(livekitUrl: livekitUrl, token: token))
+        pendingOnBootstrap = nil
+    }
+
+    func completeBootstrap(_ error: ConciergeError? = nil) {
+        pendingOnBootstrap = nil
+        guard let complete = pendingBootstrapComplete else { return }
+        pendingBootstrapComplete = nil
+        complete(error)
     }
 
     func triggerCompletion() {
