@@ -1224,6 +1224,68 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.count, 0)
     }
 
+    // MARK: - Per-request callback routing
+
+    func test_cancelActiveStream_cancelsOnlyTheLatestRequest_andEachRequestCompletesToItsOwnHandlers() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldHold = true
+        let service = makeStubbedService()
+
+        let firstCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("first", token: nil, onChunk: { _ in }, onComplete: { firstCompletions.value.append($0) })
+        let secondCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("second", token: nil, onChunk: { _ in }, onComplete: { secondCompletions.value.append($0) })
+        await waitForCondition { StubURLProtocol.count == 2 }
+
+        service.cancelActiveStream()
+        await waitForCondition { secondCompletions.value.count == 1 }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(StubURLProtocol.stoppedCount, 1, "only the latest request is cancelled")
+        if case .unreachable? = secondCompletions.value.first ?? nil {} else {
+            XCTFail("the cancelled request reports its own failure, got \(String(describing: secondCompletions.value))")
+        }
+        XCTAssertTrue(firstCompletions.value.isEmpty, "the earlier request is still open")
+
+        service.invalidateTransportForIdentityReset()
+        await waitForCondition { firstCompletions.value.count == 1 }
+        XCTAssertEqual(firstCompletions.value.count, 1, "the earlier request still reports its own completion")
+        XCTAssertEqual(secondCompletions.value.count, 1, "a request completes exactly once")
+    }
+
+    func test_openBootstrapStream_doesNotReceiveALaterRequestsChunksOrCompletion() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldHold = true
+        let service = makeStubbedService()
+
+        let bootstrapped = LockedBox<Bool>(false)
+        let bootstrapCompletions = LockedBox<[ConciergeError?]>([])
+        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true },
+                                      onComplete: { bootstrapCompletions.value.append($0) })
+        await waitForCondition { StubURLProtocol.count >= 1 }
+
+        // A session payload on the later request would bootstrap if it were routed to the open stream.
+        StubURLProtocol.shouldHold = false
+        StubURLProtocol.responseBody = sseHandle(responseJSON: #"""
+        {"message":"hi","voice":{"type":"livekit_session","livekitUrl":"wss://rtc.example.com","token":"t"}}
+        """#)
+        let chatChunks = LockedBox<Int>(0)
+        let chatCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("hi", token: nil, onChunk: { _ in chatChunks.value += 1 },
+                           onComplete: { chatCompletions.value.append($0) })
+        await waitForCondition { chatCompletions.value.count == 1 }
+
+        XCTAssertEqual(chatChunks.value, 1)
+        XCTAssertNil(chatCompletions.value.first ?? nil)
+        XCTAssertFalse(bootstrapped.value)
+        XCTAssertTrue(bootstrapCompletions.value.isEmpty, "the open stream has not completed")
+
+        service.invalidateTransportForIdentityReset()
+        await waitForCondition { bootstrapCompletions.value.count == 1 }
+        XCTAssertEqual(bootstrapCompletions.value.count, 1, "the open stream still reports its own completion")
+        XCTAssertEqual(chatCompletions.value.count, 1)
+    }
+
     // MARK: - Stubbed-network helpers
 
     private func makeStubbedService() -> ConciergeChatService {

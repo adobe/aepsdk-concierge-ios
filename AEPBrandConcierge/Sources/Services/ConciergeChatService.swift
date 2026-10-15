@@ -35,12 +35,13 @@ class ConciergeChatService: NSObject {
     private var configuration: ConciergeConfiguration
     private var session: URLSession!
 
-    // Per-turn streaming state. Written synchronously in `streamChat` (on the caller's thread, before
-    // `resume()`) and read/cleared on the URLSession delegate queue — `resume()` establishes the
-    // happens-before, and `ChatController` single-flights turns, so no lock is needed.
+    // Streaming state. Every streaming request keeps its own handlers, keyed by task, because the
+    // session has a single delegate: a request that is cancelled or superseded can still deliver
+    // data or complete after the next one starts, and must not reach the next request's handlers.
+    // `dataTask` is the most recent request, the one `cancelActiveStream()` cancels.
+    private let streamLock = NSLock()
     private var dataTask: URLSessionDataTask?
-    private var onChunkHandler: ((ConversationPayload) -> Void)?
-    private var onCompleteHandler: ((ConciergeError?) -> Void)?
+    private var streamHandlers: [Int: StreamHandlers] = [:]
     private let feedbackLock = NSLock()
     private var feedbackTasks: [UUID: URLSessionDataTask] = [:]
     private var feedbackEndedForIdentityReset = false
@@ -67,11 +68,6 @@ class ConciergeChatService: NSObject {
                     onComplete: @escaping (ConciergeError?) -> Void) {
         do {
             let url = try createUrl(sessionID: sessionID)
-
-            // Register handlers for this streaming session
-            onChunkHandler = onChunk
-            onCompleteHandler = onComplete
-
             let payload = try createChatPayload(query: query, token: token, extraXDMFields: extraXDMFields)
 
             var request = URLRequest(url: url)
@@ -81,21 +77,14 @@ class ConciergeChatService: NSObject {
             request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-            dataTask = session.dataTask(with: request)
             // Note: the request body is deliberately not logged — it carries the app's auth token.
             Log.debug(label: LOG_TAG, "Sending request to Concierge Service: \(url)")
 
             // Refresh session activity timestamp when starting a request
             SessionManager.shared.refreshSessionActivity()
 
-            dataTask?.resume()
+            startStream(request, handlers: StreamHandlers(onChunk: onChunk, onComplete: onComplete))
         } catch {
-            // The handlers were already registered above, and this instance may still own a live
-            // `dataTask` from a prior turn. Clearing them stops that task's delegate callback from
-            // firing this same `onComplete` a second time.
-            onChunkHandler = nil
-            onCompleteHandler = nil
-
             let conciergeError = (error as? ConciergeError) ?? .unknown
             Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
             onComplete(conciergeError)
@@ -110,17 +99,20 @@ class ConciergeChatService: NSObject {
     /// as in `streamChat`: an error on failure, `nil` when the stream closes. A stream that closes
     /// without a session payload completes with `nil`; callers treat that as a failed bootstrap.
     ///
-    /// Shares the per-request streaming state with `streamChat`, so callers must not run a bootstrap
-    /// and a chat turn on the same instance at the same time.
+    /// Like a chat turn, the bootstrap reports only to its own handlers and becomes the request that
+    /// `cancelActiveStream()` cancels.
     func bootstrapVoiceSession(onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
                                onComplete: @escaping (ConciergeError?) -> Void) {
         do {
             let url = try createUrl(voice: true)
 
+            let payload = try createVoiceBootstrapPayload()
+
+            // Chunks for one task arrive serially on the delegate queue.
             var didBootstrap = false
-            onChunkHandler = { payload in
+            let onChunk: (ConversationPayload) -> Void = { chunk in
                 guard !didBootstrap,
-                      let voice = payload.response?.voice,
+                      let voice = chunk.response?.voice,
                       voice.type == VoicePayload.SessionType.livekitSession,
                       let livekitUrl = voice.livekitUrl,
                       let token = voice.token else {
@@ -129,9 +121,6 @@ class ConciergeChatService: NSObject {
                 didBootstrap = true
                 onBootstrap(VoiceSessionBootstrap(url: livekitUrl, token: token))
             }
-            onCompleteHandler = onComplete
-
-            let payload = try createVoiceBootstrapPayload()
 
             var request = URLRequest(url: url)
             request.httpMethod = ConciergeConstants.HTTPMethods.POST
@@ -140,17 +129,12 @@ class ConciergeChatService: NSObject {
             request.setValue(ConciergeConstants.AcceptTypes.TEXT_EVENT_STREAM, forHTTPHeaderField: ConciergeConstants.HeaderFields.ACCEPT)
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
-            dataTask = session.dataTask(with: request)
             Log.debug(label: LOG_TAG, "Sending voice bootstrap request to Concierge Service: \(url)")
 
             SessionManager.shared.refreshSessionActivity()
 
-            dataTask?.resume()
+            startStream(request, handlers: StreamHandlers(onChunk: onChunk, onComplete: onComplete))
         } catch {
-            // Same reasoning as `streamChat`: a prior task's delegate callback must not reach these handlers.
-            onChunkHandler = nil
-            onCompleteHandler = nil
-
             let conciergeError = (error as? ConciergeError) ?? .unknown
             Log.warning(label: LOG_TAG, conciergeError.localizedDescription)
             onComplete(conciergeError)
@@ -402,10 +386,15 @@ class ConciergeChatService: NSObject {
         ]
     }
 
-    /// Cancels the turn currently in flight, if any. The delegate still reports completion, so the
-    /// caller unwinds through its normal failure path.
+    /// Cancels the most recent streaming request, if it is still in flight. The delegate still
+    /// reports its completion to that request's own handlers, so the caller unwinds through its
+    /// normal failure path.
     func cancelActiveStream() {
-        disconnect()
+        streamLock.lock()
+        let task = dataTask
+        dataTask = nil
+        streamLock.unlock()
+        task?.cancel()
     }
 
     func endFeedbackForIdentityReset() {
@@ -421,10 +410,38 @@ class ConciergeChatService: NSObject {
         session.invalidateAndCancel()
     }
 
-    private func disconnect() {
-        dataTask?.cancel()
-        dataTask = nil
+    /// Registers `handlers` for a new streaming task and starts it as the most recent request.
+    private func startStream(_ request: URLRequest, handlers: StreamHandlers) {
+        let task = session.dataTask(with: request)
+        streamLock.lock()
+        streamHandlers[task.taskIdentifier] = handlers
+        dataTask = task
+        streamLock.unlock()
+        task.resume()
     }
+
+    private func streamHandlers(for task: URLSessionTask) -> StreamHandlers? {
+        streamLock.lock()
+        defer { streamLock.unlock() }
+        return streamHandlers[task.taskIdentifier]
+    }
+
+    /// Unregisters `task`'s handlers and returns them. A task without handlers (for example a
+    /// feedback request) returns `nil`.
+    private func finishStream(_ task: URLSessionTask) -> StreamHandlers? {
+        streamLock.lock()
+        defer { streamLock.unlock() }
+        if dataTask === task {
+            dataTask = nil
+        }
+        return streamHandlers.removeValue(forKey: task.taskIdentifier)
+    }
+}
+
+/// The callbacks of one streaming request.
+private struct StreamHandlers {
+    let onChunk: (ConversationPayload) -> Void
+    let onComplete: (ConciergeError?) -> Void
 }
 
 // MARK: - URLSessionDataDelegate
@@ -433,7 +450,8 @@ extension ConciergeChatService: URLSessionDataDelegate {
 
     /// Called each time the server sends a streaming event
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard let dataString = String(data: data, encoding: .utf8) else {
+        guard let handlers = streamHandlers(for: dataTask),
+              let dataString = String(data: data, encoding: .utf8) else {
             return
         }
 
@@ -452,9 +470,8 @@ extension ConciergeChatService: URLSessionDataDelegate {
 
             do {
                 let handle = try JSONDecoder().decode(ConversationHandle.self, from: handleData)
-                if let handler = self.onChunkHandler,
-                   let payload = handle.handle.first?.payload.first {
-                    handler(payload)
+                if let payload = handle.handle.first?.payload.first {
+                    handlers.onChunk(payload)
                 }
             } catch {
                 Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
@@ -463,6 +480,7 @@ extension ConciergeChatService: URLSessionDataDelegate {
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let handlers = finishStream(task) else { return }
         if let error = error {
             // Handle connection errors
             Log.warning(label: LOG_TAG, "An error occurred while connecting to the Concierge server: \(error.localizedDescription)")
@@ -471,18 +489,14 @@ extension ConciergeChatService: URLSessionDataDelegate {
             // The domain is checked too: -1001 in any other domain is a different failure.
             let nsError = error as NSError
             if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorTimedOut {
-                onCompleteHandler?(.timeout(Int(ConciergeConstants.Request.READ_TIMEOUT)))
+                handlers.onComplete(.timeout(Int(ConciergeConstants.Request.READ_TIMEOUT)))
             } else {
-                onCompleteHandler?(.unreachable)
+                handlers.onComplete(.unreachable)
             }
         } else {
             // Connection completed (e.g., server closed connection)
             Log.trace(label: LOG_TAG, "Concierge server connection closed.")
-            onCompleteHandler?(nil)
-            disconnect()
+            handlers.onComplete(nil)
         }
-        // Clean up handlers
-        onChunkHandler = nil
-        onCompleteHandler = nil
     }
 }
