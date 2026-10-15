@@ -45,6 +45,7 @@ platform :ios, '15.0'
 target '$PROJECT_NAME' do
   use_frameworks!
   pod 'AEPBrandConcierge', :path => '../AEPBrandConcierge.podspec'
+  pod 'AEPPluginSupport', :path => '../../aepsdk-plugin-ios'
 end
 " >>Podfile
 

@@ -196,6 +196,8 @@
 		5C6490E414BE8CEB6D219998 /* ConciergeXDMContextStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */; };
 		600E9EA5E91D0A6999BFA625 /* SpeechCapturerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78116DF64B3E7886464E3576 /* SpeechCapturerTests.swift */; };
 		75DDC0EEF67378753C51DA39 /* ConciergeResolveSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */; };
+		86A4CEB16F5879D872E8047D /* ChatControllerVoiceSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325E3D3521AE046E19AF1FFC /* ChatControllerVoiceSessionTests.swift */; };
+		A08802365DF02D75EFC856CA /* FakeVoicePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E013ABFFDCF29606FAF8A /* FakeVoicePlugin.swift */; };
 		81D89C27C0B9688C2F67145B /* ConciergeDataHandoffEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0593DF64A8406DD1C1916E49 /* ConciergeDataHandoffEvent.swift */; };
 		8FF3F9C5826960C024A007F2 /* ConciergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9057D312438A622C7A60A81 /* ConciergeTests.swift */; };
 		942FC5542F55AABBD1818D06 /* MessageListViewShouldFillRemainingHeightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62777C5A2D1238AD286ECB85 /* MessageListViewShouldFillRemainingHeightTests.swift */; };
@@ -449,6 +451,8 @@
 		D000ECC120251120000000A0 /* ConciergeEventTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeEventTracker.swift; sourceTree = "<group>"; };
 		D593F447E7FFCBE0208FC8B5 /* Pods-ConciergeDemoApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.debug.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.debug.xcconfig"; sourceTree = "<group>"; };
 		DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeResolveSessionTests.swift; sourceTree = "<group>"; };
+		325E3D3521AE046E19AF1FFC /* ChatControllerVoiceSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatControllerVoiceSessionTests.swift; sourceTree = "<group>"; };
+		728E013ABFFDCF29606FAF8A /* FakeVoicePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeVoicePlugin.swift; sourceTree = "<group>"; };
 		E21378B0B68D3623005C3C79 /* ProductDetailCardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailCardViewTests.swift; sourceTree = "<group>"; };
 		E3C0FF2BB74C9140EC5A5AE3 /* Pods-AEPBrandConcierge.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConcierge.debug.xcconfig"; path = "Target Support Files/Pods-AEPBrandConcierge/Pods-AEPBrandConcierge.debug.xcconfig"; sourceTree = "<group>"; };
 		E5EE8AC6DB678C5F5BEA41F8 /* MessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTests.swift; sourceTree = "<group>"; };
@@ -798,6 +802,7 @@
 				FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */,
 				0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */,
 				DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */,
+				325E3D3521AE046E19AF1FFC /* ChatControllerVoiceSessionTests.swift */,
 			);
 			path = UnitTests;
 			sourceTree = "<group>";
@@ -809,6 +814,7 @@
 				4C2923DF2E7E223200D2D2C1 /* MockChatService.swift */,
 				4C2923E12E7E226600D2D2C1 /* MockSpeechCapturer.swift */,
 				4C2923E32E7E27CA00D2D2C1 /* MockSpeaker.swift */,
+				728E013ABFFDCF29606FAF8A /* FakeVoicePlugin.swift */,
 			);
 			path = TestHelpers;
 			sourceTree = "<group>";
@@ -1398,6 +1404,8 @@
 				8FF3F9C5826960C024A007F2 /* ConciergeTests.swift in Sources */,
 				5C6490E414BE8CEB6D219998 /* ConciergeXDMContextStoreTests.swift in Sources */,
 				75DDC0EEF67378753C51DA39 /* ConciergeResolveSessionTests.swift in Sources */,
+				A08802365DF02D75EFC856CA /* FakeVoicePlugin.swift in Sources */,
+				86A4CEB16F5879D872E8047D /* ChatControllerVoiceSessionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

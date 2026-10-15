@@ -13,6 +13,7 @@ PODS:
     - AEPEdge (< 6.0.0, >= 5.0.0)
   - AEPEdgeIdentity (5.0.0):
     - AEPCore (< 6.0.0, >= 5.0.0)
+  - AEPPluginSupport (1.0.0)
   - AEPRulesEngine (5.0.0)
   - AEPServices (5.8.0)
   - AEPTestUtils (5.6.0):
@@ -26,6 +27,7 @@ DEPENDENCIES:
   - AEPEdge
   - AEPEdgeConsent
   - AEPEdgeIdentity
+  - AEPPluginSupport (from `../aepsdk-plugin-ios`)
   - AEPServices
   - AEPTestUtils (from `https://github.com/adobe/aepsdk-core-ios.git`, tag `testutils-5.6.0`)
   - SwiftLint (= 0.52.0)
@@ -42,6 +44,8 @@ SPEC REPOS:
     - SwiftLint
 
 EXTERNAL SOURCES:
+  AEPPluginSupport:
+    :path: "../aepsdk-plugin-ios"
   AEPTestUtils:
     :git: https://github.com/adobe/aepsdk-core-ios.git
     :tag: testutils-5.6.0
@@ -57,11 +61,12 @@ SPEC CHECKSUMS:
   AEPEdge: 105afc7958acd7c016d57f7ac1d6f632bf05e6ee
   AEPEdgeConsent: 5f28a8ed6cd86812a73b1f5a4dbde9c81e486bf1
   AEPEdgeIdentity: 3161ff33434586962946912d6b8e9e8fca1c4d23
+  AEPPluginSupport: e5c05e23ad8b525db0c8c340c39e2a8febc68367
   AEPRulesEngine: fe5800653a4bee07b1e41e61b4d5551f0dba557b
   AEPServices: a5608a9d3749701030e12fe379f53e40fa6f8e6f
   AEPTestUtils: 2bbed995c8974f6f6d92058db88d6cd2e4a7f869
   SwiftLint: 13280e21cdda6786ad908dc6e416afe5acd1fcb7
 
-PODFILE CHECKSUM: f38d22b02d3a2eea34ac2593e0c1157a6cf7b6e3
+PODFILE CHECKSUM: 2d3b2d3bd5430d24a64d2f7e425f0a12622d3924
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

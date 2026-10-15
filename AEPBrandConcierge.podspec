@@ -18,6 +18,7 @@ Pod::Spec.new do |s|
   s.dependency 'AEPCore', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPServices', '>= 5.7.0', '< 6.0.0'
   s.dependency 'AEPEdgeIdentity', '>= 5.0.0', '< 6.0.0'
+  s.dependency 'AEPPluginSupport', '>= 1.0.0', '< 2.0.0'
 
   s.source_files = 'AEPBrandConcierge/Sources/**/*.swift'
 

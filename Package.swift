@@ -23,14 +23,17 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/adobe/aepsdk-core-ios.git", .upToNextMajor(from: "5.7.0")),
-        .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0"))
+        .package(url: "https://github.com/adobe/aepsdk-edgeidentity-ios.git", .upToNextMajor(from: "5.0.0")),
+        // Local path until aepsdk-plugin-ios is public; every consumer switches to a URL at the same time.
+        .package(path: "../aepsdk-plugin-ios")
     ],
     targets: [
         .target(name: "AEPBrandConcierge",
             dependencies: [
                 .product(name: "AEPCore", package: "aepsdk-core-ios"),
                 .product(name: "AEPServices", package: "aepsdk-core-ios"),
-                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios")
+                .product(name: "AEPEdgeIdentity", package: "aepsdk-edgeidentity-ios"),
+                .product(name: "AEPPluginSupport", package: "aepsdk-plugin-ios")
             ],
             path: "AEPBrandConcierge/Sources",
             exclude: ["Info.plist", "AEPBrandConcierge.h"])
