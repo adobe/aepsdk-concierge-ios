@@ -46,4 +46,50 @@ final class ComposerEditingViewTests: XCTestCase {
         let padding = ComposerEditingView.iconBottomPadding(rowHeight: 60, iconHeight: 32)
         XCTAssertEqual(padding, 14)
     }
+
+    // MARK: - trailingControl
+
+    private func trailing(
+        isRecording: Bool = false,
+        hasText: Bool = false,
+        showMic: Bool = true,
+        isVoiceAvailable: Bool = true,
+        isVoiceSessionActive: Bool = false,
+        isVoiceConnecting: Bool = false
+    ) -> ComposerEditingView.TrailingControl {
+        ComposerEditingView.trailingControl(
+            isRecording: isRecording,
+            hasText: hasText,
+            showMic: showMic,
+            isVoiceAvailable: isVoiceAvailable,
+            isVoiceSessionActive: isVoiceSessionActive,
+            isVoiceConnecting: isVoiceConnecting
+        )
+    }
+
+    func test_trailingControl_voiceAvailable_emptyField_showsVoice() {
+        XCTAssertEqual(trailing(), .voice)
+    }
+
+    func test_trailingControl_voiceAvailable_withText_showsSend() {
+        XCTAssertEqual(trailing(hasText: true), .send)
+    }
+
+    func test_trailingControl_voiceSessionActive_withText_keepsVoice() {
+        XCTAssertEqual(trailing(hasText: true, isVoiceSessionActive: true), .voice)
+    }
+
+    func test_trailingControl_voiceConnecting_withText_keepsVoice() {
+        XCTAssertEqual(trailing(hasText: true, isVoiceConnecting: true), .voice)
+    }
+
+    func test_trailingControl_recording_winsOverVoice() {
+        XCTAssertEqual(trailing(isRecording: true), .recording)
+    }
+
+    func test_trailingControl_noVoicePlugin_matchesPreviousBehavior() {
+        XCTAssertEqual(trailing(isVoiceAvailable: false), .mic)
+        XCTAssertEqual(trailing(hasText: true, isVoiceAvailable: false), .send)
+        XCTAssertEqual(trailing(showMic: false, isVoiceAvailable: false), ComposerEditingView.TrailingControl.none)
+    }
 }
