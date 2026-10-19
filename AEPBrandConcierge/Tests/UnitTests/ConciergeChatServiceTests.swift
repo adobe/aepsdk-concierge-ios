@@ -1128,7 +1128,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let service = makeStubbedService()
 
         service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { _ in })
-        await waitForCondition(timeout: 3.0) { StubURLProtocol.count >= 1 }
+        await waitForCondition { StubURLProtocol.count >= 1 }
 
         let request = try XCTUnwrap(StubURLProtocol.last)
         XCTAssertEqual(request.httpMethod, "POST")
@@ -1146,7 +1146,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let received = LockedBox<VoiceSessionBootstrap?>(nil)
         let completion = LockedBox<ConciergeError??>(nil)
         service.bootstrapVoiceSession(onBootstrap: { received.value = $0 }, onComplete: { completion.value = .some($0) })
-        await waitForCondition(timeout: 3.0) { completion.value != nil }
+        await waitForCondition { completion.value != nil }
 
         XCTAssertEqual(received.value, VoiceSessionBootstrap(url: "wss://rtc.example.com", token: "session-abc"))
         XCTAssertNil(completion.value ?? nil, "a clean close completes without an error")
@@ -1162,7 +1162,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let received = LockedBox<[VoiceSessionBootstrap]>([])
         let completed = LockedBox<Bool>(false)
         service.bootstrapVoiceSession(onBootstrap: { received.value.append($0) }, onComplete: { _ in completed.value = true })
-        await waitForCondition(timeout: 3.0) { completed.value }
+        await waitForCondition { completed.value }
 
         XCTAssertEqual(received.value, [VoiceSessionBootstrap(url: "wss://a", token: "t1")])
     }
@@ -1177,7 +1177,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let bootstrapped = LockedBox<Bool>(false)
         let completed = LockedBox<Bool>(false)
         service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { _ in completed.value = true })
-        await waitForCondition(timeout: 3.0) { completed.value }
+        await waitForCondition { completed.value }
 
         XCTAssertFalse(bootstrapped.value, "a non-session type or a session without a token must not bootstrap")
     }
@@ -1190,7 +1190,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let bootstrapped = LockedBox<Bool>(false)
         let completion = LockedBox<ConciergeError??>(nil)
         service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
-        await waitForCondition(timeout: 3.0) { completion.value != nil }
+        await waitForCondition { completion.value != nil }
 
         XCTAssertFalse(bootstrapped.value)
         XCTAssertNotNil(completion.value, "the stream closing must still complete")
@@ -1204,7 +1204,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let error = LockedBox<ConciergeError?>(nil)
         service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
-        await waitForCondition(timeout: 3.0) { error.value != nil }
+        await waitForCondition { error.value != nil }
 
         XCTAssertNotNil(error.value, "a network failure must surface a ConciergeError, matching streamChat")
     }
@@ -1218,7 +1218,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let error = LockedBox<ConciergeError?>(nil)
         service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
-        await waitForCondition(timeout: 3.0) { error.value != nil }
+        await waitForCondition { error.value != nil }
 
         XCTAssertNotNil(error.value, "bootstrap should surface a ConciergeError when the URL can't be built")
         XCTAssertEqual(StubURLProtocol.count, 0)
@@ -1237,7 +1237,9 @@ final class ConciergeChatServiceTests: XCTestCase {
         return ConciergeChatService(configuration: model, urlSessionConfiguration: sessionConfig)
     }
 
-    private func waitForCondition(timeout: TimeInterval, _ condition: @escaping () -> Bool) async {
+    /// Polls until `condition` holds or `timeout` elapses. Returns as soon as the condition holds, so
+    /// the default is generous: shared CI runners can stall for several seconds.
+    private func waitForCondition(timeout: TimeInterval = 10, _ condition: @escaping () -> Bool) async {
         let start = Date()
         while !condition() && Date().timeIntervalSince(start) < timeout {
             try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
