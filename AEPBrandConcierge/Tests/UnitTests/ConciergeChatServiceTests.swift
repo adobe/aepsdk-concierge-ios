@@ -1143,12 +1143,12 @@ final class ConciergeChatServiceTests: XCTestCase {
         """#)
         let service = makeStubbedService()
 
-        let received = LockedBox<LiveKitSessionBootstrap?>(nil)
+        let received = LockedBox<VoiceSessionBootstrap?>(nil)
         let completion = LockedBox<ConciergeError??>(nil)
         service.bootstrapVoiceSession(onBootstrap: { received.value = $0 }, onComplete: { completion.value = .some($0) })
         await waitForCondition(timeout: 3.0) { completion.value != nil }
 
-        XCTAssertEqual(received.value, LiveKitSessionBootstrap(livekitUrl: "wss://rtc.example.com", token: "session-abc"))
+        XCTAssertEqual(received.value, VoiceSessionBootstrap(url: "wss://rtc.example.com", token: "session-abc"))
         XCTAssertNil(completion.value ?? nil, "a clean close completes without an error")
     }
 
@@ -1159,12 +1159,12 @@ final class ConciergeChatServiceTests: XCTestCase {
         StubURLProtocol.responseBody = body
         let service = makeStubbedService()
 
-        let received = LockedBox<[LiveKitSessionBootstrap]>([])
+        let received = LockedBox<[VoiceSessionBootstrap]>([])
         let completed = LockedBox<Bool>(false)
         service.bootstrapVoiceSession(onBootstrap: { received.value.append($0) }, onComplete: { _ in completed.value = true })
         await waitForCondition(timeout: 3.0) { completed.value }
 
-        XCTAssertEqual(received.value, [LiveKitSessionBootstrap(livekitUrl: "wss://a", token: "t1")])
+        XCTAssertEqual(received.value, [VoiceSessionBootstrap(url: "wss://a", token: "t1")])
     }
 
     func test_bootstrapVoiceSession_ignoresIncompleteOrOtherVoicePayloads() async {

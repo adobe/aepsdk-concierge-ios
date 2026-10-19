@@ -112,7 +112,7 @@ class ConciergeChatService: NSObject {
     ///
     /// Shares the per-request streaming state with `streamChat`, so callers must not run a bootstrap
     /// and a chat turn on the same instance at the same time.
-    func bootstrapVoiceSession(onBootstrap: @escaping (LiveKitSessionBootstrap) -> Void,
+    func bootstrapVoiceSession(onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
                                onComplete: @escaping (ConciergeError?) -> Void) {
         do {
             let url = try createUrl(voice: true)
@@ -127,7 +127,7 @@ class ConciergeChatService: NSObject {
                     return
                 }
                 didBootstrap = true
-                onBootstrap(LiveKitSessionBootstrap(livekitUrl: livekitUrl, token: token))
+                onBootstrap(VoiceSessionBootstrap(url: livekitUrl, token: token))
             }
             onCompleteHandler = onComplete
 

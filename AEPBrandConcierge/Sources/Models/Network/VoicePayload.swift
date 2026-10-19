@@ -13,27 +13,28 @@
 import Foundation
 
 /// The `response.voice` object carried on a `ConversationResponse` for a voice-bootstrap turn.
+/// Mirrors the service's wire format, so it stays internal; callers receive `VoiceSessionBootstrap`.
 ///
 /// Decodes only the fields the client consumes. Other `type` values (e.g. `"done"`) decode without
 /// error and are ignored by callers that only act on `livekit_session`.
-public struct VoicePayload: Codable {
+struct VoicePayload: Codable {
     /// The kind of voice payload. `SessionType.livekitSession` is the only value the client acts on.
-    public let type: String
+    let type: String
     /// Real-time media server URL; present on a `livekit_session` payload.
-    public let livekitUrl: String?
+    let livekitUrl: String?
     /// Access token for the real-time media session; present on a `livekit_session` payload.
-    public let token: String?
+    let token: String?
 
     /// Known `type` discriminator values.
-    public enum SessionType {
+    enum SessionType {
         /// A resolved session carrying `livekitUrl` and `token`.
-        public static let livekitSession = "livekit_session"
+        static let livekitSession = "livekit_session"
     }
 }
 
 /// Connection credentials resolved from a successful voice bootstrap: the validated, non-optional
-/// form of the fields carried on `VoicePayload`.
-struct LiveKitSessionBootstrap: Equatable {
-    let livekitUrl: String
+/// form of the fields carried on `VoicePayload`, under transport-neutral names.
+struct VoiceSessionBootstrap: Equatable {
+    let url: String
     let token: String
 }
