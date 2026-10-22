@@ -49,10 +49,12 @@ struct CtaButtonView: View {
         }
     }
 
-    private func handleTap() {
-        guard let urlString = action.url else { return }
+    /// Tracks the tap with the original URL, then opens `action.clickURL` (the URL with the CTA's
+    /// summary appended). Not `private` so it stays unit-testable via `@testable import`.
+    func handleTap() {
+        guard let urlString = action.url, let clickURLString = action.clickURL else { return }
         onTap?(action.text, urlString)
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: clickURLString) else { return }
         if linkInterceptor.handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,

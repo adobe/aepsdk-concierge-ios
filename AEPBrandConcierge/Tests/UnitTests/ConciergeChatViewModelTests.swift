@@ -1678,6 +1678,61 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertNil(ctaMessage, "CTA with missing primary should not produce a message")
     }
 
+    func test_streaming_ctaWithSummary_keepsSummaryOnAction() {
+        // Given
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let ctaElement = MultimodalElement(
+            id: "cta-live-chat",
+            type: "ctaButton",
+            entityInfo: makeCtaEntityInfo(text: "Chat now", url: "https://example.com/live-chat", summary: "Asked about a refund.")
+        )
+        fakeService.plannedChunks = [
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: [ctaElement], message: "Let me connect you.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("help")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+        let action = controller.messages.compactMap { message -> ActionButton? in
+            if case .ctaButton(let action) = message.template { return action }
+            return nil
+        }.first
+        XCTAssertEqual(action?.url, "https://example.com/live-chat")
+        XCTAssertEqual(action?.summary, "Asked about a refund.")
+    }
+
+    func test_streaming_ctaWithBlankTextOrURL_isSkipped() {
+        // Given — whitespace-only or missing label/url would render a dead or empty button
+        let fakeService = MockChatService(configuration: mockConciergeConfiguration)
+        let elements = [
+            MultimodalElement(id: "cta-blank-text", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "   ", url: "https://example.com")),
+            MultimodalElement(id: "cta-empty-text", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "", url: "https://example.com")),
+            MultimodalElement(id: "cta-blank-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: "   ", summary: "hi")),
+            MultimodalElement(id: "cta-empty-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: "")),
+            MultimodalElement(id: "cta-nil-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: nil))
+        ]
+        fakeService.plannedChunks = [
+            makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: elements, message: "Here you go.")
+        ]
+        let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
+
+        // When
+        controller.applyTextChange("test")
+        controller.sendMessage(isUser: true)
+
+        // Then
+        spinUntil(controller.chatState == .idle)
+        let ctaMessage = controller.messages.first { message in
+            if case .ctaButton = message.template { return true }
+            return false
+        }
+        XCTAssertNil(ctaMessage, "CTA with blank text or url should not produce a message")
+    }
+
     // MARK: - Interleaved Element Ordering Tests
 
     func test_streaming_interleavedCtaAndCards_respectsRelativeOrder() {
@@ -2263,11 +2318,11 @@ final class ChatControllerTests: XCTestCase {
         )
     }
 
-    private func makeCtaEntityInfo(text: String, url: String) -> EntityInfo {
+    private func makeCtaEntityInfo(text: String, url: String?, summary: String? = nil) -> EntityInfo {
         EntityInfo(
             productName: nil, productDescription: nil, description: nil, productPageURL: nil,
             details: nil, learningResource: nil, productImageURL: nil, backgroundColor: nil,
-            logo: nil, primary: ActionButton(text: text, url: url),
+            logo: nil, primary: ActionButton(text: text, url: url, summary: summary),
             secondary: nil, productPrice: nil, productWasPrice: nil, productBadge: nil
         )
     }

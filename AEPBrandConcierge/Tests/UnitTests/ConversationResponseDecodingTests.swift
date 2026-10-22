@@ -270,6 +270,91 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertNil(element.thumbnailHeight)
     }
 
+    // MARK: - ActionButton summary
+
+    private func decodeAction(primaryJSON: String) throws -> ActionButton? {
+        let json = """
+        { "type": "ctaButton", "id": "cta-1", "entity_info": { "primary": \(primaryJSON) } }
+        """.data(using: .utf8)!
+        return try JSONDecoder().decode(MultimodalElement.self, from: json).entityInfo?.primary
+    }
+
+    func test_actionButton_decodesAndTrimsSummary() throws {
+        let action = try XCTUnwrap(decodeAction(primaryJSON: """
+        {
+            "text": "Chat now",
+            "url": "https://www.example.com/live-chat",
+            "summary": "  The customer asked about a refund.  ",
+            "handoff": "abc123",
+            "priority": 2,
+            "nested": { "a": "b" }
+        }
+        """))
+
+        XCTAssertEqual(action.text, "Chat now")
+        XCTAssertEqual(action.url, "https://www.example.com/live-chat")
+        XCTAssertEqual(action.summary, "The customer asked about a refund.")
+    }
+
+    func test_actionButton_missingSummary_decodesAsNil() throws {
+        let action = try XCTUnwrap(decodeAction(primaryJSON: #"{ "text": "Chat now", "url": "https://www.example.com/live-chat" }"#))
+
+        XCTAssertNil(action.summary)
+    }
+
+    func test_actionButton_blankOrNonStringSummary_decodesAsNil() throws {
+        for summary in [#""   ""#, #""""#, #""\n\t""#, "null", "42", "1.5", "true", #"{ "a": "b" }"#, #"["x"]"#, "[]", "{}"] {
+            let action = try XCTUnwrap(
+                decodeAction(primaryJSON: #"{ "text": "Chat now", "url": "https://www.example.com/live-chat", "summary": \#(summary) }"#),
+                "summary=\(summary)"
+            )
+            XCTAssertEqual(action.text, "Chat now", "summary=\(summary)")
+            XCTAssertEqual(action.url, "https://www.example.com/live-chat", "summary=\(summary)")
+            XCTAssertNil(action.summary, "summary=\(summary)")
+        }
+    }
+
+    func test_actionButton_primaryNotAnObject_decodesAsNil() throws {
+        XCTAssertNil(try decodeAction(primaryJSON: #""https://www.example.com/live-chat""#))
+    }
+
+    func test_actionButton_productCardActionsWithSummary_decodeUnchanged() throws {
+        let json = """
+        {
+            "id": "product-1",
+            "entity_info": {
+                "productName": "Product",
+                "primary": { "text": "Buy", "url": "https://primary.example.com", "summary": "s" },
+                "secondary": { "text": "Learn more", "url": "https://secondary.example.com?a=1", "summary": "s" }
+            }
+        }
+        """.data(using: .utf8)!
+
+        let element = try JSONDecoder().decode(MultimodalElement.self, from: json)
+
+        XCTAssertEqual(element.entityInfo?.productName, "Product")
+        XCTAssertEqual(element.entityInfo?.primary?.text, "Buy")
+        XCTAssertEqual(element.entityInfo?.primary?.url, "https://primary.example.com")
+        XCTAssertEqual(element.entityInfo?.secondary?.text, "Learn more")
+        XCTAssertEqual(element.entityInfo?.secondary?.url, "https://secondary.example.com?a=1")
+    }
+
+    func test_actionButton_init_normalizesSummary() {
+        XCTAssertNil(ActionButton(text: "Chat", url: "https://example.com").summary)
+        XCTAssertNil(ActionButton(text: "Chat", url: "https://example.com", summary: "   ").summary)
+        XCTAssertEqual(ActionButton(text: "Chat", url: "https://example.com", summary: " hi ").summary, "hi")
+    }
+
+    func test_actionButton_encodeDecodeRoundtrip_preservesSummary() throws {
+        let original = ActionButton(text: "Chat", url: "https://example.com", summary: "hi")
+
+        let decoded = try JSONDecoder().decode(ActionButton.self, from: JSONEncoder().encode(original))
+
+        XCTAssertEqual(decoded.text, "Chat")
+        XCTAssertEqual(decoded.url, "https://example.com")
+        XCTAssertEqual(decoded.summary, "hi")
+    }
+
     func test_multimodalElements_encodeDecodeRoundtrip() throws {
         // Given
         let original = MultimodalElements(type: "cards", elements: [

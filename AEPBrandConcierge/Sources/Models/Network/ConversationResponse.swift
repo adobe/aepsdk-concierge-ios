@@ -248,4 +248,44 @@ public struct ActionButton: Codable {
     /// Optional — a text-only action (no destination) is valid; callers that require a
     /// destination (e.g. the product card's CTA button) check this themselves.
     public let url: String?
+    /// Optional conversation summary (`entity_info.primary.summary`). Never displayed; a standalone
+    /// CTA button appends it to `url` as a `summary` query parameter when tapped (see
+    /// `CtaSummaryURLBuilder`). Ignored by product card actions. Always trimmed and non-empty when set.
+    let summary: String?
+
+    init(text: String, url: String?, summary: String? = nil) {
+        self.text = text
+        self.url = url
+        self.summary = ActionButton.normalizedSummary(summary)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case text
+        case url
+        case summary
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        // `summary` is optional metadata: a non-string value (number, bool, object, array) is
+        // ignored rather than failing the whole action.
+        summary = ActionButton.normalizedSummary((try? container.decodeIfPresent(String.self, forKey: .summary)) ?? nil)
+    }
+
+    private static func normalizedSummary(_ summary: String?) -> String? {
+        guard let trimmed = summary?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+}
+
+extension ActionButton {
+    /// URL to open when a standalone CTA button is tapped: `url` with `summary` appended
+    /// (see `CtaSummaryURLBuilder`). Tracking uses `url`, never this value.
+    var clickURL: String? {
+        url.map { CtaSummaryURLBuilder.clickURL(for: $0, summary: summary) }
+    }
 }

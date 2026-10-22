@@ -1102,6 +1102,11 @@ final class ChatController: ObservableObject {
                     Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
                     continue
                 }
+                guard !action.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      action.url?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': blank entity_info.primary text or url.")
+                    continue
+                }
                 messages.append(Message(template: .ctaButton(action)))
             } else if !cardElementEmitted {
                 if let cardMessage = cardMessage {
