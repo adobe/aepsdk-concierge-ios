@@ -18,9 +18,9 @@ import XCTest
 
 @MainActor
 final class PrivacyNoticeSnapshotTests: XCTestCase {
-    private let kingsNotice = ConciergePrivacyNoticeBehavior(
-        title: "Privacy Notice Kings",
-        text: "Privacy notice text for Kings."
+    private let shortNotice = ConciergePrivacyNoticeBehavior(
+        title: "Privacy Notice",
+        text: "Information you share is used to answer your questions."
     )
     private let longNotice = ConciergePrivacyNoticeBehavior(
         title: "Privacy Notice",
@@ -32,9 +32,9 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
         """
     )
 
-    func test_kingsNotice_light() {
+    func test_shortNotice_light() {
         assertSnapshot(
-            of: noticeView(kingsNotice),
+            of: noticeView(shortNotice),
             as: .image(layout: .fixed(width: 390, height: 180))
         )
     }
@@ -42,10 +42,10 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
     func test_noticeWithDisclaimerStyleLinks() {
         let notice = ConciergePrivacyNoticeBehavior(
             title: "Privacy Notice",
-            text: "Your messages are processed by {Sacramento Kings} and {Adobe}. Please do not provide sensitive personal information.",
+            text: "Read our {Privacy Policy} and {Terms of Use}. Please do not provide sensitive personal information.",
             links: [
-                ConciergeDisclaimerLink(text: "Sacramento Kings", url: "https://www.nba.com/kings/kings-privacy-policy"),
-                ConciergeDisclaimerLink(text: "Adobe", url: "https://www.adobe.com/privacy/policy.html")
+                ConciergeDisclaimerLink(text: "Privacy Policy", url: "https://www.example.com/privacy"),
+                ConciergeDisclaimerLink(text: "Terms of Use", url: "https://www.example.com/terms")
             ]
         )
         assertSnapshot(of: noticeView(notice), as: .image(layout: .fixed(width: 390, height: 300)))
@@ -67,7 +67,7 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
 
     func test_blankTitle_andHiddenBody() {
         let view = VStack(spacing: 12) {
-            PrivacyNoticeView(notice: ConciergePrivacyNoticeBehavior(title: " \n ", text: kingsNotice.text))
+            PrivacyNoticeView(notice: ConciergePrivacyNoticeBehavior(title: " \n ", text: shortNotice.text))
             PrivacyNoticeView(notice: ConciergePrivacyNoticeBehavior(title: "Must not appear", text: " \n "))
         }
         .padding(16)
@@ -76,15 +76,15 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
     }
 
     func test_noticeInConversation() {
-        let first = Message(template: .basic(isUserMessage: true), messageBody: "Where is the team store?")
+        let first = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?")
         let view = MessageListView(
             messages: [
                 first,
-                Message(template: .basic(isUserMessage: false), messageBody: "The team store is at Golden 1 Center."),
+                Message(template: .basic(isUserMessage: false), messageBody: "The store is at 123 Main Street."),
                 Message(template: .basic(isUserMessage: true), messageBody: "What are its hours?"),
                 Message(template: .basic(isUserMessage: false), messageBody: "Check the store website for current hours.")
             ],
-            privacyNotice: kingsNotice,
+            privacyNotice: shortNotice,
             isInputFocused: .constant(false),
             onSpeak: { _ in }
         )
@@ -98,7 +98,7 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
         service.shouldCallComplete = false
         let controller = ChatController(configuration: configuration, chatService: service, speechCapturer: nil, speaker: nil)
         var theme = ConciergeTheme()
-        theme.behavior.privacyNotice = kingsNotice
+        theme.behavior.privacyNotice = shortNotice
         let host = UIHostingController(rootView: PrivacyTranscriptHarness(controller: controller).conciergeTheme(theme))
         let previousKeyWindow = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .flatMap(\.windows).first(where: \.isKeyWindow)
@@ -112,9 +112,9 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
             previousKeyWindow?.makeKey()
         }
         try await Task.sleep(nanoseconds: 200_000_000)
-        controller.applyTextChange("Where is the team store?")
+        controller.applyTextChange("Where is the store?")
         controller.sendMessage(isUser: true)
-        controller.messages[controller.messages.count - 1].messageBody = "The team store is at Golden 1 Center."
+        controller.messages[controller.messages.count - 1].messageBody = "The store is at 123 Main Street."
         try await Task.sleep(nanoseconds: 700_000_000)
         host.view.layoutIfNeeded()
         let scrollView = try XCTUnwrap(findScrollView(in: host.view))
@@ -125,7 +125,7 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
         controller.abandonActiveTurn()
         controller.messages.append(Message(
             template: .basic(isUserMessage: false),
-            messageBody: String(repeating: "The team store is at Golden 1 Center. ", count: 25)
+            messageBody: String(repeating: "The store is at 123 Main Street. ", count: 25)
         ))
         controller.applyTextChange("What are its hours?")
         controller.sendMessage(isUser: true)

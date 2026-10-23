@@ -31,7 +31,7 @@ final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
         let messages = [first, second, response]
         var view = MessageListView(
             messages: messages,
-            privacyNotice: ConciergePrivacyNoticeBehavior(title: "Privacy Notice Kings", text: "Privacy notice text for Kings."),
+            privacyNotice: ConciergePrivacyNoticeBehavior(title: "Privacy Notice", text: "Configured privacy copy."),
             userMessageToScrollId: second.id,
             chatState: .processing,
             isInputFocused: .constant(false),

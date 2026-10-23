@@ -234,7 +234,7 @@ final class ThemeDecodingTests: XCTestCase {
             #"{"behavior": {}}"#,
             #"{"behavior": {"privacyNotice": null}}"#,
             #"{"behavior": {"privacyNotice": {}}}"#,
-            #"{"behavior": {"privacyNotice": {"title": "Privacy Notice Kings"}}}"#,
+            #"{"behavior": {"privacyNotice": {"title": "Custom Privacy Notice"}}}"#,
             #"{"behavior": {"privacyNotice": {"title": null, "text": null}}}"#
         ] {
             let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
@@ -246,10 +246,10 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
     func test_privacyNotice_configuredCopy_isPreservedAndRoundTrips() throws {
-        let json = #"{"title":"Privacy Notice Kings","text":"Privacy notice text for Kings."}"#
+        let json = #"{"title":"Custom Privacy Notice","text":"Configured privacy notice text."}"#
         let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
-        XCTAssertEqual(notice.title, "Privacy Notice Kings")
-        XCTAssertEqual(notice.text, "Privacy notice text for Kings.")
+        XCTAssertEqual(notice.title, "Custom Privacy Notice")
+        XCTAssertEqual(notice.text, "Configured privacy notice text.")
         XCTAssertTrue(notice.hasContent)
         let copy = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: JSONEncoder().encode(notice))
         XCTAssertEqual(copy.title, notice.title)
@@ -276,19 +276,19 @@ final class ThemeDecodingTests: XCTestCase {
         let json = """
         {"behavior":{"privacyNotice":{
           "title":"Privacy Notice",
-          "text":"Processed by {Sacramento Kings} and {Adobe}.",
+          "text":"Read our {Privacy Policy} and {Terms of Use}.",
           "links":[
-            {"text":"Sacramento Kings","url":"https://www.nba.com/kings/kings-privacy-policy"},
-            {"text":"Adobe","url":"https://www.adobe.com/privacy/policy.html"}
+            {"text":"Privacy Policy","url":"https://www.example.com/privacy"},
+            {"text":"Terms of Use","url":"https://www.example.com/terms"}
           ]
         }}}
         """
         let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
         let notice = theme.behavior.privacyNotice
-        XCTAssertEqual(notice.links.map(\.text), ["Sacramento Kings", "Adobe"])
+        XCTAssertEqual(notice.links.map(\.text), ["Privacy Policy", "Terms of Use"])
         XCTAssertEqual(notice.links.map(\.url), [
-            "https://www.nba.com/kings/kings-privacy-policy",
-            "https://www.adobe.com/privacy/policy.html"
+            "https://www.example.com/privacy",
+            "https://www.example.com/terms"
         ])
         let copy = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
         XCTAssertEqual(copy.behavior.privacyNotice.links.map(\.text), notice.links.map(\.text))
@@ -301,19 +301,19 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
     func test_linkedTextFormatter_matchesDisclaimerPlaceholders_andPreservesSurroundingText() throws {
-        let url = try XCTUnwrap(URL(string: "https://www.adobe.com/privacy/policy.html"))
+        let url = try XCTUnwrap(URL(string: "https://www.example.com/privacy"))
         let result = LinkedTextFormatter.format(
-            text: "Read {Adobe}.\n{Unknown} and {Adobe}.",
-            links: [ConciergeDisclaimerLink(text: "Adobe", url: url.absoluteString)],
+            text: "Read {Privacy Policy}.\n{Unknown} and {Privacy Policy}.",
+            links: [ConciergeDisclaimerLink(text: "Privacy Policy", url: url.absoluteString)],
             textColor: .gray,
             linkColor: .blue
         )
-        XCTAssertEqual(String(result.characters), "Read Adobe.\nUnknown and Adobe.")
+        XCTAssertEqual(String(result.characters), "Read Privacy Policy.\nUnknown and Privacy Policy.")
         let linkedRuns = result.runs.filter { $0.link != nil }
         XCTAssertEqual(linkedRuns.count, 2)
         for run in linkedRuns {
             XCTAssertEqual(run.link, url)
-            XCTAssertEqual(String(result[run.range].characters), "Adobe")
+            XCTAssertEqual(String(result[run.range].characters), "Privacy Policy")
             XCTAssertEqual(run.foregroundColor, .blue)
             XCTAssertEqual(run.underlineStyle, .single)
         }
@@ -325,7 +325,7 @@ final class ThemeDecodingTests: XCTestCase {
     func test_linkedTextFormatter_plainText_unclosedTokensAndInvalidLinks() {
         for (input, expected) in [
             ("No links **or Markdown**", "No links **or Markdown**"),
-            ("Unclosed {Adobe", "Unclosed {Adobe"),
+            ("Unclosed {Privacy Policy", "Unclosed {Privacy Policy"),
             ("{Unknown}", "Unknown"),
             ("{Invalid}", "Invalid"),
             ("", "")

@@ -74,7 +74,7 @@ final class ChatControllerTests: XCTestCase {
         let service = MockChatService(configuration: mockConciergeConfiguration)
         service.shouldCallComplete = false
         let controller = makeController(configuration: mockConciergeConfiguration, service: service)
-        controller.applyTextChange("Where is the team store?")
+        controller.applyTextChange("Where is the store?")
         controller.sendMessage(isUser: true)
 
         let firstID = controller.messages.first?.id
