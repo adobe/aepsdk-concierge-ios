@@ -157,9 +157,7 @@ struct BasicMessageView: View {
         VStack(alignment: .leading, spacing: 0) {
             messageContent(annotatedBody: annotatedBody, markers: markers)
                 .lineSpacing(messageLineSpacing)
-                .padding(showAgentIcon
-                    ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
-                    : theme.layout.messagePadding.edgeInsets)
+                .padding(theme.layout.messagePadding.edgeInsets)
                 .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                 .textSelection(.enabled)
                 .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)
