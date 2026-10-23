@@ -70,6 +70,52 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(controller.chatState, .processing)
     }
 
+    func test_sendMessage_firstQuery_remainsInHistoryAfterFailureAndLaterSends() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("Where is the team store?")
+        controller.sendMessage(isUser: true)
+
+        let firstID = controller.messages.first?.id
+        XCTAssertNotNil(firstID)
+        XCTAssertEqual(controller.userMessageToScrollId, firstID)
+        spinUntil(service.streamChatCallCount == 1)
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.chatState == .idle)
+        XCTAssertEqual(controller.messages.first?.id, firstID)
+
+        controller.applyTextChange("What are its hours?")
+        controller.sendMessage(isUser: true)
+        XCTAssertEqual(controller.messages.first?.id, firstID)
+        XCTAssertNotEqual(controller.userMessageToScrollId, firstID)
+        controller.endConversationForIdentityReset()
+        XCTAssertTrue(controller.messages.isEmpty)
+        controller.applyTextChange("Cannot send after reset")
+        controller.sendMessage(isUser: true)
+        XCTAssertTrue(controller.messages.isEmpty)
+    }
+
+    func test_sendMessage_afterHandoff_preservesEarlierHistory() throws {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("Local agent message")
+        controller.sendMessage(isUser: false)
+        XCTAssertEqual(controller.messages.count, 1)
+
+        controller.handleDataHandoff(routingHint: "checkout", xdmFields: [:], localMessage: "Order confirmed")
+        spinUntil(service.streamChatCallCount == 1)
+        controller.abandonActiveTurn()
+        let historyIDs = controller.messages.map(\.id)
+        controller.applyTextChange("My first query")
+        controller.sendMessage(isUser: true)
+        XCTAssertEqual(Array(controller.messages.prefix(historyIDs.count)).map(\.id), historyIDs)
+        XCTAssertFalse(historyIDs.contains(try XCTUnwrap(controller.userMessageToScrollId)))
+        controller.abandonActiveTurn()
+    }
+
     func test_handleDataHandoff_sendsRoutingHintAsQuery_andDoesNotAppendUserBubble() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)

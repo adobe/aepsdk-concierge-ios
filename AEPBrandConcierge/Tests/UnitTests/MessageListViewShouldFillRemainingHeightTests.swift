@@ -24,6 +24,52 @@ import XCTest
 /// actually run in CI, since they involve no rendering.
 @MainActor
 final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
+    func test_privacyNotice_derivesFirstUserQuery_withoutChangingTurnFiller() {
+        let first = Message(template: .basic(isUserMessage: true), messageBody: "First")
+        let second = Message(template: .basic(isUserMessage: true), messageBody: "Second")
+        let response = Message(template: .basic(isUserMessage: false), messageBody: "")
+        let messages = [first, second, response]
+        var view = MessageListView(
+            messages: messages,
+            privacyNotice: ConciergePrivacyNoticeBehavior(title: "Privacy Notice Kings", text: "Privacy notice text for Kings."),
+            userMessageToScrollId: second.id,
+            chatState: .processing,
+            isInputFocused: .constant(false),
+            onSpeak: { _ in }
+        )
+        XCTAssertEqual(view.privacyNoticeIndex, 0)
+        XCTAssertTrue(view.shouldFillRemainingHeight(at: 2))
+        view.chatState = .idle
+        XCTAssertFalse(view.shouldFillRemainingHeight(at: 2))
+        view.privacyNotice.text = " \n "
+        XCTAssertNil(view.privacyNoticeIndex)
+    }
+
+    func test_privacyNotice_skipsWelcomeAndHandoffMessages_andSupportsRestoredHistory() {
+        let welcome = Message(template: .welcomeHeader(title: "Welcome", body: "Ask a question"))
+        let handoff = Message(template: .basic(isUserMessage: false), messageBody: "Order confirmed")
+        let user = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?")
+        let failure = Message(template: .basic(isUserMessage: false), messageBody: "Network error")
+        let laterUser = Message(template: .basic(isUserMessage: true), messageBody: "Try again")
+        let cases: [(messages: [Message], expectedIndex: Int?)] = [
+            ([], nil),
+            ([welcome], nil),
+            ([welcome, handoff], nil),
+            ([welcome, handoff, user], 2),
+            ([welcome, handoff, user, failure, laterUser], 2),
+            ([user, failure, laterUser], 0)
+        ]
+        for (messages, expectedIndex) in cases {
+            let view = MessageListView(
+                messages: messages,
+                privacyNotice: ConciergePrivacyNoticeBehavior(text: "Configured privacy copy"),
+                isInputFocused: .constant(false),
+                onSpeak: { _ in }
+            )
+            XCTAssertEqual(view.privacyNoticeIndex, expectedIndex)
+        }
+    }
+
     private func makeView(messages: [Message], chatState: ChatState) -> MessageListView {
         MessageListView(messages: messages, chatState: chatState, isInputFocused: .constant(false), onSpeak: { _ in })
     }

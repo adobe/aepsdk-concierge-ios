@@ -311,8 +311,18 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.privacyNotice.title` | string | `"Privacy Notice"` | Privacy dialog title |
-| `behavior.privacyNotice.text` | string | `"Privacy notice text."` | Privacy notice content |
+| `behavior.privacyNotice.title` | string | `"Privacy Notice"` | Inline privacy notice heading; a blank title hides the heading |
+| `behavior.privacyNotice.text` | string | `""` | Privacy notice content with optional `{Label}` link placeholders; absent, empty, or whitespace-only text hides the notice |
+| `behavior.privacyNotice.links` | array | `[]` | Links with `text` and `url`, matching `{Label}` placeholders by exact `text`; uses the same format as `disclaimer.links` |
+
+The informational notice appears above the first submitted user query (typed, voice, or welcome
+suggestion) and remains in scrolling history after errors or chat hide/show. Drafts and app-only
+data handoffs do not trigger it; it does not collect consent or block submission.
+
+Supply approved privacy copy. Missing or null fields use the defaults above; HTML and Markdown
+are not interpreted. Links follow the disclaimer's `{Label}` format, open through the system,
+and use `--message-concierge-link-color`. Unmatched labels render without braces. Styling reuses
+existing typography, transcript colors, and card radius; no privacy-specific CSS tokens are added.
 
 ### Example
 
@@ -362,7 +372,13 @@ Feature toggles and interaction configuration.
     },
     "privacyNotice": {
       "title": "Privacy Notice",
-      "text": "Privacy notice text."
+      "text": "Read our {Privacy Policy}.",
+      "links": [
+        {
+          "text": "Privacy Policy",
+          "url": "https://www.example.com/privacy"
+        }
+      ]
     }
   }
 }
@@ -950,7 +966,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     },
     "privacyNotice": {
       "title": "Privacy Notice",
-      "text": "Privacy notice text."
+      "text": "",
+      "links": []
     }
   },
   "disclaimer": {
@@ -1214,8 +1231,9 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
 | `behavior.chat.userMessageBubbleStyle` | ✅ | Controls user bubble shape (`"balloon"` = speech bubble with squared-off bottom-right; default = fully rounded) |
-| `behavior.privacyNotice.title` | ⚠️ | Parsed but no privacy dialog implemented |
-| `behavior.privacyNotice.text` | ⚠️ | Parsed but no privacy dialog implemented |
+| `behavior.privacyNotice.title` | ✅ | PrivacyNoticeView heading above the first user query |
+| `behavior.privacyNotice.text` | ✅ | PrivacyNoticeView body; blank text hides the notice |
+| `behavior.privacyNotice.links` | ✅ | LinkedTextFormatter renders links in PrivacyNoticeView |
 
 ### Disclaimer
 

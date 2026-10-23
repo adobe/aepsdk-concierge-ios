@@ -22,6 +22,7 @@ struct MessageListView: View {
     static let scrollContentBasePadding: CGFloat = 16
 
     let messages: [Message]
+    var privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior()
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
     var scrollToLastOnAppear: Bool = false
@@ -72,6 +73,7 @@ struct MessageListView: View {
 
     @ViewBuilder
     private func messageStack(geometry: GeometryProxy) -> some View {
+        let noticeIndex = privacyNoticeIndex
         VStack(spacing: 12) {
             ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
                 // showHeader: insert a "Suggestions" label above the first chip in a group
@@ -88,27 +90,18 @@ struct MessageListView: View {
                     .padding(.bottom, -4)
                 }
 
-                ChatMessageView(
-                    messageId: message.id,
-                    template: message.template,
-                    messageBody: message.messageBody,
-                    sources: message.sources,
-                    linkHints: message.linkHints,
-                    promptSuggestions: message.promptSuggestions,
-                    feedbackSentiment: message.feedbackSentiment,
-                    feedbackEligible: message.feedbackEligible,
-                    isStreamComplete: message.isStreamComplete,
-                    onSuggestionTap: onSuggestionTap,
-                    onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
-                    onCtaButtonTap: onCtaButtonTap
-                )
-                    .id(message.id)
-                    .padding(horizontalPadding(for: message.template))
-                    .onAppear {
-                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
-                            onSpeak(messageBody)
-                        }
+                if index == noticeIndex {
+                    // Keep the notice and first query under the same scroll anchor.
+                    VStack(spacing: 12) {
+                        PrivacyNoticeView(notice: privacyNotice)
+                            .padding(horizontalPadding(for: .basic(isUserMessage: true)))
+                        messageView(message)
                     }
+                    .id(message.id)
+                } else {
+                    messageView(message)
+                        .id(message.id)
+                }
             }
 
             // Scroll room for the turn that's in flight. The anchor can only come to rest at the
@@ -131,6 +124,37 @@ struct MessageListView: View {
                 Spacer(minLength: 0)
                     .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
             }
+        }
+    }
+
+    private func messageView(_ message: Message) -> some View {
+        ChatMessageView(
+            messageId: message.id,
+            template: message.template,
+            messageBody: message.messageBody,
+            sources: message.sources,
+            linkHints: message.linkHints,
+            promptSuggestions: message.promptSuggestions,
+            feedbackSentiment: message.feedbackSentiment,
+            feedbackEligible: message.feedbackEligible,
+            isStreamComplete: message.isStreamComplete,
+            onSuggestionTap: onSuggestionTap,
+            onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
+            onCtaButtonTap: onCtaButtonTap
+        )
+        .padding(horizontalPadding(for: message.template))
+        .onAppear {
+            if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
+                onSpeak(messageBody)
+            }
+        }
+    }
+
+    var privacyNoticeIndex: Int? {
+        guard privacyNotice.hasContent else { return nil }
+        return messages.firstIndex {
+            if case .basic(isUserMessage: true) = $0.template { return true }
+            return false
         }
     }
 

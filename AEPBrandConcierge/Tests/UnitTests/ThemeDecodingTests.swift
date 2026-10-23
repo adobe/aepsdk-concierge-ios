@@ -11,6 +11,7 @@
  */
 
 import XCTest
+import SwiftUI
 @testable import AEPBrandConcierge
 
 final class ThemeDecodingTests: XCTestCase {
@@ -225,6 +226,119 @@ final class ThemeDecodingTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.behavior.privacyNotice.title, "Privacy Notice")
         XCTAssertEqual(theme.behavior.privacyNotice.text, "Privacy notice text.")
+    }
+
+    func test_privacyNotice_missingOrPartialContent_defaultsToHidden() throws {
+        for json in [
+            "{}",
+            #"{"behavior": {}}"#,
+            #"{"behavior": {"privacyNotice": null}}"#,
+            #"{"behavior": {"privacyNotice": {}}}"#,
+            #"{"behavior": {"privacyNotice": {"title": "Privacy Notice Kings"}}}"#,
+            #"{"behavior": {"privacyNotice": {"title": null, "text": null}}}"#
+        ] {
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+            XCTAssertEqual(theme.behavior.privacyNotice.text, "")
+            XCTAssertFalse(theme.behavior.privacyNotice.hasContent)
+            XCTAssertTrue(theme.behavior.privacyNotice.links.isEmpty)
+        }
+        XCTAssertFalse(ConciergePrivacyNoticeBehavior().hasContent)
+    }
+
+    func test_privacyNotice_configuredCopy_isPreservedAndRoundTrips() throws {
+        let json = #"{"title":"Privacy Notice Kings","text":"Privacy notice text for Kings."}"#
+        let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
+        XCTAssertEqual(notice.title, "Privacy Notice Kings")
+        XCTAssertEqual(notice.text, "Privacy notice text for Kings.")
+        XCTAssertTrue(notice.hasContent)
+        let copy = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: JSONEncoder().encode(notice))
+        XCTAssertEqual(copy.title, notice.title)
+        XCTAssertEqual(copy.text, notice.text)
+    }
+
+    func test_privacyNotice_blankBodyIsHidden_andBlankTitleDoesNotHideBody() throws {
+        XCTAssertFalse(ConciergePrivacyNoticeBehavior(text: " \n\t ").hasContent)
+        XCTAssertTrue(ConciergePrivacyNoticeBehavior(title: " ", text: "Configured copy").hasContent)
+        let notice = try JSONDecoder().decode(
+            ConciergePrivacyNoticeBehavior.self, from: Data(#"{"text":"Configured copy"}"#.utf8)
+        )
+        XCTAssertEqual(notice.title, "Privacy Notice")
+        XCTAssertTrue(notice.hasContent)
+    }
+
+    func test_privacyNotice_invalidFieldTypes_throw() {
+        for json in [#"{"title":42}"#, #"{"text":false}"#, #"{"links":{}}"#, #"{"links":[{"text":"Policy","url":42}]}"#] {
+            XCTAssertThrowsError(try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8)))
+        }
+    }
+
+    func test_privacyNotice_links_decodeAndRoundTrip() throws {
+        let json = """
+        {"behavior":{"privacyNotice":{
+          "title":"Privacy Notice",
+          "text":"Processed by {Sacramento Kings} and {Adobe}.",
+          "links":[
+            {"text":"Sacramento Kings","url":"https://www.nba.com/kings/kings-privacy-policy"},
+            {"text":"Adobe","url":"https://www.adobe.com/privacy/policy.html"}
+          ]
+        }}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        let notice = theme.behavior.privacyNotice
+        XCTAssertEqual(notice.links.map(\.text), ["Sacramento Kings", "Adobe"])
+        XCTAssertEqual(notice.links.map(\.url), [
+            "https://www.nba.com/kings/kings-privacy-policy",
+            "https://www.adobe.com/privacy/policy.html"
+        ])
+        let copy = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(copy.behavior.privacyNotice.links.map(\.text), notice.links.map(\.text))
+        XCTAssertEqual(copy.behavior.privacyNotice.links.map(\.url), notice.links.map(\.url))
+
+        for json in [#"{"text":"Copy"}"#, #"{"text":"Copy","links":null}"#, #"{"text":"Copy","links":[]}"#] {
+            let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
+            XCTAssertTrue(notice.links.isEmpty)
+        }
+    }
+
+    func test_linkedTextFormatter_matchesDisclaimerPlaceholders_andPreservesSurroundingText() throws {
+        let url = try XCTUnwrap(URL(string: "https://www.adobe.com/privacy/policy.html"))
+        let result = LinkedTextFormatter.format(
+            text: "Read {Adobe}.\n{Unknown} and {Adobe}.",
+            links: [ConciergeDisclaimerLink(text: "Adobe", url: url.absoluteString)],
+            textColor: .gray,
+            linkColor: .blue
+        )
+        XCTAssertEqual(String(result.characters), "Read Adobe.\nUnknown and Adobe.")
+        let linkedRuns = result.runs.filter { $0.link != nil }
+        XCTAssertEqual(linkedRuns.count, 2)
+        for run in linkedRuns {
+            XCTAssertEqual(run.link, url)
+            XCTAssertEqual(String(result[run.range].characters), "Adobe")
+            XCTAssertEqual(run.foregroundColor, .blue)
+            XCTAssertEqual(run.underlineStyle, .single)
+        }
+        for run in result.runs where run.link == nil {
+            XCTAssertEqual(run.foregroundColor, .gray)
+        }
+    }
+
+    func test_linkedTextFormatter_plainText_unclosedTokensAndInvalidLinks() {
+        for (input, expected) in [
+            ("No links **or Markdown**", "No links **or Markdown**"),
+            ("Unclosed {Adobe", "Unclosed {Adobe"),
+            ("{Unknown}", "Unknown"),
+            ("{Invalid}", "Invalid"),
+            ("", "")
+        ] {
+            let result = LinkedTextFormatter.format(
+                text: input,
+                links: [ConciergeDisclaimerLink(text: "Invalid", url: "https://[invalid")],
+                textColor: .gray,
+                linkColor: .blue
+            )
+            XCTAssertEqual(String(result.characters), expected)
+            XCTAssertTrue(result.runs.allSatisfy { $0.link == nil })
+        }
     }
 
     func test_behavior_feedback_displayMode_modalAndAction_decode() throws {
@@ -820,4 +934,3 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
 }
-
