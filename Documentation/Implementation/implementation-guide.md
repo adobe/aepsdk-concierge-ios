@@ -386,16 +386,17 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`hideButton`**: When `true`, hides the built-in floating button so chat can be triggered from custom host-app UI. Defaults to `false`.
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat for this session.
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`on presentingViewController`** *(required)*: The UIKit view controller that will host the chat UI as a child view controller, filling its view.
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
@@ -403,6 +404,7 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
 ### Option A - Manual API call (no floating button)

@@ -34,6 +34,13 @@ struct ChatComposer: View {
     let onComplete: () -> Void
     let onSend: () -> Void
     var onLinkTap: ((URL) -> Void)?
+    /// Voice conversation entry point, shown only when the app provided a voice transport. Defaults keep
+    /// existing call sites valid.
+    var isVoiceAvailable: Bool = false
+    var isVoiceSessionActive: Bool = false
+    var isVoiceConnecting: Bool = false
+    var voiceEnabled: Bool = false
+    var onVoiceTap: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -53,7 +60,12 @@ struct ChatComposer: View {
                         micEnabled: micEnabled,
                         sendEnabled: sendEnabled,
                         audioLevel: audioLevel,
-                        onSend: onSend
+                        onSend: onSend,
+                        isVoiceAvailable: isVoiceAvailable,
+                        isVoiceSessionActive: isVoiceSessionActive,
+                        isVoiceConnecting: isVoiceConnecting,
+                        voiceEnabled: voiceEnabled,
+                        onVoiceTap: onVoiceTap
                     )
                 }
                 .padding(.horizontal, ChatComposer.inputInnerHorizontalPadding)

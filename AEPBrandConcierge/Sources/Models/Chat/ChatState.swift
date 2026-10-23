@@ -45,6 +45,10 @@ public enum ChatState: Equatable {
     case idle
     case processing
 
+    /// A voice conversation is running through the app's voice transport. Typed turns, the
+    /// dictation mic and data handoffs are held off until it ends; the chat then returns to `.idle`.
+    case voiceSession
+
     /// - Important: No production code path produces this case. A failed turn is a *finished* turn:
     ///   it surfaces the failure and returns to `.idle`. Parking here would deadlock the chat, since
     ///   `sendMessage`, `sendEnabled` and `micEnabled` all require `.idle` and the only route back

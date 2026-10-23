@@ -207,6 +207,7 @@
 		9AC954A5C5714A1E8514A4C0 /* Pods_AEPBrandConcierge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */; };
 		A017E57000000000000000A1 /* AuthTokenTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A017E57000000000000000A2 /* AuthTokenTestView.swift */; };
 		A1B2C3D40001000100010001 /* ConciergeHeaderConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */; };
+		A5AC519FD7BA66CDB9FB1CF2 /* ChatControllerVoiceSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDE3DC5D89D460FA3AD766E /* ChatControllerVoiceSessionTests.swift */; };
 		ABDEBF4434DB0A9044A9E92E /* GeoURLConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6132A7C818AB7E802856BA /* GeoURLConverterTests.swift */; };
 		B283F5767264476781252EEC /* ConciergeCardTapHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49180BEE1E2A4439AC75F403 /* ConciergeCardTapHandler.swift */; };
 		B6B082EF543410FE5586506E /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4C57535CE2A722B6A0CC54 /* AudioWaveformView.swift */; };
@@ -438,6 +439,7 @@
 		4CF60BF82F0F2DF4008CE4F0 /* FeedbackIconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackIconButton.swift; sourceTree = "<group>"; };
 		4CF60BFD2F0F2E00008CE4F0 /* ComposerSendButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerSendButtonStyle.swift; sourceTree = "<group>"; };
 		551D82570E6C2C5DC62D9F97 /* VoiceSessionControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceSessionControllerTests.swift; sourceTree = "<group>"; };
+		5DDE3DC5D89D460FA3AD766E /* ChatControllerVoiceSessionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChatControllerVoiceSessionTests.swift; sourceTree = "<group>"; };
 		62777C5A2D1238AD286ECB85 /* MessageListViewShouldFillRemainingHeightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewShouldFillRemainingHeightTests.swift; sourceTree = "<group>"; };
 		77E8779C1207FDDE566FCEAC /* Pods-UnitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.release.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.release.xcconfig"; sourceTree = "<group>"; };
 		78116DF64B3E7886464E3576 /* SpeechCapturerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechCapturerTests.swift; sourceTree = "<group>"; };
@@ -830,6 +832,7 @@
 				DDCB026AE1D66F2D18D30A74 /* ConciergeResolveSessionTests.swift */,
 				551D82570E6C2C5DC62D9F97 /* VoiceSessionControllerTests.swift */,
 				F35EAAAFB51F75C32BE02779 /* DataChannelMessageParserTests.swift */,
+				5DDE3DC5D89D460FA3AD766E /* ChatControllerVoiceSessionTests.swift */,
 			);
 			path = UnitTests;
 			sourceTree = "<group>";
@@ -1439,6 +1442,7 @@
 				726D11FF3673A165B0776D56 /* FakeVoiceTransport.swift in Sources */,
 				7D43F9F96CAE44173EA4C7F5 /* VoiceSessionControllerTests.swift in Sources */,
 				DB1ED7DE290584FE75CE488F /* DataChannelMessageParserTests.swift in Sources */,
+				A5AC519FD7BA66CDB9FB1CF2 /* ChatControllerVoiceSessionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
