@@ -345,14 +345,17 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertEqual(ActionButton(text: "Chat", url: "https://example.com", summary: " hi ").summary, "hi")
     }
 
-    func test_actionButton_encodeDecodeRoundtrip_preservesSummary() throws {
+    func test_actionButton_encode_leavesOutSummary() throws {
         let original = ActionButton(text: "Chat", url: "https://example.com", summary: "hi")
 
-        let decoded = try JSONDecoder().decode(ActionButton.self, from: JSONEncoder().encode(original))
+        let data = try JSONEncoder().encode(original)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let decoded = try JSONDecoder().decode(ActionButton.self, from: data)
 
+        XCTAssertEqual(Set(json.keys), ["text", "url"])
         XCTAssertEqual(decoded.text, "Chat")
         XCTAssertEqual(decoded.url, "https://example.com")
-        XCTAssertEqual(decoded.summary, "hi")
+        XCTAssertNil(decoded.summary)
     }
 
     func test_multimodalElements_encodeDecodeRoundtrip() throws {

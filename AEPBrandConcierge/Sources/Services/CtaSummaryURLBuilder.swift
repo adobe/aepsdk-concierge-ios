@@ -33,10 +33,10 @@ enum CtaSummaryURLBuilder {
 
     private static let supportedSchemes: Set<String> = ["http", "https"]
 
-    /// RFC 3986 unreserved characters; everything else in the summary is percent-encoded
-    /// (including `+`, `/`, `=`, `&`, `%`, `#`, `?`, spaces and line breaks).
+    /// Characters left as-is in the summary, same as Android's `URLEncoder`; everything else
+    /// (spaces, `+`, `/`, `=`, `&`, `%`, `~`, line breaks, ...) is percent-encoded.
     private static let allowedSummaryCharacters = CharacterSet(
-        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._*"
     )
 
     /// Returns the URL to open for a CTA tap.

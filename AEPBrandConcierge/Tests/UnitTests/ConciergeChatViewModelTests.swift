@@ -1705,15 +1705,16 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(action?.summary, "Asked about a refund.")
     }
 
-    func test_streaming_ctaWithBlankTextOrURL_isSkipped() {
-        // Given — whitespace-only or missing label/url would render a dead or empty button
+    func test_streaming_ctaWithBlankTextOrURL_isSkipped_validCtaIsKept() {
+        // Given — blank or missing label/url CTAs plus one valid CTA
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let elements = [
             MultimodalElement(id: "cta-blank-text", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "   ", url: "https://example.com")),
             MultimodalElement(id: "cta-empty-text", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "", url: "https://example.com")),
             MultimodalElement(id: "cta-blank-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: "   ", summary: "hi")),
             MultimodalElement(id: "cta-empty-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: "")),
-            MultimodalElement(id: "cta-nil-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: nil))
+            MultimodalElement(id: "cta-nil-url", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat", url: nil)),
+            MultimodalElement(id: "cta-valid", type: "ctaButton", entityInfo: makeCtaEntityInfo(text: "Chat now", url: "https://example.com/live-chat"))
         ]
         fakeService.plannedChunks = [
             makePayloadWithElements(state: ConciergeConstants.StreamState.COMPLETED, elements: elements, message: "Here you go.")
@@ -1726,11 +1727,13 @@ final class ChatControllerTests: XCTestCase {
 
         // Then
         spinUntil(controller.chatState == .idle)
-        let ctaMessage = controller.messages.first { message in
-            if case .ctaButton = message.template { return true }
-            return false
+        let actions = controller.messages.compactMap { message -> ActionButton? in
+            if case .ctaButton(let action) = message.template { return action }
+            return nil
         }
-        XCTAssertNil(ctaMessage, "CTA with blank text or url should not produce a message")
+        XCTAssertEqual(actions.count, 1, "Only the valid CTA should produce a message")
+        XCTAssertEqual(actions.first?.text, "Chat now")
+        XCTAssertEqual(actions.first?.url, "https://example.com/live-chat")
     }
 
     // MARK: - Interleaved Element Ordering Tests

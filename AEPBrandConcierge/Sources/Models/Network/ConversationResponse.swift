@@ -274,18 +274,17 @@ public struct ActionButton: Codable {
         summary = ActionButton.normalizedSummary((try? container.decodeIfPresent(String.self, forKey: .summary)) ?? nil)
     }
 
+    // `summary` is not encoded so it never shows up in debug logs of the encoded response.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .text)
+        try container.encodeIfPresent(url, forKey: .url)
+    }
+
     private static func normalizedSummary(_ summary: String?) -> String? {
         guard let trimmed = summary?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             return nil
         }
         return trimmed
-    }
-}
-
-extension ActionButton {
-    /// URL to open when a standalone CTA button is tapped: `url` with `summary` appended
-    /// (see `CtaSummaryURLBuilder`). Tracking uses `url`, never this value.
-    var clickURL: String? {
-        url.map { CtaSummaryURLBuilder.clickURL(for: $0, summary: summary) }
     }
 }

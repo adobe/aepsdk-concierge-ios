@@ -67,8 +67,9 @@ final class CtaSummaryURLBuilderTests: XCTestCase {
         )
     }
 
-    func test_clickURL_leavesUnreservedCharactersUnencoded() {
-        XCTAssertEqual(clickURL("https://example.com/chat", "aZ0-._~"), "https://example.com/chat?summary=aZ0-._~")
+    func test_clickURL_encodesLikeAndroidURLEncoder() {
+        XCTAssertEqual(clickURL("https://example.com/chat", "aZ0-._*"), "https://example.com/chat?summary=aZ0-._*")
+        XCTAssertEqual(clickURL("https://example.com/chat", "a*b~c"), "https://example.com/chat?summary=a*b%7Ec")
     }
 
     func test_clickURL_addsSummaryToExistingQuery() {
@@ -144,6 +145,13 @@ final class CtaSummaryURLBuilderTests: XCTestCase {
         )
     }
 
+    func test_clickURL_appendsSummary_whenExistingParameterNamesHaveMalformedEscapes() {
+        XCTAssertEqual(
+            clickURL("https://example.com/chat?%zz=1&a%=2", "hi"),
+            "https://example.com/chat?%zz=1&a%=2&summary=hi"
+        )
+    }
+
     // MARK: - Length limit
 
     func test_clickURL_appendsSummary_thatReachesLengthLimitExactly() {
@@ -207,70 +215,5 @@ final class CtaSummaryURLBuilderTests: XCTestCase {
         let url = "https://exa mple.com/chat"
 
         XCTAssertEqual(clickURL(url, "hi"), url)
-    }
-}
-
-// MARK: - ActionButton.clickURL
-
-final class ActionButtonClickURLTests: XCTestCase {
-
-    func test_clickURL_appendsSummary_andKeepsURLUnchanged() {
-        let action = ActionButton(text: "Chat", url: "https://example.com/chat", summary: "hi")
-
-        XCTAssertEqual(action.url, "https://example.com/chat")
-        XCTAssertEqual(action.clickURL, "https://example.com/chat?summary=hi")
-    }
-
-    func test_clickURL_equalsURL_whenNoSummary() {
-        XCTAssertEqual(ActionButton(text: "Chat", url: "https://example.com/chat").clickURL, "https://example.com/chat")
-    }
-
-    func test_clickURL_isNil_whenURLNil() {
-        XCTAssertNil(ActionButton(text: "Chat", url: nil, summary: "hi").clickURL)
-    }
-}
-
-// MARK: - CtaButtonView tap
-
-final class CtaButtonViewTests: XCTestCase {
-
-    override func tearDown() {
-        ConciergeLinkHandler.urlOpener = { url, options, completion in
-            UIApplication.shared.open(url, options: options, completionHandler: completion)
-        }
-        super.tearDown()
-    }
-
-    /// Taps the button and returns the URL sent to tracking and the URL the SDK tried to open.
-    private func tap(_ action: ActionButton) -> (tracked: String?, opened: URL?) {
-        var trackedURL: String?
-        var openedURL: URL?
-        ConciergeLinkHandler.urlOpener = { url, _, completion in
-            openedURL = url
-            completion?(true) // handled as a universal link, so no further routing
-        }
-        CtaButtonView(action: action, onTap: { _, url in trackedURL = url }).handleTap()
-        return (trackedURL, openedURL)
-    }
-
-    func test_handleTap_tracksOriginalURL_andOpensURLWithSummary() {
-        let result = tap(ActionButton(text: "Chat now", url: "https://example.com/chat", summary: "refund for order 12345"))
-
-        XCTAssertEqual(result.tracked, "https://example.com/chat")
-        XCTAssertEqual(result.opened?.absoluteString, "https://example.com/chat?summary=refund%20for%20order%2012345")
-    }
-
-    func test_handleTap_withoutSummary_tracksAndOpensSameURL() {
-        let result = tap(ActionButton(text: "Shop", url: "https://example.com/shop"))
-
-        XCTAssertEqual(result.tracked, "https://example.com/shop")
-        XCTAssertEqual(result.opened?.absoluteString, "https://example.com/shop")
-    }
-
-    func test_handleTap_doesNothing_whenURLNil() {
-        let result = tap(ActionButton(text: "Chat", url: nil, summary: "hi"))
-
-        XCTAssertNil(result.tracked)
-        XCTAssertNil(result.opened)
     }
 }
