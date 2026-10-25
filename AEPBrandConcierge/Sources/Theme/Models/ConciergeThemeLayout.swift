@@ -125,7 +125,7 @@ public struct ConciergeLayout: Codable {
     public var agentIconSize: CGFloat
     public var agentIconSpacing: CGFloat
     /// Total horizontal space occupied by the agent icon column (size + trailing spacing).
-    /// Use this to align sibling elements with the start of the agent response text.
+    /// Use this to align sibling elements with the leading edge of the agent message bubble.
     public var agentTextIndent: CGFloat { agentIconSize + agentIconSpacing }
 
     // Welcome screen layout

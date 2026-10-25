@@ -127,7 +127,9 @@ struct BasicMessageView: View {
                 if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
 
                 if showAgentIcon {
+                    // Fixed frame reserves the icon column even if the asset fails to resolve.
                     LocalAssetImageView(iconPath: theme.assets.icons.company, width: theme.layout.agentIconSize, height: theme.layout.agentIconSize)
+                        .frame(width: theme.layout.agentIconSize, height: theme.layout.agentIconSize)
                         .padding(.trailing, theme.layout.agentIconSpacing)
                 }
 
