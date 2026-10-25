@@ -91,6 +91,9 @@ final class ChatControllerTests: XCTestCase {
         controller.sendMessage(isUser: true)
         XCTAssertEqual(controller.messages.first?.id, firstID)
         XCTAssertNotEqual(controller.userMessageToScrollId, firstID)
+        // Let the turn resolve its auth token now so it cannot run during a later test.
+        spinUntil(service.streamChatCallCount == 2)
+        XCTAssertEqual(service.streamChatCallCount, 2)
         controller.endConversationForIdentityReset()
         XCTAssertTrue(controller.messages.isEmpty)
         controller.applyTextChange("Cannot send after reset")
@@ -113,6 +116,9 @@ final class ChatControllerTests: XCTestCase {
         let historyIDs = controller.messages.map(\.id)
         controller.applyTextChange("My first query")
         controller.sendMessage(isUser: true)
+        // Let the turn resolve its auth token now so it cannot run during a later test.
+        spinUntil(service.streamChatCallCount == 2)
+        XCTAssertEqual(service.streamChatCallCount, 2)
         XCTAssertEqual(Array(controller.messages.prefix(historyIDs.count)).map(\.id), historyIDs)
         XCTAssertFalse(historyIDs.contains(try XCTUnwrap(controller.userMessageToScrollId)))
         controller.abandonActiveTurn()
