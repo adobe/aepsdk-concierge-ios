@@ -300,6 +300,41 @@ final class ThemeDecodingTests: XCTestCase {
         }
     }
 
+    func test_privacyNotice_initializers_keepShippedSignature_andAcceptLinks() {
+        let shipped = ConciergePrivacyNoticeBehavior(title: "Privacy", text: "Copy")
+        XCTAssertEqual(shipped.title, "Privacy")
+        XCTAssertTrue(shipped.links.isEmpty)
+        let linked = ConciergePrivacyNoticeBehavior(
+            text: "Copy",
+            links: [ConciergeDisclaimerLink(text: "Policy", url: "https://www.example.com")]
+        )
+        XCTAssertEqual(linked.title, "Privacy Notice")
+        XCTAssertEqual(linked.links.map(\.text), ["Policy"])
+    }
+
+    func test_links_missingFields_defaultToEmpty_withoutFailingTheme() throws {
+        let json = """
+        {
+          "disclaimer": {"text": "See {Terms}.", "links": [{"text": "Terms"}]},
+          "behavior": {"privacyNotice": {"text": "Read {Policy}.", "links": [{"url": "https://www.example.com"}, {}]}}
+        }
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.disclaimer.links.map(\.text), ["Terms"])
+        XCTAssertEqual(theme.disclaimer.links.map(\.url), [""])
+        XCTAssertEqual(theme.behavior.privacyNotice.links.map(\.text), ["", ""])
+        XCTAssertEqual(theme.behavior.privacyNotice.links.map(\.url), ["https://www.example.com", ""])
+
+        let result = LinkedTextFormatter.format(
+            text: theme.disclaimer.text,
+            links: theme.disclaimer.links,
+            textColor: .gray,
+            linkColor: .blue
+        )
+        XCTAssertEqual(String(result.characters), "See Terms.")
+        XCTAssertTrue(result.runs.allSatisfy { $0.link == nil })
+    }
+
     func test_linkedTextFormatter_matchesDisclaimerPlaceholders_andPreservesSurroundingText() throws {
         let url = try XCTUnwrap(URL(string: "https://www.example.com/privacy"))
         let result = LinkedTextFormatter.format(

@@ -327,6 +327,7 @@ public enum ConciergeConstants {
             public static let PRODUCT_CARD = "productCard"
             public static let DISCLAIMER   = "disclaimer"
             public static let CTA          = "cta"
+            public static let PRIVACY_NOTICE = "privacyNotice"
         }
     }
 

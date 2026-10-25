@@ -14,6 +14,10 @@ import SwiftUI
 
 struct PrivacyNoticeView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.openURL) private var openURL
+    @Environment(\.conciergeWebViewPresenter) private var webViewPresenter
+    @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
+    @Environment(\.conciergeLinkClickTracker) private var linkClickTracker
     @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
 
     let notice: ConciergePrivacyNoticeBehavior
@@ -41,6 +45,16 @@ struct PrivacyNoticeView: View {
                     linkColor: theme.colors.message.conciergeLink.color
                 ))
                     .font(bodyFont)
+                    .environment(\.openURL, OpenURLAction { url in
+                        Self.handleLinkTap(
+                            url,
+                            tracker: linkClickTracker,
+                            interceptor: linkInterceptor,
+                            openInWebView: { webViewPresenter.openURL($0) },
+                            openWithSystem: { openURL($0) }
+                        )
+                        return .handled
+                    })
             }
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -49,13 +63,27 @@ struct PrivacyNoticeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard, style: .continuous)
-                    .fill(theme.colors.surface.mainContainerBackground.color)
+                    .fill(theme.components.chatMessage.conciergeBackground.color)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: theme.layout.borderRadiusCard, style: .continuous)
-                    .strokeBorder(Color(UIColor.separator), lineWidth: 1)
+                    .strokeBorder(theme.colors.message.conciergeText.color.opacity(0.12), lineWidth: 1)
             )
             .accessibilityElement(children: .contain)
         }
+    }
+
+    /// Routes privacy links like other chat links: track, let the host intercept, then open
+    /// web links as universal links or in the in-app web view, and other schemes via the system.
+    nonisolated static func handleLinkTap(
+        _ url: URL,
+        tracker: ConciergeLinkClickTracker,
+        interceptor: ConciergeLinkInterceptor,
+        openInWebView: @escaping (URL) -> Void,
+        openWithSystem: @escaping (URL) -> Void
+    ) {
+        tracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.PRIVACY_NOTICE)
+        if interceptor.handleLink(url) { return }
+        ConciergeLinkHandler.handleURL(url, openInWebView: openInWebView, openWithSystem: openWithSystem)
     }
 }

@@ -430,8 +430,16 @@ public struct ConciergePrivacyNoticeBehavior: Codable {
 
     public init(
         title: String = "Privacy Notice",
+        text: String = ""
+    ) {
+        self.init(title: title, text: text, links: [])
+    }
+
+    // Separate from `init(title:text:)` so the previously shipped initializer keeps its ABI.
+    public init(
+        title: String = "Privacy Notice",
         text: String = "",
-        links: [ConciergeDisclaimerLink] = []
+        links: [ConciergeDisclaimerLink]
     ) {
         self.title = title
         self.text = text

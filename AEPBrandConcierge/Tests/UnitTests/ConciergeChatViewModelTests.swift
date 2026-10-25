@@ -70,7 +70,8 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(controller.chatState, .processing)
     }
 
-    func test_sendMessage_firstQuery_remainsInHistoryAfterFailureAndLaterSends() {
+    /// The privacy notice is anchored to the first user message, so it must stay first in history.
+    func test_sendMessage_privacyNoticeAnchor_firstQueryStaysFirstAfterFailureAndLaterSends() {
         let service = MockChatService(configuration: mockConciergeConfiguration)
         service.shouldCallComplete = false
         let controller = makeController(configuration: mockConciergeConfiguration, service: service)
@@ -97,7 +98,8 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
-    func test_sendMessage_afterHandoff_preservesEarlierHistory() throws {
+    /// A handoff never anchors the privacy notice; the first typed query after it does.
+    func test_sendMessage_afterHandoff_privacyNoticeAnchorIsNewQuery_andHistoryIsPreserved() throws {
         let service = MockChatService(configuration: mockConciergeConfiguration)
         service.shouldCallComplete = false
         let controller = makeController(configuration: mockConciergeConfiguration, service: service)

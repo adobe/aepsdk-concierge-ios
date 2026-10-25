@@ -310,4 +310,58 @@ final class ConciergeLinkHandlerTests: XCTestCase {
 
         XCTAssertEqual(probedURL?.absoluteString, "https://maps.apple.com/?daddr=37.6788,-122.4567")
     }
+
+    // MARK: - Privacy notice link routing
+
+    func testPrivacyNoticeLinkTap_whenIntercepted_tracksAndSkipsSDKRouting() {
+        let url = URL(string: "https://www.example.com/privacy")!
+        var tracked: [(String, String)] = []
+        var opened = false
+
+        PrivacyNoticeView.handleLinkTap(
+            url,
+            tracker: ConciergeLinkClickTracker { tracked.append(($0, $1)) },
+            interceptor: ConciergeLinkInterceptor { _ in true },
+            openInWebView: { _ in opened = true },
+            openWithSystem: { _ in opened = true }
+        )
+
+        XCTAssertEqual(tracked.map(\.0), [url.absoluteString])
+        XCTAssertEqual(tracked.map(\.1), [ConciergeConstants.TrackingEvent.LinkClickOrigin.PRIVACY_NOTICE])
+        XCTAssertFalse(opened)
+    }
+
+    func testPrivacyNoticeLinkTap_customScheme_opensWithSystem() {
+        let url = URL(string: "myapp://privacy")!
+        var systemURL: URL?
+
+        PrivacyNoticeView.handleLinkTap(
+            url,
+            tracker: ConciergeLinkClickTracker(),
+            interceptor: ConciergeLinkInterceptor(),
+            openInWebView: { _ in XCTFail("Custom schemes must not open in the web view") },
+            openWithSystem: { systemURL = $0 }
+        )
+
+        XCTAssertEqual(systemURL, url)
+    }
+
+    func testPrivacyNoticeLinkTap_webLinkNotUniversal_opensInWebView() {
+        let url = URL(string: "https://www.example.com/privacy")!
+        let opened = expectation(description: "openInWebView called")
+        ConciergeLinkHandler.urlOpener = { _, _, completion in completion?(false) }
+
+        PrivacyNoticeView.handleLinkTap(
+            url,
+            tracker: ConciergeLinkClickTracker(),
+            interceptor: ConciergeLinkInterceptor(),
+            openInWebView: {
+                XCTAssertEqual($0, url)
+                opened.fulfill()
+            },
+            openWithSystem: { _ in XCTFail("Web links must not open with the system handler") }
+        )
+
+        waitForExpectations(timeout: 1)
+    }
 }

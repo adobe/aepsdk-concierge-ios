@@ -320,9 +320,12 @@ suggestion) and remains in scrolling history after errors or chat hide/show. Dra
 data handoffs do not trigger it; it does not collect consent or block submission.
 
 Supply approved privacy copy. Missing or null fields use the defaults above; HTML and Markdown
-are not interpreted. Links follow the disclaimer's `{Label}` format, open through the system,
-and use `--message-concierge-link-color`. Unmatched labels render without braces. Styling reuses
-existing typography, transcript colors, and card radius; no privacy-specific CSS tokens are added.
+are not interpreted. Links follow the disclaimer's `{Label}` format, use
+`--message-concierge-link-color`, and route like inline message links (host `handleLink` first,
+then universal link, in-app web view, or system), tracked with link-click origin `privacyNotice`.
+Unmatched labels render without braces. The card uses the concierge message background, a border
+derived from `--message-concierge-text-color`, and the card radius; no privacy-specific CSS
+tokens are added.
 
 ### Example
 
@@ -394,8 +397,8 @@ Legal disclaimer text with embedded links.
 |----------|------|---------|-------------|
 | `disclaimer.text` | string | `"AI responses may be inaccurate..."` | Disclaimer text with `{placeholders}` for links |
 | `disclaimer.links` | array | `[]` | Array of link objects; each item has string properties `text` and `url`. |
-| `disclaimer.links[].text` | string | `""` | Link display text (matches placeholder) |
-| `disclaimer.links[].url` | string | `""` | Link URL |
+| `disclaimer.links[].text` | string | `""` | Link display text (matches placeholder); missing defaults to empty |
+| `disclaimer.links[].url` | string | `""` | Link URL; missing or invalid renders the label as plain text |
 
 ### Example
 
@@ -1233,7 +1236,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.chat.userMessageBubbleStyle` | ✅ | Controls user bubble shape (`"balloon"` = speech bubble with squared-off bottom-right; default = fully rounded) |
 | `behavior.privacyNotice.title` | ✅ | PrivacyNoticeView heading above the first user query |
 | `behavior.privacyNotice.text` | ✅ | PrivacyNoticeView body; blank text hides the notice |
-| `behavior.privacyNotice.links` | ✅ | LinkedTextFormatter renders links in PrivacyNoticeView |
+| `behavior.privacyNotice.links` | ✅ | LinkedTextFormatter renders links in PrivacyNoticeView; taps route through ConciergeLinkHandler |
 
 ### Disclaimer
 
