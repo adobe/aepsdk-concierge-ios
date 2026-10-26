@@ -70,6 +70,31 @@ final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
         }
     }
 
+    func test_privacyNotice_sharesFirstQueryScrollAnchor() {
+        let welcome = Message(template: .welcomeHeader(title: "Welcome", body: "Ask a question"))
+        let first = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?")
+        let response = Message(template: .basic(isUserMessage: false), messageBody: "123 Main Street.")
+        let later = Message(template: .basic(isUserMessage: true), messageBody: "What are its hours?")
+        let messages = [welcome, first, response, later]
+        var view = MessageListView(
+            messages: messages,
+            privacyNotice: ConciergePrivacyNoticeBehavior(text: "Configured privacy copy"),
+            userMessageToScrollId: first.id,
+            isInputFocused: .constant(false),
+            onSpeak: { _ in }
+        )
+
+        // The notice adds no anchor of its own: it lives in the first query's row, so
+        // `scrollTo(userMessageToScrollId)` brings both to the top.
+        let rows = view.transcriptRows
+        XCTAssertEqual(rows.map(\.id), messages.map(\.id))
+        XCTAssertEqual(rows.filter(\.showsPrivacyNotice).map(\.id), [first.id])
+        XCTAssertEqual(rows.first(where: \.showsPrivacyNotice)?.id, view.userMessageToScrollId)
+
+        view.privacyNotice.text = " "
+        XCTAssertFalse(view.transcriptRows.contains(where: \.showsPrivacyNotice))
+    }
+
     private func makeView(messages: [Message], chatState: ChatState) -> MessageListView {
         MessageListView(messages: messages, chatState: chatState, isInputFocused: .constant(false), onSpeak: { _ in })
     }

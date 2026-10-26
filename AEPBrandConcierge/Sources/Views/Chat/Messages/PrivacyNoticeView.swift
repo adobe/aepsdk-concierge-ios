@@ -46,13 +46,7 @@ struct PrivacyNoticeView: View {
                 ))
                     .font(bodyFont)
                     .environment(\.openURL, OpenURLAction { url in
-                        Self.handleLinkTap(
-                            url,
-                            tracker: linkClickTracker,
-                            interceptor: linkInterceptor,
-                            openInWebView: { webViewPresenter.openURL($0) },
-                            openWithSystem: { openURL($0) }
-                        )
+                        handleLinkTap(url)
                         return .handled
                     })
             }
@@ -73,17 +67,13 @@ struct PrivacyNoticeView: View {
         }
     }
 
-    /// Routes privacy links like other chat links: track, let the host intercept, then open
-    /// web links as universal links or in the in-app web view, and other schemes via the system.
-    nonisolated static func handleLinkTap(
-        _ url: URL,
-        tracker: ConciergeLinkClickTracker,
-        interceptor: ConciergeLinkInterceptor,
-        openInWebView: @escaping (URL) -> Void,
-        openWithSystem: @escaping (URL) -> Void
-    ) {
-        tracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.PRIVACY_NOTICE)
-        if interceptor.handleLink(url) { return }
-        ConciergeLinkHandler.handleURL(url, openInWebView: openInWebView, openWithSystem: openWithSystem)
+    private func handleLinkTap(_ url: URL) {
+        linkClickTracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.PRIVACY_NOTICE)
+        if linkInterceptor.handleLink(url) { return }
+        ConciergeLinkHandler.handleURL(
+            url,
+            openInWebView: { webViewPresenter.openURL($0) },
+            openWithSystem: { openURL($0) }
+        )
     }
 }

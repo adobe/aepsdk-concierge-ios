@@ -324,7 +324,7 @@ are not interpreted. Links follow the disclaimer's `{Label}` format, use
 `--message-concierge-link-color`, and route like inline message links (host `handleLink` first,
 then universal link, in-app web view, or system), tracked with link-click origin `privacyNotice`.
 Unmatched labels render without braces. The card uses the concierge message background, a border
-derived from `--message-concierge-text-color`, and the card radius; no privacy-specific CSS
+derived from `--message-concierge-text`, and the card radius; no privacy-specific CSS
 tokens are added.
 
 ### Example

@@ -73,9 +73,9 @@ struct MessageListView: View {
 
     @ViewBuilder
     private func messageStack(geometry: GeometryProxy) -> some View {
-        let noticeIndex = privacyNoticeIndex
         VStack(spacing: 12) {
-            ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+            ForEach(Array(transcriptRows.enumerated()), id: \.element.id) { index, row in
+                let message = row.message
                 // showHeader: insert a "Suggestions" label above the first chip in a group
                 if isFirstInSuggestionGroup(at: index),
                    theme.behavior.promptSuggestions?.showHeader == true {
@@ -90,17 +90,16 @@ struct MessageListView: View {
                     .padding(.bottom, -4)
                 }
 
-                if index == noticeIndex {
-                    // Keep the notice and first query under the same scroll anchor.
+                if row.showsPrivacyNotice {
                     VStack(spacing: 12) {
                         PrivacyNoticeView(notice: privacyNotice)
                             .padding(horizontalPadding(for: .basic(isUserMessage: true)))
                         messageView(message)
                     }
-                    .id(message.id)
+                    .id(row.id)
                 } else {
                     messageView(message)
-                        .id(message.id)
+                        .id(row.id)
                 }
             }
 
@@ -147,6 +146,21 @@ struct MessageListView: View {
             if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
                 onSpeak(messageBody)
             }
+        }
+    }
+
+    /// One scroll anchor per message. The privacy notice renders inside its first user query's
+    /// row, so scrolling to that query brings the notice into view with it.
+    struct TranscriptRow: Identifiable {
+        let message: Message
+        let showsPrivacyNotice: Bool
+        var id: UUID { message.id }
+    }
+
+    var transcriptRows: [TranscriptRow] {
+        let noticeIndex = privacyNoticeIndex
+        return messages.enumerated().map { index, message in
+            TranscriptRow(message: message, showsPrivacyNotice: index == noticeIndex)
         }
     }
 
