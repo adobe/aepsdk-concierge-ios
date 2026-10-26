@@ -177,7 +177,8 @@ final class VoiceSessionControllerTests: XCTestCase {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
         var session: VoiceSessionController? = start(transport, listener: listener)
-        weak let weakSession = session
+        weak var weakSession: VoiceSessionController?
+        weakSession = session
         await listening(listener)
         session = nil
         XCTAssertNil(weakSession)
@@ -188,7 +189,8 @@ final class VoiceSessionControllerTests: XCTestCase {
 
     func test_listenerIsWeak() async {
         var listener: RecordingVoiceListener? = RecordingVoiceListener()
-        weak let weakListener = listener
+        weak var weakListener: RecordingVoiceListener?
+        weakListener = listener
         let session = start(FakeVoiceTransport(), listener: listener!)
         listener = nil
         XCTAssertNil(weakListener)
