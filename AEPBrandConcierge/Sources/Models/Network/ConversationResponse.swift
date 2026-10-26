@@ -288,3 +288,14 @@ public struct ActionButton: Codable {
         return trimmed
     }
 }
+
+extension ActionButton: CustomStringConvertible, CustomReflectable {
+    // Hides the summary text, which may contain personal data, from printing and debug dumps.
+    public var description: String {
+        "ActionButton(text: \(text), url: \(url ?? "nil"), hasSummary: \(summary != nil))"
+    }
+
+    public var customMirror: Mirror {
+        Mirror(self, children: ["text": text, "url": url as Any, "hasSummary": summary != nil])
+    }
+}

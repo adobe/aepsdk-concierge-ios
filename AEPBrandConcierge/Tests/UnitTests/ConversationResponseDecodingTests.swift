@@ -345,6 +345,34 @@ final class ConversationResponseDecodingTests: XCTestCase {
         XCTAssertEqual(ActionButton(text: "Chat", url: "https://example.com", summary: " hi ").summary, "hi")
     }
 
+    func test_actionButton_printing_hidesSummaryText() {
+        let action = ActionButton(text: "Chat", url: "https://example.com", summary: "secret summary")
+        var dumped = ""
+        dump(MessageTemplate.ctaButton(action), to: &dumped)
+
+        let outputs = [
+            "\(action)",
+            String(describing: action),
+            String(reflecting: action),
+            String(describing: MessageTemplate.ctaButton(action)),
+            String(reflecting: [action]),
+            dumped
+        ]
+
+        XCTAssertEqual("\(action)", "ActionButton(text: Chat, url: https://example.com, hasSummary: true)")
+        for output in outputs {
+            XCTAssertFalse(output.contains("secret summary"), output)
+            XCTAssertTrue(output.contains("hasSummary"), output)
+        }
+    }
+
+    func test_actionButton_printing_withoutSummary() {
+        XCTAssertEqual(
+            "\(ActionButton(text: "Chat", url: nil))",
+            "ActionButton(text: Chat, url: nil, hasSummary: false)"
+        )
+    }
+
     func test_actionButton_encode_leavesOutSummary() throws {
         let original = ActionButton(text: "Chat", url: "https://example.com", summary: "hi")
 
