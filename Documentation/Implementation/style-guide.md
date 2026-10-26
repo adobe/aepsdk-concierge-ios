@@ -757,11 +757,11 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--message-border-radius` | `layout.messageBorderRadius` | `CGFloat` | `10` | Message bubble corner radius |
-| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding |
+| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding. Applied on all sides, including when an agent icon is shown. |
 | `--message-max-width` | `layout.messageMaxWidth` | `CGFloat?` | `nil` | Max message width |
 | `--markdown-block-spacing` | `layout.markdownBlockSpacing` | `CGFloat?` | `8` | Vertical spacing between top-level Markdown blocks; falls back to 8 when omitted |
-| `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. When set, product cards and prompt suggestion chips are automatically offset to align with the agent message text column. |
-| `--agent-icon-spacing` | `layout.agentIconSpacing` | `CGFloat` | `12` | Horizontal gap in points between the agent icon and the message bubble. Contributes to the text column offset applied to product cards and prompt suggestion chips. |
+| `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. The icon slot is always reserved, even if the asset fails to load. Product cards, carousels, CTA buttons and prompt suggestion chips are offset to align with the agent message bubble's leading edge. |
+| `--agent-icon-spacing` | `layout.agentIconSpacing` | `CGFloat` | `12` | Horizontal gap in points between the agent icon and the message bubble. Contributes to the bubble-edge offset applied to product cards, carousels, CTA buttons and prompt suggestion chips. |
 
 ### Layout - Chat
 
@@ -1455,7 +1455,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--cta-button-font-size` | ✅ | Used in CtaButtonView |
 | `--cta-button-font-weight` | ✅ | Used in CtaButtonView |
 | `--cta-button-icon-size` | ✅ | Used in CtaButtonView |
-| `--agent-icon-size` | ✅ | Diameter of the agent icon in points; default 39 |
+| `--agent-icon-size` | ✅ | Diameter of the agent icon in points; default 39. Slot reserved even if the asset fails to load (`BasicMessageView`) |
 | `--agent-icon-spacing` | ✅ | Horizontal spacing between the agent icon and message bubble in points; default 12 |
 
 ### Unsupported CSS Variables
