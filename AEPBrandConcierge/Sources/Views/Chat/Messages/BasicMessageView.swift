@@ -37,6 +37,13 @@ struct BasicMessageView: View {
         !isUserMessage && theme.hasAgentIcon
     }
 
+    /// Unset `--message-padding` keeps the legacy flush text beside the agent icon.
+    private var bubblePadding: EdgeInsets {
+        let padding = theme.layout.messagePadding
+        guard showAgentIcon, theme.layout.isMessagePaddingSet != true else { return padding.edgeInsets }
+        return EdgeInsets(top: padding.top, leading: 0, bottom: padding.bottom, trailing: 0)
+    }
+
     private var resolvedAgentFont: UIFont {
         let fontSize = theme.typography.fontSize
         if theme.typography.fontFamily.isEmpty {
@@ -159,7 +166,7 @@ struct BasicMessageView: View {
         VStack(alignment: .leading, spacing: 0) {
             messageContent(annotatedBody: annotatedBody, markers: markers)
                 .lineSpacing(messageLineSpacing)
-                .padding(theme.layout.messagePadding.edgeInsets)
+                .padding(bubblePadding)
                 .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                 .textSelection(.enabled)
                 .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)

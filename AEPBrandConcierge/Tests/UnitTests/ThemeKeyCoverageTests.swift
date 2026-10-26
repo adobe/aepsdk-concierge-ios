@@ -446,6 +446,11 @@ private extension ThemeKeyCoverageTests {
             return true
         }
 
+        // Internal flag recording whether `--message-padding` was set; not a CSS token itself.
+        if path == "layout.isMessagePaddingSet" {
+            return true
+        }
+
         return false
     }
 }

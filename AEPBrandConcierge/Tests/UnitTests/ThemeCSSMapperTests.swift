@@ -235,6 +235,24 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.messagePadding.bottom, CGFloat(8))
         XCTAssertEqual(theme.layout.messagePadding.leading, CGFloat(16))
         XCTAssertEqual(theme.layout.messagePadding.trailing, CGFloat(16))
+        XCTAssertEqual(theme.layout.isMessagePaddingSet, true)
+    }
+
+    func test_messagePadding_defaultLayout_isNotMarkedSet() {
+        XCTAssertNil(ConciergeLayout().isMessagePaddingSet)
+        XCTAssertEqual(ConciergeLayout().messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
+    }
+
+    func test_messagePadding_initWithValue_isMarkedSet() {
+        let layout = ConciergeLayout(messagePadding: ConciergePadding(all: 4))
+        XCTAssertEqual(layout.isMessagePaddingSet, true)
+        XCTAssertEqual(layout.messagePadding, ConciergePadding(all: 4))
+    }
+
+    func test_messagePadding_assignmentInCode_isMarkedSet() {
+        var layout = ConciergeLayout()
+        layout.messagePadding.leading = 0
+        XCTAssertEqual(layout.isMessagePaddingSet, true)
     }
     
     func test_inputBoxShadow_mapsToLayout() {

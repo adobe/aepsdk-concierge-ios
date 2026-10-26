@@ -757,7 +757,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--message-border-radius` | `layout.messageBorderRadius` | `CGFloat` | `10` | Message bubble corner radius |
-| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding. Applied on all sides, including when an agent icon is shown. |
+| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding. When set, applied on all sides, including beside an agent icon. When unset, the default applies, except beside an agent icon where leading/trailing stay 0 (text flush with the bubble edge). |
 | `--message-max-width` | `layout.messageMaxWidth` | `CGFloat?` | `nil` | Max message width |
 | `--markdown-block-spacing` | `layout.markdownBlockSpacing` | `CGFloat?` | `8` | Vertical spacing between top-level Markdown blocks; falls back to 8 when omitted |
 | `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. The icon slot is always reserved, even if the asset fails to load. Product cards, carousels, CTA buttons and prompt suggestion chips are offset to align with the agent message bubble's leading edge. |
@@ -1383,7 +1383,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--input-button-border-radius` | ✅ | Used in ComposerSendButtonStyle |
 | `--input-box-shadow` | ✅ | Used in ChatComposer |
 | `--message-border-radius` | ✅ | Used in ChatMessageView, SourcesListView |
-| `--message-padding` | ✅ | Used in ChatMessageView |
+| `--message-padding` | ✅ | Used in `BasicMessageView`; unset keeps 0 leading/trailing beside an agent icon |
 | `--message-max-width` | ✅ | Used in ChatMessageView |
 | `--markdown-block-spacing` | ✅ | Used in MarkdownBlockView; falls back to 8 when omitted |
 | `--chat-interface-max-width` | ✅ | Used in ChatView |

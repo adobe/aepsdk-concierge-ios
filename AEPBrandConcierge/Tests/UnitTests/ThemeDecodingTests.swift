@@ -403,6 +403,25 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.layout.messagePadding.bottom, CGFloat(8))
         XCTAssertEqual(theme.layout.messagePadding.leading, CGFloat(16))
         XCTAssertEqual(theme.layout.messagePadding.trailing, CGFloat(16))
+        XCTAssertEqual(theme.layout.isMessagePaddingSet, true)
+    }
+
+    func test_messagePadding_unsetInThemeJSON_usesDefaultAndIsNotMarkedSet() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "theme": { "--message-border-radius": "12px" } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
+        XCTAssertNil(decoded.layout.isMessagePaddingSet)
+    }
+
+    func test_messagePadding_setFlag_survivesEncodeDecodeRoundTrip() throws {
+        var theme = ConciergeTheme()
+        theme.layout.messagePadding = ConciergePadding(vertical: 4, horizontal: 10)
+        let data = try JSONEncoder().encode(theme)
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 4, horizontal: 10))
+        XCTAssertEqual(decoded.layout.isMessagePaddingSet, true)
     }
     
     func test_inputBoxShadow_convertsCorrectly() {
