@@ -182,7 +182,7 @@ struct MessageListView: View {
     ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
     /// - Secondary agent-response elements (product cards, CTA buttons, thumbnails, prompt
     ///   suggestions) with a configured icon are indented by `agentIconSize + agentIconSpacing`
-    ///   so they align with the agent response text.
+    ///   so they align with the leading edge of the agent message bubble.
     /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
     private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
         if case .carouselGroup = template {
