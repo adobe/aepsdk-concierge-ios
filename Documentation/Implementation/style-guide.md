@@ -899,6 +899,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 
 ## Complete Example
 
+This example opts into agent-only padding with `--agent-message-padding`. Omit that token to preserve the existing agent layout: beside an icon, only the top/bottom values of `--message-padding` apply and leading/trailing remain 0. User padding is unaffected by the agent-only token.
+
 ```json
 {
   "metadata": {
@@ -1047,6 +1049,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
     "--message-concierge-link-color": "#274DEA",
     "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
+    "--agent-message-padding": "8px 16px",
     "--message-max-width": "100%",
     "--markdown-block-spacing": "8px",
     "--chat-interface-max-width": "768px",
