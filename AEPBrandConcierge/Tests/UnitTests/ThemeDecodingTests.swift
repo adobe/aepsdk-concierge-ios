@@ -225,7 +225,8 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Then
         XCTAssertEqual(theme.behavior.privacyNotice.title, "Privacy Notice")
-        XCTAssertEqual(theme.behavior.privacyNotice.text, "Privacy notice text.")
+        XCTAssertEqual(theme.behavior.privacyNotice.text, "")
+        XCTAssertFalse(theme.behavior.privacyNotice.hasContent, "The default theme must not show a privacy notice")
     }
 
     func test_privacyNotice_missingOrPartialContent_defaultsToHidden() throws {

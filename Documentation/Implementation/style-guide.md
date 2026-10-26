@@ -319,7 +319,9 @@ The informational notice appears above the first submitted user query (typed, vo
 suggestion) and remains in scrolling history after errors or chat hide/show. Drafts and app-only
 data handoffs do not trigger it; it does not collect consent or block submission.
 
-Supply approved privacy copy. Missing or null fields use the defaults above; HTML and Markdown
+Any non-blank `text` displays the notice, so remove or clear placeholder copy (for example, the
+earlier template value `"Privacy notice text."`) before upgrading. Supply approved privacy copy.
+Missing or null fields use the defaults above; HTML and Markdown
 are not interpreted. Links follow the disclaimer's `{Label}` format, use
 `--message-concierge-link-color`, and route like inline message links (host `handleLink` first,
 then universal link, in-app web view, or system), tracked with link-click origin `privacyNotice`.
