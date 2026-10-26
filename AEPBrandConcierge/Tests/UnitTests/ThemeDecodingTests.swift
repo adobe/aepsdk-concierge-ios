@@ -403,25 +403,75 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.layout.messagePadding.bottom, CGFloat(8))
         XCTAssertEqual(theme.layout.messagePadding.leading, CGFloat(16))
         XCTAssertEqual(theme.layout.messagePadding.trailing, CGFloat(16))
-        XCTAssertEqual(theme.layout.isMessagePaddingSet, true)
+        XCTAssertNil(theme.layout.agentMessagePadding)
     }
 
-    func test_messagePadding_unsetInThemeJSON_usesDefaultAndIsNotMarkedSet() throws {
+    func test_messagePadding_unsetInThemeJSON_usesLegacyDefaults() throws {
         let json = """
         { "metadata": { "brandName": "Test" }, "theme": { "--message-border-radius": "12px" } }
         """.data(using: .utf8)!
         let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
         XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
-        XCTAssertNil(decoded.layout.isMessagePaddingSet)
+        XCTAssertNil(decoded.layout.agentMessagePadding)
+        XCTAssertEqual(decoded.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 8, horizontal: 0))
     }
 
-    func test_messagePadding_setFlag_survivesEncodeDecodeRoundTrip() throws {
+    func test_agentMessagePadding_survivesEncodeDecodeRoundTripWithoutInternalFlag() throws {
         var theme = ConciergeTheme()
         theme.layout.messagePadding = ConciergePadding(vertical: 4, horizontal: 10)
+        theme.layout.agentMessagePadding = ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4)
         let data = try JSONEncoder().encode(theme)
         let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
         XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 4, horizontal: 10))
-        XCTAssertEqual(decoded.layout.isMessagePaddingSet, true)
+        XCTAssertEqual(decoded.layout.agentMessagePadding, theme.layout.agentMessagePadding)
+        XCTAssertFalse(try XCTUnwrap(String(data: data, encoding: .utf8)).contains("isMessagePaddingSet"))
+    }
+
+    func test_agentMessagePadding_decodesFromCSSThemeJSON() throws {
+        let json = """
+        { "theme": { "--message-padding": "10px", "--agent-message-padding": "2px 4px 6px 8px" } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(all: 10))
+        XCTAssertEqual(decoded.layout.agentMessagePadding, ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4))
+    }
+
+    func test_messagePadding_typedJSONWithoutAgentOverride_preservesLegacyLayout() throws {
+        let data = try JSONEncoder().encode(ConciergeLayout(messagePadding: ConciergePadding(all: 10)))
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        json.removeValue(forKey: "agentMessagePadding")
+        json.removeValue(forKey: "isMessagePaddingSet")
+        let typedData = try JSONSerialization.data(withJSONObject: json)
+
+        let layout = try JSONDecoder().decode(ConciergeLayout.self, from: typedData)
+        XCTAssertEqual(layout.messagePadding, ConciergePadding(all: 10))
+        XCTAssertNil(layout.agentMessagePadding)
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 10, horizontal: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: true), ConciergePadding(all: 10))
+        let encoded = try JSONEncoder().encode(layout)
+        XCTAssertFalse(try XCTUnwrap(String(data: encoded, encoding: .utf8)).contains("isMessagePaddingSet"))
+    }
+
+    func test_agentMessagePadding_typedJSONDecodesExplicitZero() throws {
+        let layout = ConciergeLayout(agentMessagePadding: ConciergePadding(all: 0))
+        let data = try JSONEncoder().encode(layout)
+        let decoded = try JSONDecoder().decode(ConciergeLayout.self, from: data)
+        XCTAssertEqual(decoded.agentMessagePadding, ConciergePadding(all: 0))
+        XCTAssertEqual(decoded.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true), ConciergePadding(all: 0))
+    }
+
+    func test_agentMessagePadding_nullInTypedJSON_preservesLegacyLayout() throws {
+        let data = try JSONEncoder().encode(ConciergeLayout())
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        json["agentMessagePadding"] = NSNull()
+        let typedData = try JSONSerialization.data(withJSONObject: json)
+
+        let layout = try JSONDecoder().decode(ConciergeLayout.self, from: typedData)
+        XCTAssertNil(layout.agentMessagePadding)
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 8, horizontal: 0))
     }
     
     func test_inputBoxShadow_convertsCorrectly() {
@@ -839,4 +889,3 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
 }
-

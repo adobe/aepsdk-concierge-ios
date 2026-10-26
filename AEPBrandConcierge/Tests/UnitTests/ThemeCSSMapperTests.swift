@@ -235,24 +235,60 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.layout.messagePadding.bottom, CGFloat(8))
         XCTAssertEqual(theme.layout.messagePadding.leading, CGFloat(16))
         XCTAssertEqual(theme.layout.messagePadding.trailing, CGFloat(16))
-        XCTAssertEqual(theme.layout.isMessagePaddingSet, true)
+        XCTAssertNil(theme.layout.agentMessagePadding)
     }
 
-    func test_messagePadding_defaultLayout_isNotMarkedSet() {
-        XCTAssertNil(ConciergeLayout().isMessagePaddingSet)
-        XCTAssertEqual(ConciergeLayout().messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
+    func test_agentMessagePadding_defaultLayout_preservesLegacyPadding() {
+        let layout = ConciergeLayout()
+        XCTAssertNil(layout.agentMessagePadding)
+        XCTAssertEqual(layout.messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 8, horizontal: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: false), layout.messagePadding)
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: true), layout.messagePadding)
     }
 
-    func test_messagePadding_initWithValue_isMarkedSet() {
-        let layout = ConciergeLayout(messagePadding: ConciergePadding(all: 4))
-        XCTAssertEqual(layout.isMessagePaddingSet, true)
-        XCTAssertEqual(layout.messagePadding, ConciergePadding(all: 4))
+    func test_messagePadding_existingCustomerTheme_preservesAgentAndUserPadding() {
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "message-padding", cssValue: "10px 10px", to: &theme)
+
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 10, horizontal: 0))
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: true),
+                       ConciergePadding(all: 10))
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: false),
+                       ConciergePadding(all: 10))
     }
 
-    func test_messagePadding_assignmentInCode_isMarkedSet() {
-        var layout = ConciergeLayout()
-        layout.messagePadding.leading = 0
-        XCTAssertEqual(layout.isMessagePaddingSet, true)
+    func test_agentMessagePadding_mapsAllEdgesWithoutChangingUserPadding() {
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "message-padding", cssValue: "10px", to: &theme)
+        CSSKeyMapper.apply(cssKey: "agent-message-padding", cssValue: "2px 4px 6px 8px", to: &theme)
+
+        let expected = ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4)
+        XCTAssertEqual(theme.layout.agentMessagePadding, expected)
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true), expected)
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: false), expected)
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: true), ConciergePadding(all: 10))
+        XCTAssertEqual(theme.layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: false), ConciergePadding(all: 10))
+    }
+
+    func test_agentMessagePadding_explicitZeroOverridesAndCanBeCleared() {
+        var layout = ConciergeLayout(messagePadding: ConciergePadding(all: 10),
+                                     agentMessagePadding: ConciergePadding(all: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true), ConciergePadding(all: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: false), ConciergePadding(all: 0))
+
+        layout.agentMessagePadding = nil
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 10, horizontal: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: false), ConciergePadding(all: 10))
+    }
+
+    func test_messagePadding_asymmetricVerticalPaddingIsPreservedBesideIcon() {
+        let layout = ConciergeLayout(messagePadding: ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(top: 2, bottom: 6, leading: 0, trailing: 0))
     }
     
     func test_inputBoxShadow_mapsToLayout() {

@@ -757,7 +757,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--message-border-radius` | `layout.messageBorderRadius` | `CGFloat` | `10` | Message bubble corner radius |
-| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | Message content padding. When set, applied on all sides, including beside an agent icon. When unset, the default applies, except beside an agent icon where leading/trailing stay 0 (text flush with the bubble edge). |
+| `--message-padding` | `layout.messagePadding` | `Padding` | `8px 16px` | User and agent message content padding. Beside an agent icon, agent messages use only its top/bottom values and keep leading/trailing at 0, even when this token is set. This preserves existing themes. |
+| `--agent-message-padding` | `layout.agentMessagePadding` | `Padding?` | `nil` | Optional agent-only override, applied on all sides with or without an agent icon. Does not change user bubbles. When unset, agents keep the `--message-padding` behavior above. Setting this token opts into a visible agent layout change; sources, chips, cards and CTAs remain aligned to the bubble edge, not the padded text. |
 | `--message-max-width` | `layout.messageMaxWidth` | `CGFloat?` | `nil` | Max message width |
 | `--markdown-block-spacing` | `layout.markdownBlockSpacing` | `CGFloat?` | `8` | Vertical spacing between top-level Markdown blocks; falls back to 8 when omitted |
 | `--agent-icon-size` | `layout.agentIconSize` | `CGFloat` | `39` | Diameter of the agent icon in points. The icon slot is always reserved, even if the asset fails to load. Product cards, carousels, CTA buttons and prompt suggestion chips are offset to align with the agent message bubble's leading edge. |
@@ -1383,7 +1384,8 @@ This section documents which properties are fully implemented, partially impleme
 | `--input-button-border-radius` | ✅ | Used in ComposerSendButtonStyle |
 | `--input-box-shadow` | ✅ | Used in ChatComposer |
 | `--message-border-radius` | ✅ | Used in ChatMessageView, SourcesListView |
-| `--message-padding` | ✅ | Used in `BasicMessageView`; unset keeps 0 leading/trailing beside an agent icon |
+| `--message-padding` | ✅ | Used in `BasicMessageView`; agent leading/trailing stay 0 beside an icon unless `--agent-message-padding` overrides them |
+| `--agent-message-padding` | ✅ | Optional agent-only padding in `BasicMessageView`; preserves legacy layout when unset |
 | `--message-max-width` | ✅ | Used in ChatMessageView |
 | `--markdown-block-spacing` | ✅ | Used in MarkdownBlockView; falls back to 8 when omitted |
 | `--chat-interface-max-width` | ✅ | Used in ChatView |

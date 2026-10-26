@@ -45,12 +45,9 @@ public struct ConciergeLayout: Codable {
     public var inputButtonWidth: CGFloat
     public var inputButtonBorderRadius: CGFloat
     public var messageBorderRadius: CGFloat
-    public var messagePadding: ConciergePadding {
-        didSet { isMessagePaddingSet = true }
-    }
-    /// `true` once `messagePadding` is set by a theme or in code; `nil` means the default applies.
-    /// Beside an agent icon, an unset padding keeps the legacy zero leading/trailing inset.
-    private(set) var isMessagePaddingSet: Bool?
+    public var messagePadding: ConciergePadding
+    /// Agent-only override. When nil, icon layouts keep zero leading/trailing padding.
+    public var agentMessagePadding: ConciergePadding?
     public var messageMaxWidth: CGFloat? // nil = no max width, value = max width in points
     /// Vertical spacing between top-level Markdown blocks. `nil` uses the view's built-in fallback.
     public var markdownBlockSpacing: CGFloat?
@@ -164,7 +161,8 @@ public struct ConciergeLayout: Codable {
         inputButtonWidth: CGFloat = 30,
         inputButtonBorderRadius: CGFloat = 8,
         messageBorderRadius: CGFloat = 10,
-        messagePadding: ConciergePadding? = nil,
+        messagePadding: ConciergePadding = ConciergePadding(vertical: 8, horizontal: 16),
+        agentMessagePadding: ConciergePadding? = nil,
         messageMaxWidth: CGFloat? = nil,
         markdownBlockSpacing: CGFloat? = nil,
         chatInterfaceMaxWidth: CGFloat = 768,
@@ -269,8 +267,8 @@ public struct ConciergeLayout: Codable {
         self.inputButtonWidth = inputButtonWidth
         self.inputButtonBorderRadius = inputButtonBorderRadius
         self.messageBorderRadius = messageBorderRadius
-        self.messagePadding = messagePadding ?? ConciergePadding(vertical: 8, horizontal: 16)
-        self.isMessagePaddingSet = messagePadding == nil ? nil : true
+        self.messagePadding = messagePadding
+        self.agentMessagePadding = agentMessagePadding
         self.messageMaxWidth = messageMaxWidth
         self.markdownBlockSpacing = markdownBlockSpacing
         self.chatInterfaceMaxWidth = chatInterfaceMaxWidth
@@ -357,6 +355,13 @@ public struct ConciergeLayout: Codable {
         self.thinkingBubblePaddingVertical = thinkingBubblePaddingVertical
         self.thinkingDotVerticalAlignment = thinkingDotVerticalAlignment
         self.suggestionItemBorderRadius = suggestionItemBorderRadius
+    }
+
+    func resolvedMessagePadding(isUserMessage: Bool, hasAgentIcon: Bool) -> ConciergePadding {
+        if isUserMessage { return messagePadding }
+        if let agentMessagePadding { return agentMessagePadding }
+        guard hasAgentIcon else { return messagePadding }
+        return ConciergePadding(top: messagePadding.top, bottom: messagePadding.bottom, leading: 0, trailing: 0)
     }
 }
 
