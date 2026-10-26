@@ -4,6 +4,8 @@
 
 Brand Concierge serves to provide an in app conversational UI (a chat surface) that can be embedded into a host app with minimal UI wiring, connect that UI to Adobe Experience Platform by using AEP SDK shared state (Configuration + Edge Identity) to derive the service configuration needed to run a session, and enable brand controlled experiences through configuration and theming.
 
+Chat and feedback requests use an `events` array in the request body. Feedback is sent as a single event with `xdm.eventType` set to `conversation.feedback`; its identity map, conversation identifiers, feedback, and optional authentication data are under `events[0].xdm`, and consent is under `events[0].meta.consent`.
+
 The Brand Concierge UI is presented in two steps:
 
 - **Enable UI presentation** by wrapping the app's SwiftUI root with `Concierge.wrap(...)`

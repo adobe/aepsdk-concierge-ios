@@ -262,7 +262,7 @@ class ConciergeChatService: NSObject {
     /// - Parameters:
     ///   - data: The feedback data dictionary.
     ///   - token: The app-supplied auth token to attach under `xdm.conversation`, or `nil`/blank to omit it.
-    /// - Returns: JSON data for the request body
+    /// - Returns: JSON data containing the feedback event in the request's `events` array.
     /// - Note: Internal visibility for testing
     func createFeedbackPayload(data: [String: Any], token: String? = nil) throws -> Data {
         let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
@@ -288,7 +288,11 @@ class ConciergeChatService: NSObject {
             }
         }
 
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+        let requestPayload: [String: Any] = [
+            ConciergeConstants.Request.Keys.EVENTS: [payload]
+        ]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: requestPayload) else {
             throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge feedback event.")
         }
 
