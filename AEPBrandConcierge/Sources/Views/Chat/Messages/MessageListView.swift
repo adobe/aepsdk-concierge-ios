@@ -22,6 +22,7 @@ struct MessageListView: View {
     static let scrollContentBasePadding: CGFloat = 16
 
     let messages: [Message]
+    var privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior()
     var userScrollTick: Int = 0
     var userMessageToScrollId: UUID?
     var scrollToLastOnAppear: Bool = false
@@ -73,7 +74,8 @@ struct MessageListView: View {
     @ViewBuilder
     private func messageStack(geometry: GeometryProxy) -> some View {
         VStack(spacing: 12) {
-            ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+            ForEach(Array(transcriptRows.enumerated()), id: \.element.id) { index, row in
+                let message = row.message
                 // showHeader: insert a "Suggestions" label above the first chip in a group
                 if isFirstInSuggestionGroup(at: index),
                    theme.behavior.promptSuggestions?.showHeader == true {
@@ -88,27 +90,17 @@ struct MessageListView: View {
                     .padding(.bottom, -4)
                 }
 
-                ChatMessageView(
-                    messageId: message.id,
-                    template: message.template,
-                    messageBody: message.messageBody,
-                    sources: message.sources,
-                    linkHints: message.linkHints,
-                    promptSuggestions: message.promptSuggestions,
-                    feedbackSentiment: message.feedbackSentiment,
-                    feedbackEligible: message.feedbackEligible,
-                    isStreamComplete: message.isStreamComplete,
-                    onSuggestionTap: onSuggestionTap,
-                    onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
-                    onCtaButtonTap: onCtaButtonTap
-                )
-                    .id(message.id)
-                    .padding(horizontalPadding(for: message.template))
-                    .onAppear {
-                        if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
-                            onSpeak(messageBody)
-                        }
+                if row.showsPrivacyNotice {
+                    VStack(spacing: 12) {
+                        PrivacyNoticeView(notice: privacyNotice)
+                            .padding(horizontalPadding(for: .basic(isUserMessage: true)))
+                        messageView(message)
                     }
+                    .id(row.id)
+                } else {
+                    messageView(message)
+                        .id(row.id)
+                }
             }
 
             // Scroll room for the turn that's in flight. The anchor can only come to rest at the
@@ -134,6 +126,52 @@ struct MessageListView: View {
         }
     }
 
+    private func messageView(_ message: Message) -> some View {
+        ChatMessageView(
+            messageId: message.id,
+            template: message.template,
+            messageBody: message.messageBody,
+            sources: message.sources,
+            linkHints: message.linkHints,
+            promptSuggestions: message.promptSuggestions,
+            feedbackSentiment: message.feedbackSentiment,
+            feedbackEligible: message.feedbackEligible,
+            isStreamComplete: message.isStreamComplete,
+            onSuggestionTap: onSuggestionTap,
+            onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
+            onCtaButtonTap: onCtaButtonTap
+        )
+        .padding(horizontalPadding(for: message.template))
+        .onAppear {
+            if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
+                onSpeak(messageBody)
+            }
+        }
+    }
+
+    /// One scroll anchor per message. The privacy notice renders inside its first user query's
+    /// row, so scrolling to that query brings the notice into view with it.
+    struct TranscriptRow: Identifiable {
+        let message: Message
+        let showsPrivacyNotice: Bool
+        var id: UUID { message.id }
+    }
+
+    var transcriptRows: [TranscriptRow] {
+        let noticeIndex = privacyNoticeIndex
+        return messages.enumerated().map { index, message in
+            TranscriptRow(message: message, showsPrivacyNotice: index == noticeIndex)
+        }
+    }
+
+    var privacyNoticeIndex: Int? {
+        guard privacyNotice.hasContent else { return nil }
+        return messages.firstIndex {
+            if case .basic(isUserMessage: true) = $0.template { return true }
+            return false
+        }
+    }
+
     /// Returns the padding insets for a given message template.
     ///
     /// - Carousel messages receive zero container padding. The carousel's `ScrollView` spans
@@ -144,7 +182,7 @@ struct MessageListView: View {
     ///   The trailing inset keeps the full `chatHistoryPadding + scrollContentBasePadding`.
     /// - Secondary agent-response elements (product cards, CTA buttons, thumbnails, prompt
     ///   suggestions) with a configured icon are indented by `agentIconSize + agentIconSpacing`
-    ///   so they align with the agent response text.
+    ///   so they align with the leading edge of the agent message bubble.
     /// - All other messages use `chatHistoryPadding + scrollContentBasePadding` on both sides.
     private func horizontalPadding(for template: MessageTemplate) -> EdgeInsets {
         if case .carouselGroup = template {
