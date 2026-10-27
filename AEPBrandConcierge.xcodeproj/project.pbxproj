@@ -26,6 +26,7 @@
 		0E15D57993EDC1901166BE99 /* VoiceSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC6A86A69F6944E3AA7AD3E4 /* VoiceSessionState.swift */; };
 		0F1601732FADD64E0032EFD0 /* LinkHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1601712FADD63D0032EFD0 /* LinkHint.swift */; };
 		0F1601752FAF7FA80032EFD0 /* MessageFeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1601742FAF7FA80032EFD0 /* MessageFeedbackView.swift */; };
+		121C63BE16FBD3E5A9FAF0DF /* LiveKitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB516BD83126615E59E1A2F /* LiveKitTransport.swift */; };
 		1297F79D2A9C4E61BBBE69DC /* ConciergeTrackingEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24070DF09312406A88B8F60F /* ConciergeTrackingEvent.swift */; };
 		24037ABB2EF3645E00FF4031 /* InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB82EF3645E00FF4031 /* InputController.swift */; };
 		24037ABC2EF3645E00FF4031 /* ChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24037AB72EF3645E00FF4031 /* ChatController.swift */; };
@@ -217,6 +218,7 @@
 		D000ECC120251120000000A1 /* ConciergeEventTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D000ECC120251120000000A0 /* ConciergeEventTracker.swift */; };
 		D41A7C9E3B2F48A15E6C0917 /* ProductCardCarouselSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */; };
 		D680B287B96F87A9860DFCD4 /* TestingHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908306C0ADD3A3C6A0992252 /* TestingHubView.swift */; };
+		D8AB92563C1D699C55DF5D6C /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6F6C86B4AA35C3ACCB0A36B8 /* LiveKit */; };
 		DB1ED7DE290584FE75CE488F /* DataChannelMessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35EAAAFB51F75C32BE02779 /* DataChannelMessageParserTests.swift */; };
 		FD89E045080E424A53837DC5 /* Pods_UnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C499727DAE8BD01BA05537D1 /* Pods_UnitTests.framework */; };
 		FEEA046181F235BB8F21F329 /* DataChannelMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACF57CAA0E2B58CD53831F4 /* DataChannelMessage.swift */; };
@@ -275,6 +277,7 @@
 		0FFDD23E07E0F08B759C10EE /* ConciergeXDMContextStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeXDMContextStoreTests.swift; sourceTree = "<group>"; };
 		14D5B019AE7B2AEA4B6032C3 /* VoicePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoicePayload.swift; sourceTree = "<group>"; };
 		18212DD855ADEEFDFE97322B /* Pods-UnitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UnitTests.debug.xcconfig"; path = "Target Support Files/Pods-UnitTests/Pods-UnitTests.debug.xcconfig"; sourceTree = "<group>"; };
+		1AB516BD83126615E59E1A2F /* LiveKitTransport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveKitTransport.swift; sourceTree = "<group>"; };
 		1F083DD30445434A872EF78A /* CheckoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutView.swift; sourceTree = "<group>"; };
 		202C8B02213B468D0644D4CA /* Pods-ConciergeDemoApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ConciergeDemoApp.release.xcconfig"; path = "Target Support Files/Pods-ConciergeDemoApp/Pods-ConciergeDemoApp.release.xcconfig"; sourceTree = "<group>"; };
 		24037AB72EF3645E00FF4031 /* ChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatController.swift; sourceTree = "<group>"; };
@@ -503,6 +506,7 @@
 			files = (
 				530AC730701BA5C86CB7A0BE /* Pods_ConciergeDemoApp.framework in Frameworks */,
 				2430137B2E69E6C800F6673E /* AEPBrandConcierge.framework in Frameworks */,
+				D8AB92563C1D699C55DF5D6C /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -767,6 +771,7 @@
 				4CDB0DEB2F234567000B85D0 /* theme-all-properties.json */,
 				4CDB0DB42EC6E887000B85D0 /* theme-default.json */,
 				4CDB0DE72F123456000B85D0 /* themeDemo.json */,
+				1AB516BD83126615E59E1A2F /* LiveKitTransport.swift */,
 			);
 			path = ConciergeDemoApp;
 			sourceTree = "<group>";
@@ -1078,6 +1083,9 @@
 				2430137E2E69E6C800F6673E /* PBXTargetDependency */,
 			);
 			name = ConciergeDemoApp;
+			packageProductDependencies = (
+				6F6C86B4AA35C3ACCB0A36B8 /* LiveKit */,
+			);
 			productName = ConciergeDemoApp;
 			productReference = 2498999D2D67CCD20005CBD7 /* ConciergeDemoApp.app */;
 			productType = "com.apple.product-type.application";
@@ -1117,6 +1125,7 @@
 			mainGroup = 2498993F2D6679790005CBD7;
 			packageReferences = (
 				4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				3CB2D0797AB8AE3B4545C0E2 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
 			);
 			productRefGroup = 2498994A2D6679790005CBD7 /* Products */;
 			projectDirPath = "";
@@ -1467,6 +1476,7 @@
 				3523A0148F1C41662548C065 /* BuyNowMockView.swift in Sources */,
 				41DAE6E472994C298C2E140A /* CheckoutView.swift in Sources */,
 				4C3A65D52E55446600EEEF3B /* UIKitDemoViewController.swift in Sources */,
+				121C63BE16FBD3E5A9FAF0DF /* LiveKitTransport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1900,6 +1910,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3CB2D0797AB8AE3B4545C0E2 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.17.0;
+			};
+		};
 		4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
@@ -1915,6 +1933,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4CF60C102F000001008CE4F0 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
 			productName = SnapshotTesting;
+		};
+		6F6C86B4AA35C3ACCB0A36B8 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3CB2D0797AB8AE3B4545C0E2 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

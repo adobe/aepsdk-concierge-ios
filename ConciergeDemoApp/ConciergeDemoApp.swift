@@ -39,3 +39,10 @@ class DeepLinkState: ObservableObject {
     @Published var receivedURL: URL?
     @Published var targetTab: ContentView.DemoTab?
 }
+
+/// The app's one voice transport. Brand Concierge reuses it for every conversation. Every
+/// `Concierge.show` and `Concierge.present` call passes it, because a reopened chat keeps the
+/// transport it was first shown with.
+enum DemoVoice {
+    static let transport = LiveKitTransport()
+}
