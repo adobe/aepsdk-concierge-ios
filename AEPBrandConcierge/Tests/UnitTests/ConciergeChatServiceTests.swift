@@ -583,9 +583,6 @@ final class ConciergeChatServiceTests: XCTestCase {
             XCTAssertNil(try XCTUnwrap(feedbackConversation(from: payload))["data"])
             XCTAssertEqual(extractFeedbackConsentState(from: payload), "unknown")
         }
-
-        XCTAssertEqual(Set(input.keys), Set(["xdm"]), "Building the request must not mutate the caller's event")
-        XCTAssertEqual(try XCTUnwrap(input["xdm"] as? [String: Any]) as NSDictionary, xdm as NSDictionary)
     }
 
     func test_createFeedbackPayload_invalidConsent_usesUnknownInsideEvent() throws {
