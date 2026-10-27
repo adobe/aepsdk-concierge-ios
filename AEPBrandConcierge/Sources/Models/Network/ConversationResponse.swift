@@ -248,4 +248,54 @@ public struct ActionButton: Codable {
     /// Optional — a text-only action (no destination) is valid; callers that require a
     /// destination (e.g. the product card's CTA button) check this themselves.
     public let url: String?
+    /// Optional conversation summary (`entity_info.primary.summary`). Never displayed; a standalone
+    /// CTA button appends it to `url` as a `summary` query parameter when tapped (see
+    /// `CtaSummaryURLBuilder`). Ignored by product card actions. Always trimmed and non-empty when set.
+    let summary: String?
+
+    init(text: String, url: String?, summary: String? = nil) {
+        self.text = text
+        self.url = url
+        self.summary = ActionButton.normalizedSummary(summary)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case text
+        case url
+        case summary
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        // `summary` is optional metadata: a non-string value (number, bool, object, array) is
+        // ignored rather than failing the whole action.
+        summary = ActionButton.normalizedSummary((try? container.decodeIfPresent(String.self, forKey: .summary)) ?? nil)
+    }
+
+    // `summary` is not encoded so it never shows up in debug logs of the encoded response.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .text)
+        try container.encodeIfPresent(url, forKey: .url)
+    }
+
+    private static func normalizedSummary(_ summary: String?) -> String? {
+        guard let trimmed = summary?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+}
+
+extension ActionButton: CustomStringConvertible, CustomReflectable {
+    // Hides the summary text, which may contain personal data, from printing and debug dumps.
+    public var description: String {
+        "ActionButton(text: \(text), url: \(url ?? "nil"), hasSummary: \(summary != nil))"
+    }
+
+    public var customMirror: Mirror {
+        Mirror(self, children: ["text": text, "url": url as Any, "hasSummary": summary != nil])
+    }
 }

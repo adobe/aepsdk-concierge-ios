@@ -24,7 +24,7 @@ struct CtaButtonView: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
-            Button(action: handleTap) {
+            Button(action: { handleTap() }) {
                 HStack(spacing: 8) {
                     Text(action.text)
                         .font(.system(size: theme.layout.ctaButtonFontSize, weight: theme.layout.ctaButtonFontWeight.toSwiftUIFontWeight()))
@@ -49,11 +49,14 @@ struct CtaButtonView: View {
         }
     }
 
-    private func handleTap() {
+    /// Tracks the tap with the original URL, then opens the URL with the CTA's summary appended.
+    /// `linkInterceptor` lets tests pass a host handler; the view uses the one from the environment.
+    func handleTap(linkInterceptor interceptor: ConciergeLinkInterceptor? = nil) {
         guard let urlString = action.url else { return }
         onTap?(action.text, urlString)
-        guard let url = URL(string: urlString) else { return }
-        if linkInterceptor.handleLink(url) { return }
+        let clickURLString = CtaSummaryURLBuilder.clickURL(for: urlString, summary: action.summary)
+        guard let url = URL(string: clickURLString) else { return }
+        if (interceptor ?? linkInterceptor).handleLink(url) { return }
         ConciergeLinkHandler.handleURL(
             url,
             openInWebView: { webViewPresenter.openURL($0) },
