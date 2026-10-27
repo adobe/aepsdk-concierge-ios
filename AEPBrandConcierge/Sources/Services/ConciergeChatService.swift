@@ -139,7 +139,11 @@ class ConciergeChatService: NSObject {
                 }
 
                 if let httpResponse = response as? HTTPURLResponse {
-                    Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
+                    if (200..<300).contains(httpResponse.statusCode) {
+                        Log.debug(label: self.LOG_TAG, "Feedback request completed with statusCode=\(httpResponse.statusCode)")
+                    } else {
+                        Log.warning(label: self.LOG_TAG, "Feedback request failed with statusCode=\(httpResponse.statusCode)")
+                    }
                 }
             }
             feedbackTasks[feedbackID] = task

@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPServices
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -998,6 +999,38 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(extractFeedbackConsentState(from: payload), "in")
     }
 
+    func test_sendFeedback_httpStatus_logsSuccessAtDebugAndFailureAtWarning() async throws {
+        let logging = FeedbackResponseLogging()
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .debug
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+            StubURLProtocol.reset()
+        }
+
+        for status in [199, 200, 204, 299, 300, 400, 500] {
+            StubURLProtocol.reset()
+            StubURLProtocol.responseStatusCode = status
+            let service = makeStubbedService()
+            let success = (200..<300).contains(status)
+            let message = "Feedback request \(success ? "completed" : "failed") with statusCode=\(status)"
+            let expectedLevel: LogLevel = success ? .debug : .warning
+            let before = logging.entries.count
+
+            service.sendFeedback(data: ["xdm": ["conversation": ["turnID": "t-1"]]], token: "private-token")
+            await waitForCondition(timeout: 3) { logging.entries.count > before }
+
+            let entry = try XCTUnwrap(logging.entries.last)
+            XCTAssertEqual(logging.entries.count, before + 1)
+            XCTAssertEqual(entry.level, expectedLevel)
+            XCTAssertEqual(entry.message, message)
+            XCTAssertFalse(entry.message.contains("private-token"))
+        }
+    }
+
     func test_sendFeedback_networkError_isHandledWithoutCrashing() async {
         StubURLProtocol.reset()
         StubURLProtocol.shouldFail = true
@@ -1122,13 +1155,14 @@ final class ConciergeChatServiceTests: XCTestCase {
 }
 
 /// Intercepts requests from an injected `URLSessionConfiguration` so tests can drive the service's
-/// request path without real networking. Captures requests (thread-safe) and returns an empty 200.
+/// request path without real networking. Captures requests (thread-safe) and defaults to an empty 200.
 private final class StubURLProtocol: URLProtocol {
     private static let lock = NSLock()
     private static var requests: [URLRequest] = []
     private static var _shouldFail = false
     private static var _shouldHold = false
     private static var _stoppedCount = 0
+    private static var _responseStatusCode = 200
     private var held = false
 
     static func reset() {
@@ -1137,6 +1171,7 @@ private final class StubURLProtocol: URLProtocol {
         _shouldFail = false
         _shouldHold = false
         _stoppedCount = 0
+        _responseStatusCode = 200
         lock.unlock()
     }
     static var count: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
@@ -1150,6 +1185,10 @@ private final class StubURLProtocol: URLProtocol {
         get { lock.lock(); defer { lock.unlock() }; return _shouldHold }
         set { lock.lock(); defer { lock.unlock() }; _shouldHold = newValue }
     }
+    static var responseStatusCode: Int {
+        get { lock.lock(); defer { lock.unlock() }; return _responseStatusCode }
+        set { lock.lock(); defer { lock.unlock() }; _responseStatusCode = newValue }
+    }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -1158,6 +1197,7 @@ private final class StubURLProtocol: URLProtocol {
         StubURLProtocol.lock.lock()
         StubURLProtocol.requests.append(request)
         let shouldFail = StubURLProtocol._shouldFail
+        let responseStatusCode = StubURLProtocol._responseStatusCode
         held = StubURLProtocol._shouldHold
         StubURLProtocol.lock.unlock()
 
@@ -1167,7 +1207,7 @@ private final class StubURLProtocol: URLProtocol {
             return
         }
         if let url = request.url,
-           let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+           let response = HTTPURLResponse(url: url, statusCode: responseStatusCode, httpVersion: nil, headerFields: nil) {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         }
         client?.urlProtocol(self, didLoad: Data())
@@ -1181,6 +1221,29 @@ private final class StubURLProtocol: URLProtocol {
             held = false
         }
         StubURLProtocol.lock.unlock()
+    }
+}
+
+private final class FeedbackResponseLogging: NSObject, Logging {
+    struct Entry {
+        let level: LogLevel
+        let message: String
+    }
+
+    private let lock = NSLock()
+    private var recordedEntries: [Entry] = []
+
+    var entries: [Entry] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedEntries
+    }
+
+    func log(level: LogLevel, label: String, message: String) {
+        guard message.hasPrefix("Feedback request ") else { return }
+        lock.lock()
+        recordedEntries.append(Entry(level: level, message: message))
+        lock.unlock()
     }
 }
 
