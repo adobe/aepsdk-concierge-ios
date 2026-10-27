@@ -123,6 +123,9 @@ public enum CSSKeyMapper {
         "message-padding": { cssValue, theme in
             theme.layout.messagePadding = CSSValueConverter.parsePadding(cssValue)
         },
+        "agent-message-padding": { cssValue, theme in
+            theme.layout.agentMessagePadding = CSSValueConverter.parsePadding(cssValue)
+        },
         "message-max-width": { cssValue, theme in
             theme.layout.messageMaxWidth = CSSValueConverter.parseWidth(cssValue)
         },

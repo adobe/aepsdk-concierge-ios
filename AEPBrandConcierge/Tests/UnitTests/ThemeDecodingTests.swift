@@ -11,6 +11,7 @@
  */
 
 import XCTest
+import SwiftUI
 @testable import AEPBrandConcierge
 
 final class ThemeDecodingTests: XCTestCase {
@@ -224,7 +225,156 @@ final class ThemeDecodingTests: XCTestCase {
         
         // Then
         XCTAssertEqual(theme.behavior.privacyNotice.title, "Privacy Notice")
-        XCTAssertEqual(theme.behavior.privacyNotice.text, "Privacy notice text.")
+        XCTAssertEqual(theme.behavior.privacyNotice.text, "")
+        XCTAssertFalse(theme.behavior.privacyNotice.hasContent, "The default theme must not show a privacy notice")
+    }
+
+    func test_privacyNotice_missingOrPartialContent_defaultsToHidden() throws {
+        for json in [
+            "{}",
+            #"{"behavior": {}}"#,
+            #"{"behavior": {"privacyNotice": null}}"#,
+            #"{"behavior": {"privacyNotice": {}}}"#,
+            #"{"behavior": {"privacyNotice": {"title": "Custom Privacy Notice"}}}"#,
+            #"{"behavior": {"privacyNotice": {"title": null, "text": null}}}"#
+        ] {
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+            XCTAssertEqual(theme.behavior.privacyNotice.text, "")
+            XCTAssertFalse(theme.behavior.privacyNotice.hasContent)
+            XCTAssertTrue(theme.behavior.privacyNotice.links.isEmpty)
+        }
+        XCTAssertFalse(ConciergePrivacyNoticeBehavior().hasContent)
+    }
+
+    func test_privacyNotice_configuredCopy_isPreservedAndRoundTrips() throws {
+        let json = #"{"title":"Custom Privacy Notice","text":"Configured privacy notice text."}"#
+        let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
+        XCTAssertEqual(notice.title, "Custom Privacy Notice")
+        XCTAssertEqual(notice.text, "Configured privacy notice text.")
+        XCTAssertTrue(notice.hasContent)
+        let copy = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: JSONEncoder().encode(notice))
+        XCTAssertEqual(copy.title, notice.title)
+        XCTAssertEqual(copy.text, notice.text)
+    }
+
+    func test_privacyNotice_blankBodyIsHidden_andBlankTitleDoesNotHideBody() throws {
+        XCTAssertFalse(ConciergePrivacyNoticeBehavior(text: " \n\t ").hasContent)
+        XCTAssertTrue(ConciergePrivacyNoticeBehavior(title: " ", text: "Configured copy").hasContent)
+        let notice = try JSONDecoder().decode(
+            ConciergePrivacyNoticeBehavior.self, from: Data(#"{"text":"Configured copy"}"#.utf8)
+        )
+        XCTAssertEqual(notice.title, "Privacy Notice")
+        XCTAssertTrue(notice.hasContent)
+    }
+
+    func test_privacyNotice_invalidFieldTypes_throw() {
+        for json in [#"{"title":42}"#, #"{"text":false}"#, #"{"links":{}}"#, #"{"links":[{"text":"Policy","url":42}]}"#] {
+            XCTAssertThrowsError(try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8)))
+        }
+    }
+
+    func test_privacyNotice_links_decodeAndRoundTrip() throws {
+        let json = """
+        {"behavior":{"privacyNotice":{
+          "title":"Privacy Notice",
+          "text":"Read our {Privacy Policy} and {Terms of Use}.",
+          "links":[
+            {"text":"Privacy Policy","url":"https://www.example.com/privacy"},
+            {"text":"Terms of Use","url":"https://www.example.com/terms"}
+          ]
+        }}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        let notice = theme.behavior.privacyNotice
+        XCTAssertEqual(notice.links.map(\.text), ["Privacy Policy", "Terms of Use"])
+        XCTAssertEqual(notice.links.map(\.url), [
+            "https://www.example.com/privacy",
+            "https://www.example.com/terms"
+        ])
+        let copy = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(copy.behavior.privacyNotice.links.map(\.text), notice.links.map(\.text))
+        XCTAssertEqual(copy.behavior.privacyNotice.links.map(\.url), notice.links.map(\.url))
+
+        for json in [#"{"text":"Copy"}"#, #"{"text":"Copy","links":null}"#, #"{"text":"Copy","links":[]}"#] {
+            let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
+            XCTAssertTrue(notice.links.isEmpty)
+        }
+    }
+
+    func test_privacyNotice_initializers_keepShippedSignature_andAcceptLinks() {
+        let shipped = ConciergePrivacyNoticeBehavior(title: "Privacy", text: "Copy")
+        XCTAssertEqual(shipped.title, "Privacy")
+        XCTAssertTrue(shipped.links.isEmpty)
+        let linked = ConciergePrivacyNoticeBehavior(
+            text: "Copy",
+            links: [ConciergeDisclaimerLink(text: "Policy", url: "https://www.example.com")]
+        )
+        XCTAssertEqual(linked.title, "Privacy Notice")
+        XCTAssertEqual(linked.links.map(\.text), ["Policy"])
+    }
+
+    func test_links_missingFields_defaultToEmpty_withoutFailingTheme() throws {
+        let json = """
+        {
+          "disclaimer": {"text": "See {Terms}.", "links": [{"text": "Terms"}]},
+          "behavior": {"privacyNotice": {"text": "Read {Policy}.", "links": [{"url": "https://www.example.com"}, {}]}}
+        }
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.disclaimer.links.map(\.text), ["Terms"])
+        XCTAssertEqual(theme.disclaimer.links.map(\.url), [""])
+        XCTAssertEqual(theme.behavior.privacyNotice.links.map(\.text), ["", ""])
+        XCTAssertEqual(theme.behavior.privacyNotice.links.map(\.url), ["https://www.example.com", ""])
+
+        let result = LinkedTextFormatter.format(
+            text: theme.disclaimer.text,
+            links: theme.disclaimer.links,
+            textColor: .gray,
+            linkColor: .blue
+        )
+        XCTAssertEqual(String(result.characters), "See Terms.")
+        XCTAssertTrue(result.runs.allSatisfy { $0.link == nil })
+    }
+
+    func test_linkedTextFormatter_matchesDisclaimerPlaceholders_andPreservesSurroundingText() throws {
+        let url = try XCTUnwrap(URL(string: "https://www.example.com/privacy"))
+        let result = LinkedTextFormatter.format(
+            text: "Read {Privacy Policy}.\n{Unknown} and {Privacy Policy}.",
+            links: [ConciergeDisclaimerLink(text: "Privacy Policy", url: url.absoluteString)],
+            textColor: .gray,
+            linkColor: .blue
+        )
+        XCTAssertEqual(String(result.characters), "Read Privacy Policy.\nUnknown and Privacy Policy.")
+        let linkedRuns = result.runs.filter { $0.link != nil }
+        XCTAssertEqual(linkedRuns.count, 2)
+        for run in linkedRuns {
+            XCTAssertEqual(run.link, url)
+            XCTAssertEqual(String(result[run.range].characters), "Privacy Policy")
+            XCTAssertEqual(run.foregroundColor, .blue)
+            XCTAssertEqual(run.underlineStyle, .single)
+        }
+        for run in result.runs where run.link == nil {
+            XCTAssertEqual(run.foregroundColor, .gray)
+        }
+    }
+
+    func test_linkedTextFormatter_plainText_unclosedTokensAndInvalidLinks() {
+        for (input, expected) in [
+            ("No links **or Markdown**", "No links **or Markdown**"),
+            ("Unclosed {Privacy Policy", "Unclosed {Privacy Policy"),
+            ("{Unknown}", "Unknown"),
+            ("{Invalid}", "Invalid"),
+            ("", "")
+        ] {
+            let result = LinkedTextFormatter.format(
+                text: input,
+                links: [ConciergeDisclaimerLink(text: "Invalid", url: "https://[invalid")],
+                textColor: .gray,
+                linkColor: .blue
+            )
+            XCTAssertEqual(String(result.characters), expected)
+            XCTAssertTrue(result.runs.allSatisfy { $0.link == nil })
+        }
     }
 
     func test_behavior_feedback_displayMode_modalAndAction_decode() throws {
@@ -403,6 +553,75 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(theme.layout.messagePadding.bottom, CGFloat(8))
         XCTAssertEqual(theme.layout.messagePadding.leading, CGFloat(16))
         XCTAssertEqual(theme.layout.messagePadding.trailing, CGFloat(16))
+        XCTAssertNil(theme.layout.agentMessagePadding)
+    }
+
+    func test_messagePadding_unsetInThemeJSON_usesLegacyDefaults() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "theme": { "--message-border-radius": "12px" } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 8, horizontal: 16))
+        XCTAssertNil(decoded.layout.agentMessagePadding)
+        XCTAssertEqual(decoded.layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 8, horizontal: 0))
+    }
+
+    func test_agentMessagePadding_survivesEncodeDecodeRoundTripWithoutInternalFlag() throws {
+        var theme = ConciergeTheme()
+        theme.layout.messagePadding = ConciergePadding(vertical: 4, horizontal: 10)
+        theme.layout.agentMessagePadding = ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4)
+        let data = try JSONEncoder().encode(theme)
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(vertical: 4, horizontal: 10))
+        XCTAssertEqual(decoded.layout.agentMessagePadding, theme.layout.agentMessagePadding)
+        XCTAssertFalse(try XCTUnwrap(String(data: data, encoding: .utf8)).contains("isMessagePaddingSet"))
+    }
+
+    func test_agentMessagePadding_decodesFromCSSThemeJSON() throws {
+        let json = """
+        { "theme": { "--message-padding": "10px", "--agent-message-padding": "2px 4px 6px 8px" } }
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertEqual(decoded.layout.messagePadding, ConciergePadding(all: 10))
+        XCTAssertEqual(decoded.layout.agentMessagePadding, ConciergePadding(top: 2, bottom: 6, leading: 8, trailing: 4))
+    }
+
+    func test_messagePadding_typedJSONWithoutAgentOverride_preservesLegacyLayout() throws {
+        let data = try JSONEncoder().encode(ConciergeLayout(messagePadding: ConciergePadding(all: 10)))
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        json.removeValue(forKey: "agentMessagePadding")
+        json.removeValue(forKey: "isMessagePaddingSet")
+        let typedData = try JSONSerialization.data(withJSONObject: json)
+
+        let layout = try JSONDecoder().decode(ConciergeLayout.self, from: typedData)
+        XCTAssertEqual(layout.messagePadding, ConciergePadding(all: 10))
+        XCTAssertNil(layout.agentMessagePadding)
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 10, horizontal: 0))
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: true, hasAgentIcon: true), ConciergePadding(all: 10))
+        let encoded = try JSONEncoder().encode(layout)
+        XCTAssertFalse(try XCTUnwrap(String(data: encoded, encoding: .utf8)).contains("isMessagePaddingSet"))
+    }
+
+    func test_agentMessagePadding_typedJSONDecodesExplicitZero() throws {
+        let layout = ConciergeLayout(agentMessagePadding: ConciergePadding(all: 0))
+        let data = try JSONEncoder().encode(layout)
+        let decoded = try JSONDecoder().decode(ConciergeLayout.self, from: data)
+        XCTAssertEqual(decoded.agentMessagePadding, ConciergePadding(all: 0))
+        XCTAssertEqual(decoded.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true), ConciergePadding(all: 0))
+    }
+
+    func test_agentMessagePadding_nullInTypedJSON_preservesLegacyLayout() throws {
+        let data = try JSONEncoder().encode(ConciergeLayout())
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        json["agentMessagePadding"] = NSNull()
+        let typedData = try JSONSerialization.data(withJSONObject: json)
+
+        let layout = try JSONDecoder().decode(ConciergeLayout.self, from: typedData)
+        XCTAssertNil(layout.agentMessagePadding)
+        XCTAssertEqual(layout.resolvedMessagePadding(isUserMessage: false, hasAgentIcon: true),
+                       ConciergePadding(vertical: 8, horizontal: 0))
     }
     
     func test_inputBoxShadow_convertsCorrectly() {
@@ -820,4 +1039,3 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
 }
-
