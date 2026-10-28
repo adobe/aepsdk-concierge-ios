@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import AEPServices
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -424,7 +425,8 @@ final class ConciergeChatServiceTests: XCTestCase {
     }
     
     private func extractFeedbackConsentState(from payload: [String: Any]) -> String? {
-        guard let meta = payload["meta"] as? [String: Any],
+        guard let event = extractFirstEvent(from: payload),
+              let meta = event["meta"] as? [String: Any],
               let consent = meta["consent"] as? [String: Any],
               let state = consent["state"] as? String else {
             return nil
@@ -501,9 +503,10 @@ final class ConciergeChatServiceTests: XCTestCase {
         let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
         
         // Then
-        XCTAssertEqual(payload["eventType"] as? String, "conversation.feedback")
-        XCTAssertNotNil(payload["feedback"])
-        XCTAssertNotNil(payload["meta"], "Feedback payload should contain 'meta' object")
+        let event = try XCTUnwrap(extractFirstEvent(from: payload))
+        XCTAssertEqual(event["eventType"] as? String, "conversation.feedback")
+        XCTAssertNotNil(event["feedback"])
+        XCTAssertNotNil(event["meta"], "Feedback event should contain 'meta' object")
     }
     
     func test_createFeedbackPayload_containsMetaConsentStructure() throws {
@@ -514,13 +517,84 @@ final class ConciergeChatServiceTests: XCTestCase {
         
         // When
         let payload = try extractFeedbackPayloadDictionary(from: service, data: feedbackData)
-        let meta = payload["meta"] as? [String: Any]
+        let event = try XCTUnwrap(extractFirstEvent(from: payload))
+        let meta = event["meta"] as? [String: Any]
         let consent = meta?["consent"] as? [String: Any]
         
         // Then
         XCTAssertNotNil(meta, "Payload should contain 'meta' object")
         XCTAssertNotNil(consent, "Meta should contain 'consent' object")
         XCTAssertNotNil(consent?["state"], "Consent should contain 'state' key")
+    }
+
+    func test_createFeedbackPayload_wrapsCompleteXdmInSingleEvent() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration(consentCollectValue: "y"))
+        let xdm: [String: Any] = [
+            "eventType": "conversation.feedback",
+            "identityMap": [
+                "ECID": [["id": "ecid-123"]],
+                "CRMID": [["id": "customer-123", "authenticatedState": "authenticated"]]
+            ],
+            "conversation": [
+                "conversationID": "conversation-1",
+                "turnID": "turn-1",
+                "feedback": [
+                    "source": "end-user",
+                    "raw": [["text": "Helpful \"answer\"\nThanks!", "purpose": "user input"]],
+                    "rating": ["score": 1, "classification": "Thumbs Up", "reasons": ["Helpful"]]
+                ]
+            ]
+        ]
+
+        let payload = try extractFeedbackPayloadDictionary(from: service, data: ["xdm": xdm])
+        let events = try XCTUnwrap(payload["events"] as? [[String: Any]])
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(Set(payload.keys), Set(["events"]))
+        let event = try XCTUnwrap(events.first)
+        let serializedXdm = try XCTUnwrap(event["xdm"] as? [String: Any])
+        XCTAssertEqual(serializedXdm as NSDictionary, xdm as NSDictionary)
+        XCTAssertEqual(extractFeedbackConsentState(from: payload), "in")
+    }
+
+    func test_createFeedbackPayload_negativeWithEmptyNotesAndReasons_preservesInput() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration())
+        let xdm: [String: Any] = [
+            "eventType": "conversation.feedback",
+            "identityMap": ["ECID": [["id": "ecid-123"]]],
+            "conversation": [
+                "conversationID": "conversation-1",
+                "turnID": "turn-1",
+                "feedback": [
+                    "source": "end-user",
+                    "raw": [["text": "", "purpose": "user input"]],
+                    "rating": ["score": 0, "classification": "Thumbs Down", "reasons": [String]()]
+                ]
+            ]
+        ]
+        let input: [String: Any] = ["xdm": xdm]
+
+        for token in [nil, "", " \n\t"] as [String?] {
+            let data = try service.createFeedbackPayload(data: input, token: token)
+            let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let events = try XCTUnwrap(payload["events"] as? [[String: Any]])
+            XCTAssertEqual(events.count, 1)
+            let event = try XCTUnwrap(events.first)
+            let actualXdm = try XCTUnwrap(event["xdm"] as? [String: Any])
+            XCTAssertEqual(actualXdm as NSDictionary, xdm as NSDictionary)
+            XCTAssertNil(try XCTUnwrap(feedbackConversation(from: payload))["data"])
+            XCTAssertEqual(extractFeedbackConsentState(from: payload), "unknown")
+        }
+    }
+
+    func test_createFeedbackPayload_invalidConsent_usesUnknownInsideEvent() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration(consentCollectValue: "invalid"))
+        let payload = try extractFeedbackPayloadDictionary(
+            from: service,
+            data: ["xdm": ["conversation": ["turnID": "turn-1"]]]
+        )
+        XCTAssertEqual(extractFeedbackConsentState(from: payload), "unknown")
+        XCTAssertNil(payload["meta"])
+        XCTAssertNil(payload["xdm"])
     }
 
     // MARK: - URL Construction Tests
@@ -794,7 +868,8 @@ final class ConciergeChatServiceTests: XCTestCase {
     // MARK: - Auth Token: Feedback Payload
 
     private func feedbackConversation(from payload: [String: Any]) -> [String: Any]? {
-        guard let xdm = payload["xdm"] as? [String: Any],
+        guard let event = extractFirstEvent(from: payload),
+              let xdm = event["xdm"] as? [String: Any],
               let conversation = xdm["conversation"] as? [String: Any] else {
             return nil
         }
@@ -838,7 +913,9 @@ final class ConciergeChatServiceTests: XCTestCase {
         let payload = try JSONSerialization.jsonObject(with: data) as! [String: Any]
 
         // Then
-        XCTAssertNil(feedbackConversation(from: payload)?["data"])
+        let conversation = try XCTUnwrap(feedbackConversation(from: payload))
+        XCTAssertEqual(conversation["turnID"] as? String, "turn-1")
+        XCTAssertNil(conversation["data"])
     }
 
     // MARK: - Auth Token: Helpers
@@ -999,7 +1076,7 @@ final class ConciergeChatServiceTests: XCTestCase {
                        "The token must not appear in any header")
     }
 
-    func test_sendFeedback_issuesRequestThroughService() async {
+    func test_sendFeedback_issuesRequestThroughService() async throws {
         StubURLProtocol.reset()
         let service = makeStubbedService()
 
@@ -1014,6 +1091,61 @@ final class ConciergeChatServiceTests: XCTestCase {
         let headers = request.allHTTPHeaderFields ?? [:]
         XCTAssertNil(headers.keys.first { $0.caseInsensitiveCompare("Authorization") == .orderedSame },
                      "Feedback must not send the token as an Authorization header")
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+
+        let json: Any
+        if let body = request.httpBody {
+            json = try JSONSerialization.jsonObject(with: body)
+        } else {
+            let stream = try XCTUnwrap(request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            json = try JSONSerialization.jsonObject(with: stream)
+        }
+        let payload = try XCTUnwrap(json as? [String: Any])
+        let events = try XCTUnwrap(payload["events"] as? [[String: Any]])
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(Set(payload.keys), Set(["events"]))
+        let conversation = try XCTUnwrap(feedbackConversation(from: payload))
+        XCTAssertEqual(conversation["turnID"] as? String, "t-1")
+        XCTAssertEqual((conversation["feedback"] as? [String: Any])?["source"] as? String, "end-user")
+        let auth = try XCTUnwrap(conversation["data"] as? [String: Any])
+        XCTAssertEqual(auth["type"] as? String, "auth")
+        XCTAssertEqual((auth["payload"] as? [String: Any])?["token"] as? String, "athlete-token-123")
+        XCTAssertEqual(extractFeedbackConsentState(from: payload), "in")
+    }
+
+    func test_sendFeedback_httpStatus_logsSuccessAtDebugAndFailureAtWarning() async throws {
+        let logging = FeedbackResponseLogging()
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .debug
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+            StubURLProtocol.reset()
+        }
+
+        for status in [199, 200, 204, 299, 300, 400, 500] {
+            StubURLProtocol.reset()
+            StubURLProtocol.responseStatusCode = status
+            let service = makeStubbedService()
+            let success = (200..<300).contains(status)
+            let message = "Feedback request \(success ? "completed" : "failed") with statusCode=\(status)"
+            let expectedLevel: LogLevel = success ? .debug : .warning
+            let before = logging.entries.count
+
+            service.sendFeedback(data: ["xdm": ["conversation": ["turnID": "t-1"]]], token: "private-token")
+            await waitForCondition(timeout: 3) { logging.entries.count > before }
+
+            let entry = try XCTUnwrap(logging.entries.last)
+            XCTAssertEqual(logging.entries.count, before + 1)
+            XCTAssertEqual(entry.level, expectedLevel)
+            XCTAssertEqual(entry.message, message)
+            XCTAssertFalse(entry.message.contains("private-token"))
+        }
     }
 
     func test_sendFeedback_networkError_isHandledWithoutCrashing() async {
@@ -1110,7 +1242,10 @@ final class ConciergeChatServiceTests: XCTestCase {
         let payloadData = try service.createFeedbackPayload(data: data, token: "athlete-token-123")
         let payload = try JSONSerialization.jsonObject(with: payloadData) as! [String: Any]
 
-        XCTAssertNil((payload["xdm"] as? [String: Any])?["conversation"], "no conversation node was present")
+        let event = try XCTUnwrap(extractFirstEvent(from: payload))
+        let xdm = try XCTUnwrap(event["xdm"] as? [String: Any])
+        XCTAssertNotNil(xdm["identityMap"])
+        XCTAssertNil(xdm["conversation"], "no conversation node was present")
         let json = String(data: payloadData, encoding: .utf8) ?? ""
         XCTAssertFalse(json.contains("athlete-token-123"), "token omitted when there is no conversation node to attach to")
     }
@@ -1248,7 +1383,8 @@ final class ConciergeChatServiceTests: XCTestCase {
 }
 
 /// Intercepts requests from an injected `URLSessionConfiguration` so tests can drive the service's
-/// request path without real networking. Captures requests (thread-safe) and returns a 200 with `responseBody` (empty by default).
+/// request path without real networking. Captures requests (thread-safe) and returns `responseStatusCode`
+/// (200 by default) with `responseBody` (empty by default).
 private final class StubURLProtocol: URLProtocol {
     private static let lock = NSLock()
     private static var requests: [URLRequest] = []
@@ -1256,6 +1392,7 @@ private final class StubURLProtocol: URLProtocol {
     private static var _shouldHold = false
     private static var _stoppedCount = 0
     private static var _responseBody: Data?
+    private static var _responseStatusCode = 200
     private var held = false
 
     static func reset() {
@@ -1265,6 +1402,7 @@ private final class StubURLProtocol: URLProtocol {
         _shouldHold = false
         _stoppedCount = 0
         _responseBody = nil
+        _responseStatusCode = 200
         lock.unlock()
     }
     static var count: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
@@ -1283,6 +1421,10 @@ private final class StubURLProtocol: URLProtocol {
         get { lock.lock(); defer { lock.unlock() }; return _responseBody }
         set { lock.lock(); defer { lock.unlock() }; _responseBody = newValue }
     }
+    static var responseStatusCode: Int {
+        get { lock.lock(); defer { lock.unlock() }; return _responseStatusCode }
+        set { lock.lock(); defer { lock.unlock() }; _responseStatusCode = newValue }
+    }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -1291,6 +1433,7 @@ private final class StubURLProtocol: URLProtocol {
         StubURLProtocol.lock.lock()
         StubURLProtocol.requests.append(request)
         let shouldFail = StubURLProtocol._shouldFail
+        let responseStatusCode = StubURLProtocol._responseStatusCode
         held = StubURLProtocol._shouldHold
         let body = StubURLProtocol._responseBody
         StubURLProtocol.lock.unlock()
@@ -1301,7 +1444,7 @@ private final class StubURLProtocol: URLProtocol {
             return
         }
         if let url = request.url,
-           let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+           let response = HTTPURLResponse(url: url, statusCode: responseStatusCode, httpVersion: nil, headerFields: nil) {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         }
         client?.urlProtocol(self, didLoad: body ?? Data())
@@ -1315,6 +1458,29 @@ private final class StubURLProtocol: URLProtocol {
             held = false
         }
         StubURLProtocol.lock.unlock()
+    }
+}
+
+private final class FeedbackResponseLogging: NSObject, Logging {
+    struct Entry {
+        let level: LogLevel
+        let message: String
+    }
+
+    private let lock = NSLock()
+    private var recordedEntries: [Entry] = []
+
+    var entries: [Entry] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedEntries
+    }
+
+    func log(level: LogLevel, label: String, message: String) {
+        guard message.hasPrefix("Feedback request ") else { return }
+        lock.lock()
+        recordedEntries.append(Entry(level: level, message: message))
+        lock.unlock()
     }
 }
 

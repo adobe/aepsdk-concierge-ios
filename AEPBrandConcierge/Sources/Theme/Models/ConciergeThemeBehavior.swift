@@ -418,13 +418,40 @@ public struct ConciergePromptSuggestionsBehavior: Codable {
 public struct ConciergePrivacyNoticeBehavior: Codable {
     public var title: String
     public var text: String
+    public var links: [ConciergeDisclaimerLink]
+
+    var hasContent: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case title, text, links
+    }
 
     public init(
         title: String = "Privacy Notice",
-        text: String = "Privact notice text."
+        text: String = ""
+    ) {
+        self.init(title: title, text: text, links: [])
+    }
+
+    // Separate from `init(title:text:)` so the previously shipped initializer keeps its ABI.
+    public init(
+        title: String = "Privacy Notice",
+        text: String = "",
+        links: [ConciergeDisclaimerLink]
     ) {
         self.title = title
         self.text = text
+        self.links = links
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Self()
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? defaults.title
+        text = try container.decodeIfPresent(String.self, forKey: .text) ?? defaults.text
+        links = try container.decodeIfPresent([ConciergeDisclaimerLink].self, forKey: .links) ?? defaults.links
     }
 }
 

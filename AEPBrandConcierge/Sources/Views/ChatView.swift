@@ -95,6 +95,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
             MessageListView(
                 messages: displayMessages,
+                privacyNotice: theme.behavior.privacyNotice,
                 userScrollTick: controller.userScrollTick,
                 userMessageToScrollId: controller.userMessageToScrollId,
                 scrollToLastOnAppear: controller.hasConversationStarted,
