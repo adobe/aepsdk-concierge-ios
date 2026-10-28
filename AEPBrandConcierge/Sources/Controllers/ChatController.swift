@@ -16,6 +16,31 @@ import Combine
 import AEPCore
 import AEPServices
 
+private final class MainActorCallbackSequencer {
+    private let lock = NSLock()
+    private var lastTask: Task<Void, Never>?
+
+    func enqueue(_ operation: @escaping @MainActor () -> Void) {
+        lock.lock()
+        let previousTask = lastTask
+        lastTask = Task { @MainActor in
+            await previousTask?.value
+            operation()
+        }
+        lock.unlock()
+    }
+}
+
+/// Everything needed to resend a background-interrupted typed turn once the app is foregrounded.
+private struct RecoveryRequest {
+    let query: String
+    let xdmFields: [String: Any]
+    let sessionID: String
+    /// The failure that triggered recovery; surfaced if the resend is skipped.
+    let error: ConciergeError
+    let attemptStartedAt: Date
+}
+
 /// Main controller orchestrating chat functionality.
 /// Manages messages, chat state, and coordinates between services.
 @MainActor
@@ -51,6 +76,7 @@ final class ChatController: ObservableObject {
     let configuration: ConciergeConfiguration?
     private let speechController: SpeechController
     private let dispatch: ((_ event: Event) -> Void)?
+    private let appState: ConciergeAppState
     private(set) var lastTurnSessionID: String?
     private let identityGeneration: Int
     @Published private(set) var endedForIdentityReset = false
@@ -105,12 +131,15 @@ final class ChatController: ObservableObject {
     /// Injectable so tests can exercise the caps without waiting out the production values.
     private let handoffFirstChunkTimeout: TimeInterval
     private let handoffTurnTimeout: TimeInterval
+    /// Longest wait after which a background-interrupted turn is no longer resent. Injectable for tests.
+    private let backgroundRecoveryMaxAge: TimeInterval
 
     private var latestSources: [Source] = []
     private var latestLinkHints: [LinkHint] = []
     private var latestPromptSuggestions: [String] = []
     private var chatOpenTime: Date?
     private var cancellables = Set<AnyCancellable>()
+    private var foregroundRetryCancellable: AnyCancellable?
 
     // MARK: - Computed Properties
 
@@ -143,7 +172,7 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil, appState: ConciergeAppState = .shared) {
         let generation = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -154,16 +183,19 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
         self.voiceTransport = voiceTransport
         self.requestMicrophonePermission = VoiceSessionController.requestMicrophonePermission
+        self.appState = appState
         self.handoffTurnTimeout = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT
         self.handoffFirstChunkTimeout = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT
+        self.backgroundRecoveryMaxAge = ConciergeConstants.Session.TTL_SECONDS
 
         configureSpeech()
         observeComposerState()
+        observeAppState()
     }
 
     #if DEBUG
     // Internal for testing only
-    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, requestMicrophonePermission: @escaping () async -> Bool = { true }, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT) {
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, requestMicrophonePermission: @escaping () async -> Bool = { true }, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT, appState: ConciergeAppState = .shared, backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS) {
         self.identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -173,11 +205,14 @@ final class ChatController: ObservableObject {
         self.dispatch = dispatch
         self.voiceTransport = voiceTransport
         self.requestMicrophonePermission = requestMicrophonePermission
+        self.appState = appState
         self.handoffTurnTimeout = handoffTurnTimeout
         self.handoffFirstChunkTimeout = handoffFirstChunkTimeout
+        self.backgroundRecoveryMaxAge = backgroundRecoveryMaxAge
 
         configureSpeech()
         observeComposerState()
+        observeAppState()
     }
     #endif
 
@@ -187,6 +222,15 @@ final class ChatController: ObservableObject {
         inputController.$state
             .sink { [weak self] newState in
                 self?.composerState = newState
+            }
+            .store(in: &cancellables)
+    }
+
+    private func observeAppState() {
+        appState.statePublisher
+            .sink { [weak self] state in
+                guard let self = self, state == .background else { return }
+                self.activeTurn?.noteAppBackgrounded()
             }
             .store(in: &cancellables)
     }
@@ -432,6 +476,54 @@ final class ChatController: ObservableObject {
         chatService.cancelActiveStream()
     }
 
+    private func retryAfterForeground(_ turn: ChatTurn, _ request: RecoveryRequest) {
+        discardPlaceholder(of: turn)
+        guard appState.state == .background else {
+            Log.debug(label: LOG_TAG, "Background recovery scheduled while app is foregrounded; starting resend now.")
+            startRecovery(turn, request)
+            return
+        }
+
+        Log.debug(label: LOG_TAG, "Background recovery scheduled; waiting for app foreground before resending.")
+        foregroundRetryCancellable?.cancel()
+        foregroundRetryCancellable = appState.statePublisher
+            .filter { $0 == .foreground }
+            .prefix(1)
+            .sink { [weak self, weak turn] _ in
+                Task { @MainActor in
+                    guard let self = self, let turn = turn else { return }
+                    self.startRecovery(turn, request)
+                }
+            }
+    }
+
+    private func startRecovery(_ turn: ChatTurn, _ request: RecoveryRequest) {
+        guard identityReady, activeTurn === turn, !turn.isResolved else { return }
+        foregroundRetryCancellable?.cancel()
+        foregroundRetryCancellable = nil
+
+        // Past the session TTL the backend session has expired, and the user has likely moved on
+        // from the question. Report the original failure instead of answering it out of context.
+        guard Date().timeIntervalSince(request.attemptStartedAt) < backgroundRecoveryMaxAge else {
+            Log.warning(label: LOG_TAG, "Background recovery skipped because the session expired while waiting.")
+            dispatchTrackingEvent(.errorOccurred(errorMessage: request.error.localizedDescription))
+            messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
+            turn.resolve(request.error)
+            endTurn(turn)
+            return
+        }
+
+        Log.debug(label: LOG_TAG, "Resending one background-interrupted typed chat turn.")
+        turn.resolve(nil)
+        latestSources = []
+        latestLinkHints = []
+        latestPromptSuggestions = []
+        // The resend is a new request with its own interaction ID, so it reports its own
+        // responseStarted/responseCompleted pair rather than completing the failed attempt's.
+        _ = streamAgentResponse(for: request.query, heldXDMFields: request.xdmFields, sessionID: request.sessionID,
+                                kind: .typed, allowsBackgroundRecovery: false)
+    }
+
     /// Removes `turn`'s streaming placeholder from the transcript, if it is still there.
     ///
     /// Looked up by id: the transcript shifts under a turn as cards and suggestions are appended,
@@ -447,6 +539,11 @@ final class ChatController: ObservableObject {
     /// whichever turn is running now.
     private func endTurn(_ turn: ChatTurn) {
         guard activeTurn === turn else { return }
+        if foregroundRetryCancellable != nil {
+            Log.debug(label: LOG_TAG, "Cancelling pending background recovery because the chat turn ended.")
+        }
+        foregroundRetryCancellable?.cancel()
+        foregroundRetryCancellable = nil
         clearState()
     }
 
@@ -830,11 +927,18 @@ final class ChatController: ObservableObject {
                                      extraXDMFields: [String: Any]? = nil,
                                      sessionID: String? = nil,
                                      kind: TurnKind = .typed,
+                                     allowsBackgroundRecovery: Bool = true,
                                      completion: ((ConciergeError?) -> Void)? = nil) -> ChatTurn {
         let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
         messages.append(placeholder)
 
-        let turn = ChatTurn(placeholderId: placeholder.id, kind: kind, outcome: completion)
+        let turn = ChatTurn(placeholderId: placeholder.id,
+                            kind: kind,
+                            allowsBackgroundRecovery: allowsBackgroundRecovery,
+                            outcome: completion)
+        if appState.state == .background {
+            turn.noteAppBackgrounded()
+        }
         activeTurn = turn
 
         // Armed from submission, so it also bounds the auth-token wait below.
@@ -856,6 +960,8 @@ final class ChatController: ObservableObject {
         var accumulatedContent = ""
         var latestElements: [MultimodalElement] = []
         var responseStartedDispatched = false
+        let attemptStartedAt = Date()
+        let callbackSequencer = MainActorCallbackSequencer()
 
         // Resolve the auth token off the UI thread, then send the turn on the main actor.
         //
@@ -882,7 +988,7 @@ final class ChatController: ObservableObject {
             self.chatService.streamChat(query, token: token, extraXDMFields: mergedXDMFields.isEmpty ? nil : mergedXDMFields,
             sessionID: resolvedSessionID,
             onChunk: { [weak self] payload in
-                Task { @MainActor in
+                callbackSequencer.enqueue { [weak self] in
                     guard let self = self, self.identityReady, self.activeTurn === turn else { return }
 
                     // The service is alive, so the fast "never answered" cap has done its job.
@@ -899,6 +1005,9 @@ final class ChatController: ObservableObject {
                     turn.noteResponseStarted()
 
                     let state = payload.state
+                    if state == ConciergeConstants.StreamState.COMPLETED {
+                        turn.noteResponseCompleted()
+                    }
 
                     // Serializing + pretty-printing the response is only useful for local debugging,
                     #if DEBUG
@@ -975,25 +1084,51 @@ final class ChatController: ObservableObject {
                 }
             },
             onComplete: { [weak self] error in
-                Task { @MainActor in
+                callbackSequencer.enqueue { [weak self] in
                     // A turn ended by a deadline has already reported its outcome and unwound the
                     // transcript. Its late completion must not do either a second time.
                     guard !turn.isResolved else { return }
+
+                    guard let self = self, self.identityReady, self.activeTurn === turn else {
+                        // The session went away mid-stream; nothing was rendered.
+                        turn.resolve(error ?? .unknown)
+                        return
+                    }
+
+                    // `ConciergeAppState` updates its state synchronously before publishing it.
+                    // This closes the narrow race where a stream fails after the UIKit background
+                    // notification but before the controller's Combine observer receives it.
+                    if self.appState.state == .background {
+                        turn.noteAppBackgrounded()
+                    }
+
+                    // A completed response is authoritative even if the transport reports an
+                    // error as it closes the stream. Preserve it rather than discarding or retrying.
+                    let effectiveError = turn.hasCompletedResponse ? nil : error
+                    if let effectiveError, turn.reserveBackgroundRecovery(for: effectiveError) {
+                        self.retryAfterForeground(turn, RecoveryRequest(
+                            query: query,
+                            xdmFields: mergedXDMFields,
+                            sessionID: resolvedSessionID,
+                            error: effectiveError,
+                            attemptStartedAt: attemptStartedAt
+                        ))
+                        return
+                    }
 
                     // The caller must hear back on every path out of this closure, including the
                     // early `return`s below and a deallocated controller. `resolve` is idempotent,
                     // so the `defer` can fire unconditionally without racing the paths that report
                     // a more specific outcome first.
-                    var outcome: ConciergeError? = error
+                    var outcome: ConciergeError? = effectiveError
                     defer { turn.resolve(outcome) }
 
-                    guard let self = self, self.identityReady, self.activeTurn === turn else {
-                        // The session went away mid-stream; nothing was rendered.
-                        outcome = outcome ?? .unknown
-                        return
-                    }
-
-                    if let error = error {
+                    if let error = effectiveError {
+                        if !turn.allowsBackgroundRecovery {
+                            Log.warning(label: self.LOG_TAG, "Background recovery resend failed; no further resend will be attempted.")
+                        } else if turn.hasOverlappedBackground {
+                            Log.debug(label: self.LOG_TAG, "Background-overlapped turn failure is not eligible for automatic recovery.")
+                        }
                         Log.error(label: self.LOG_TAG, "Streaming error: \(error)")
                         self.dispatchTrackingEvent(.errorOccurred(errorMessage: error.localizedDescription))
 
