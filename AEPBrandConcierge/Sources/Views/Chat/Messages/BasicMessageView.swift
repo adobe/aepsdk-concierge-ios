@@ -37,6 +37,10 @@ struct BasicMessageView: View {
         !isUserMessage && theme.hasAgentIcon
     }
 
+    private var bubblePadding: EdgeInsets {
+        theme.layout.resolvedMessagePadding(isUserMessage: isUserMessage, hasAgentIcon: theme.hasAgentIcon).edgeInsets
+    }
+
     private var resolvedAgentFont: UIFont {
         let fontSize = theme.typography.fontSize
         if theme.typography.fontFamily.isEmpty {
@@ -127,7 +131,9 @@ struct BasicMessageView: View {
                 if isUserMessage { Spacer() } else if theme.behavior.chat.messageAlignment == .center { Spacer() }
 
                 if showAgentIcon {
+                    // Fixed frame reserves the icon column even if the asset fails to resolve.
                     LocalAssetImageView(iconPath: theme.assets.icons.company, width: theme.layout.agentIconSize, height: theme.layout.agentIconSize)
+                        .frame(width: theme.layout.agentIconSize, height: theme.layout.agentIconSize)
                         .padding(.trailing, theme.layout.agentIconSpacing)
                 }
 
@@ -157,9 +163,7 @@ struct BasicMessageView: View {
         VStack(alignment: .leading, spacing: 0) {
             messageContent(annotatedBody: annotatedBody, markers: markers)
                 .lineSpacing(messageLineSpacing)
-                .padding(showAgentIcon
-                    ? EdgeInsets(top: theme.layout.messagePadding.top, leading: 0, bottom: theme.layout.messagePadding.bottom, trailing: 0)
-                    : theme.layout.messagePadding.edgeInsets)
+                .padding(bubblePadding)
                 .frame(maxWidth: resolvedMessageMaxWidth, alignment: .leading)
                 .textSelection(.enabled)
                 .foregroundColor(isUserMessage ? theme.colors.message.userText.color : theme.colors.message.conciergeText.color)

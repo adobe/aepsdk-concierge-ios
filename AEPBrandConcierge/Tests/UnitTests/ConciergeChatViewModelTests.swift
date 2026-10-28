@@ -70,6 +70,60 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(controller.chatState, .processing)
     }
 
+    /// The privacy notice is anchored to the first user message, so it must stay first in history.
+    func test_sendMessage_privacyNoticeAnchor_firstQueryStaysFirstAfterFailureAndLaterSends() {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("Where is the store?")
+        controller.sendMessage(isUser: true)
+
+        let firstID = controller.messages.first?.id
+        XCTAssertNotNil(firstID)
+        XCTAssertEqual(controller.userMessageToScrollId, firstID)
+        spinUntil(service.streamChatCallCount == 1)
+        service.plannedError = .unreachable
+        service.triggerCompletion()
+        spinUntil(controller.chatState == .idle)
+        XCTAssertEqual(controller.messages.first?.id, firstID)
+
+        controller.applyTextChange("What are its hours?")
+        controller.sendMessage(isUser: true)
+        XCTAssertEqual(controller.messages.first?.id, firstID)
+        XCTAssertNotEqual(controller.userMessageToScrollId, firstID)
+        // Let the turn resolve its auth token now so it cannot run during a later test.
+        spinUntil(service.streamChatCallCount == 2)
+        XCTAssertEqual(service.streamChatCallCount, 2)
+        controller.endConversationForIdentityReset()
+        XCTAssertTrue(controller.messages.isEmpty)
+        controller.applyTextChange("Cannot send after reset")
+        controller.sendMessage(isUser: true)
+        XCTAssertTrue(controller.messages.isEmpty)
+    }
+
+    /// A handoff never anchors the privacy notice; the first typed query after it does.
+    func test_sendMessage_afterHandoff_privacyNoticeAnchorIsNewQuery_andHistoryIsPreserved() throws {
+        let service = MockChatService(configuration: mockConciergeConfiguration)
+        service.shouldCallComplete = false
+        let controller = makeController(configuration: mockConciergeConfiguration, service: service)
+        controller.applyTextChange("Local agent message")
+        controller.sendMessage(isUser: false)
+        XCTAssertEqual(controller.messages.count, 1)
+
+        controller.handleDataHandoff(routingHint: "checkout", xdmFields: [:], localMessage: "Order confirmed")
+        spinUntil(service.streamChatCallCount == 1)
+        controller.abandonActiveTurn()
+        let historyIDs = controller.messages.map(\.id)
+        controller.applyTextChange("My first query")
+        controller.sendMessage(isUser: true)
+        // Let the turn resolve its auth token now so it cannot run during a later test.
+        spinUntil(service.streamChatCallCount == 2)
+        XCTAssertEqual(service.streamChatCallCount, 2)
+        XCTAssertEqual(Array(controller.messages.prefix(historyIDs.count)).map(\.id), historyIDs)
+        XCTAssertFalse(historyIDs.contains(try XCTUnwrap(controller.userMessageToScrollId)))
+        controller.abandonActiveTurn()
+    }
+
     func test_handleDataHandoff_sendsRoutingHintAsQuery_andDoesNotAppendUserBubble() {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)

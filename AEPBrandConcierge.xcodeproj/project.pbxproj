@@ -107,6 +107,8 @@
 		3089F7096D79893B211B2F47 /* DataChannelMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DB8D73CB51A0510D19199D4 /* DataChannelMessageParser.swift */; };
 		3523A0148F1C41662548C065 /* BuyNowMockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4274A7A6D620553F44A2B4CD /* BuyNowMockView.swift */; };
 		3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */; };
+		C3F8624C10234AB791040001 /* PrivacyNoticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F8624C10234AB791040002 /* PrivacyNoticeView.swift */; };
+		C3F8624C10234AB791040003 /* PrivacyNoticeSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F8624C10234AB791040004 /* PrivacyNoticeSnapshotTests.swift */; };
 		3BC69E9C64052B6BBCA4AE99 /* ProductDetailCardViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E21378B0B68D3623005C3C79 /* ProductDetailCardViewTests.swift */; };
 		41DAE6E472994C298C2E140A /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F083DD30445434A872EF78A /* CheckoutView.swift */; };
 		44D3D2BA6FCA570474FBD2B5 /* GeoURLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E7DD31CC1B008B43BF0F97 /* GeoURLConverter.swift */; };
@@ -140,6 +142,7 @@
 		4C3A65DF2E5E913200EEEF3B /* MarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */; };
 		4C3A65E12E5E989E00EEEF3B /* MarkdownBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */; };
 		4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */; };
+		C3F8624C10234AB791040005 /* LinkedTextFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F8624C10234AB791040006 /* LinkedTextFormatter.swift */; };
 		4C3D5F982E67DBF700323738 /* RoundedCornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */; };
 		4C3D5F9A2E69068500323738 /* ConciergeResponsePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F992E69068500323738 /* ConciergeResponsePlaceholderView.swift */; };
 		4C3D5F9C2E6A693F00323738 /* CheckboxRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */; };
@@ -390,6 +393,7 @@
 		4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownText.swift; sourceTree = "<group>"; };
 		4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownBlockView.swift; sourceTree = "<group>"; };
 		4C3A65E22E5FBD1F00EEEF3B /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
+		C3F8624C10234AB791040006 /* LinkedTextFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedTextFormatter.swift; sourceTree = "<group>"; };
 		4C3D5F972E67DBF700323738 /* RoundedCornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundedCornerShape.swift; sourceTree = "<group>"; };
 		4C3D5F992E69068500323738 /* ConciergeResponsePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeResponsePlaceholderView.swift; sourceTree = "<group>"; };
 		4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxRow.swift; sourceTree = "<group>"; };
@@ -458,6 +462,8 @@
 		A9553D91AA7C6E5EFCB2DEFC /* Pods-AEPBrandConciergeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AEPBrandConciergeTests.debug.xcconfig"; path = "Target Support Files/Pods-AEPBrandConciergeTests/Pods-AEPBrandConciergeTests.debug.xcconfig"; sourceTree = "<group>"; };
 		AC33FE7D698E71E78E13C87D /* VoiceTransport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceTransport.swift; sourceTree = "<group>"; };
 		AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicMessageView.swift; sourceTree = "<group>"; };
+		C3F8624C10234AB791040002 /* PrivacyNoticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyNoticeView.swift; sourceTree = "<group>"; };
+		C3F8624C10234AB791040004 /* PrivacyNoticeSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyNoticeSnapshotTests.swift; sourceTree = "<group>"; };
 		AF5ED24D4568F21DDE8084B7 /* Pods_AEPBrandConcierge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AEPBrandConcierge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6C8A8D300235DCA7C2130A1 /* ConciergeXDMContextStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConciergeXDMContextStore.swift; sourceTree = "<group>"; };
 		B76EE6B2191CEB029EC13C57 /* VoiceSessionController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceSessionController.swift; sourceTree = "<group>"; };
@@ -608,6 +614,7 @@
 				CB8A6DBE18A82A94A689AF8E /* WhiteSpaceReservationSnapshotTests.swift */,
 				E72B9D4A1C5F63B08A2E7D31 /* ProductCardCarouselSnapshotTests.swift */,
 				244E69E92F22DF8300ADF1AA /* MessageBubbleSnapshotTests.swift */,
+				C3F8624C10234AB791040004 /* PrivacyNoticeSnapshotTests.swift */,
 				244E69EA2F22DF8300ADF1AA /* PermissionDialogSnapshotTests.swift */,
 				244E69EB2F22DF8300ADF1AA /* SourcesProbeSnapshotTests.swift */,
 			);
@@ -873,6 +880,7 @@
 			isa = PBXGroup;
 			children = (
 				AE4EA5F0D817FDEC1A8F6695 /* BasicMessageView.swift */,
+				C3F8624C10234AB791040002 /* PrivacyNoticeView.swift */,
 				4C5FE3252EBD9D2F004F9286 /* CitationAttachmentBuilder.swift */,
 				4C5FE3232EBD2C5E004F9286 /* CitationRenderer.swift */,
 				4C5FE3262EBD9D2F004F9286 /* CitationStyle.swift */,
@@ -913,6 +921,7 @@
 				4C3A65CA2E55272300EEEF3B /* BrandIcon.swift */,
 				4C3D5F9B2E6A693F00323738 /* CheckboxRow.swift */,
 				4C3A65E02E5E989E00EEEF3B /* MarkdownBlockView.swift */,
+				C3F8624C10234AB791040006 /* LinkedTextFormatter.swift */,
 				4C3A65DE2E5E913200EEEF3B /* MarkdownText.swift */,
 				4C5FE32D2EC42C8D004F9286 /* MarkdownTextCoordinator.swift */,
 				4CB1CF012E98896B00AB3107 /* RemoteImageView.swift */,
@@ -1296,8 +1305,10 @@
 				4C3D5F9A2E69068500323738 /* ConciergeResponsePlaceholderView.swift in Sources */,
 				4C3A65CC2E55272400EEEF3B /* ComposerEditingView.swift in Sources */,
 				4C3A65E32E5FBD1F00EEEF3B /* MarkdownRenderer.swift in Sources */,
+				C3F8624C10234AB791040005 /* LinkedTextFormatter.swift in Sources */,
 				4C3A65CD2E55272400EEEF3B /* ChatTopBar.swift in Sources */,
 				3743A0FEC974D8BF598ACBBE /* BasicMessageView.swift in Sources */,
+				C3F8624C10234AB791040001 /* PrivacyNoticeView.swift in Sources */,
 				4C3A65D02E55272400EEEF3B /* MessageListView.swift in Sources */,
 				4C3A65D12E55272400EEEF3B /* ComposerDisclaimer.swift in Sources */,
 				4C3A65D22E55272400EEEF3B /* BrandIcon.swift in Sources */,
@@ -1424,6 +1435,7 @@
 				244E69F12F22DF8300ADF1AA /* PermissionDialogSnapshotTests.swift in Sources */,
 				244E69F22F22DF8300ADF1AA /* ComposerSnapshotTests.swift in Sources */,
 				244E69F32F22DF8300ADF1AA /* MessageBubbleSnapshotTests.swift in Sources */,
+				C3F8624C10234AB791040003 /* PrivacyNoticeSnapshotTests.swift in Sources */,
 				4C2923DA2E7E1CCD00D2D2C1 /* InputReducerTests.swift in Sources */,
 				4C29834D2F870A580057C927 /* ConciergeChatSessionTests.swift in Sources */,
 				4C2923E42E7E27CA00D2D2C1 /* MockSpeaker.swift in Sources */,
@@ -1562,7 +1574,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.10.1;
+				MARKETING_VERSION = 5.10.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -1603,7 +1615,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MARKETING_VERSION = 5.10.1;
+				MARKETING_VERSION = 5.10.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.adobe.aep.concierge;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;

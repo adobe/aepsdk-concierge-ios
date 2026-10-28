@@ -118,8 +118,8 @@ struct CarouselGroupView: View {
     ///
     /// Computed as `columnAlignedBase + (productCardCarouselHorizontalPadding ?? 0)`, where the
     /// column-aligned base is:
-    /// - With an agent icon: `chatHistoryPadding + agentTextIndent`, aligning with agent text
-    ///   and suggestion chips (i.e. the start of the response text column).
+    /// - With an agent icon: `chatHistoryPadding + agentTextIndent`, aligning with the agent
+    ///   message bubble's leading edge and suggestion chips.
     /// - Without an agent icon: `chatHistoryPadding + scrollContentBasePadding`, aligning with
     ///   text bubbles and suggestion chips.
     private var scrollContentLeadingInset: CGFloat {

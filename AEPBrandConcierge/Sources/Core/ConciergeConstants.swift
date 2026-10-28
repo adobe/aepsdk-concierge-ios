@@ -20,7 +20,7 @@ import Foundation
 public enum ConciergeConstants {
     static let LOG_TAG = "Concierge"
     static let EXTENSION_NAME = "com.adobe.aep.concierge"
-    static let EXTENSION_VERSION = "5.10.1"
+    static let EXTENSION_VERSION = "5.10.2"
     static let FRIENDLY_NAME = "Brand Concierge"
     static let DEFAULT_TIMEOUT = 3.0
     static let IDENTITY_RESET_WARNING_DELAY_NANOSECONDS: UInt64 = 5_000_000_000
@@ -338,6 +338,7 @@ public enum ConciergeConstants {
             public static let PRODUCT_CARD = "productCard"
             public static let DISCLAIMER   = "disclaimer"
             public static let CTA          = "cta"
+            public static let PRIVACY_NOTICE = "privacyNotice"
         }
     }
 
