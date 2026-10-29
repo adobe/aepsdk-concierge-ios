@@ -490,6 +490,15 @@ final class ThemeDecodingTests: XCTestCase {
         }
     }
 
+    func test_components_feedback_notesToggles_malformedFlagDoesNotDiscardValidFlag() throws {
+        let json = """
+        { "components": { "feedback": { "positiveNotesEnabled": "no", "negativeNotesEnabled": false } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertTrue(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertFalse(theme.components.feedback.negativeNotesEnabled)
+    }
+
     func test_components_feedback_notesToggles_ignoreUnrelatedMalformedFeedbackStyle() throws {
         let json = """
         { "components": { "feedback": {

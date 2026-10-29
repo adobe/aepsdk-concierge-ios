@@ -79,6 +79,7 @@ The theme JSON file contains these top-level keys:
 | `text` | Localized UI strings (copy) |
 | `arrays` | Welcome examples and feedback options |
 | `assets` | Icon and image assets |
+| `components` | Component-level overrides (currently feedback notes field visibility) |
 | `theme` | Visual styling tokens (CSS variables) |
 
 ---
@@ -298,10 +299,12 @@ Feature toggles and interaction configuration.
 | `behavior.feedback.thumbsPlacement` | string | `"inline"` | Placement of thumbs up/down buttons. `"inline"` places them beside the sources accordion header. `"below"` places them below the header with a "Was this helpful?" label. |
 | `behavior.feedback.showCloseButton` | boolean\|null | `null` | X close button visibility. `null` = shown for `"action"`, hidden for `"modal"`. |
 | `behavior.feedback.showCancelButton` | boolean\|null | `null` | Cancel button visibility. `null` = shown for `"modal"`, hidden for `"action"`. Both set to `false` is honored — Submit and (in action mode) drag-down still dismiss. |
+| `components.feedback.positiveNotesEnabled` | boolean | `true` | Show the free-form Notes field in the positive feedback dialog. Only applies to `"modal"` display mode. |
+| `components.feedback.negativeNotesEnabled` | boolean | `true` | Show the free-form Notes field in the negative feedback dialog. Only applies to `"modal"` display mode. |
 
 > **Note:** The notes field is only available in `"modal"` display mode, gated by `components.feedback.positiveNotesEnabled` / `negativeNotesEnabled`.
 
-Both notes flags default to `true`. Set both to `false` to hide the free-form Notes field while keeping the feedback options and submission buttons. Partial overrides are supported, and the flags are preserved when a theme is encoded and decoded again. These flags are read independently of other component styles; unrelated malformed style values do not discard them. Other component styles continue to be derived from the canonical theme tokens.
+Both notes flags default to `true`. Set both to `false` to hide the free-form Notes field while keeping the feedback options and submission buttons. Partial overrides are supported, and the flags are preserved when a theme is encoded and decoded again. Each flag is decoded independently — a malformed value for one flag falls back to `true` without discarding a valid value for the other, and unrelated malformed component styles do not discard them. Other component styles continue to be derived from the canonical theme tokens.
 
 ### Citations
 
@@ -1026,6 +1029,12 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
   "assets": {
     "icons": {
       "company": ""
+    }
+  },
+  "components": {
+    "feedback": {
+      "positiveNotesEnabled": true,
+      "negativeNotesEnabled": true
     }
   },
   "theme": {

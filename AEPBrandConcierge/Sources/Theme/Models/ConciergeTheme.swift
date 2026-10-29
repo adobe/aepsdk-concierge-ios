@@ -44,6 +44,7 @@ private struct DynamicCodingKey: CodingKey {
 /// - `arrays.feedback.positive.options` -> feedbackPositiveOptions
 /// - `arrays.feedback.negative.options` -> feedbackNegativeOptions
 /// - `assets` -> assets
+/// - `components.feedback` -> feedback notes field visibility overrides
 /// - `theme` -> colors, layout, typography, components (CSS variables mapped to semantic groups)
 public struct ConciergeTheme: Codable {
     public var metadata: ConciergeThemeMetadata
@@ -75,6 +76,14 @@ public struct ConciergeTheme: Codable {
         struct FeedbackOverrides: Codable {
             var positiveNotesEnabled: Bool?
             var negativeNotesEnabled: Bool?
+
+            // Decode each flag independently so a malformed value for one flag
+            // does not discard a valid value for the other.
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                positiveNotesEnabled = try? container.decodeIfPresent(Bool.self, forKey: .positiveNotesEnabled)
+                negativeNotesEnabled = try? container.decodeIfPresent(Bool.self, forKey: .negativeNotesEnabled)
+            }
         }
 
         var feedback: FeedbackOverrides?
