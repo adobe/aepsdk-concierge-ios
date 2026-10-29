@@ -390,6 +390,119 @@ final class ThemeDecodingTests: XCTestCase {
         let actionTheme = try JSONDecoder().decode(ConciergeTheme.self, from: jsonAction)
         XCTAssertEqual(actionTheme.behavior.feedback?.displayMode, "action")
     }
+
+    // MARK: - Components Decoding Tests
+
+    func test_components_feedback_notesToggles_decode() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "components": { "feedback": { "positiveNotesEnabled": false, "negativeNotesEnabled": false } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertFalse(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertFalse(theme.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_feedback_notesToggles_defaultToEnabledWhenKeyAbsent() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertTrue(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertTrue(theme.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_feedback_notesToggles_partialOverride() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "components": { "feedback": { "positiveNotesEnabled": false } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertFalse(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertTrue(theme.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_malformed_fallsBackToDefaults() throws {
+        let json = """
+        { "metadata": { "brandName": "Test" }, "components": { "feedback": { "positiveNotesEnabled": "not-a-bool" } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertTrue(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertTrue(theme.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_feedback_notesToggles_roundtrip() throws {
+        let json = """
+        { "components": { "feedback": { "positiveNotesEnabled": false, "negativeNotesEnabled": false } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        let encoded = try JSONEncoder().encode(theme)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let components = try XCTUnwrap(object["components"] as? [String: Any])
+        let feedback = try XCTUnwrap(components["feedback"] as? [String: Any])
+        XCTAssertEqual(feedback["positiveNotesEnabled"] as? Bool, false)
+        XCTAssertEqual(feedback["negativeNotesEnabled"] as? Bool, false)
+
+        let copy = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertFalse(copy.components.feedback.positiveNotesEnabled)
+        XCTAssertFalse(copy.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_feedback_notesToggles_partialOverride_roundtrip() throws {
+        let json = """
+        { "components": { "feedback": { "negativeNotesEnabled": false } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        let encoded = try JSONEncoder().encode(theme)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let components = try XCTUnwrap(object["components"] as? [String: Any])
+        let feedback = try XCTUnwrap(components["feedback"] as? [String: Any])
+        XCTAssertNil(feedback["positiveNotesEnabled"])
+        XCTAssertEqual(feedback["negativeNotesEnabled"] as? Bool, false)
+
+        let copy = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertTrue(copy.components.feedback.positiveNotesEnabled)
+        XCTAssertFalse(copy.components.feedback.negativeNotesEnabled)
+    }
+
+    func test_components_absent_isNotEncoded() throws {
+        let encoded = try JSONEncoder().encode(ConciergeTheme())
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertNil(object["components"])
+    }
+
+    func test_components_feedback_notesToggles_ignoreUnrelatedMalformedStyles() throws {
+        let unrelatedStyles = [
+            "\"welcome\": { \"inputOrder\": \"invalid\" }",
+            "\"inputBar\": false",
+            "\"chatMessage\": { \"padding\": \"invalid\" }",
+            "\"carousel\": []",
+            "\"disclaimer\": { \"fontSize\": \"invalid\" }"
+        ]
+        for style in unrelatedStyles {
+            let json = """
+            { "components": {
+                \(style),
+                "feedback": { "positiveNotesEnabled": false, "negativeNotesEnabled": false }
+            } }
+            """.data(using: .utf8)!
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+            XCTAssertFalse(theme.components.feedback.positiveNotesEnabled, style)
+            XCTAssertFalse(theme.components.feedback.negativeNotesEnabled, style)
+        }
+    }
+
+    func test_components_feedback_notesToggles_ignoreUnrelatedMalformedFeedbackStyle() throws {
+        let json = """
+        { "components": { "feedback": {
+            "iconButtonSizeDesktop": "invalid",
+            "positiveNotesEnabled": false,
+            "negativeNotesEnabled": false
+        } } }
+        """.data(using: .utf8)!
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: json)
+        XCTAssertFalse(theme.components.feedback.positiveNotesEnabled)
+        XCTAssertFalse(theme.components.feedback.negativeNotesEnabled)
+        XCTAssertEqual(theme.components.feedback.iconButtonSizeDesktop, theme.layout.feedbackIconButtonSize)
+    }
     
     // MARK: - Disclaimer Decoding Tests
     

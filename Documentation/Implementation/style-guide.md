@@ -301,6 +301,8 @@ Feature toggles and interaction configuration.
 
 > **Note:** The notes field is only available in `"modal"` display mode, gated by `components.feedback.positiveNotesEnabled` / `negativeNotesEnabled`.
 
+Both notes flags default to `true`. Set both to `false` to hide the free-form Notes field while keeping the feedback options and submission buttons. Partial overrides are supported, and the flags are preserved when a theme is encoded and decoded again. These flags are read independently of other component styles; unrelated malformed style values do not discard them. Other component styles continue to be derived from the canonical theme tokens.
+
 ### Citations
 
 | JSON Key | Type | Default | Description |

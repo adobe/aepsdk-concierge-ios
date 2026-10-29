@@ -70,8 +70,20 @@ public struct ConciergeTheme: Codable {
         set { theme.layout = newValue }
     }
 
+    // Only notes flags are overridden by `components`; other styles use canonical theme tokens.
+    private struct ComponentOverrides: Codable {
+        struct FeedbackOverrides: Codable {
+            var positiveNotesEnabled: Bool?
+            var negativeNotesEnabled: Bool?
+        }
+
+        var feedback: FeedbackOverrides?
+    }
+
+    private var decodedComponents: ComponentOverrides?
+
     public var components: ConciergeComponentStyles {
-        // Derived convenience property.
+        // Derived convenience property, with any decoded `components` overrides applied.
         derivedComponents
     }
 
@@ -104,6 +116,7 @@ public struct ConciergeTheme: Codable {
         case text
         case arrays
         case theme
+        case components
     }
 
     public init(
@@ -154,6 +167,15 @@ public struct ConciergeTheme: Codable {
             arrays = ConciergeArrays()
         }
 
+        // Decode optional component style overrides (maps from "components" key)
+        do {
+            decodedComponents = try container.decodeIfPresent(ComponentOverrides.self, forKey: .components)
+        } catch {
+            Log.warning(label: ConciergeConstants.LOG_TAG, "Failed to decode theme components: \(error)")
+            print("Failed to decode theme components: \(error)")
+            decodedComponents = nil
+        }
+
         // Decode theme tokens or process CSS variables
         if let typedTheme = try? container.decode(ConciergeThemeTokens.self, forKey: .theme) {
             theme = typedTheme
@@ -181,6 +203,7 @@ public struct ConciergeTheme: Codable {
         try container.encode(text, forKey: .text)
         try container.encode(arrays, forKey: .arrays)
         try container.encode(theme, forKey: .theme)
+        try container.encodeIfPresent(decodedComponents, forKey: .components)
     }
 }
 
@@ -224,7 +247,11 @@ private extension ConciergeTheme {
         resolved.feedback.iconButtonSizeDesktop = layout.feedbackIconButtonSize
         resolved.feedback.containerGap = layout.feedbackContainerGap
         resolved.feedback.iconButtonBackground = colors.feedback.iconButtonBackground
-        // Note: notes toggles are currently modeled as component style booleans and default to enabled.
+        // Notes toggles are component style booleans that default to enabled; apply any decoded overrides.
+        if let feedbackOverrides = decodedComponents?.feedback {
+            resolved.feedback.positiveNotesEnabled = feedbackOverrides.positiveNotesEnabled ?? resolved.feedback.positiveNotesEnabled
+            resolved.feedback.negativeNotesEnabled = feedbackOverrides.negativeNotesEnabled ?? resolved.feedback.negativeNotesEnabled
+        }
 
         // MARK: Carousel
         resolved.carousel.cardBorderRadius = layout.borderRadiusCard
