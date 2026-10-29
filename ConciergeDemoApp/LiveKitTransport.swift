@@ -37,11 +37,16 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     private var connectTask: Task<Void, Never>?
     /// Microphone changes run one after another, so a quick mute and unmute land in order.
     private var microphoneTask: Task<Void, Never>?
+    /// Tears down the previous connection. A new connection waits for it, because the teardown stops
+    /// the shared audio stack's microphone input, which would otherwise cut off the new connection's.
+    private var teardownTask: Task<Void, Never>?
 
     func connect(url: String, token: String) {
         disconnect()
         let id = connectionID
+        let teardown = teardownTask
         connectTask = Task.detached { [weak self] in
+            await teardown?.value
             // Creating a room can initialize WebRTC's audio stack, so keep it off the main thread.
             let room = Room()
             guard await self?.adopt(room, connectionID: id) == true else { return }
@@ -69,30 +74,60 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
 
     func disconnect() {
         connectionID += 1
-        connectTask?.cancel()
-        connectTask = nil
         microphoneTask = nil
-        guard let room else { return }
+        let task = connectTask
+        let room = self.room
+        connectTask = nil
         self.room = nil
-        Task.detached { await room.disconnect() }
+        guard task != nil || room != nil else { return }
+        task?.cancel()
+        teardownTask = Task.detached {
+            // LiveKit leaves the microphone input that preconnect capture opened running, and a join in
+            // progress keeps waiting on the network after cancellation, so release the microphone first.
+            await Self.stopMicrophoneInput()
+            await room?.disconnect()
+            guard let task else { return }
+            await task.value
+            // A join cancelled just before it began capturing can still have opened the microphone.
+            await Self.stopMicrophoneInput()
+        }
     }
 
-    /// Connects and publishes the microphone. Returns once the microphone is live.
+    /// Connects and publishes the microphone. Returns once the microphone is live. A failed join leaves
+    /// releasing the microphone to `disconnect()`.
     private static func join(_ room: Room, url: String, token: String) async throws {
         AudioManager.shared.isSpeakerOutputPreferred = true
+        let preconnect = PreconnectCapture()
         do {
             // Records the microphone while the room connects and sends that audio to the agent once
             // it joins, so the user can start speaking right away. Publishes the microphone on success.
             try await room.withPreConnectAudio {
+                preconnect.markStarted()
                 try await room.connect(url: url, token: token)
             } onError: { error in
                 logger.warning("Preconnect audio could not be sent: \(error.localizedDescription, privacy: .public)")
             }
-        } catch {
+        } catch where !preconnect.hasStarted {
+            // Only a capture that could not start falls back; a failed connection would just fail again.
             try Task.checkCancellation()
-            logger.warning("Preconnect path unavailable; falling back to plain connect: \(error.localizedDescription, privacy: .public)")
+            logger.warning("Preconnect audio unavailable; connecting without it: \(error.localizedDescription, privacy: .public)")
             try await room.connect(url: url, token: token)
             try await room.localParticipant.setMicrophone(enabled: true)
+        }
+    }
+
+    /// Stops the audio stack's microphone input. The call blocks until WebRTC applies it, so it runs
+    /// on a dispatch queue instead of holding a Swift Concurrency thread.
+    private static func stopMicrophoneInput() async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    try AudioManager.shared.stopLocalRecording()
+                } catch {
+                    logger.warning("Could not stop the microphone input: \(error.localizedDescription, privacy: .public)")
+                }
+                continuation.resume()
+            }
         }
     }
 
@@ -156,5 +191,23 @@ extension LiveKitTransport: RoomDelegate {
         onMain(ifCurrent: room) { transport in
             transport.delegate?.voiceTransport(transport, didReceive: data, topic: topic.isEmpty ? nil : topic)
         }
+    }
+}
+
+/// Records whether preconnect capture started. `withPreConnectAudio` runs its operation only once it has.
+private final class PreconnectCapture: @unchecked Sendable {
+    private let lock = NSLock()
+    private var started = false
+
+    var hasStarted: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return started
+    }
+
+    func markStarted() {
+        lock.lock()
+        started = true
+        lock.unlock()
     }
 }
