@@ -80,22 +80,28 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
         connectTask = nil
         self.room = nil
         guard task != nil || room != nil else { return }
+        // A join still in progress can outlast its cancellation; `connectFinished` cleans up after it.
         task?.cancel()
-        teardownTask = Task.detached {
-            // LiveKit leaves the microphone input that preconnect capture opened running, and a join in
-            // progress keeps waiting on the network after cancellation, so release the microphone first.
+        tearDown {
+            // LiveKit leaves the microphone input that preconnect capture opened running.
             await Self.stopMicrophoneInput()
             await room?.disconnect()
-            guard let task else { return }
-            await task.value
-            // A join cancelled just before it began capturing can still have opened the microphone.
-            await Self.stopMicrophoneInput()
+        }
+    }
+
+    /// Runs `teardown` after the previous teardown, and makes the next connection wait for it.
+    private func tearDown(_ teardown: @escaping @Sendable () async -> Void) {
+        let previous = teardownTask
+        teardownTask = Task.detached {
+            await previous?.value
+            await teardown()
         }
     }
 
     /// Connects and publishes the microphone. Returns once the microphone is live. A failed join leaves
     /// releasing the microphone to `disconnect()`.
     private static func join(_ room: Room, url: String, token: String) async throws {
+        try Task.checkCancellation()
         AudioManager.shared.isSpeakerOutputPreferred = true
         let preconnect = PreconnectCapture()
         do {
@@ -103,6 +109,8 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
             // it joins, so the user can start speaking right away. Publishes the microphone on success.
             try await room.withPreConnectAudio {
                 preconnect.markStarted()
+                // LiveKit can keep connecting long after cancellation, so give up here.
+                try Task.checkCancellation()
                 try await room.connect(url: url, token: token)
             } onError: { error in
                 logger.warning("Preconnect audio could not be sent: \(error.localizedDescription, privacy: .public)")
@@ -112,6 +120,7 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
             try Task.checkCancellation()
             logger.warning("Preconnect audio unavailable; connecting without it: \(error.localizedDescription, privacy: .public)")
             try await room.connect(url: url, token: token)
+            try Task.checkCancellation()
             try await room.localParticipant.setMicrophone(enabled: true)
         }
     }
@@ -142,8 +151,13 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     @MainActor
     private func connectFinished(_ room: Room, error: Error?) {
         guard room === self.room else {
-            // Superseded while connecting; make sure the room does not stay up.
-            Task.detached { await room.disconnect() }
+            // Superseded while connecting. Make sure the room does not stay up, and release the
+            // microphone this join may have opened after `disconnect()`, unless a newer connection uses it.
+            tearDown { [weak self] in
+                await room.disconnect()
+                let idle = await self?.isIdle ?? true
+                if idle { await Self.stopMicrophoneInput() }
+            }
             return
         }
         if let error {
@@ -152,6 +166,11 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
         } else {
             report(.connected)
         }
+    }
+
+    @MainActor
+    private var isIdle: Bool {
+        connectTask == nil && room == nil
     }
 
     private func report(_ state: VoiceTransportState) {
