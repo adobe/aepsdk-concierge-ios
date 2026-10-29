@@ -51,15 +51,6 @@ public struct ConciergeWelcomeStyle: Codable {
         self.inputOrder = inputOrder
         self.cardsOrder = cardsOrder
     }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeWelcomeStyle()
-        headingColor = try container.decodeIfPresent(CodableColor.self, forKey: .headingColor) ?? defaults.headingColor
-        subheadingColor = try container.decodeIfPresent(CodableColor.self, forKey: .subheadingColor) ?? defaults.subheadingColor
-        inputOrder = try container.decodeIfPresent(Int.self, forKey: .inputOrder) ?? defaults.inputOrder
-        cardsOrder = try container.decodeIfPresent(Int.self, forKey: .cardsOrder) ?? defaults.cardsOrder
-    }
 }
 
 /// Input bar component style
@@ -85,17 +76,6 @@ public struct ConciergeInputBarStyle: Codable {
         self.placeholderColor = placeholderColor
         self.icon = icon
         self.voiceEnabled = voiceEnabled
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeInputBarStyle()
-        background = try container.decodeIfPresent(CodableColor.self, forKey: .background) ?? defaults.background
-        textColor = try container.decodeIfPresent(CodableColor.self, forKey: .textColor) ?? defaults.textColor
-        border = try container.decodeIfPresent(ConciergeBorderStyle.self, forKey: .border) ?? defaults.border
-        placeholderColor = try container.decodeIfPresent(CodableColor.self, forKey: .placeholderColor) ?? defaults.placeholderColor
-        icon = try container.decodeIfPresent(ConciergeIconConfig.self, forKey: .icon) ?? defaults.icon
-        voiceEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceEnabled) ?? defaults.voiceEnabled
     }
 }
 
@@ -129,19 +109,6 @@ public struct ConciergeChatMessageStyle: Codable {
         self.padding = padding
         self.maxWidth = maxWidth
     }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeChatMessageStyle()
-        userBackground = try container.decodeIfPresent(CodableColor.self, forKey: .userBackground) ?? defaults.userBackground
-        userText = try container.decodeIfPresent(CodableColor.self, forKey: .userText) ?? defaults.userText
-        conciergeBackground = try container.decodeIfPresent(CodableColor.self, forKey: .conciergeBackground) ?? defaults.conciergeBackground
-        conciergeText = try container.decodeIfPresent(CodableColor.self, forKey: .conciergeText) ?? defaults.conciergeText
-        linkColor = try container.decodeIfPresent(CodableColor.self, forKey: .linkColor) ?? defaults.linkColor
-        borderRadius = try container.decodeIfPresent(CGFloat.self, forKey: .borderRadius) ?? defaults.borderRadius
-        padding = try container.decodeIfPresent(ConciergePadding.self, forKey: .padding) ?? defaults.padding
-        maxWidth = try container.decodeIfPresent(CGFloat.self, forKey: .maxWidth) ?? defaults.maxWidth
-    }
 }
 
 /// Feedback component style
@@ -165,16 +132,6 @@ public struct ConciergeFeedbackStyle: Codable {
         self.positiveNotesEnabled = positiveNotesEnabled
         self.negativeNotesEnabled = negativeNotesEnabled
     }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeFeedbackStyle()
-        iconButtonBackground = try container.decodeIfPresent(CodableColor.self, forKey: .iconButtonBackground) ?? defaults.iconButtonBackground
-        iconButtonSizeDesktop = try container.decodeIfPresent(CGFloat.self, forKey: .iconButtonSizeDesktop) ?? defaults.iconButtonSizeDesktop
-        containerGap = try container.decodeIfPresent(CGFloat.self, forKey: .containerGap) ?? defaults.containerGap
-        positiveNotesEnabled = try container.decodeIfPresent(Bool.self, forKey: .positiveNotesEnabled) ?? defaults.positiveNotesEnabled
-        negativeNotesEnabled = try container.decodeIfPresent(Bool.self, forKey: .negativeNotesEnabled) ?? defaults.negativeNotesEnabled
-    }
 }
 
 /// Carousel component style
@@ -192,14 +149,6 @@ public struct ConciergeCarouselStyle: Codable {
         self.cardBoxShadow = cardBoxShadow
         self.cardClickAction = cardClickAction
     }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeCarouselStyle()
-        cardBorderRadius = try container.decodeIfPresent(CGFloat.self, forKey: .cardBorderRadius) ?? defaults.cardBorderRadius
-        cardBoxShadow = try container.decodeIfPresent(ConciergeShadow.self, forKey: .cardBoxShadow) ?? defaults.cardBoxShadow
-        cardClickAction = try container.decodeIfPresent(String.self, forKey: .cardClickAction) ?? defaults.cardClickAction
-    }
 }
 
 /// Disclaimer component style
@@ -216,14 +165,6 @@ public struct ConciergeDisclaimerStyle: Codable {
         self.textColor = textColor
         self.fontSize = fontSize
         self.fontWeight = fontWeight
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeDisclaimerStyle()
-        textColor = try container.decodeIfPresent(CodableColor.self, forKey: .textColor) ?? defaults.textColor
-        fontSize = try container.decodeIfPresent(CGFloat.self, forKey: .fontSize) ?? defaults.fontSize
-        fontWeight = try container.decodeIfPresent(CodableFontWeight.self, forKey: .fontWeight) ?? defaults.fontWeight
     }
 }
 
@@ -250,16 +191,5 @@ public struct ConciergeComponentStyles: Codable {
         self.feedback = feedback
         self.carousel = carousel
         self.disclaimer = disclaimer
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = ConciergeComponentStyles()
-        welcome = try container.decodeIfPresent(ConciergeWelcomeStyle.self, forKey: .welcome) ?? defaults.welcome
-        inputBar = try container.decodeIfPresent(ConciergeInputBarStyle.self, forKey: .inputBar) ?? defaults.inputBar
-        chatMessage = try container.decodeIfPresent(ConciergeChatMessageStyle.self, forKey: .chatMessage) ?? defaults.chatMessage
-        feedback = try container.decodeIfPresent(ConciergeFeedbackStyle.self, forKey: .feedback) ?? defaults.feedback
-        carousel = try container.decodeIfPresent(ConciergeCarouselStyle.self, forKey: .carousel) ?? defaults.carousel
-        disclaimer = try container.decodeIfPresent(ConciergeDisclaimerStyle.self, forKey: .disclaimer) ?? defaults.disclaimer
     }
 }
