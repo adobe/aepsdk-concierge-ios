@@ -127,7 +127,7 @@ Concierge.show(surfaces: ["my-surface"], voiceTransport: Voice.transport)
 
 `Concierge.present(on:...)` takes the same `voiceTransport` parameter. The transport is kept for re-shows of the same chat, like `textSpeaker`; a chat first shown without a transport stays without one. `Concierge.wrap` takes no transport: its floating button reopens the chat with the transport of the last `show` or `present` call. Pass the same instance at every `show` and `present` call, as the demo app does.
 
-When a transport is provided, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. Brand Concierge asks for microphone permission before connecting; a denied permission or a failed connection ends the session and shows an error message in the chat.
+When a transport is provided, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. Brand Concierge asks for microphone permission when the user starts a conversation, before it requests a voice session; if the permission is denied, no conversation starts and the chat offers to open Settings. A failed connection ends the conversation and shows an error message in the chat.
 
 #### Audio quality
 

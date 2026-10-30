@@ -87,7 +87,7 @@ final class ComposerEditingViewTests: XCTestCase {
         XCTAssertEqual(trailing(isRecording: true), .recording)
     }
 
-    func test_trailingControl_noVoicePlugin_matchesPreviousBehavior() {
+    func test_trailingControl_withoutVoiceTransport_showsMicSendOrNothing() {
         XCTAssertEqual(trailing(isVoiceAvailable: false), .mic)
         XCTAssertEqual(trailing(hasText: true, isVoiceAvailable: false), .send)
         XCTAssertEqual(trailing(showMic: false, isVoiceAvailable: false), ComposerEditingView.TrailingControl.none)

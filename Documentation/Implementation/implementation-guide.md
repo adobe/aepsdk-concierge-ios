@@ -364,11 +364,12 @@ the local message and the streamed Brand Concierge/Product Advisor response.
 
 The callback completes after the forwarding stream finishes, reporting either the
 delivered response or the first error encountered along the way. A handoff submitted
-while another chat turn is still processing is rejected immediately with
-`ConciergeDataHandoffError.chatInProgress`; the SDK does not queue or retain it, and
-nothing is rendered for the rejected handoff — not even `localMessage`. The host app
-owns the retry and can resubmit the same handoff once the in-flight turn finishes,
-whether it succeeded or failed. An empty `routingHint` is allowed when the XDM fields
+while another chat turn is still processing, or while a voice conversation is running,
+is rejected immediately with `ConciergeDataHandoffError.chatInProgress`; the SDK does
+not queue or retain it, and nothing is rendered for the rejected handoff — not even
+`localMessage`. The host app owns the retry and can resubmit the same handoff once the
+in-flight turn finishes, whether it succeeded or failed, or once the voice conversation
+ends. An empty `routingHint` is allowed when the XDM fields
 provide the necessary routing context.
 
 ### API reference

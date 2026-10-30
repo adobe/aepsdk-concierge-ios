@@ -78,16 +78,18 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     func test_start_entersVoiceSession_andRequestsCredentials() {
         let controller = makeController()
+        controller.applyTextChange("hello")
 
         controller.startVoiceSession()
 
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertEqual(controller.chatState, .idle, "voice adds no case to the public ChatState")
         XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.isVoiceConnecting)
         XCTAssertTrue(controller.voiceEnabled, "the button must stay tappable so the user can stop")
         XCTAssertFalse(controller.composerEditable)
         XCTAssertFalse(controller.micEnabled)
         XCTAssertFalse(controller.sendEnabled)
+        spinUntil(service.bootstrapVoiceSessionCallCount == 1)
         XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 1)
         settle()
         XCTAssertTrue(transport.connections.isEmpty, "no connection before the backend supplies credentials")
@@ -96,14 +98,14 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
     func test_bootstrap_connectsTheTransport_withTheBackendsUrlAndToken() {
         let controller = makeController()
         transport.autoConnect = false
-        controller.startVoiceSession()
+        startVoice(controller)
 
         service.emitBootstrap(url: "wss://voice.example", token: "secret")
         spinUntil(!transport.connections.isEmpty)
 
         XCTAssertEqual(transport.connections.map(\.url), ["wss://voice.example"])
         XCTAssertEqual(transport.connections.map(\.token), ["secret"])
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.isVoiceConnecting)
     }
 
@@ -113,16 +115,16 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         startListening(controller)
 
         XCTAssertFalse(controller.isVoiceConnecting)
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
     }
 
     func test_bootstrapClosingWithoutCredentials_failsBackToIdle_withAnErrorBubble() {
         let controller = makeController()
         controller.networkErrorMessage = "network down"
-        controller.startVoiceSession()
+        startVoice(controller)
 
         service.completeBootstrap(nil)
-        spinUntil(controller.chatState == .idle)
+        spinUntil(!controller.isVoiceSessionActive)
 
         XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertFalse(controller.isVoiceConnecting)
@@ -133,10 +135,10 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     func test_bootstrapError_failsBackToIdle_withAnErrorBubble() {
         let controller = makeController()
-        controller.startVoiceSession()
+        startVoice(controller)
 
         service.completeBootstrap(.unreachable)
-        spinUntil(controller.chatState == .idle)
+        spinUntil(!controller.isVoiceSessionActive)
 
         XCTAssertEqual(controller.messages.count, 1)
         XCTAssertEqual(service.cancelActiveStreamCallCount, 0, "a finished bootstrap is not cancelled")
@@ -149,22 +151,39 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         service.completeBootstrap(nil)
         settle()
 
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertEqual(transport.disconnectCount, 0)
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
-    func test_microphonePermissionDenied_failsBackToIdle_withoutConnecting() {
+    func test_microphonePermissionDenied_startsNothing_andShowsThePermissionDialog() {
         let controller = makeController(permission: false)
-        controller.networkErrorMessage = "network down"
         controller.startVoiceSession()
 
-        service.emitBootstrap()
-        spinUntil(controller.chatState == .idle)
+        spinUntil(!controller.isVoiceSessionActive)
+        settle()
 
+        XCTAssertFalse(controller.isVoiceSessionActive)
+        XCTAssertFalse(controller.isVoiceConnecting)
+        XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 0, "no conversation is requested without the microphone")
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 0)
         XCTAssertTrue(transport.connections.isEmpty)
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["network down"])
-        XCTAssertEqual(events.count, 1)
+        XCTAssertTrue(controller.showPermissionDialog)
+        XCTAssertEqual(controller.permissionDialogPurpose, .voiceConversation)
+        XCTAssertTrue(controller.messages.isEmpty, "a denied permission is not an error")
+        XCTAssertTrue(events.isEmpty)
+    }
+
+    func test_stopWhilePermissionIsPending_neverRequestsCredentials() {
+        let controller = makeController()
+        controller.startVoiceSession()
+
+        controller.stopVoiceSession()
+        settle()
+
+        XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 0)
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 0, "there was no request to cancel")
+        XCTAssertFalse(controller.showPermissionDialog)
     }
 
     // MARK: - Transcript
@@ -214,7 +233,6 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         transport.report(.disconnected)
 
-        XCTAssertEqual(controller.chatState, .idle)
         XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertEqual(controller.messages.map(\.messageBody), ["Bye"])
         XCTAssertTrue(events.isEmpty)
@@ -226,7 +244,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         transport.receive(json: ["type": "session_notice", "data": ["kind": "session_ended", "reason": "user_inactivity_timeout"]])
 
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertTrue(controller.messages.isEmpty)
     }
@@ -238,7 +256,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         transport.report(.failed(URLError(.networkConnectionLost)))
 
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertEqual(controller.messages.map(\.messageBody), ["network down"])
         XCTAssertEqual(events.count, 1)
         XCTAssertEqual(transport.disconnectCount, 1)
@@ -254,7 +272,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertNil(transport.delegate)
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertFalse(controller.isVoiceConnecting)
         XCTAssertTrue(controller.messages.isEmpty, "a user stop is not an error")
         XCTAssertEqual(service.cancelActiveStreamCallCount, 0, "a finished bootstrap is not cancelled")
@@ -269,13 +287,13 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.messages.isEmpty, "the cancelled bootstrap's completion is stale")
     }
 
     func test_stopBeforeCredentials_cancelsTheBootstrap_andNeverConnects() {
         let controller = makeController()
-        controller.startVoiceSession()
+        startVoice(controller)
 
         controller.stopVoiceSession()
         service.emitBootstrap()
@@ -283,7 +301,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
         XCTAssertTrue(transport.connections.isEmpty)
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
@@ -291,10 +309,10 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         let controller = makeController()
 
         controller.toggleVoiceSession()
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
 
         controller.toggleVoiceSession()
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
     }
 
     // MARK: - Stale sessions
@@ -311,7 +329,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(transport.connections.count, 2)
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertEqual(controller.messages.map(\.messageBody), ["first", "second"])
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
     }
 
     func test_callbacksFromAnotherSession_areIgnored() {
@@ -323,7 +341,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         controller.voiceSession(stranger, didChangeState: .failed("late"))
         controller.voiceSession(stranger, didChangeState: .ended)
 
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.messages.isEmpty)
         XCTAssertTrue(events.isEmpty)
     }
@@ -382,7 +400,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertFalse(accepted)
         XCTAssertTrue(outcomes.isEmpty)
         XCTAssertEqual(service.streamChatCallCount, 0)
-        XCTAssertEqual(controller.chatState, .voiceSession)
+        XCTAssertTrue(controller.isVoiceSessionActive)
     }
 
     func test_chatReturnsToIdle_afterVoiceEnds_soTypedTurnsResume() {
@@ -408,13 +426,13 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         spinUntil(!controller.isVoiceSessionActive)
 
         XCTAssertEqual(transport.disconnectCount, 1)
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.messages.isEmpty, "going to the background is not an error")
     }
 
     func test_appBackgroundDuringBootstrap_cancelsIt_andNeverConnects() {
         let controller = makeController()
-        controller.startVoiceSession()
+        startVoice(controller)
 
         enterBackground()
         spinUntil(!controller.isVoiceSessionActive)
@@ -423,7 +441,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
         XCTAssertTrue(transport.connections.isEmpty)
-        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertFalse(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
@@ -484,11 +502,18 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
                                 file: StaticString = #filePath,
                                 line: UInt = #line) {
         let count = transport.connections.count
-        controller.startVoiceSession()
+        startVoice(controller)
         service.emitBootstrap()
         spinUntil(transport.connections.count > count && !controller.isVoiceConnecting)
         XCTAssertGreaterThan(transport.connections.count, count, "credentials did not connect the transport", file: file, line: line)
         XCTAssertFalse(controller.isVoiceConnecting, "the transport did not report connected", file: file, line: line)
+    }
+
+    /// Starts voice and waits until the microphone permission check lets the bootstrap request out.
+    private func startVoice(_ controller: ChatController) {
+        let count = service.bootstrapVoiceSessionCallCount
+        controller.startVoiceSession()
+        spinUntil(service.bootstrapVoiceSessionCallCount > count)
     }
 
     /// Posts the app's background notification, and brings every app state back to the foreground

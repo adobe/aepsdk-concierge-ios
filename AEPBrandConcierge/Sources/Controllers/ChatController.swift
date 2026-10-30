@@ -91,14 +91,13 @@ final class ChatController: ObservableObject {
     /// `ConciergeChatService` keeps a single `dataTask`/handler pair per instance, so a second
     /// concurrent turn would strand the first one's completion.
     ///
-    /// Together with `activeVoice`, this is the controller's single source of truth for "is the chat
-    /// busy", and `updateChatState()` is the only writer of `chatState`. Chat state used to be
-    /// assigned from every path that started or ended a turn, and a path that ended one without
-    /// assigning left the chat parked in `.processing` with a dead composer - the failure mode
-    /// behind several of this feature's bugs. Deriving it here makes that state unreachable: there
-    /// is nowhere left to end a turn without also going idle.
+    /// This is the controller's single source of truth for "is a turn running", and the only writer
+    /// of `chatState`. Chat state used to be assigned from every path that started or ended a turn,
+    /// and a path that ended one without assigning left the chat parked in `.processing` with a
+    /// dead composer - the failure mode behind several of this feature's bugs. Deriving it here
+    /// makes that state unreachable: there is nowhere left to end a turn without also going idle.
     private var activeTurn: ChatTurn? {
-        didSet { updateChatState() }
+        didSet { chatState = activeTurn == nil ? .idle : .processing }
     }
 
     // MARK: - Voice
@@ -111,22 +110,21 @@ final class ChatController: ObservableObject {
 
     /// The voice conversation currently running, or `nil`. Same role as `activeTurn`: callbacks
     /// that do not belong to this run are stale and dropped.
+    ///
+    /// A running conversation leaves `chatState` at `.idle` (`ChatState` is public, so it gains no
+    /// voice case); the composer, dictation, typed turns and handoffs check this instead.
     private var activeVoice: VoiceRun? {
-        didSet { updateChatState() }
+        didSet { isVoiceSessionActive = activeVoice != nil }
     }
+
+    /// True while a voice conversation runs, from the voice tap until it ends.
+    @Published private(set) var isVoiceSessionActive = false
 
     /// True from the voice tap until the voice session reports the conversation is live.
     @Published private(set) var isVoiceConnecting = false
 
-    private func updateChatState() {
-        if activeTurn != nil {
-            chatState = .processing
-        } else if activeVoice != nil {
-            chatState = .voiceSession
-        } else {
-            chatState = .idle
-        }
-    }
+    /// What the permission dialog asks for while `showPermissionDialog` is true.
+    @Published private(set) var permissionDialogPurpose: PermissionDialogView.Purpose = .dictation
 
     /// Injectable so tests can exercise the caps without waiting out the production values.
     private let handoffFirstChunkTimeout: TimeInterval
@@ -145,15 +143,14 @@ final class ChatController: ObservableObject {
 
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
-    var composerEditable: Bool { identityReady && chatState != .processing && chatState != .voiceSession }
+    var composerEditable: Bool { identityReady && chatState != .processing && !isVoiceSessionActive }
     var isVoiceAvailable: Bool { voiceTransport != nil }
-    var isVoiceSessionActive: Bool { activeVoice != nil }
     var voiceEnabled: Bool {
         guard identityReady, voiceTransport != nil else { return false }
         return isVoiceSessionActive || (chatState == .idle && !isRecording)
     }
-    var micEnabled: Bool { identityReady && chatState == .idle }
-    var sendEnabled: Bool { identityReady && chatState == .idle && inputController.data.canSend }
+    var micEnabled: Bool { identityReady && chatState == .idle && !isVoiceSessionActive }
+    var sendEnabled: Bool { identityReady && chatState == .idle && !isVoiceSessionActive && inputController.data.canSend }
 
     /// Whether the transcript holds at least one real turn. Welcome content doesn't count.
     ///
@@ -294,6 +291,10 @@ final class ChatController: ObservableObject {
             Log.warning(label: LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
             return
         }
+        guard !isVoiceSessionActive else {
+            Log.warning(label: LOG_TAG, "startRecording ignored. A voice session is in progress.")
+            return
+        }
         guard inputState == .empty || inputState == .editing || {
             if case .error = inputState { return true } else { return false }
         }() else {
@@ -317,7 +318,7 @@ final class ChatController: ObservableObject {
                         self.beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
                     } else {
                         Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
-                        self.showPermissionDialog = true
+                        self.presentPermissionDialog(for: .dictation)
                     }
                 }
             }
@@ -328,7 +329,7 @@ final class ChatController: ObservableObject {
         if !speechController.isAvailable {
             // Permissions were asked but not granted - show custom dialog
             Log.debug(label: LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
-            showPermissionDialog = true
+            presentPermissionDialog(for: .dictation)
             return
         }
 
@@ -350,6 +351,11 @@ final class ChatController: ObservableObject {
     }
 
     // MARK: - Permission Dialog
+
+    private func presentPermissionDialog(for purpose: PermissionDialogView.Purpose) {
+        permissionDialogPurpose = purpose
+        showPermissionDialog = true
+    }
 
     func dismissPermissionDialog() {
         showPermissionDialog = false
@@ -379,6 +385,10 @@ final class ChatController: ObservableObject {
         }
         guard chatState == .idle else {
             Log.warning(label: LOG_TAG, "sendMessage ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
+            return
+        }
+        guard !isVoiceSessionActive else {
+            Log.warning(label: LOG_TAG, "sendMessage ignored. A voice session is in progress.")
             return
         }
 
@@ -620,9 +630,10 @@ final class ChatController: ObservableObject {
         if isVoiceSessionActive { stopVoiceSession() } else { startVoiceSession() }
     }
 
-    /// Starts a voice conversation: fetches session credentials from the Concierge service, then
-    /// connects through the app's voice transport. Does nothing when the app passed no transport or
-    /// the chat is busy.
+    /// Starts a voice conversation: asks for microphone permission, fetches session credentials
+    /// from the Concierge service, then connects through the app's voice transport. Does nothing
+    /// when the app passed no transport or the chat is busy. A denied permission starts nothing on
+    /// the service and shows the permission dialog instead.
     func startVoiceSession() {
         ConciergeIdentityBoundary.shared.synchronized {
             startAdmittedVoiceSession()
@@ -631,8 +642,8 @@ final class ChatController: ObservableObject {
 
     private func startAdmittedVoiceSession() {
         guard identityReady, let transport = voiceTransport else { return }
-        guard chatState == .idle, !isRecording else {
-            Log.warning(label: LOG_TAG, "startVoiceSession ignored. Expected an idle chat, but chatState was '\(chatState)' and inputState was '\(inputState)'.")
+        guard chatState == .idle, !isVoiceSessionActive, !isRecording else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored. Expected an idle chat, but chatState was '\(chatState)', a voice session active was '\(isVoiceSessionActive)' and inputState was '\(inputState)'.")
             return
         }
 
@@ -642,6 +653,29 @@ final class ChatController: ObservableObject {
         // Read-aloud would otherwise talk over the voice agent and leak into its microphone.
         speechController.stopSpeaking()
 
+        let requestPermission = requestMicrophonePermission
+        Task { @MainActor [weak self] in
+            let granted = await requestPermission()
+            guard let self, self.activeVoice === run else { return }
+            guard granted else {
+                Log.debug(label: self.LOG_TAG, "Microphone permission not granted. Showing permission dialog.")
+                self.finishVoiceSession(run)
+                self.presentPermissionDialog(for: .voiceConversation)
+                return
+            }
+            ConciergeIdentityBoundary.shared.synchronized {
+                guard self.identityReady else {
+                    self.finishVoiceSession(run)
+                    return
+                }
+                self.bootstrapVoiceSession(run, transport: transport)
+            }
+        }
+    }
+
+    private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport) {
+        guard activeVoice === run else { return }
+        run.bootstrapStarted = true
         chatService.bootstrapVoiceSession(
             onBootstrap: { [weak self] bootstrap in
                 Task { @MainActor in
@@ -680,7 +714,7 @@ final class ChatController: ObservableObject {
         activeVoice = nil
         isVoiceConnecting = false
         run.session?.stop()
-        if !run.bootstrapFinished {
+        if run.bootstrapStarted && !run.bootstrapFinished {
             // No typed turn can start during voice, so the bootstrap is the request in flight.
             chatService.cancelActiveStream()
         }
@@ -1330,6 +1364,8 @@ extension ChatController: VoiceSessionListener {
 private final class VoiceRun {
     /// The session, set once the bootstrap delivered credentials.
     var session: VoiceSessionController?
+    /// True once microphone permission was granted and the bootstrap request was sent.
+    var bootstrapStarted = false
     /// True once the bootstrap request completed; an open one is cancelled when the run ends.
     var bootstrapFinished = false
     /// The transcript bubble each role is still speaking into.
