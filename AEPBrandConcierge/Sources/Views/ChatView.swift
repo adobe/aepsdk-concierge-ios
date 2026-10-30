@@ -241,6 +241,7 @@ struct ChatView: View {
 
                     // Dialog card with scale animation
                     PermissionDialogView(
+                        purpose: controller.permissionDialogPurpose,
                         onCancel: {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 controller.dismissPermissionDialog()
