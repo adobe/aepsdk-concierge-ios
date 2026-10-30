@@ -192,7 +192,8 @@ extension LiveKitTransport: RoomDelegate {
     func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
         onMain(ifCurrent: room) { transport in
             transport.disconnect()
-            // The room closing or removing the user ends the conversation normally.
+            // Leaving, the room being deleted or the user being removed ends the conversation
+            // normally; anything else, including an unrecognized server reason, is a failure.
             if let error, ![.cancelled, .roomDeleted, .participantRemoved].contains(error.type) {
                 transport.report(.failed(error))
             } else {
