@@ -231,6 +231,9 @@ final class ChatController: ObservableObject {
             .sink { [weak self] state in
                 guard let self = self, state == .background else { return }
                 self.activeTurn?.noteAppBackgrounded()
+                // Voice doesn't continue in the background; this also keeps a still-pending bootstrap
+                // from opening the microphone there.
+                self.stopVoiceSession()
             }
             .store(in: &cancellables)
     }

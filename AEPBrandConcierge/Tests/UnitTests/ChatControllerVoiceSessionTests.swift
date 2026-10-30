@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import UIKit
 import XCTest
 import AEPCore
 @testable import AEPBrandConcierge
@@ -397,6 +398,35 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(service.streamChatCallCount, 1)
     }
 
+    // MARK: - App background
+
+    func test_appBackground_endsTheVoiceSession() {
+        let controller = makeController()
+        startListening(controller)
+
+        enterBackground()
+        spinUntil(!controller.isVoiceSessionActive)
+
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertTrue(controller.messages.isEmpty, "going to the background is not an error")
+    }
+
+    func test_appBackgroundDuringBootstrap_cancelsIt_andNeverConnects() {
+        let controller = makeController()
+        controller.startVoiceSession()
+
+        enterBackground()
+        spinUntil(!controller.isVoiceSessionActive)
+        service.emitBootstrap()
+        settle()
+
+        XCTAssertEqual(service.cancelActiveStreamCallCount, 1)
+        XCTAssertTrue(transport.connections.isEmpty)
+        XCTAssertEqual(controller.chatState, .idle)
+        XCTAssertTrue(controller.messages.isEmpty)
+    }
+
     // MARK: - Identity reset
 
     func test_identityReset_endsTheVoiceSession() {
@@ -437,14 +467,16 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     private func makeController(withVoice: Bool = true,
                                 capturer: SpeechCapturing? = nil,
-                                permission: Bool = true) -> ChatController {
+                                permission: Bool = true,
+                                appState: ConciergeAppState = ConciergeAppState()) -> ChatController {
         ChatController(configuration: configuration,
                        chatService: service,
                        speechCapturer: capturer,
                        speaker: SilentSpeaker(),
                        voiceTransport: withVoice ? transport : nil,
                        requestMicrophonePermission: { permission },
-                       dispatch: { [weak self] in self?.events.append($0) })
+                       dispatch: { [weak self] in self?.events.append($0) },
+                       appState: appState)
     }
 
     /// Starts voice, delivers credentials and waits until the transport reports `.connected`.
@@ -457,6 +489,15 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         spinUntil(transport.connections.count > count && !controller.isVoiceConnecting)
         XCTAssertGreaterThan(transport.connections.count, count, "credentials did not connect the transport", file: file, line: line)
         XCTAssertFalse(controller.isVoiceConnecting, "the transport did not report connected", file: file, line: line)
+    }
+
+    /// Posts the app's background notification, and brings every app state back to the foreground
+    /// when the test ends so later tests don't start in the background.
+    private func enterBackground() {
+        addTeardownBlock {
+            NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        }
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
 
     private func userSays(_ text: String, isFinal: Bool = false) {

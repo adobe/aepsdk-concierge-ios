@@ -13,7 +13,6 @@
 import AEPServices
 import AVFoundation
 import Foundation
-import UIKit
 
 /// Receives updates for one `VoiceSessionController`. Every method is called on the main thread.
 protocol VoiceSessionListener: AnyObject {
@@ -69,10 +68,6 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleAudioSessionInterruption(_:)),
                                                name: AVAudioSession.interruptionNotification,
-                                               object: nil)
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleAppDidEnterBackground),
-                                               name: UIApplication.didEnterBackgroundNotification,
                                                object: nil)
     }
 
@@ -141,10 +136,6 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 AVAudioSession.sharedInstance().requestRecordPermission { continuation.resume(returning: $0) }
             }
         }
-    }
-
-    @objc private func handleAppDidEnterBackground() {
-        stop()
     }
 
     @objc private func handleAudioSessionInterruption(_ notification: Notification) {
