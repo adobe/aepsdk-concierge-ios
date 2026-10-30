@@ -31,6 +31,54 @@ struct ComposerEditingView: View {
     let sendEnabled: Bool
     let audioLevel: Float
     let onSend: () -> Void
+    /// Voice conversation entry point, shown only when the app provided a voice transport. Defaults keep
+    /// existing call sites valid.
+    var isVoiceAvailable: Bool = false
+    var isVoiceSessionActive: Bool = false
+    var isVoiceConnecting: Bool = false
+    var voiceEnabled: Bool = false
+    var onVoiceTap: () -> Void = {}
+
+    /// What occupies the trailing (send) slot of the input row.
+    enum TrailingControl: Equatable {
+        /// Waveform indicator plus stop button while dictating.
+        case recording
+        /// Send button.
+        case send
+        /// Voice conversation button, optionally preceded by the mic.
+        case voice
+        /// Mic button only.
+        case mic
+        case none
+    }
+
+    /// Like the web client, the voice button takes the send button's place while the field is
+    /// empty, and gives it back once there is text. It stays put while a session is running or
+    /// connecting so the user can always end it.
+    static func trailingControl(
+        isRecording: Bool,
+        hasText: Bool,
+        showMic: Bool,
+        isVoiceAvailable: Bool,
+        isVoiceSessionActive: Bool,
+        isVoiceConnecting: Bool
+    ) -> TrailingControl {
+        if isRecording { return .recording }
+        if isVoiceAvailable && (!hasText || isVoiceSessionActive || isVoiceConnecting) { return .voice }
+        if hasText { return .send }
+        return showMic ? .mic : .none
+    }
+
+    private var trailingControl: TrailingControl {
+        Self.trailingControl(
+            isRecording: inputState == .recording,
+            hasText: hasText,
+            showMic: showMic,
+            isVoiceAvailable: isVoiceAvailable,
+            isVoiceSessionActive: isVoiceSessionActive,
+            isVoiceConnecting: isVoiceConnecting
+        )
+    }
 
     /// Minimum height of the single-line input row, shared by the text field and every icon in
     /// this row so they stay aligned. Not theme-configurable — it's a UX/tap-target floor, not a
@@ -122,7 +170,8 @@ struct ComposerEditingView: View {
                 .padding(.bottom, iconBottomPadding)
             }
 
-            if case .recording = inputState {
+            switch trailingControl {
+            case .recording:
                 // Waveform visual indicator
                 AudioWaveformView(
                     audioLevel: audioLevel,
@@ -153,7 +202,7 @@ struct ComposerEditingView: View {
                 .contentShape(Rectangle())
                 .accessibilityLabel("Stop recording")
                 .padding(.bottom, iconBottomPadding)
-            } else if hasText {
+            case .send:
                 // Send button appears in the same slot once text is present
                 if theme.behavior.input.sendButtonStyle == "arrow" {
                     Button(action: onSend) {
@@ -187,21 +236,15 @@ struct ComposerEditingView: View {
                     .transition(buttonTransition)
                     .padding(.bottom, iconBottomPadding)
                 }
-            } else if showMic {
-                // Mic button when idle with no text
-                Button(action: onMicTap) {
-                    BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
-                        .foregroundStyle(micEnabled
-                                         ? micIconStyle
-                                         : AnyShapeStyle(Color.secondary.opacity(0.5)))
-                        .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
+            case .voice:
+                if showMic {
+                    micButton
                 }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-                .accessibilityLabel(theme.text.inputMicAria)
-                .disabled(!micEnabled)
-                .transition(buttonTransition)
-                .padding(.bottom, iconBottomPadding)
+                voiceSessionButton
+            case .mic:
+                micButton
+            case .none:
+                EmptyView()
             }
         }
         .animation(.easeInOut(duration: 0.2), value: inputState)
@@ -210,6 +253,48 @@ struct ComposerEditingView: View {
 }
 
 private extension ComposerEditingView {
+    /// Mic button when idle with no text.
+    var micButton: some View {
+        Button(action: onMicTap) {
+            BrandIcon(assetName: "S2_Icon_Microphone_20_N", systemName: "mic.fill")
+                .foregroundStyle(micEnabled
+                                 ? micIconStyle
+                                 : AnyShapeStyle(Color.secondary.opacity(0.5)))
+                .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityLabel(theme.text.inputMicAria)
+        .disabled(!micEnabled)
+        .transition(buttonTransition)
+        .padding(.bottom, iconBottomPadding)
+    }
+
+    /// Starts a voice conversation, or ends the running one. Filled while a session runs, with a
+    /// spinner while it connects.
+    var voiceSessionButton: some View {
+        Button(action: onVoiceTap) {
+            ZStack {
+                Image(systemName: isVoiceSessionActive ? "waveform.circle.fill" : "waveform.circle")
+                    .font(.system(size: theme.layout.inputButtonHeight))
+                    .foregroundColor(voiceEnabled
+                                     ? theme.colors.primary.primary.color
+                                     : Color.secondary.opacity(0.5))
+                if isVoiceConnecting {
+                    ProgressView()
+                }
+            }
+            .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight)
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .disabled(!voiceEnabled)
+        .accessibilityLabel(isVoiceSessionActive ? "Stop voice conversation" : "Start voice conversation")
+        .accessibilityIdentifier("voiceSessionToggle")
+        .transition(buttonTransition)
+        .padding(.bottom, iconBottomPadding)
+    }
+
     /// Shared by the idle mic button and the recording/stop button so the two copies can't drift.
     var micIconStyle: AnyShapeStyle {
         conciergeShapeStyle(
