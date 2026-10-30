@@ -364,11 +364,12 @@ the local message and the streamed Brand Concierge/Product Advisor response.
 
 The callback completes after the forwarding stream finishes, reporting either the
 delivered response or the first error encountered along the way. A handoff submitted
-while another chat turn is still processing is rejected immediately with
-`ConciergeDataHandoffError.chatInProgress`; the SDK does not queue or retain it, and
-nothing is rendered for the rejected handoff — not even `localMessage`. The host app
-owns the retry and can resubmit the same handoff once the in-flight turn finishes,
-whether it succeeded or failed. An empty `routingHint` is allowed when the XDM fields
+while another chat turn is still processing, or while a voice conversation is running,
+is rejected immediately with `ConciergeDataHandoffError.chatInProgress`; the SDK does
+not queue or retain it, and nothing is rendered for the rejected handoff — not even
+`localMessage`. The host app owns the retry and can resubmit the same handoff once the
+in-flight turn finishes, whether it succeeded or failed, or once the voice conversation
+ends. An empty `routingHint` is allowed when the XDM fields
 provide the necessary routing context.
 
 ### API reference
@@ -386,16 +387,17 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`hideButton`**: When `true`, hides the built-in floating button so chat can be triggered from custom host-app UI. Defaults to `false`.
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat for this session.
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`on presentingViewController`** *(required)*: The UIKit view controller that will host the chat UI as a child view controller, filling its view.
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
@@ -403,6 +405,7 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
 ### Option A - Manual API call (no floating button)

@@ -24,6 +24,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         Concierge.chatSubtitle = ConciergeConstants.Defaults.SUBTITLE
         Concierge.speechCapturer = nil
         Concierge.textSpeaker = nil
+        Concierge.voiceTransport = nil
         Concierge.linkInterceptor = ConciergeLinkInterceptor()
         #if DEBUG
         Concierge.urlSessionConfigurationForTesting = nil
@@ -36,12 +37,14 @@ final class ConciergePresentationConfigTests: XCTestCase {
     func test_applyPresentationConfiguration_setsAllProperties() {
         let capturer = MockSpeechCapturer()
         let speaker = MockSpeaker()
+        let transport = FakeVoiceTransport()
 
         Concierge.applyPresentationConfiguration(
             title: customTitle,
             subtitle: customSubtitle,
             speechCapturer: capturer,
             textSpeaker: speaker,
+            voiceTransport: transport,
             handleLink: { _ in true }
         )
 
@@ -49,6 +52,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertEqual(Concierge.chatSubtitle, customSubtitle)
         XCTAssertTrue(Concierge.speechCapturer as AnyObject === capturer)
         XCTAssertTrue(Concierge.textSpeaker as AnyObject === speaker)
+        XCTAssertTrue(Concierge.voiceTransport === transport)
         XCTAssertTrue(Concierge.linkInterceptor.handleLink(testURL))
     }
 
@@ -57,6 +61,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         Concierge.chatSubtitle = customSubtitle
         Concierge.speechCapturer = MockSpeechCapturer()
         Concierge.textSpeaker = MockSpeaker()
+        Concierge.voiceTransport = FakeVoiceTransport()
         Concierge.linkInterceptor = ConciergeLinkInterceptor { _ in true }
 
         Concierge.applyPresentationConfiguration(
@@ -64,6 +69,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
             subtitle: nil,
             speechCapturer: nil,
             textSpeaker: nil,
+            voiceTransport: nil,
             handleLink: nil
         )
 
@@ -71,6 +77,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertNil(Concierge.chatSubtitle)
         XCTAssertNil(Concierge.speechCapturer)
         XCTAssertNil(Concierge.textSpeaker)
+        XCTAssertNil(Concierge.voiceTransport)
         XCTAssertFalse(Concierge.linkInterceptor.handleLink(testURL))
     }
 
@@ -81,15 +88,18 @@ final class ConciergePresentationConfigTests: XCTestCase {
             subtitle: customSubtitle,
             speechCapturer: originalCapturer,
             textSpeaker: MockSpeaker(),
+            voiceTransport: FakeVoiceTransport(),
             handleLink: { _ in true }
         )
 
         let replacementCapturer = MockSpeechCapturer()
+        let replacementTransport = FakeVoiceTransport()
         Concierge.applyPresentationConfiguration(
             title: "Replaced",
             subtitle: "Also Replaced",
             speechCapturer: replacementCapturer,
             textSpeaker: nil,
+            voiceTransport: replacementTransport,
             handleLink: nil
         )
 
@@ -97,6 +107,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertEqual(Concierge.chatSubtitle, "Also Replaced")
         XCTAssertTrue(Concierge.speechCapturer as AnyObject === replacementCapturer)
         XCTAssertNil(Concierge.textSpeaker)
+        XCTAssertTrue(Concierge.voiceTransport === replacementTransport)
         XCTAssertFalse(Concierge.linkInterceptor.handleLink(testURL))
     }
 
@@ -128,6 +139,13 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertTrue(Concierge.textSpeaker as AnyObject === speaker)
     }
 
+    func test_reshow_preservesVoiceTransport() {
+        let transport = FakeVoiceTransport()
+        Concierge.voiceTransport = transport
+        Concierge.reshow()
+        XCTAssertTrue(Concierge.voiceTransport === transport)
+    }
+
     func test_reshow_preservesLinkInterceptor() {
         Concierge.linkInterceptor = ConciergeLinkInterceptor { _ in true }
         Concierge.reshow()
@@ -137,12 +155,14 @@ final class ConciergePresentationConfigTests: XCTestCase {
     func test_reshow_preservesAllCustomValuesFromPriorConfiguration() {
         let capturer = MockSpeechCapturer()
         let speaker = MockSpeaker()
+        let transport = FakeVoiceTransport()
 
         Concierge.applyPresentationConfiguration(
             title: customTitle,
             subtitle: customSubtitle,
             speechCapturer: capturer,
             textSpeaker: speaker,
+            voiceTransport: transport,
             handleLink: { _ in true }
         )
 
@@ -152,6 +172,7 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertEqual(Concierge.chatSubtitle, customSubtitle)
         XCTAssertTrue(Concierge.speechCapturer as AnyObject === capturer)
         XCTAssertTrue(Concierge.textSpeaker as AnyObject === speaker)
+        XCTAssertTrue(Concierge.voiceTransport === transport)
         XCTAssertTrue(Concierge.linkInterceptor.handleLink(testURL))
     }
 
