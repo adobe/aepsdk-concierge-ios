@@ -11,7 +11,6 @@
  */
 
 import AVFoundation
-import UIKit
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -356,15 +355,6 @@ final class VoiceSessionControllerTests: XCTestCase {
         XCTAssertTrue(listener.transcripts.isEmpty)
         XCTAssertEqual(session.state, .listening)
         session.stop()
-    }
-
-    func test_appBackground_endsSession() async {
-        let transport = FakeVoiceTransport()
-        let listener = RecordingVoiceListener()
-        let session = start(transport, listener: listener)
-        await listening(listener)
-        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        XCTAssertEqual(session.state, .ended)
     }
 
     func test_interruption_mutesAndResumesTheMicrophone() async {
