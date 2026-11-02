@@ -15,6 +15,12 @@ import XCTest
 @testable import AEPBrandConcierge
 
 final class ThemeKeyCoverageTests: XCTestCase {
+    func test_appOwnedVariablesAreDeliberatelyOutsideTypedTokenCoverage() {
+        XCTAssertFalse(CSSKeyMapper.supportedCSSKeys.contains("fnb-accent-color"))
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "--fnb-accent-color", cssValue: "#abcdef", to: &theme)
+        XCTAssertEqual(theme.customVariables["--fnb-accent-color"], "#abcdef")
+    }
 
     // MARK: - Theme JSON key coverage
 

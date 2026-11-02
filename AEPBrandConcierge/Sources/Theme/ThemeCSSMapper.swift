@@ -323,8 +323,17 @@ public enum CSSKeyMapper {
         if let assignment = cssToAssignmentMap[normalizedKey] {
             assignment(cssValue, &theme)
         } else {
-            Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
+            retainCustomVariable(cssKey: cssKey, cssValue: cssValue, variables: &theme.customVariables)
         }
+    }
+
+    static func retainCustomVariable(cssKey: String, cssValue: String, variables: inout [String: String]) {
+        let key = cssKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = cssValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard key.hasPrefix("--"), !value.isEmpty, key.count <= 512, value.count <= 512,
+              cssToAssignmentMap[String(key.dropFirst(2))] == nil,
+              variables[key] != nil || variables.count < 256 else { return }
+        variables[key] = value
     }
 
     /// Applies one field-mutation on top of whatever gradient (if any) prior CSS keys already built,

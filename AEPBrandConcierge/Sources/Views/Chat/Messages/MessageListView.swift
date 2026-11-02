@@ -203,7 +203,7 @@ struct MessageListView: View {
         }
         if theme.hasAgentIcon {
             switch template {
-            case .promptSuggestion, .productCard, .ctaButton, .thumbnail:
+            case .promptSuggestion, .productCard, .ctaButton, .thumbnail, .nativeCard:
                 return EdgeInsets(
                     top: 0,
                     leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,

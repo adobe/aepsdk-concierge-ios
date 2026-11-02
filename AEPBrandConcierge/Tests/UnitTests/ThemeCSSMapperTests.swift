@@ -15,6 +15,85 @@ import XCTest
 @testable import AEPBrandConcierge
 
 final class ThemeCSSMapperTests: XCTestCase {
+    func test_decodedCustomVariablesUseTheSameValidationAsCSSTokens() throws {
+        let values = [
+            " --app-color ": "  #abcdef  ",
+            "--app-empty": " ",
+            "not-css": "value",
+            "--color-primary": "#123456",
+            "--" + String(repeating: "k", count: 511): "value",
+            "--app-long": String(repeating: "v", count: 513),
+            "--app-boundary": String(repeating: "v", count: 512)
+        ]
+        let data = try JSONSerialization.data(withJSONObject: ["customVariables": values])
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(theme.customVariables, [
+            "--app-color": "#abcdef",
+            "--app-boundary": String(repeating: "v", count: 512)
+        ])
+    }
+
+    func test_decodedCustomVariablesLimitCountAndAllowThemeOverride() throws {
+        var values: [String: String] = [:]
+        for index in 0..<260 {
+            values[String(format: "--app-%03d", index)] = "before"
+        }
+        let data = try JSONSerialization.data(withJSONObject: [
+            "customVariables": values,
+            "theme": ["--app-000": "after", "--app-overflow": "ignored"]
+        ])
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(theme.customVariables.count, 256)
+        XCTAssertEqual(theme.customVariables["--app-000"], "after")
+        XCTAssertNil(theme.customVariables["--app-256"])
+        XCTAssertNil(theme.customVariables["--app-overflow"])
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(roundTrip.customVariables, theme.customVariables)
+    }
+
+    func test_unknownAppTokenIsRetainedAndKnownTokenIsNotDuplicated() throws {
+        let json = """
+        {"theme":{"--fnb-accent-color":"  #abcdef  ","--fnb-spacing":12,
+        "--color-primary":"#123456","--fnb-blank":"  "}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.customVariables["--fnb-accent-color"], "#abcdef")
+        XCTAssertEqual(theme.customVariables["--fnb-spacing"], "12.0")
+        XCTAssertNil(theme.customVariables["--fnb-blank"])
+        XCTAssertNil(theme.customVariables["--color-primary"])
+        let encoded = try JSONEncoder().encode(theme)
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertEqual(roundTrip.customVariables["--fnb-accent-color"], "#abcdef")
+    }
+
+    func test_numericValueForKnownKeyIsIgnoredAsOnDev() throws {
+        let baseline = try JSONDecoder().decode(ConciergeTheme.self, from: Data(#"{"theme":{}}"#.utf8))
+        let json = #"{"theme":{"--message-border-radius":99}}"#
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.layout.messageBorderRadius, baseline.layout.messageBorderRadius)
+        XCTAssertTrue(theme.customVariables.isEmpty)
+    }
+
+    func test_malformedCustomVariablesDoNotRejectExistingThemeValues() throws {
+        for value in ["42", #""legacy""#, "[]", #"{"--bad":42}"#] {
+            let json = #"{"customVariables":\#(value),"theme":{"--message-border-radius":"12px"}}"#
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+            XCTAssertEqual(theme.layout.messageBorderRadius, 12)
+            XCTAssertTrue(theme.customVariables.isEmpty)
+        }
+    }
+
+    func test_invalidCustomVariableDoesNotDiscardValidSibling() throws {
+        let json = ##"{"customVariables":{"--good":"#abcdef","--bad":42}}"##
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.customVariables, ["--good": "#abcdef"])
+    }
+
+    func test_emptyCustomVariablesAreOmittedFromEncodedTheme() throws {
+        let encoded = try JSONEncoder().encode(ConciergeTheme())
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertNil(object["customVariables"])
+    }
     
     // MARK: - Key Normalization Tests
     

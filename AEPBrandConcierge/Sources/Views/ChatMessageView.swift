@@ -56,6 +56,36 @@ struct ChatMessageView: View {
     }
 
     var body: some View {
+        if let attachedSuggestions {
+            VStack(alignment: .leading, spacing: 8) {
+                templateContent
+                if theme.behavior.promptSuggestions?.showHeader == true {
+                    Text(theme.text.suggestionsHeader)
+                        .font(.system(.subheadline).weight(.semibold))
+                        .foregroundColor(theme.colors.message.conciergeText.color)
+                }
+                ForEach(Array(attachedSuggestions.enumerated()), id: \.offset) { _, suggestion in
+                    promptSuggestionView(suggestion)
+                }
+            }
+        } else {
+            templateContent
+        }
+    }
+
+    /// Prompt suggestions the SDK attached to a card row of a response that rendered a native card.
+    private var attachedSuggestions: [String]? {
+        guard let promptSuggestions, !promptSuggestions.isEmpty else { return nil }
+        switch template {
+        case .nativeCard, .productCard, .carouselGroup:
+            return promptSuggestions
+        default:
+            return nil
+        }
+    }
+
+    @ViewBuilder
+    private var templateContent: some View {
         switch template {
         case .welcomeHeader(let title, let body):
             let welcomeAlign: TextAlignment = theme.layout.welcomeTextAlign == "center" ? .center : .leading
@@ -273,39 +303,46 @@ struct ChatMessageView: View {
         case .ctaButton(let action):
             CtaButtonView(action: action, onTap: onCtaButtonTap)
 
+        case .nativeCard(let card):
+            NativeCardView(card: card)
+
         case .carouselGroup(let items):
             CarouselGroupView(items: items, onCtaButtonTap: onCtaButtonTap)
 
         case .promptSuggestion(let text):
-            let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
-                ?? theme.colors.message.conciergeText.color
-            let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
-                ?? theme.colors.primary.container?.color
-                ?? Color(UIColor.secondarySystemBackground)
-            let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
-            let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+            promptSuggestionView(text)
+        }
+    }
 
-            HStack(alignment: .bottom) {
-                Button(action: { onSuggestionTap?(text) }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.turn.down.right")
-                            .imageScale(.small)
-                            .foregroundColor(suggestionTextColor)
-                        Text(text)
-                            .font(.system(.subheadline))
-                            .foregroundColor(suggestionTextColor)
-                            .lineLimit(suggestionMaxLines)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
-                            .fill(suggestionBgColor)
-                    )
+    private func promptSuggestionView(_ text: String) -> some View {
+        let suggestionTextColor = theme.colors.promptSuggestion.textColor?.color
+            ?? theme.colors.message.conciergeText.color
+        let suggestionBgColor = theme.colors.promptSuggestion.backgroundColor?.color
+            ?? theme.colors.primary.container?.color
+            ?? Color(UIColor.secondarySystemBackground)
+        let suggestionCornerRadius = theme.layout.suggestionItemBorderRadius ?? 10
+        let suggestionMaxLines = theme.behavior.promptSuggestions?.itemMaxLines ?? 1
+
+        return HStack(alignment: .bottom) {
+            Button(action: { onSuggestionTap?(text) }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .imageScale(.small)
+                        .foregroundColor(suggestionTextColor)
+                    Text(text)
+                        .font(.system(.subheadline))
+                        .foregroundColor(suggestionTextColor)
+                        .lineLimit(suggestionMaxLines)
                 }
-                .buttonStyle(PlainButtonStyle())
-                Spacer()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: suggestionCornerRadius, style: .continuous)
+                        .fill(suggestionBgColor)
+                )
             }
+            .buttonStyle(PlainButtonStyle())
+            Spacer()
         }
     }
 }

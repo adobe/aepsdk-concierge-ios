@@ -23,6 +23,7 @@ public enum MessageTemplate {
     case productCard(ProductCardData)
     case carouselGroup([Message])
     case ctaButton(ActionButton)
+    case nativeCard(NativeCard)
     case promptSuggestion(text: String)
     case divider
 }

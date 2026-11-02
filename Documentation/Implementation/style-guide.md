@@ -86,6 +86,21 @@ The theme JSON file contains these top-level keys:
 
 ## Value Formats
 
+### App-owned CSS variables
+
+Unknown `--`-prefixed variables in the theme object are retained in
+`ConciergeTheme.customVariables` for native app card renderers, not applied to SDK views.
+Keys and values are trimmed; blank values are ignored. Numeric JSON values of unknown keys become
+strings here (known keys still require string values, as before).
+At most 256 distinct keys with at most 512 characters per key/value are retained;
+an existing key can still be overwritten at the limit. Known variables remain in the
+typed theme API and are not duplicated here.
+The same validation applies to the top-level `customVariables` dictionary used in
+encoded theme round trips. Invalid entries are ignored; non-string values and
+malformed dictionaries generate warnings. CSS variables in `theme` take precedence
+over retained entries. An empty
+dictionary is omitted when encoding a theme.
+
 Understanding the value formats used throughout this document.
 
 ### Colors
@@ -616,6 +631,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--font-family` | `typography.fontFamily` | `String` | `""` (system font) | Font family name |
 | `--line-height-body` | `typography.lineHeight` | `CGFloat` | `1.0` | Line height multiplier |
 
+### App-owned native card variables
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--myapp-accent-color` (example) | `customVariables["--myapp-accent-color"]` | `String?` | `nil` | Unrecognized CSS key retained for a host renderer; parsing and defaults are host-owned |
+
 ### Colors - Primary
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -1038,6 +1059,7 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     }
   },
   "theme": {
+    "--myapp-accent-color": "",
     "--welcome-input-order": "3",
     "--welcome-cards-order": "2",
     "--font-family": "",
@@ -1309,6 +1331,12 @@ This section documents which properties are fully implemented, partially impleme
 | Property | Status | Notes |
 |----------|--------|-------|
 | `assets.icons.company` | ✅ | Rendered as circular icon to the left of agent text message bubbles |
+
+### Theme Tokens - App-owned native cards
+
+| CSS Variable | Status | Notes |
+|--------------|--------|-------|
+| `--myapp-accent-color` (example) | ✅ | Retained by `ThemeCSSMapper` in `ConciergeTheme.customVariables`; host-owned, not consumed by SDK views. |
 
 ### Theme Tokens - Typography
 

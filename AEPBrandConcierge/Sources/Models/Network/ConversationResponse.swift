@@ -21,6 +21,18 @@ public struct ConversationResponse: Codable {
     public let linkHints: [LinkHint]?
     public let state: String?
     public let feedback: ConversationFeedbackInfo?
+
+    #if DEBUG
+    var debugLogDescription: String? {
+        if multimodalElements?.elements.contains(where: \.hasCompleteRawElement) == true {
+            return "[native card payload omitted]"
+        }
+        guard let data = try? JSONEncoder().encode(self), let json = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return json.prettyPrintedJSON()
+    }
+    #endif
 }
 
 /// Feedback metadata returned with an agent response.
@@ -110,6 +122,24 @@ public struct MultimodalElement: Codable {
     public let thumbnailWidth: Int?
     public let thumbnailHeight: Int?
     public let entityInfo: EntityInfo?
+    /// The complete original JSON object, captured only for types with a registered native card renderer.
+    let rawElement: [String: Any]
+    let hasCompleteRawElement: Bool
+    private let rawJSON: [String: CardJSONValue]?
+
+    /// Native occurrence identity follows Android's nonempty scalar ID, otherwise array position.
+    var nativeElementId: String? {
+        let value: String?
+        switch rawJSON?["id"] {
+        case .string(let id): value = id
+        case .integer(let id): value = String(id)
+        case .unsignedInteger(let id): value = String(id)
+        case .number(let id): value = NSDecimalNumber(decimal: id).stringValue
+        case .boolean(let id): value = id ? "true" : "false"
+        default: value = id
+        }
+        return value.flatMap { $0.isEmpty ? nil : $0 }
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -129,10 +159,39 @@ public struct MultimodalElement: Codable {
         self.thumbnailWidth = thumbnailWidth
         self.thumbnailHeight = thumbnailHeight
         self.entityInfo = entityInfo
+        self.rawElement = [:]
+        self.hasCompleteRawElement = false
+        self.rawJSON = nil
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Elements for a registered native renderer carry app-defined fields (for example a numeric
+        // `id`), so they are decoded leniently and kept whole. All other elements decode as before.
+        let rawType = try? container.decode(String.self, forKey: .type)
+        if NativeCardRegistry.registration(for: rawType) != nil {
+            if let raw = try? CardJSONValue.decodeObject(from: decoder) {
+                rawJSON = raw
+                rawElement = raw.mapValues(\.foundationValue)
+                hasCompleteRawElement = true
+            } else {
+                rawJSON = nil
+                rawElement = [:]
+                hasCompleteRawElement = false
+            }
+            id = try? container.decode(String.self, forKey: .id)
+            type = rawType
+            width = try? container.decode(Int.self, forKey: .width)
+            height = try? container.decode(Int.self, forKey: .height)
+            thumbnailWidth = try? container.decode(Int.self, forKey: .thumbnail_width)
+            thumbnailHeight = try? container.decode(Int.self, forKey: .thumbnail_height)
+            entityInfo = try? container.decode(EntityInfo.self, forKey: .entity_info)
+            return
+        }
+        rawJSON = nil
+        rawElement = [:]
+        hasCompleteRawElement = false
 
         id = try container.decodeIfPresent(String.self, forKey: .id)
         type = try container.decodeIfPresent(String.self, forKey: .type)
@@ -144,6 +203,11 @@ public struct MultimodalElement: Codable {
     }
 
     public func encode(to encoder: Encoder) throws {
+        if let rawJSON {
+            var container = encoder.singleValueContainer()
+            try container.encode(rawJSON)
+            return
+        }
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encodeIfPresent(id, forKey: .id)
