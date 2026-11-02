@@ -12,13 +12,16 @@
 
 import Foundation
 
-/// The lifecycle of a `VoiceSessionController`: `connecting`, then `listening`, then `ended` or
+/// The lifecycle of a `VoiceSessionController`: `connecting`, then `listening` (moving to
+/// `reconnecting` and back while the transport restores a lost connection), then `ended` or
 /// `failed`. `ended` and `failed` are terminal; a session never leaves them.
 enum VoiceSessionState: Equatable {
     /// Waiting for microphone permission or for the transport to connect.
     case connecting
     /// Connected; the conversation is live.
     case listening
+    /// The transport lost the connection and is restoring it; the conversation stays open.
+    case reconnecting
     /// Ended normally, for example after `VoiceSessionController.stop()`.
     case ended
     /// Could not start, or the connection was lost. The reason is for logging, not for display.

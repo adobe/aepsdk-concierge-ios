@@ -21,7 +21,7 @@ import Foundation
 final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
     private let lock = NSLock()
     private weak var storedDelegate: VoiceTransportDelegate?
-    private var recordedConnections: [(url: String, token: String)] = []
+    private var recordedConnections: [VoiceConnection] = []
     private var recordedDisconnectCount = 0
     private var recordedMicrophoneChanges: [Bool] = []
     private var connectHandler: (() -> Void)?
@@ -35,7 +35,7 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
         set { locked { storedDelegate = newValue } }
     }
 
-    var connections: [(url: String, token: String)] { locked { recordedConnections } }
+    var connections: [VoiceConnection] { locked { recordedConnections } }
     var disconnectCount: Int { locked { recordedDisconnectCount } }
     var microphoneChanges: [Bool] { locked { recordedMicrophoneChanges } }
 
@@ -57,8 +57,8 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
         set { locked { microphoneHandler = newValue } }
     }
 
-    func connect(url: String, token: String) {
-        locked { recordedConnections.append((url, token)) }
+    func connect(_ connection: VoiceConnection) {
+        locked { recordedConnections.append(connection) }
         onConnect?()
         guard autoConnect else { return }
         DispatchQueue.main.async { [weak self] in

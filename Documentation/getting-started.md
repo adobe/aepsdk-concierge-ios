@@ -109,7 +109,7 @@ Add `NSMicrophoneUsageDescription` to your app's `Info.plist`. iOS terminates th
 
 #### 3. Copy the transport
 
-Copy [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) into your app (change the logger subsystem to your own). A `VoiceTransport` connects to the URL and token Brand Concierge passes to `connect(url:token:)`, publishes the microphone, plays the agent's audio, and reports its state and incoming data messages to its `delegate`. The reference transport also records the microphone while the room connects and sends that audio once the agent joins, so the user can start speaking right away.
+Copy [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) into your app (change the logger subsystem to your own). A `VoiceTransport` connects to the URL and token in the `VoiceConnection` Brand Concierge passes to `connect(_:)`, publishes the microphone, plays the agent's audio, and reports its state and incoming data messages to its `delegate`. The reference transport also records the microphone while the room connects and sends that audio once the agent joins, so the user can start speaking right away.
 
 If you change the transport, keep the rules in the `VoiceTransport` documentation. When you update LiveKit, check that the file still builds and repeat the device checks below.
 
@@ -127,7 +127,7 @@ Concierge.show(surfaces: ["my-surface"], voiceTransport: Voice.transport)
 
 `Concierge.present(on:...)` takes the same `voiceTransport` parameter. The transport is kept for re-shows of the same chat, like `textSpeaker`; a chat first shown without a transport stays without one. `Concierge.wrap` takes no transport: its floating button reopens the chat with the transport of the last `show` or `present` call. Pass the same instance at every `show` and `present` call, as the demo app does.
 
-When a transport is provided, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. Brand Concierge asks for microphone permission when the user starts a conversation, before it requests a voice session; if the permission is denied, no conversation starts and the chat offers to open Settings. A failed connection ends the conversation and shows an error message in the chat.
+When a transport is provided, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. Brand Concierge asks for microphone permission when the user starts a conversation, before it requests a voice session; if the permission is denied, no conversation starts and the chat offers to open Settings. A failed connection ends the conversation and shows an error message in the chat. While the transport reports `.reconnecting`, the conversation stays open and the voice button shows a spinner; if the transport does not report `.connected` again within 30 seconds, the conversation ends with the same error message.
 
 #### Audio quality
 

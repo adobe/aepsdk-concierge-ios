@@ -271,7 +271,7 @@ private extension ComposerEditingView {
     }
 
     /// Starts a voice conversation, or ends the running one. Filled while a session runs, with a
-    /// spinner while it connects.
+    /// spinner while it connects or reconnects.
     var voiceSessionButton: some View {
         Button(action: onVoiceTap) {
             ZStack {

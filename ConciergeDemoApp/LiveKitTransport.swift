@@ -29,7 +29,7 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
 
     private static let logger = Logger(subsystem: "com.adobe.aep.ConciergeDemoApp", category: "LiveKitTransport")
 
-    /// Moves on with every `connect(url:token:)` and `disconnect()`, so a room created for an
+    /// Moves on with every `connect(_:)` and `disconnect()`, so a room created for an
     /// earlier connection can tell it has been superseded.
     private var connectionID = 0
     /// The current connection's room, set once it is created.
@@ -41,7 +41,7 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     /// the shared audio stack's microphone input, which would otherwise cut off the new connection's.
     private var teardownTask: Task<Void, Never>?
 
-    func connect(url: String, token: String) {
+    func connect(_ connection: VoiceConnection) {
         disconnect()
         let id = connectionID
         let teardown = teardownTask
@@ -51,7 +51,7 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
             let room = Room()
             guard await self?.adopt(room, connectionID: id) == true else { return }
             do {
-                try await Self.join(room, url: url, token: token)
+                try await Self.join(room, url: connection.url.absoluteString, token: connection.token)
                 await self?.connectFinished(room, error: nil)
             } catch {
                 await self?.connectFinished(room, error: error)
