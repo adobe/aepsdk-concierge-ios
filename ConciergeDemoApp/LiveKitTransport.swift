@@ -202,6 +202,15 @@ extension LiveKitTransport: RoomDelegate {
         }
     }
 
+    // Called for quick and full reconnects. If LiveKit gives up, it calls didDisconnectWithError.
+    func room(_ room: Room, didStartReconnectWithMode reconnectMode: ReconnectMode) {
+        onMain(ifCurrent: room) { $0.report(.reconnecting) }
+    }
+
+    func room(_ room: Room, didCompleteReconnectWithMode reconnectMode: ReconnectMode) {
+        onMain(ifCurrent: room) { $0.report(.connected) }
+    }
+
     func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
         guard publication.kind == .audio else { return }
         Self.logger.info("Subscribed to remote audio track from \(participant.identity?.stringValue ?? "unknown", privacy: .public).")
