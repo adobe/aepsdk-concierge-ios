@@ -120,7 +120,8 @@ final class ChatController: ObservableObject {
     /// True while a voice conversation runs, from the voice tap until it ends.
     @Published private(set) var isVoiceSessionActive = false
 
-    /// True from the voice tap until the voice session reports the conversation is live.
+    /// True from the voice tap until the voice session reports the conversation is live, and again
+    /// while the transport restores a lost connection.
     @Published private(set) var isVoiceConnecting = false
 
     /// What the permission dialog asks for while `showPermissionDialog` is true.
@@ -741,6 +742,8 @@ final class ChatController: ObservableObject {
             break
         case .listening:
             isVoiceConnecting = false
+        case .reconnecting:
+            isVoiceConnecting = true
         case .ended:
             finishVoiceSession(run)
         case .failed(let reason):

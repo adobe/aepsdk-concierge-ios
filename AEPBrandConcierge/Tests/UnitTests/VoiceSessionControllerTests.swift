@@ -39,7 +39,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         let session = start(transport, listener: listener)
         await listening(listener)
         XCTAssertEqual(transport.connections.count, 1)
-        XCTAssertEqual(transport.connections.first?.url, url)
+        XCTAssertEqual(transport.connections.first?.url.absoluteString, url)
         XCTAssertEqual(transport.connections.first?.token, token)
         XCTAssertTrue(transport.delegate === session)
         XCTAssertEqual(listener.states, [.connecting, .listening])
@@ -224,6 +224,58 @@ final class VoiceSessionControllerTests: XCTestCase {
         let listener = RecordingVoiceListener()
         let session = start(transport, listener: listener)
         await listening(listener)
+        transport.report(.connected)
+        XCTAssertEqual(listener.states, [.connecting, .listening])
+        session.stop()
+    }
+
+    func test_reconnecting_keepsTheSession_andReturnsToListening_withoutUnmuting() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener, reconnectTimeout: 0.05)
+        await listening(listener)
+        interruption(.began)
+
+        transport.report(.reconnecting)
+        XCTAssertEqual(session.state, .reconnecting)
+        transport.report(.connected)
+        try? await Task.sleep(nanoseconds: 150_000_000)
+
+        XCTAssertEqual(listener.states, [.connecting, .listening, .reconnecting, .listening])
+        XCTAssertEqual(transport.microphoneChanges, [false], "the interruption mute stays after reconnecting")
+        XCTAssertEqual(transport.disconnectCount, 0)
+        XCTAssertTrue(transport.delegate === session)
+        session.stop()
+    }
+
+    func test_reconnecting_failsAndDisconnects_whenNotRestoredInTime() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener, reconnectTimeout: 0.05)
+        await listening(listener)
+        let failed = expectation(description: "failed after the reconnect timeout")
+        listener.onState = { if case .failed = $0 { failed.fulfill() } }
+
+        transport.report(.reconnecting)
+        await fulfillment(of: [failed], timeout: 2)
+
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertNil(transport.delegate)
+        session.voiceTransport(transport, didChange: .connected)
+        XCTAssertEqual(listener.states.count, 4, "a late reconnect is ignored")
+    }
+
+    func test_reconnecting_beforeConnected_isIgnored() async {
+        let transport = FakeVoiceTransport()
+        transport.autoConnect = false
+        let connecting = expectation(description: "connecting")
+        transport.onConnect = { connecting.fulfill() }
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await fulfillment(of: [connecting], timeout: 2)
+
+        transport.report(.reconnecting)
+        XCTAssertEqual(session.state, .connecting)
         transport.report(.connected)
         XCTAssertEqual(listener.states, [.connecting, .listening])
         session.stop()
@@ -448,10 +500,12 @@ final class VoiceSessionControllerTests: XCTestCase {
 
     private func start(_ transport: FakeVoiceTransport,
                        listener: RecordingVoiceListener,
-                       permission: Bool = true) -> VoiceSessionController {
+                       permission: Bool = true,
+                       reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) -> VoiceSessionController {
         let session = VoiceSessionController(transport: transport,
                                              listener: listener,
-                                             requestMicrophonePermission: { permission })
+                                             requestMicrophonePermission: { permission },
+                                             reconnectTimeout: reconnectTimeout)
         session.start(url: url, token: token)
         return session
     }

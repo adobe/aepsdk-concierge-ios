@@ -25,9 +25,9 @@ import Foundation
 /// Implementations must follow these rules:
 /// - Brand Concierge calls every method on the main thread. Each method returns immediately and
 ///   reports its outcome to `delegate`.
-/// - One instance serves every conversation: `connect(url:token:)` can be called again after
+/// - One instance serves every conversation: `connect(_:)` can be called again after
 ///   `disconnect()`.
-/// - Brand Concierge sets `delegate` before each `connect(url:token:)` and clears it before
+/// - Brand Concierge sets `delegate` before each `connect(_:)` and clears it before
 ///   `disconnect()`. Hold it weakly.
 /// - After `disconnect()`, report nothing more about that connection, even if a new connection has
 ///   started since.
@@ -40,10 +40,8 @@ public protocol VoiceTransport: AnyObject {
     ///
     /// Report `.connected` once the microphone is live, or `.failed(_:)` if the connection cannot be made.
     ///
-    /// - Parameters:
-    ///   - url: the real-time media server URL from the Concierge service.
-    ///   - token: the access token for the room, from the Concierge service.
-    func connect(url: String, token: String)
+    /// - Parameter connection: where to connect and the credentials to use, from the Concierge service.
+    func connect(_ connection: VoiceConnection)
 
     /// Mutes or unmutes the microphone without leaving the room. Brand Concierge mutes it while
     /// another app interrupts the audio session (for example, a phone call), and unmutes it afterwards.
@@ -67,10 +65,28 @@ public protocol VoiceTransportDelegate: AnyObject {
     func voiceTransport(_ transport: VoiceTransport, didReceive data: Data, topic: String?)
 }
 
+/// Where and how a `VoiceTransport` connects, from the Concierge service. Brand Concierge creates
+/// it; later releases may add properties.
+public struct VoiceConnection: Equatable, Sendable {
+    /// The real-time media server URL.
+    public let url: URL
+    /// The access token for the room.
+    public let token: String
+
+    init(url: URL, token: String) {
+        self.url = url
+        self.token = token
+    }
+}
+
 /// The state of a `VoiceTransport` connection.
 public enum VoiceTransportState {
-    /// Connected, with the microphone live.
+    /// Connected, with the microphone live. Also reported when a reconnect succeeds.
     case connected
+    /// The connection was lost and the transport is restoring it. Report `.connected` once it is
+    /// back, or `.failed(_:)` if it gives up. Brand Concierge keeps the conversation open meanwhile,
+    /// and fails it if the connection is not back within 30 seconds.
+    case reconnecting
     /// The connection ended without an error, for example because the room closed.
     case disconnected
     /// The connection could not be made, or was lost because of `error`.

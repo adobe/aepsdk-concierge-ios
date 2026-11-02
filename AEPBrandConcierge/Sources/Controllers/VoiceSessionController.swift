@@ -32,11 +32,16 @@ protocol VoiceSessionListener: AnyObject {
 /// lifecycle and transcript work runs on main; `state` is lock-protected, so any thread may read it
 /// or call `stop()`.
 final class VoiceSessionController: NSObject, @unchecked Sendable {
+    /// How long a lost connection may take to come back before the session fails.
+    static let defaultReconnectTimeout: TimeInterval = 30
+
     private let LOG_TAG = "VoiceSessionController"
     private let transport: VoiceTransport
     private weak var listener: VoiceSessionListener?
     private let requestMicrophonePermission: () async -> Bool
+    private let reconnectTimeout: TimeInterval
     private var startTask: Task<Void, Never>?
+    private var reconnectTimer: DispatchWorkItem?
     private let stateLock = NSLock()
     private var currentState: VoiceSessionState = .connecting
     private var pendingAssistantText = ""
@@ -55,15 +60,17 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
 
     private var isActive: Bool {
         let currentState = state
-        return currentState == .connecting || currentState == .listening
+        return currentState == .connecting || currentState == .listening || currentState == .reconnecting
     }
 
     init(transport: VoiceTransport,
          listener: VoiceSessionListener,
-         requestMicrophonePermission: @escaping () async -> Bool = VoiceSessionController.requestMicrophonePermission) {
+         requestMicrophonePermission: @escaping () async -> Bool = VoiceSessionController.requestMicrophonePermission,
+         reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) {
         self.transport = transport
         self.listener = listener
         self.requestMicrophonePermission = requestMicrophonePermission
+        self.reconnectTimeout = reconnectTimeout
         super.init()
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleAudioSessionInterruption(_:)),
@@ -74,6 +81,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     deinit {
         NotificationCenter.default.removeObserver(self)
         startTask?.cancel()
+        reconnectTimer?.cancel()
         guard holdsTransport else { return }
         // The transport's delegate is weak and already nil here.
         let transport = transport
@@ -100,10 +108,12 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         guard let parsedURL = URLComponents(string: url),
               ["ws", "wss", "http", "https"].contains(parsedURL.scheme?.lowercased() ?? ""),
               let host = parsedURL.host, !host.isEmpty,
+              let serverURL = parsedURL.url,
               !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             fail("Voice connection requires a valid server URL and a non-empty token.")
             return
         }
+        let connection = VoiceConnection(url: serverURL, token: token)
 
         let requestPermission = requestMicrophonePermission
         startTask = Task { [weak self] in
@@ -117,7 +127,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 }
                 session.holdsTransport = true
                 session.transport.delegate = session
-                session.transport.connect(url: url, token: token)
+                session.transport.connect(connection)
             }
         }
     }
@@ -145,7 +155,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt)
             .map(AVAudioSession.InterruptionOptions.init(rawValue:)) ?? []
         onMain { session in
-            guard session.state == .listening else { return }
+            guard session.state == .listening || session.state == .reconnecting else { return }
             switch type {
             case .began:
                 session.micWasEnabledBeforeInterruption = session.isMicrophoneEnabled
@@ -178,6 +188,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private func finish(_ terminalState: VoiceSessionState) {
         guard isActive else { return }
         startTask?.cancel()
+        cancelReconnectTimer()
         if holdsTransport {
             holdsTransport = false
             if transport.delegate === self {
@@ -215,14 +226,42 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private func handleTransportState(_ transportState: VoiceTransportState) {
         switch transportState {
         case .connected:
-            guard state == .connecting else { return }
-            isMicrophoneEnabled = true
-            setState(.listening)
+            switch state {
+            case .connecting:
+                isMicrophoneEnabled = true
+                setState(.listening)
+            case .reconnecting:
+                // The transport keeps the microphone as it was; an interruption mute stays.
+                cancelReconnectTimer()
+                setState(.listening)
+            default:
+                break
+            }
+        case .reconnecting:
+            guard state == .listening else { return }
+            setState(.reconnecting)
+            startReconnectTimer()
         case .disconnected:
             finish(.ended)
         case .failed(let error):
             fail(error.localizedDescription)
         }
+    }
+
+    private func startReconnectTimer() {
+        cancelReconnectTimer()
+        let timeout = reconnectTimeout
+        let timer = DispatchWorkItem { [weak self] in
+            guard let self, self.state == .reconnecting else { return }
+            self.fail("The voice connection was not restored within \(Int(timeout)) seconds.")
+        }
+        reconnectTimer = timer
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timer)
+    }
+
+    private func cancelReconnectTimer() {
+        reconnectTimer?.cancel()
+        reconnectTimer = nil
     }
 
     private func handle(_ message: DataChannelMessage) {

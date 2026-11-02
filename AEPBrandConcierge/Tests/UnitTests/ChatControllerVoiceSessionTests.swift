@@ -103,7 +103,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         service.emitBootstrap(url: "wss://voice.example", token: "secret")
         spinUntil(!transport.connections.isEmpty)
 
-        XCTAssertEqual(transport.connections.map(\.url), ["wss://voice.example"])
+        XCTAssertEqual(transport.connections.map(\.url.absoluteString), ["wss://voice.example"])
         XCTAssertEqual(transport.connections.map(\.token), ["secret"])
         XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertTrue(controller.isVoiceConnecting)
@@ -116,6 +116,21 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertFalse(controller.isVoiceConnecting)
         XCTAssertTrue(controller.isVoiceSessionActive)
+    }
+
+    func test_reconnecting_keepsTheConversation_andShowsTheConnectingIndicatorUntilConnected() {
+        let controller = makeController()
+        startListening(controller)
+
+        transport.report(.reconnecting)
+        XCTAssertTrue(controller.isVoiceConnecting)
+        XCTAssertTrue(controller.isVoiceSessionActive)
+
+        transport.report(.connected)
+        XCTAssertFalse(controller.isVoiceConnecting)
+        XCTAssertTrue(controller.isVoiceSessionActive)
+        XCTAssertEqual(transport.disconnectCount, 0)
+        XCTAssertTrue(controller.messages.isEmpty, "no error bubble")
     }
 
     func test_bootstrapClosingWithoutCredentials_failsBackToIdle_withAnErrorBubble() {
