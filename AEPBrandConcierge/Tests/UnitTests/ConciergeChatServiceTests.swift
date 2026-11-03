@@ -1133,6 +1133,71 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertFalse(json.contains("athlete-token-123"), "token omitted when there is no conversation node to attach to")
     }
 
+    // MARK: - Per-request callback routing
+
+    /// Frames a `ConversationResponse` JSON inside the SSE `data:` handle wrapper the service decodes.
+    private func sseHandle(responseJSON: String) -> Data {
+        let handle = #"{"handle":[{"payload":[{"response":\#(responseJSON)}]}]}"#
+        return "data: \(handle)\n".data(using: .utf8)!
+    }
+
+    func test_cancelActiveStream_cancelsOnlyTheLatestRequest_andEachRequestCompletesToItsOwnHandlers() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldHold = true
+        let service = makeStubbedService()
+
+        let firstCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("first", token: nil, onChunk: { _ in }, onComplete: { firstCompletions.value.append($0) })
+        let secondCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("second", token: nil, onChunk: { _ in }, onComplete: { secondCompletions.value.append($0) })
+        await waitForCondition(timeout: 10) { StubURLProtocol.count == 2 }
+
+        service.cancelActiveStream()
+        await waitForCondition(timeout: 10) { secondCompletions.value.count == 1 }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(StubURLProtocol.stoppedCount, 1, "only the latest request is cancelled")
+        if case .unreachable? = secondCompletions.value.first ?? nil {} else {
+            XCTFail("the cancelled request reports its own failure, got \(String(describing: secondCompletions.value))")
+        }
+        XCTAssertTrue(firstCompletions.value.isEmpty, "the earlier request is still open")
+
+        service.invalidateTransportForIdentityReset()
+        await waitForCondition(timeout: 10) { firstCompletions.value.count == 1 }
+        XCTAssertEqual(firstCompletions.value.count, 1, "the earlier request still reports its own completion")
+        XCTAssertEqual(secondCompletions.value.count, 1, "a request completes exactly once")
+    }
+
+    func test_openRequest_doesNotReceiveALaterRequestsChunksOrCompletion() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldHold = true
+        let service = makeStubbedService()
+
+        let firstChunks = LockedBox<Int>(0)
+        let firstCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("first", token: nil, onChunk: { _ in firstChunks.value += 1 },
+                           onComplete: { firstCompletions.value.append($0) })
+        await waitForCondition(timeout: 10) { StubURLProtocol.count >= 1 }
+
+        StubURLProtocol.shouldHold = false
+        StubURLProtocol.responseBody = sseHandle(responseJSON: #"{"message":"hi"}"#)
+        let secondChunks = LockedBox<Int>(0)
+        let secondCompletions = LockedBox<[ConciergeError?]>([])
+        service.streamChat("second", token: nil, onChunk: { _ in secondChunks.value += 1 },
+                           onComplete: { secondCompletions.value.append($0) })
+        await waitForCondition(timeout: 10) { secondCompletions.value.count == 1 }
+
+        XCTAssertEqual(secondChunks.value, 1)
+        XCTAssertNil(secondCompletions.value.first ?? nil)
+        XCTAssertEqual(firstChunks.value, 0, "the open request must not receive the later request's chunks")
+        XCTAssertTrue(firstCompletions.value.isEmpty, "the open request has not completed")
+
+        service.invalidateTransportForIdentityReset()
+        await waitForCondition(timeout: 10) { firstCompletions.value.count == 1 }
+        XCTAssertEqual(firstCompletions.value.count, 1, "the open request still reports its own completion")
+        XCTAssertEqual(secondCompletions.value.count, 1)
+    }
+
     // MARK: - Stubbed-network helpers
 
     private func makeStubbedService() -> ConciergeChatService {
@@ -1155,7 +1220,8 @@ final class ConciergeChatServiceTests: XCTestCase {
 }
 
 /// Intercepts requests from an injected `URLSessionConfiguration` so tests can drive the service's
-/// request path without real networking. Captures requests (thread-safe) and defaults to an empty 200.
+/// request path without real networking. Captures requests (thread-safe) and returns `responseStatusCode`
+/// (200 by default) with `responseBody` (empty by default).
 private final class StubURLProtocol: URLProtocol {
     private static let lock = NSLock()
     private static var requests: [URLRequest] = []
@@ -1163,6 +1229,7 @@ private final class StubURLProtocol: URLProtocol {
     private static var _shouldHold = false
     private static var _stoppedCount = 0
     private static var _responseStatusCode = 200
+    private static var _responseBody: Data?
     private var held = false
 
     static func reset() {
@@ -1172,6 +1239,7 @@ private final class StubURLProtocol: URLProtocol {
         _shouldHold = false
         _stoppedCount = 0
         _responseStatusCode = 200
+        _responseBody = nil
         lock.unlock()
     }
     static var count: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
@@ -1189,6 +1257,11 @@ private final class StubURLProtocol: URLProtocol {
         get { lock.lock(); defer { lock.unlock() }; return _responseStatusCode }
         set { lock.lock(); defer { lock.unlock() }; _responseStatusCode = newValue }
     }
+    /// Body delivered as a single chunk before the response finishes. Defaults to empty.
+    static var responseBody: Data? {
+        get { lock.lock(); defer { lock.unlock() }; return _responseBody }
+        set { lock.lock(); defer { lock.unlock() }; _responseBody = newValue }
+    }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -1199,6 +1272,7 @@ private final class StubURLProtocol: URLProtocol {
         let shouldFail = StubURLProtocol._shouldFail
         let responseStatusCode = StubURLProtocol._responseStatusCode
         held = StubURLProtocol._shouldHold
+        let body = StubURLProtocol._responseBody
         StubURLProtocol.lock.unlock()
 
         if held { return }
@@ -1210,7 +1284,7 @@ private final class StubURLProtocol: URLProtocol {
            let response = HTTPURLResponse(url: url, statusCode: responseStatusCode, httpVersion: nil, headerFields: nil) {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         }
-        client?.urlProtocol(self, didLoad: Data())
+        client?.urlProtocol(self, didLoad: body ?? Data())
         client?.urlProtocolDidFinishLoading(self)
     }
 
