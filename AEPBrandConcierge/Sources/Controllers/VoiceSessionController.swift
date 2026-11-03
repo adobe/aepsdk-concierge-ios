@@ -105,8 +105,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         guard isActive else { return }
         listener?.voiceSession(self, didChangeState: .connecting)
         guard isActive else { return }
+        // The token travels on this connection, so only encrypted schemes are accepted.
         guard let parsedURL = URLComponents(string: url),
-              ["ws", "wss", "http", "https"].contains(parsedURL.scheme?.lowercased() ?? ""),
+              ["wss", "https"].contains(parsedURL.scheme?.lowercased() ?? ""),
               let host = parsedURL.host, !host.isEmpty,
               let serverURL = parsedURL.url,
               !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
