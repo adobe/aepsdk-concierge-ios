@@ -105,8 +105,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         guard isActive else { return }
         listener?.voiceSession(self, didChangeState: .connecting)
         guard isActive else { return }
+        // The token travels on this connection, so only encrypted schemes are accepted.
         guard let parsedURL = URLComponents(string: url),
-              ["ws", "wss", "http", "https"].contains(parsedURL.scheme?.lowercased() ?? ""),
+              ["wss", "https"].contains(parsedURL.scheme?.lowercased() ?? ""),
               let host = parsedURL.host, !host.isEmpty,
               let serverURL = parsedURL.url,
               !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -115,6 +116,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         }
         let connection = VoiceConnection(url: serverURL, token: token)
 
+        // ChatController already asks for the permission before requesting the session. This second
+        // check is a safety net for any caller that starts a session without going through
+        // ChatController; when the permission is already granted it returns at once.
         let requestPermission = requestMicrophonePermission
         startTask = Task { [weak self] in
             let granted = await requestPermission()

@@ -53,6 +53,8 @@ final class VoiceSessionControllerTests: XCTestCase {
             ("not-a-url", token),
             ("file:///tmp/voice", token),
             ("wss:///room", token),
+            ("ws://voice.example.com", token),
+            ("http://voice.example.com", token),
             (url, ""),
             (url, "  \n")
         ] {
