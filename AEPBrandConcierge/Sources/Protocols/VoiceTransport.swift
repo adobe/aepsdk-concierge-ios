@@ -19,8 +19,8 @@ import Foundation
 /// only carries audio and data, so Brand Concierge does not depend on any real-time media SDK. The
 /// sample app contains a complete LiveKit implementation to copy.
 ///
-/// Pass a transport to `Concierge.show(...)` or `Concierge.present(...)`. Without one, the voice
-/// button is hidden.
+/// Pass a transport to `Concierge.show(...)`, `Concierge.present(...)` or `Concierge.wrap(...)`.
+/// Without one, the voice button is hidden.
 ///
 /// Implementations must follow these rules:
 /// - Brand Concierge calls every method on the main thread. Each method returns immediately and
