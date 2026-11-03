@@ -53,10 +53,11 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private var pendingAssistantText = ""
     /// True from `connect` until this session disconnects the transport.
     private var holdsTransport = false
-    /// The transport has no microphone getter: the microphone is live once `.connected`, and only
-    /// this session changes it after that.
-    private var isMicrophoneEnabled = false
-    private var micWasEnabledBeforeInterruption = false
+    /// True from an audio interruption (a phone call, Siri) until it ends, in any active state.
+    /// Tracked apart from the session state, so a `.connected` that arrives during the interruption
+    /// doesn't leave the microphone live. The transport has no microphone getter: the microphone is
+    /// live once `.connected`, and only interruptions change it after that.
+    private var isAudioInterrupted = false
 
     var state: VoiceSessionState {
         stateLock.lock()
@@ -171,25 +172,32 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt)
             .map(AVAudioSession.InterruptionOptions.init(rawValue:)) ?? []
         onMain { session in
-            guard session.state == .listening || session.state == .reconnecting else { return }
+            guard session.isActive else { return }
             switch type {
             case .began:
-                session.micWasEnabledBeforeInterruption = session.isMicrophoneEnabled
+                guard !session.isAudioInterrupted else { return }
+                session.isAudioInterrupted = true
                 session.setMicrophone(enabled: false)
             case .ended:
-                if options.contains(.shouldResume), session.micWasEnabledBeforeInterruption {
-                    session.setMicrophone(enabled: true)
+                guard session.isAudioInterrupted else { return }
+                session.isAudioInterrupted = false
+                guard options.contains(.shouldResume) else {
+                    // iOS often omits it, and the chat has no unmute control, so a muted call would
+                    // look live while the agent hears nothing. End it so the user knows.
+                    session.fail("The audio interruption ended without the system allowing the conversation to resume.")
+                    return
                 }
-                session.micWasEnabledBeforeInterruption = false
+                session.setMicrophone(enabled: true)
             @unknown default:
                 break
             }
         }
     }
 
+    /// Changes the microphone once connected. Before that it is left alone: the transport turns it
+    /// on when it connects, and `.connected` applies any interruption.
     private func setMicrophone(enabled: Bool) {
-        guard holdsTransport, isActive else { return }
-        isMicrophoneEnabled = enabled
+        guard holdsTransport, state == .listening || state == .reconnecting else { return }
         transport.setMicrophoneEnabled(enabled)
     }
 
@@ -245,8 +253,10 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             switch state {
             case .connecting:
                 cancelConnectionTimer()
-                isMicrophoneEnabled = true
                 setState(.listening)
+                if isAudioInterrupted {
+                    setMicrophone(enabled: false)
+                }
             case .reconnecting:
                 // The transport keeps the microphone as it was; an interruption mute stays.
                 cancelConnectionTimer()

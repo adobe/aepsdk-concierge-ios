@@ -453,18 +453,24 @@ final class VoiceSessionControllerTests: XCTestCase {
         session.stop()
     }
 
-    func test_interruption_doesNotResumeWithoutSystemPermission() async {
+    func test_interruption_endingWithoutSystemPermission_failsAndDisconnects() async {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
         let session = start(transport, listener: listener)
         await listening(listener)
         interruption(.began)
         interruption(.ended)
+
         XCTAssertEqual(transport.microphoneChanges, [false])
-        session.stop()
+        guard case .failed(let reason) = session.state else {
+            return XCTFail("expected failed, got \(session.state)")
+        }
+        XCTAssertTrue(reason.hasPrefix("The audio interruption ended"), reason)
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertNil(transport.delegate)
     }
 
-    func test_interruption_doesNotResumeAMicrophoneThatWasAlreadyMuted() async {
+    func test_interruption_repeatedBegan_mutesOnce_andOneEndResumes() async {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
         let session = start(transport, listener: listener)
@@ -472,11 +478,43 @@ final class VoiceSessionControllerTests: XCTestCase {
         interruption(.began)
         interruption(.began)
         interruption(.ended, options: .shouldResume)
-        XCTAssertEqual(transport.microphoneChanges, [false, false])
+        XCTAssertEqual(transport.microphoneChanges, [false, true])
+        XCTAssertEqual(session.state, .listening)
         session.stop()
     }
 
-    func test_interruption_isIgnoredBeforeConnected() async {
+    func test_interruption_endedWithoutBegan_isIgnored() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await listening(listener)
+        interruption(.ended)
+        XCTAssertTrue(transport.microphoneChanges.isEmpty)
+        XCTAssertEqual(session.state, .listening)
+        session.stop()
+    }
+
+    func test_interruptionWhileConnecting_mutesOnConnected_andResumesWhenItEnds() async {
+        let transport = FakeVoiceTransport()
+        transport.autoConnect = false
+        let connecting = expectation(description: "connecting")
+        transport.onConnect = { connecting.fulfill() }
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await fulfillment(of: [connecting], timeout: 2)
+        interruption(.began)
+        XCTAssertTrue(transport.microphoneChanges.isEmpty, "the transport is not connected yet")
+
+        transport.report(.connected)
+        XCTAssertEqual(session.state, .listening)
+        XCTAssertEqual(transport.microphoneChanges, [false], "connecting must not leave the microphone live during a call")
+
+        interruption(.ended, options: .shouldResume)
+        XCTAssertEqual(transport.microphoneChanges, [false, true])
+        session.stop()
+    }
+
+    func test_interruptionEndingWhileConnecting_leavesTheMicrophoneAlone() async {
         let transport = FakeVoiceTransport()
         transport.autoConnect = false
         let connecting = expectation(description: "connecting")
@@ -486,8 +524,30 @@ final class VoiceSessionControllerTests: XCTestCase {
         await fulfillment(of: [connecting], timeout: 2)
         interruption(.began)
         interruption(.ended, options: .shouldResume)
+        transport.report(.connected)
+
+        XCTAssertEqual(session.state, .listening)
         XCTAssertTrue(transport.microphoneChanges.isEmpty)
         session.stop()
+    }
+
+    func test_interruptionEndingWithoutSystemPermission_whileConnecting_failsAndDisconnects() async {
+        let transport = FakeVoiceTransport()
+        transport.autoConnect = false
+        let connecting = expectation(description: "connecting")
+        transport.onConnect = { connecting.fulfill() }
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await fulfillment(of: [connecting], timeout: 2)
+        interruption(.began)
+        interruption(.ended)
+        transport.report(.connected)
+
+        guard case .failed = session.state else {
+            return XCTFail("expected failed, got \(session.state)")
+        }
+        XCTAssertTrue(transport.microphoneChanges.isEmpty)
+        XCTAssertEqual(transport.disconnectCount, 1)
     }
 
     func test_sharedTransport_servesOneSessionAfterAnother() async {

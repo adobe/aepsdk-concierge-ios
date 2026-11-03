@@ -46,7 +46,9 @@ public protocol VoiceTransport: AnyObject {
     func connect(_ connection: VoiceConnection)
 
     /// Mutes or unmutes the microphone without leaving the room. Brand Concierge mutes it while
-    /// another app interrupts the audio session (for example, a phone call), and unmutes it afterwards.
+    /// another app interrupts the audio session (for example, a phone call), including an
+    /// interruption that began while connecting, and unmutes it when iOS allows the audio to resume.
+    /// If iOS does not, Brand Concierge ends the conversation instead. Called only while connected.
     func setMicrophoneEnabled(_ enabled: Bool)
 
     /// Leaves the room and releases the microphone. Safe to call at any time, including while
