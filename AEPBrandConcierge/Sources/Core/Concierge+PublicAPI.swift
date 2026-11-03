@@ -170,6 +170,9 @@ public extension Concierge {
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
     ///   - hideButton: Whether to hide the floating button.
+    ///   - voiceTransport: Optional real-time connection for voice conversations in chats opened from
+    ///     the floating button. The voice button is shown only when one is provided. Pass the same
+    ///     long-lived instance on every call. See `VoiceTransport`.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
@@ -179,6 +182,7 @@ public extension Concierge {
         title: String? = nil,
         subtitle: String? = nil,
         hideButton: Bool = false,
+        voiceTransport: VoiceTransport? = nil,
         handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
         // wrap() is called inside a SwiftUI body and re-evaluates on every state change.
@@ -187,6 +191,7 @@ public extension Concierge {
         if let title = title { self.chatTitle = title }
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
         if !surfaces.isEmpty { self.surfaces = surfaces }
+        if let voiceTransport = voiceTransport { self.voiceTransport = voiceTransport }
         if let handleLink = handleLink {
             self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
         }

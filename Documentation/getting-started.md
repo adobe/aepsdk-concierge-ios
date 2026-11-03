@@ -100,7 +100,11 @@ Pass your transport when showing the chat:
 Concierge.show(surfaces: ["my-surface"], voiceTransport: myVoiceTransport)
 ```
 
-`Concierge.present(on:...)` takes the same `voiceTransport` parameter. The transport is kept for re-shows of the same chat, like `textSpeaker`.
+`Concierge.present(on:...)` takes the same `voiceTransport` parameter. The transport is kept for re-shows of the same chat, like `textSpeaker`. For chats opened from the floating button, pass it to `Concierge.wrap(...)`:
+
+```swift
+Concierge.wrap(AppRootView(), surfaces: ["my-surface"], voiceTransport: myVoiceTransport)
+```
 
 A `VoiceTransport` connects to the URL and token in the `VoiceConnection` Brand Concierge passes to `connect(_:)`, publishes the microphone, plays the agent's audio, and reports its state and incoming data messages to its `delegate`. Keep one instance for the life of the app: Brand Concierge reuses it for each conversation, sets the delegate before connecting and clears it before disconnecting. The sample app contains a complete implementation built on the LiveKit Swift SDK to copy.
 

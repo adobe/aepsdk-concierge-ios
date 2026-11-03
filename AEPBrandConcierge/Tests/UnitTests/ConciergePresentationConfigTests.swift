@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import SwiftUI
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -109,6 +110,21 @@ final class ConciergePresentationConfigTests: XCTestCase {
         XCTAssertNil(Concierge.textSpeaker)
         XCTAssertTrue(Concierge.voiceTransport === replacementTransport)
         XCTAssertFalse(Concierge.linkInterceptor.handleLink(testURL))
+    }
+
+    // MARK: - wrap
+
+    func test_wrap_storesVoiceTransport() {
+        let transport = FakeVoiceTransport()
+        _ = Concierge.wrap(EmptyView(), voiceTransport: transport)
+        XCTAssertTrue(Concierge.voiceTransport === transport)
+    }
+
+    func test_wrap_withoutVoiceTransport_keepsStoredTransport() {
+        let transport = FakeVoiceTransport()
+        Concierge.voiceTransport = transport
+        _ = Concierge.wrap(EmptyView())
+        XCTAssertTrue(Concierge.voiceTransport === transport)
     }
 
     // MARK: - reshow preserves stored values
