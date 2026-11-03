@@ -26,7 +26,8 @@ import Foundation
 /// - Brand Concierge calls every method on the main thread. Each method returns immediately and
 ///   reports its outcome to `delegate`.
 /// - One instance serves every conversation: `connect(_:)` can be called again after
-///   `disconnect()`.
+///   `disconnect()`. Brand Concierge runs one conversation at a time across the app, so it never
+///   calls `connect(_:)` while an earlier connection is still open.
 /// - Brand Concierge sets `delegate` before each `connect(_:)` and clears it before
 ///   `disconnect()`. Hold it weakly.
 /// - After `disconnect()`, report nothing more about that connection, even if a new connection has

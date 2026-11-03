@@ -361,6 +361,68 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(events.isEmpty)
     }
 
+    // MARK: - One conversation app-wide
+
+    func test_anotherChat_cannotStartVoice_whileAConversationRuns() {
+        let ownership = VoiceSessionOwnership()
+        let owner = makeController(voiceOwnership: ownership)
+        let other = makeController(voiceOwnership: ownership)
+        XCTAssertTrue(other.voiceEnabled)
+
+        owner.startVoiceSession()
+        XCTAssertFalse(other.voiceEnabled, "voice is claimed at the tap, before permission and credentials")
+        spinUntil(service.bootstrapVoiceSessionCallCount == 1)
+        service.emitBootstrap()
+        spinUntil(!owner.isVoiceConnecting)
+
+        other.startVoiceSession()
+        settle()
+        other.stopVoiceSession()
+        userSays("hello", isFinal: true)
+
+        XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 1)
+        XCTAssertEqual(transport.connections.count, 1)
+        XCTAssertEqual(transport.disconnectCount, 0)
+        XCTAssertFalse(other.isVoiceSessionActive)
+        XCTAssertTrue(other.messages.isEmpty)
+        XCTAssertEqual(owner.messages.map(\.messageBody), ["hello"])
+        XCTAssertTrue(owner.voiceEnabled, "the owner can still stop its conversation")
+    }
+
+    func test_endingTheConversation_freesVoiceForTheOtherChat() {
+        let ownership = VoiceSessionOwnership()
+        let owner = makeController(voiceOwnership: ownership)
+        let other = makeController(voiceOwnership: ownership)
+        startListening(owner)
+        owner.stopVoiceSession()
+
+        XCTAssertTrue(other.voiceEnabled)
+        startListening(other)
+        userSays("hi", isFinal: true)
+
+        XCTAssertEqual(other.messages.map(\.messageBody), ["hi"])
+        XCTAssertTrue(owner.messages.isEmpty)
+        XCTAssertFalse(owner.voiceEnabled)
+        XCTAssertEqual(transport.disconnectCount, 1)
+    }
+
+    func test_theOwningChatGoingAway_hangsUpItsCall_andFreesVoice() {
+        let ownership = VoiceSessionOwnership()
+        let other = makeController(voiceOwnership: ownership)
+        weak var released: ChatController?
+        autoreleasepool {
+            let owner = makeController(voiceOwnership: ownership)
+            released = owner
+            startListening(owner)
+            XCTAssertFalse(other.voiceEnabled)
+        }
+
+        XCTAssertNil(released)
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertNil(transport.delegate)
+        XCTAssertTrue(other.voiceEnabled)
+    }
+
     // MARK: - Gating
 
     func test_start_isIgnoredWhileATurnIsInFlight() {
@@ -501,7 +563,8 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
     private func makeController(withVoice: Bool = true,
                                 capturer: SpeechCapturing? = nil,
                                 permission: Bool = true,
-                                appState: ConciergeAppState = ConciergeAppState()) -> ChatController {
+                                appState: ConciergeAppState = ConciergeAppState(),
+                                voiceOwnership: VoiceSessionOwnership = VoiceSessionOwnership()) -> ChatController {
         ChatController(configuration: configuration,
                        chatService: service,
                        speechCapturer: capturer,
@@ -509,7 +572,8 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
                        voiceTransport: withVoice ? transport : nil,
                        requestMicrophonePermission: { permission },
                        dispatch: { [weak self] in self?.events.append($0) },
-                       appState: appState)
+                       appState: appState,
+                       voiceOwnership: voiceOwnership)
     }
 
     /// Starts voice, delivers credentials and waits until the transport reports `.connected`.
