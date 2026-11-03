@@ -65,6 +65,7 @@ public class Concierge: NSObject, Extension {
 
     static var speechCapturer: SpeechCapturing?
     static var textSpeaker: TextSpeaking?
+    static var voiceTransport: VoiceTransport?
     static var chatTitle: String = ConciergeConstants.Defaults.TITLE
     static var chatSubtitle: String? = ConciergeConstants.Defaults.SUBTITLE
     static var surfaces: [String] = []
