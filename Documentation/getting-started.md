@@ -98,7 +98,7 @@ The demo app's [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.s
 
 #### 1. Add LiveKit to your app
 
-Add the package `https://github.com/livekit/client-sdk-swift.git` with Swift Package Manager and link its `LiveKit` product to your app target. LiveKit is your app's dependency: you choose and update its version, and Brand Concierge does not constrain it. The demo app pins 2.17.0.
+Add the package `https://github.com/livekit/client-sdk-swift.git` with Swift Package Manager and link its `LiveKit` product to your app target. LiveKit is your app's dependency: you choose and update its version, and Brand Concierge does not constrain it. The demo app pins 2.17.0, the version Brand Concierge voice was tested with on devices.
 
 - **Link `LiveKit` to the app target itself**, so Xcode embeds its binary frameworks. If it reaches the app only through another framework target, the app can crash at launch with `Library not loaded: @rpath/LiveKitWebRTC.framework`.
 - **Use Swift Package Manager for LiveKit**, even if you add Brand Concierge with CocoaPods. Current LiveKit releases are not on CocoaPods trunk, and LiveKit has deprecated its CocoaPods support. A CocoaPods project can add Swift packages too: the demo app gets the AEP SDKs from CocoaPods and LiveKit from Swift Package Manager.
@@ -140,6 +140,6 @@ When a transport is provided, the composer shows a voice button. While a voice c
 The transport, and therefore LiveKit, owns the audio session and the audio processing:
 
 - **Keep Apple's voice processing on.** LiveKit uses it by default for echo cancellation and noise suppression. Without it, the agent's voice from the speaker reaches the microphone and the agent can interrupt itself. Even with it, loud speaker playback can occasionally be heard as the user speaking; headphones avoid this.
-- **Speaker output.** The reference transport prefers the built-in speaker over the receiver (`AudioManager.shared.isSpeakerOutputPreferred`). Headphones and Bluetooth devices take over when connected.
+- **Speaker output.** The reference transport prefers the built-in speaker over the receiver (`AudioManager.shared.isSpeakerOutputPreferred`). Headphones and Bluetooth devices take over when connected. The setting is LiveKit-wide, so it also applies to any other LiveKit use in your app; the transport puts back your app's value when the conversation ends.
 - **Interruptions.** Brand Concierge mutes the microphone through the transport during an audio interruption (a call, Siri) and unmutes it afterwards.
 - **Test on a device.** The simulator proves the wiring and the connection, but not echo, audio routes or interruptions. Check a conversation on the speaker, connecting and disconnecting wired and Bluetooth headphones mid-session, a call or Siri during a session, and moving the app to the background. Repeat these checks when you update LiveKit or change its audio settings (for example `AudioManager.shared.sessionConfiguration`) elsewhere in your app.

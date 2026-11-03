@@ -40,9 +40,12 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     /// Tears down the previous connection. A new connection waits for it, because the teardown stops
     /// the shared audio stack's microphone input, which would otherwise cut off the new connection's.
     private var teardownTask: Task<Void, Never>?
+    /// The app's speaker preference from before this transport changed it; nil while unchanged.
+    private var savedSpeakerOutputPreference: Bool?
 
     func connect(_ connection: VoiceConnection) {
         disconnect()
+        preferSpeakerOutput()
         let id = connectionID
         let teardown = teardownTask
         connectTask = Task.detached { [weak self] in
@@ -82,11 +85,31 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
         guard task != nil || room != nil else { return }
         // A join still in progress can outlast its cancellation; `connectFinished` cleans up after it.
         task?.cancel()
-        tearDown {
+        tearDown { [self] in
             // LiveKit leaves the microphone input that preconnect capture opened running.
             await Self.stopMicrophoneInput()
             await room?.disconnect()
+            await restoreSpeakerOutputIfIdle()
         }
+    }
+
+    /// Plays the agent through the built-in speaker rather than the receiver; headphones and
+    /// Bluetooth devices still take over. `AudioManager.shared` is LiveKit-wide: the setting applies
+    /// to every LiveKit room in the app, not just this transport's. So the app's own value is saved
+    /// here and put back once this transport is idle.
+    private func preferSpeakerOutput() {
+        if savedSpeakerOutputPreference == nil {
+            savedSpeakerOutputPreference = AudioManager.shared.isSpeakerOutputPreferred
+        }
+        AudioManager.shared.isSpeakerOutputPreferred = true
+    }
+
+    /// Restores the speaker preference after a teardown, unless a newer connection has started.
+    @MainActor
+    private func restoreSpeakerOutputIfIdle() {
+        guard isIdle, let saved = savedSpeakerOutputPreference else { return }
+        savedSpeakerOutputPreference = nil
+        AudioManager.shared.isSpeakerOutputPreferred = saved
     }
 
     /// Runs `teardown` after the previous teardown, and makes the next connection wait for it.
@@ -102,7 +125,6 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     /// releasing the microphone to `disconnect()`.
     private static func join(_ room: Room, url: String, token: String) async throws {
         try Task.checkCancellation()
-        AudioManager.shared.isSpeakerOutputPreferred = true
         let preconnect = PreconnectCapture()
         do {
             // Records the microphone while the room connects and sends that audio to the agent once
