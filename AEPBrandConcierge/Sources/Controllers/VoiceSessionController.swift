@@ -12,6 +12,7 @@
 
 import AEPServices
 import AVFoundation
+import Combine
 import Foundation
 
 /// Receives updates for one `VoiceSessionController`. Every method is called on the main thread.
@@ -27,8 +28,9 @@ protocol VoiceSessionListener: AnyObject {
 /// One voice conversation over the app's `VoiceTransport`: microphone permission, the connection
 /// lifecycle, audio interruptions, and turning the voice agent's data messages into transcript updates.
 ///
-/// The transport is shared by every conversation in the app, so a session claims it (becomes its
-/// delegate) only for the time it is connected, and releases it before disconnecting. Mutable
+/// The transport is shared by every conversation in the app. Only one conversation runs at a time
+/// (see `VoiceSessionOwnership`), and a session claims the transport (becomes its delegate) only for
+/// the time it is connected, and releases it before disconnecting. Mutable
 /// lifecycle and transcript work runs on main; `state` is lock-protected, so any thread may read it
 /// or call `stop()`.
 final class VoiceSessionController: NSObject, @unchecked Sendable {
@@ -327,6 +329,79 @@ extension VoiceSessionController: VoiceTransportDelegate {
                 return
             }
             session.handle(message)
+        }
+    }
+}
+
+// MARK: - VoiceSessionOwnership
+
+/// Allows one voice conversation at a time across the app.
+///
+/// The overlay chat (`show`) and the UIKit chat (`present`) can be open together and usually get the
+/// same transport. A second conversation on it would take the transport's delegate, so the first
+/// conversation's transcript would appear in the second chat, and ending either one would hang up the
+/// other's call. So a chat claims ownership at the voice tap, before its conversation touches the
+/// transport, and keeps it until the conversation ends. Other chats can't start voice meanwhile.
+final class VoiceSessionOwnership: @unchecked Sendable {
+    static let shared = VoiceSessionOwnership()
+
+    /// Held by the chat whose conversation owns voice. Releasing it, or deallocating it along with
+    /// that chat, frees voice for the other chats.
+    final class Claim {
+        private let ownership: VoiceSessionOwnership
+
+        fileprivate init(ownership: VoiceSessionOwnership) {
+            self.ownership = ownership
+        }
+
+        deinit {
+            ownership.release(ObjectIdentifier(self))
+        }
+
+        /// Frees voice for the other chats. Calling it again has no effect.
+        func release() {
+            ownership.release(ObjectIdentifier(self))
+        }
+    }
+
+    private let lock = NSLock()
+    private var ownerID: ObjectIdentifier?
+    private let changeSubject = PassthroughSubject<Void, Never>()
+
+    /// Whether a conversation owns voice right now.
+    var isClaimed: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return ownerID != nil
+    }
+
+    /// Fires after every claim and release, on the thread that made it. Read `isClaimed` for the
+    /// current value.
+    var changes: AnyPublisher<Void, Never> { changeSubject.eraseToAnyPublisher() }
+
+    /// Returns a claim, or `nil` when another conversation already owns voice.
+    func claim() -> Claim? {
+        let claim = Claim(ownership: self)
+        lock.lock()
+        let granted = ownerID == nil
+        if granted {
+            ownerID = ObjectIdentifier(claim)
+        }
+        lock.unlock()
+        guard granted else { return nil }
+        changeSubject.send()
+        return claim
+    }
+
+    private func release(_ id: ObjectIdentifier) {
+        lock.lock()
+        let released = ownerID == id
+        if released {
+            ownerID = nil
+        }
+        lock.unlock()
+        if released {
+            changeSubject.send()
         }
     }
 }
