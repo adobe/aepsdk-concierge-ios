@@ -39,6 +39,7 @@ public protocol VoiceTransport: AnyObject {
     /// Joins the voice agent's room, publishes the microphone and plays the agent's audio.
     ///
     /// Report `.connected` once the microphone is live, or `.failed(_:)` if the connection cannot be made.
+    /// If neither arrives within 20 seconds, Brand Concierge fails the conversation and calls `disconnect()`.
     ///
     /// - Parameter connection: where to connect and the credentials to use, from the Concierge service.
     func connect(_ connection: VoiceConnection)
