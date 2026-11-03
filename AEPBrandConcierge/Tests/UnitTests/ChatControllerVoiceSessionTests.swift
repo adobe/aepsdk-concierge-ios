@@ -264,6 +264,19 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
+    func test_agentEndingTheSessionWithAnError_returnsToIdle_withAnErrorBubble_andTracksIt() {
+        let controller = makeController()
+        controller.networkErrorMessage = "network down"
+        startListening(controller)
+
+        transport.receive(json: ["type": "session_notice", "data": ["kind": "session_ended", "reason": "error"]])
+
+        XCTAssertFalse(controller.isVoiceSessionActive)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["network down"])
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(transport.disconnectCount, 1)
+    }
+
     func test_transportFailure_returnsToIdle_withAnErrorBubble_andTracksIt() {
         let controller = makeController()
         controller.networkErrorMessage = "network down"

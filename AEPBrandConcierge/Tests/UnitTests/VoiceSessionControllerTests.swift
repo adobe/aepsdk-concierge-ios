@@ -412,14 +412,36 @@ final class VoiceSessionControllerTests: XCTestCase {
         session.stop()
     }
 
-    func test_sessionEndedNotice_stopsSession() async {
-        let transport = FakeVoiceTransport()
-        let listener = RecordingVoiceListener()
-        let session = start(transport, listener: listener)
-        await listening(listener)
-        transport.receive(json: ["type": "session_notice", "data": ["kind": "session_ended", "reason": "user_inactivity_timeout"]])
-        XCTAssertEqual(session.state, .ended)
-        XCTAssertEqual(transport.disconnectCount, 1)
+    func test_sessionEnded_byATimeout_endsNormally() async {
+        for reason in ["room_empty_timeout", "user_join_timeout", "user_inactivity_timeout"] {
+            let transport = FakeVoiceTransport()
+            let listener = RecordingVoiceListener()
+            let session = start(transport, listener: listener)
+            await listening(listener)
+            transport.receive(json: ["type": "session_notice", "data": ["kind": "session_ended", "reason": reason]])
+            XCTAssertEqual(session.state, .ended, reason)
+            XCTAssertEqual(transport.disconnectCount, 1, reason)
+        }
+    }
+
+    func test_sessionEnded_byAnErrorShutdownOrUnknownReason_fails() async {
+        let cases: [(reason: String?, expected: String)] = [
+            ("error", "error"),
+            ("worker_shutdown", "worker_shutdown"),
+            ("brand_new_reason", "unknown reason"),
+            (nil, "unknown reason")
+        ]
+        for (reason, expected) in cases {
+            let transport = FakeVoiceTransport()
+            let listener = RecordingVoiceListener()
+            let session = start(transport, listener: listener)
+            await listening(listener)
+            var data: [String: Any] = ["kind": "session_ended"]
+            data["reason"] = reason
+            transport.receive(json: ["type": "session_notice", "data": data])
+            XCTAssertEqual(session.state, .failed("The voice agent ended the session (\(expected))."), expected)
+            XCTAssertEqual(transport.disconnectCount, 1, expected)
+        }
     }
 
     func test_ignoredMessages_doNotEmitTranscriptOrChangeState() async {
