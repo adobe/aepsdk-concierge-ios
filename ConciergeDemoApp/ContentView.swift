@@ -136,7 +136,8 @@ struct ContentView: View {
                 Label(
                     "hello, world", systemImage: "world"
                 ),
-                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"]
+                surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
+                voiceTransport: DemoVoice.transport
             )
             .conciergeTheme(loadedTheme)
             .tag(DemoTab.magic)

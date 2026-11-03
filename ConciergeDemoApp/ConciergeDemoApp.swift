@@ -41,8 +41,8 @@ class DeepLinkState: ObservableObject {
 }
 
 /// The app's one voice transport. Brand Concierge reuses it for every conversation. Every
-/// `Concierge.show` and `Concierge.present` call passes it, because a reopened chat keeps the
-/// transport it was first shown with.
+/// `Concierge.show` and `Concierge.present` call, and the `Concierge.wrap` that shows the floating
+/// button, passes it, because a reopened chat keeps the transport it was first shown with.
 enum DemoVoice {
     static let transport = LiveKitTransport()
 }
