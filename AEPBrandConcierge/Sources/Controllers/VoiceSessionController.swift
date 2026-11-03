@@ -307,10 +307,21 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             let text = fullText.isEmpty ? pendingAssistantText : fullText
             pendingAssistantText = ""
             emit(.assistant, text, isFinal: true)
-        case .sessionNotice(.sessionEnded):
-            stop()
+        case .sessionNotice(.sessionEnded(let reason)):
+            handleSessionEnded(reason)
         case .uiPayload, .sessionNotice, .stateUpdate:
             break
+        }
+    }
+
+    /// The voice agent ended the session. Only its timeouts are a normal end. An error, a shutdown or
+    /// a reason this SDK doesn't know is a failure, so the user sees a message and it is tracked.
+    private func handleSessionEnded(_ reason: EndReason?) {
+        switch reason {
+        case .roomEmptyTimeout, .userJoinTimeout, .userInactivityTimeout:
+            finish(.ended)
+        case .error, .workerShutdown, nil:
+            fail("The voice agent ended the session (\(reason?.rawValue ?? "unknown reason")).")
         }
     }
 
