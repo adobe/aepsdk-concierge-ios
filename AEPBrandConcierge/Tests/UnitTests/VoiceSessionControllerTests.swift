@@ -267,6 +267,36 @@ final class VoiceSessionControllerTests: XCTestCase {
         XCTAssertEqual(listener.states.count, 4, "a late reconnect is ignored")
     }
 
+    func test_connect_failsAndDisconnects_whenTransportNeverReportsConnected() async {
+        let transport = FakeVoiceTransport()
+        transport.autoConnect = false
+        let listener = RecordingVoiceListener()
+        let failed = expectation(description: "failed after the connect timeout")
+        listener.onState = { if case .failed = $0 { failed.fulfill() } }
+        let session = start(transport, listener: listener, connectTimeout: 0.05)
+        await fulfillment(of: [failed], timeout: 2)
+
+        guard case .failed(let reason) = session.state else { return XCTFail("expected failed, got \(session.state)") }
+        XCTAssertTrue(reason.hasPrefix("The voice connection was not established"), reason)
+        XCTAssertEqual(transport.connections.count, 1)
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertNil(transport.delegate)
+        session.voiceTransport(transport, didChange: .connected)
+        XCTAssertEqual(listener.states.count, 2, "a late connect is ignored")
+    }
+
+    func test_connected_beforeConnectTimeout_keepsTheSession() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener, connectTimeout: 0.05)
+        await listening(listener)
+        try? await Task.sleep(nanoseconds: 150_000_000)
+
+        XCTAssertEqual(session.state, .listening)
+        XCTAssertEqual(transport.disconnectCount, 0)
+        session.stop()
+    }
+
     func test_reconnecting_beforeConnected_isIgnored() async {
         let transport = FakeVoiceTransport()
         transport.autoConnect = false
@@ -503,10 +533,12 @@ final class VoiceSessionControllerTests: XCTestCase {
     private func start(_ transport: FakeVoiceTransport,
                        listener: RecordingVoiceListener,
                        permission: Bool = true,
+                       connectTimeout: TimeInterval = VoiceSessionController.defaultConnectTimeout,
                        reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) -> VoiceSessionController {
         let session = VoiceSessionController(transport: transport,
                                              listener: listener,
                                              requestMicrophonePermission: { permission },
+                                             connectTimeout: connectTimeout,
                                              reconnectTimeout: reconnectTimeout)
         session.start(url: url, token: token)
         return session

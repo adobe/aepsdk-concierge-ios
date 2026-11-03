@@ -32,6 +32,8 @@ protocol VoiceSessionListener: AnyObject {
 /// lifecycle and transcript work runs on main; `state` is lock-protected, so any thread may read it
 /// or call `stop()`.
 final class VoiceSessionController: NSObject, @unchecked Sendable {
+    /// How long the transport may take to report `.connected` after `connect` before the session fails.
+    static let defaultConnectTimeout: TimeInterval = 20
     /// How long a lost connection may take to come back before the session fails.
     static let defaultReconnectTimeout: TimeInterval = 30
 
@@ -39,9 +41,11 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private let transport: VoiceTransport
     private weak var listener: VoiceSessionListener?
     private let requestMicrophonePermission: () async -> Bool
+    private let connectTimeout: TimeInterval
     private let reconnectTimeout: TimeInterval
     private var startTask: Task<Void, Never>?
-    private var reconnectTimer: DispatchWorkItem?
+    /// Runs while waiting for `.connected`, first after `connect` and again while reconnecting.
+    private var connectionTimer: DispatchWorkItem?
     private let stateLock = NSLock()
     private var currentState: VoiceSessionState = .connecting
     private var pendingAssistantText = ""
@@ -66,10 +70,12 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     init(transport: VoiceTransport,
          listener: VoiceSessionListener,
          requestMicrophonePermission: @escaping () async -> Bool = VoiceSessionController.requestMicrophonePermission,
+         connectTimeout: TimeInterval = VoiceSessionController.defaultConnectTimeout,
          reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) {
         self.transport = transport
         self.listener = listener
         self.requestMicrophonePermission = requestMicrophonePermission
+        self.connectTimeout = connectTimeout
         self.reconnectTimeout = reconnectTimeout
         super.init()
         NotificationCenter.default.addObserver(self,
@@ -81,7 +87,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     deinit {
         NotificationCenter.default.removeObserver(self)
         startTask?.cancel()
-        reconnectTimer?.cancel()
+        connectionTimer?.cancel()
         guard holdsTransport else { return }
         // The transport's delegate is weak and already nil here.
         let transport = transport
@@ -131,6 +137,10 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 }
                 session.holdsTransport = true
                 session.transport.delegate = session
+                // The transport is app code; don't wait forever for it to report back.
+                let timeout = session.connectTimeout
+                session.startConnectionTimer(timeout: timeout, while: .connecting,
+                                             reason: "The voice connection was not established within \(Int(timeout)) seconds.")
                 session.transport.connect(connection)
             }
         }
@@ -192,7 +202,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private func finish(_ terminalState: VoiceSessionState) {
         guard isActive else { return }
         startTask?.cancel()
-        cancelReconnectTimer()
+        cancelConnectionTimer()
         if holdsTransport {
             holdsTransport = false
             if transport.delegate === self {
@@ -232,11 +242,12 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         case .connected:
             switch state {
             case .connecting:
+                cancelConnectionTimer()
                 isMicrophoneEnabled = true
                 setState(.listening)
             case .reconnecting:
                 // The transport keeps the microphone as it was; an interruption mute stays.
-                cancelReconnectTimer()
+                cancelConnectionTimer()
                 setState(.listening)
             default:
                 break
@@ -244,7 +255,8 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         case .reconnecting:
             guard state == .listening else { return }
             setState(.reconnecting)
-            startReconnectTimer()
+            startConnectionTimer(timeout: reconnectTimeout, while: .reconnecting,
+                                 reason: "The voice connection was not restored within \(Int(reconnectTimeout)) seconds.")
         case .disconnected:
             finish(.ended)
         case .failed(let error):
@@ -252,20 +264,21 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         }
     }
 
-    private func startReconnectTimer() {
-        cancelReconnectTimer()
-        let timeout = reconnectTimeout
+    /// Fails the session with `reason`, which also disconnects the transport, if it is still in
+    /// `waitingState` after `timeout`.
+    private func startConnectionTimer(timeout: TimeInterval, while waitingState: VoiceSessionState, reason: String) {
+        cancelConnectionTimer()
         let timer = DispatchWorkItem { [weak self] in
-            guard let self, self.state == .reconnecting else { return }
-            self.fail("The voice connection was not restored within \(Int(timeout)) seconds.")
+            guard let self, self.state == waitingState else { return }
+            self.fail(reason)
         }
-        reconnectTimer = timer
+        connectionTimer = timer
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timer)
     }
 
-    private func cancelReconnectTimer() {
-        reconnectTimer?.cancel()
-        reconnectTimer = nil
+    private func cancelConnectionTimer() {
+        connectionTimer?.cancel()
+        connectionTimer = nil
     }
 
     private func handle(_ message: DataChannelMessage) {
