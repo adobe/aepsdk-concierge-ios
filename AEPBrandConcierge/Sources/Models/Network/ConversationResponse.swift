@@ -21,6 +21,10 @@ public struct ConversationResponse: Codable {
     public let linkHints: [LinkHint]?
     public let state: String?
     public let feedback: ConversationFeedbackInfo?
+    /// Present only on a voice-bootstrap turn; carries the voice session credentials. Optional, so
+    /// text-turn responses (which omit this key) decode unchanged. Internal: the voice wire format
+    /// belongs to the service and is not part of the public API.
+    let voice: VoicePayload?
 }
 
 /// Feedback metadata returned with an agent response.
