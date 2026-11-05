@@ -230,6 +230,45 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes", "Sure"])
     }
 
+    func test_transcript_scrollsTheUsersWordsToTheTop_andKeepsThemThereForTheReply() {
+        let controller = makeController()
+        startListening(controller)
+
+        userSays("Show me shoes", isFinal: true)
+        let firstUserBubble = controller.messages[0].id
+        XCTAssertEqual(controller.voiceScrollAnchorId, firstUserBubble)
+        XCTAssertEqual(controller.userMessageToScrollId, firstUserBubble)
+
+        transport.receive(json: ["event": "text_delta", "delta": "Sure"])
+        transport.receive(json: ["event": "turn_completed"])
+        XCTAssertEqual(controller.voiceScrollAnchorId, firstUserBubble, "the reply shows below the user's words")
+        XCTAssertEqual(controller.userMessageToScrollId, firstUserBubble)
+
+        userSays("Red ones", isFinal: true)
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[2].id)
+        XCTAssertEqual(controller.userMessageToScrollId, controller.messages[2].id)
+    }
+
+    func test_transcript_agentSpeakingFirst_scrollsItsBubbleToTheTop() {
+        let controller = makeController()
+        startListening(controller)
+
+        transport.receive(json: ["event": "text_delta", "delta": "Hi! How can I help?"])
+
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[0].id)
+        XCTAssertEqual(controller.userMessageToScrollId, controller.messages[0].id)
+    }
+
+    func test_voiceSessionEnding_clearsTheScrollAnchor() {
+        let controller = makeController()
+        startListening(controller)
+        userSays("Show me shoes", isFinal: true)
+
+        controller.stopVoiceSession()
+
+        XCTAssertNil(controller.voiceScrollAnchorId)
+    }
+
     func test_transcript_emptyText_addsNoBubble() {
         let controller = makeController()
         startListening(controller)

@@ -127,6 +127,12 @@ final class ChatController: ObservableObject {
     /// True while a voice conversation runs, from the voice tap until it ends.
     @Published private(set) var isVoiceSessionActive = false
 
+    /// The transcript bubble a running voice conversation keeps at the top of the list: the latest
+    /// user bubble, or the agent's first one when it speaks before the user. `MessageListView`
+    /// reserves space below it, as for a typed turn, so the scroll reaches it and the agent's replies
+    /// show below it. `nil` when no voice conversation runs.
+    @Published private(set) var voiceScrollAnchorId: UUID?
+
     /// True from the voice tap until the voice session reports the conversation is live, and again
     /// while the transport restores a lost connection.
     @Published private(set) var isVoiceConnecting = false
@@ -742,6 +748,7 @@ final class ChatController: ObservableObject {
         guard activeVoice === run else { return }
         activeVoice = nil
         isVoiceConnecting = false
+        voiceScrollAnchorId = nil
         run.session?.stop()
         if run.bootstrapStarted && !run.bootstrapFinished {
             // No typed turn can start during voice, so the bootstrap is the request in flight.
@@ -793,7 +800,8 @@ final class ChatController: ObservableObject {
             let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
             messages.append(message)
             run.openMessageIds[role] = message.id
-            if role == .user {
+            if role == .user || voiceScrollAnchorId == nil {
+                voiceScrollAnchorId = message.id
                 scrollToTop(messageId: message.id)
             }
         }

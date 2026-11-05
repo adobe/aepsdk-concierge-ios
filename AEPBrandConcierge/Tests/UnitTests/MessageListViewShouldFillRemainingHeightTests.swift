@@ -246,4 +246,51 @@ final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
         let view = makeView(messages: [], chatState: .processing)
         XCTAssertFalse(view.shouldFillRemainingHeight(at: 0))
     }
+
+    // MARK: - Voice
+
+    private func makeView(messages: [Message], voiceAnchorId: UUID?) -> MessageListView {
+        MessageListView(messages: messages,
+                        chatState: .idle,
+                        voiceScrollAnchorId: voiceAnchorId,
+                        isInputFocused: .constant(false),
+                        onSpeak: { _ in })
+    }
+
+    /// Voice leaves `chatState` idle. Without the filler, the scroll to the user's words clamps and
+    /// the agent's reply lands below the screen.
+    func test_voice_anchorIsLast_returnsTrue() {
+        let anchor = Message(template: .basic(isUserMessage: true), messageBody: "Show me shoes")
+        let view = makeView(
+            messages: [Message(template: .basic(isUserMessage: false), messageBody: "Hi!"), anchor],
+            voiceAnchorId: anchor.id
+        )
+        XCTAssertTrue(view.shouldFillRemainingHeight(at: 1))
+    }
+
+    func test_voice_onlyAgentBubblesFollowTheAnchor_returnsTrue() {
+        let anchor = Message(template: .basic(isUserMessage: true), messageBody: "Show me shoes")
+        let view = makeView(
+            messages: [
+                anchor,
+                Message(template: .basic(isUserMessage: false), messageBody: "Sure."),
+                Message(template: .basic(isUserMessage: false), messageBody: "Here are some.")
+            ],
+            voiceAnchorId: anchor.id
+        )
+        XCTAssertTrue(view.shouldFillRemainingHeight(at: 2))
+    }
+
+    func test_voice_aUserBubbleFollowsTheAnchor_returnsFalse() {
+        let anchor = Message(template: .basic(isUserMessage: true), messageBody: "Show me shoes")
+        let view = makeView(
+            messages: [
+                anchor,
+                Message(template: .basic(isUserMessage: false), messageBody: "Sure."),
+                Message(template: .basic(isUserMessage: true), messageBody: "Red ones")
+            ],
+            voiceAnchorId: anchor.id
+        )
+        XCTAssertFalse(view.shouldFillRemainingHeight(at: 2))
+    }
 }
