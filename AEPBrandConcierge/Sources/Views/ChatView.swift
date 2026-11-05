@@ -100,6 +100,7 @@ struct ChatView: View {
                 userMessageToScrollId: controller.userMessageToScrollId,
                 scrollToLastOnAppear: controller.hasConversationStarted,
                 chatState: controller.chatState,
+                voiceScrollAnchorId: controller.voiceScrollAnchorId,
                 isInputFocused: $isInputFocused
             ) { text in
                 controller.speak(text)
