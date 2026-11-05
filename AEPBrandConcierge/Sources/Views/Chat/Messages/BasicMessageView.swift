@@ -61,6 +61,12 @@ struct BasicMessageView: View {
         theme.behavior.feedback?.thumbsPlacement ?? .inline
     }
 
+    /// Whether inline citation number badges are shown (`behavior.citations.showCitationNumbers`).
+    /// The sources list below the bubble is unaffected.
+    private var showCitationNumbers: Bool {
+        theme.behavior.citations?.showCitationNumbers ?? true
+    }
+
     private var messageLineSpacing: CGFloat {
         let multiplier = theme.typography.lineHeight
         guard multiplier.isFinite, multiplier > 0 else { return 0 }
@@ -119,7 +125,7 @@ struct BasicMessageView: View {
         // the expensive `CitationRenderer.decorate` call would run 3× per render.
         let rawSources = sources ?? []
         let decoration: CitationDecoration? = {
-            guard !isUserMessage, let body = messageBody, !body.isEmpty else { return nil }
+            guard !isUserMessage, showCitationNumbers, let body = messageBody, !body.isEmpty else { return nil }
             return CitationRenderer.decorate(markdown: body, sources: rawSources)
         }()
         let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")

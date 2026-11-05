@@ -125,6 +125,7 @@
 		4C29834F2F885C1E0057C927 /* ConciergePresentationConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */; };
 		4C2983512F91D5020057C927 /* FeedbackButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */; };
 		4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */; };
+		4C2983562F91D5140057C927 /* ConciergeCitationsBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2983552F91D5140057C927 /* ConciergeCitationsBehaviorTests.swift */; };
 		4C3A65B82E54039600EEEF3B /* SelectableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */; };
 		4C3A65BC2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BB2E551C2300EEEF3B /* S2_Icon_Send_20_N.svg */; };
 		4C3A65BD2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */; };
@@ -364,6 +365,7 @@
 		4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergePresentationConfigTests.swift; sourceTree = "<group>"; };
 		4C2983502F91D5020057C927 /* FeedbackButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackButtonStyle.swift; sourceTree = "<group>"; };
 		4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeFeedbackBehaviorTests.swift; sourceTree = "<group>"; };
+		4C2983552F91D5140057C927 /* ConciergeCitationsBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConciergeCitationsBehaviorTests.swift; sourceTree = "<group>"; };
 		4C3A65B72E54039600EEEF3B /* SelectableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableTextView.swift; sourceTree = "<group>"; };
 		4C3A65B92E551C2300EEEF3B /* S2_Icon_Checkmark_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Checkmark_20_N.svg; sourceTree = "<group>"; };
 		4C3A65BA2E551C2300EEEF3B /* S2_Icon_Microphone_20_N.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = S2_Icon_Microphone_20_N.svg; sourceTree = "<group>"; };
@@ -767,6 +769,7 @@
 			isa = PBXGroup;
 			children = (
 				4C2983522F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift */,
+				4C2983552F91D5140057C927 /* ConciergeCitationsBehaviorTests.swift */,
 				4C29834E2F885C1E0057C927 /* ConciergePresentationConfigTests.swift */,
 				A1B2C3D40001000100010002 /* ConciergeHeaderConfigTests.swift */,
 				B83AC8F6176F39468E33F041 /* ComposerEditingViewTests.swift */,
@@ -1367,6 +1370,7 @@
 				55C58A59A70A4F50B92C86CE /* ConciergeTrackingEventTests.swift in Sources */,
 				4C2923E22E7E226600D2D2C1 /* MockSpeechCapturer.swift in Sources */,
 				4C2983532F91D50E0057C927 /* ConciergeFeedbackBehaviorTests.swift in Sources */,
+				4C2983562F91D5140057C927 /* ConciergeCitationsBehaviorTests.swift in Sources */,
 				244E69ED2F22DF8300ADF1AA /* GlobalTypographySnapshotTests.swift in Sources */,
 				CCA3039F65F45F6F18B0801D /* WhiteSpaceReservationSnapshotTests.swift in Sources */,
 				D41A7C9E3B2F48A15E6C0917 /* ProductCardCarouselSnapshotTests.swift in Sources */,
