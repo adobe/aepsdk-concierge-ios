@@ -91,7 +91,9 @@ The theme JSON file contains these top-level keys:
 Unknown `--`-prefixed variables in the theme object are retained in
 `ConciergeTheme.customVariables` for native app card renderers, not applied to SDK views.
 Keys and values are trimmed; blank values are ignored. Numeric JSON values of unknown keys become
-strings here (known keys still require string values, as before).
+strings here: whole-number values such as `140` become `"140"` and fractional values
+such as `0.5` become `"0.5"`. Booleans are ignored. Known keys still require string
+values, as before.
 At most 256 distinct keys with at most 512 characters per key/value are retained;
 an existing key can still be overwritten at the limit. Known variables remain in the
 typed theme API and are not duplicated here.

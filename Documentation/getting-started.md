@@ -151,13 +151,14 @@ The SDK validates these values against their original response bytes.
 Read `NSDecimalNumber` values directly when decimal precision matters; converting
 them to `Double` can lose precision.
 The renderer also receives a live context
-containing `cardId`, monotonically increasing `receiptSequence`, optional originating `sessionId`/
-`conversationId`/`interactionId`, `isBusy`, `isStale`, and the last saved `state`.
+containing `cardId`, `sequence`, optional originating `sessionId`/
+`conversationId`/`interactionId`, `isBusy`, `isStale`, `isLatest`, and the last saved `state`.
 `saveState` replaces this card occurrence's private JSON dictionary; it does **not**
 send data to the backend. Do not send actions when busy or stale. Use the existing
 `Concierge.sendDataHandoff` and `Concierge.updateXDMContext` APIs for card actions
-and context. Native cards render after completion, using elements from the `completed`
-response only. Elements received only in streaming updates do not activate native cards;
+and context. Native cards activate when the stream finishes, using elements from the
+`completed` response only; receiving a completed payload alone does not activate them
+while the transport remains open. Elements received only in streaming updates do not activate native cards;
 built-in elements retain iOS's existing buffering behavior. Registered types take priority.
 Unregistered and untyped elements are decoded and rendered exactly as before
 (built-in product card/carousel). Only elements whose `type` has a registered
@@ -178,23 +179,47 @@ Removing transcript rows disposes only those card occurrences; clearing the chat
 or resetting identity disposes all of them. Disposed cards become stale and ignore
 queued or late state saves.
 
+Session expiry or replacement does not automatically mark cards stale. The
+originating session and conversation identifiers in context are metadata, not
+automatic action-availability rules.
+
 On iOS, a `response` object must include a string `message`; use an empty string
 for a card-only response.
 
 The only public native-card integration API is
-`registerCardRenderer(type:_:)`. The context's `receiptSequence` is monotonic in
-transcript insertion order and can be used to order first-display effects when rows
-appear lazily or are recreated. Gate such effects on `isStale` and deduplicate them
-by `cardId`; do not publish state from view-body evaluation.
+`registerCardRenderer(type:_:)`. For app-owned first-display effects, trigger them
+from the view lifecycle, gate them on `isStale`, and deduplicate them by `cardId`;
+do not publish state from view-body evaluation.
+
+Card order comes from the SDK, never from the view lifecycle: SwiftUI doesn't create
+or show transcript rows in transcript order (lazy rows, recreated rows), so "the last
+card whose `onAppear` fired" is not the newest card.
+- `isLatest` covers the common rule "only the newest card of a type is actionable":
+  gate controls on `isLatest && !isStale && !isBusy`. It reports order, not
+  host-app action availability. Activating a newer card of the
+  same `type` sets the older one to `false`. If the newest card is rolled back, the
+  newest remaining card of that type becomes latest again.
+- `sequence` supports other cross-card rules (for example, newest per location): it
+  strictly increases in transcript order (including element order within one
+  response), is fixed for the card's lifetime, and is never reused in the chat.
+  Rejected elements don't use a number. Compare it only between cards of the same
+  chat; it is not meaningful across chats or app launches.
 
 Raw native elements and saved state must be valid JSON within depth 64 (root at depth
-zero) and 100,000 total value/container nodes. Over-budget elements are logged and
+zero) and 100,000 total value/container nodes. These are structural validation limits,
+not byte-size or peak-memory limits. Saved-state copying reserves an array's full
+capacity before validating all its nodes, so oversized arrays can allocate memory
+before rejection. Invalid or over-budget saved state is logged and leaves the last
+valid state unchanged. Over-budget elements are logged and
 rejected before a native occurrence is activated; when the built-in projection parsed
 successfully, it remains eligible for fallback rendering.
 When at least one native renderer is registered, streaming SSE `data:` lines that
 span multiple network reads (large card payloads) are reassembled before decoding,
 including fragmented UTF-8 and a final line without a newline. Lines have no size
-limit, matching the existing stream handling. Without a registered renderer, the
+limit, matching the existing stream handling; the structural JSON budget does not
+bound the buffered line's memory usage. A final unterminated line is decoded when
+possible; malformed or truncated JSON is logged and skipped, not automatically
+reported as a transport error. Without a registered renderer, the
 existing stream handling remains unchanged.
 
 For stateful renderers, keep runtime state in an observable SwiftUI owner and initialize

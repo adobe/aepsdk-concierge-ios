@@ -58,12 +58,28 @@ final class ThemeCSSMapperTests: XCTestCase {
         """
         let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
         XCTAssertEqual(theme.customVariables["--fnb-accent-color"], "#abcdef")
-        XCTAssertEqual(theme.customVariables["--fnb-spacing"], "12.0")
+        XCTAssertEqual(theme.customVariables["--fnb-spacing"], "12")
         XCTAssertNil(theme.customVariables["--fnb-blank"])
         XCTAssertNil(theme.customVariables["--color-primary"])
         let encoded = try JSONEncoder().encode(theme)
         let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
         XCTAssertEqual(roundTrip.customVariables["--fnb-accent-color"], "#abcdef")
+    }
+
+    func test_numericCustomVariablesMatchAndroidValues() throws {
+        let json = """
+        {"theme":{"--my-card-tile-width":140,"--my-card-disabled-opacity":0.5,
+        "--my-card-offset":-140,"--my-card-zero":0,"--my-card-flag":true}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.customVariables, [
+            "--my-card-tile-width": "140",
+            "--my-card-disabled-opacity": "0.5",
+            "--my-card-offset": "-140",
+            "--my-card-zero": "0"
+        ])
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(roundTrip.customVariables, theme.customVariables)
     }
 
     func test_numericValueForKnownKeyIsIgnoredAsOnDev() throws {

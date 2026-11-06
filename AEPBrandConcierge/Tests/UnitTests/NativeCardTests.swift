@@ -238,13 +238,13 @@ final class NativeCardTests: XCTestCase {
     }
 
     @MainActor
-    func testReceiptSequenceOrdersOccurrencesAndOccurrenceDomainsDoNotCollide() throws {
+    func testDistinctOccurrencesRemainDeduplicated() throws {
         let controller = ChatController(configuration: nil,
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
-        NativeCardRegistry.register(type: "test.receipt") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(type: "test.occurrence") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.receipt","id":"1"},{"type":"test.receipt"}]"#.utf8))
+            from: Data(#"[{"type":"test.occurrence","id":"1"},{"type":"test.occurrence"}]"#.utf8))
         let payload = try CardJSONValue.decode(ConversationPayload.self, from: Data("{}".utf8))
         let turn = UUID()
         controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
@@ -254,8 +254,8 @@ final class NativeCardTests: XCTestCase {
             return nil
         }
         XCTAssertEqual(cards.count, 2)
-        XCTAssertLessThan(try XCTUnwrap(cards[0].context["receiptSequence"] as? Int),
-                          try XCTUnwrap(cards[1].context["receiptSequence"] as? Int))
+        XCTAssertEqual(Set(cards.map(\.cardId)).count, 2)
+        XCTAssertEqual(cards.map(\.sequence), [0, 1], "sequence follows transcript order within one response")
         controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
         XCTAssertEqual(controller.messages.count, 2, "Reprocessing the response must not append cards")
     }
@@ -1213,6 +1213,96 @@ final class NativeCardTests: XCTestCase {
             XCTAssertFalse(card.isStale)
             XCTAssertFalse(card.isBusy)
         }
+    }
+
+    @MainActor
+    private func makeOrderingController() -> ChatController {
+        NativeCardRegistry.register(type: "test.menu") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(type: "test.cart") { _, _, _ in AnyView(EmptyView()) }
+        return ChatController(configuration: nil,
+            chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
+    }
+
+    private func orderingElements(_ json: String) throws -> [MultimodalElement] {
+        try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
+    }
+
+    @MainActor
+    func testLastCardOfATypeInOneResponseIsLatestAndTypesAreIndependent() throws {
+        let controller = makeOrderingController()
+        let elements = try orderingElements(
+            #"[{"type":"test.menu","id":"m1"},{"type":"test.cart","id":"c1"},{"type":"test.menu","id":"m2"}]"#)
+        controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
+        let cards = nativeCards(in: controller.messages)
+        XCTAssertEqual(cards.map(\.sequence), [0, 1, 2])
+        XCTAssertEqual(cards.map(\.isLatest), [false, true, true])
+        XCTAssertEqual(cards[2].context["sequence"] as? Int, 2)
+        XCTAssertEqual(cards[2].context["isLatest"] as? Bool, true)
+        XCTAssertEqual(cards[0].context["isLatest"] as? Bool, false)
+    }
+
+    @MainActor
+    func testNewerTurnTakesOverLatestForItsTypeOnly() throws {
+        let controller = makeOrderingController()
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.cart"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        let cards = nativeCards(in: controller.messages)
+        XCTAssertEqual(cards.map(\.sequence), [0, 1, 2])
+        XCTAssertEqual(cards.map(\.isLatest), [false, true, true])
+    }
+
+    @MainActor
+    func testRollbackPromotesTheNewestRemainingCardOfTheType() throws {
+        let controller = makeOrderingController()
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.menu"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.cart"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        let cards = nativeCards(in: controller.messages)
+        XCTAssertEqual(cards.map(\.isLatest), [false, false, true, true])
+
+        controller.messages.removeLast(2)
+        XCTAssertTrue(cards[1].isLatest, "the highest remaining sequence of the type is promoted")
+        XCTAssertFalse(cards[0].isLatest)
+        XCTAssertFalse(cards[2].isLatest)
+        XCTAssertFalse(cards[3].isLatest, "a disposed card is never latest")
+        XCTAssertTrue(cards[3].disposed)
+
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.cart"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        let newCart = try XCTUnwrap(nativeCards(in: controller.messages).last)
+        XCTAssertTrue(newCart.isLatest, "rolling back the only card of a type leaves no latest to demote")
+        XCTAssertEqual(newCart.sequence, 4, "sequences are never reused after rollback")
+    }
+
+    @MainActor
+    func testRejectedAndDuplicateElementsDoNotConsumeASequence() throws {
+        let controller = makeOrderingController()
+        let elements = try orderingElements(
+            #"[{"type":"test.menu","id":"same"},{"type":"test.menu","id":"same"},{"type":"test.menu","id":"next"}]"#)
+        let turn = UUID()
+        controller.renderElementsForTesting(elements, turnId: turn, payload: streamPayload(state: "completed"))
+        controller.renderElementsForTesting(elements, turnId: turn, payload: streamPayload(state: "completed"))
+        let cards = nativeCards(in: controller.messages)
+        XCTAssertEqual(cards.map(\.sequence), [0, 1])
+        XCTAssertEqual(cards.map(\.isLatest), [false, true])
+    }
+
+    @MainActor
+    func testRemovingAllCardsKeepsTheSequenceCounter() throws {
+        let controller = makeOrderingController()
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        let first = try XCTUnwrap(nativeCards(in: controller.messages).first)
+        controller.messages.removeAll()
+        XCTAssertFalse(first.isLatest)
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+                                            turnId: UUID(), payload: streamPayload(state: "completed"))
+        let second = try XCTUnwrap(nativeCards(in: controller.messages).first)
+        XCTAssertEqual(second.sequence, 1)
+        XCTAssertTrue(second.isLatest)
     }
 
     @MainActor

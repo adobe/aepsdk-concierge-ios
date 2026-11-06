@@ -129,6 +129,7 @@ enum ResponseElementResolver {
                     occurrencePositions[occurrence] = position
                     if existingPosition == nil {
                         targets.append(.native(NativeCardStore.Activation(occurrence: occurrence, position: position,
+                                                                         type: element.type ?? "",
                                                                          element: rawElement, registration: registration)))
                     }
                     continue

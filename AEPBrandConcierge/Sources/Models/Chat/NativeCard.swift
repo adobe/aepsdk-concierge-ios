@@ -62,9 +62,10 @@ enum NativeCardRegistry {
 /// A transcript occurrence owns its renderer and state even while its SwiftUI row is off screen.
 @MainActor
 public final class NativeCard: ObservableObject {
-    private static var nextReceiptSequence = 0
     let cardId = UUID().uuidString
     let occurrenceId: String
+    /// Activation order within this chat: strictly increasing in transcript order and never reused.
+    let sequence: Int
     let element: [String: Any]
     let renderer: ConciergeCardRenderer
     let sessionId: String?
@@ -73,25 +74,25 @@ public final class NativeCard: ObservableObject {
     @Published private(set) var state: [String: Any]?
     @Published private(set) var isBusy = false
     @Published private(set) var isStale = false
+    /// True while this is the most recently activated card of its `type` in this chat.
+    @Published private(set) var isLatest = false
     private(set) var disposed = false
-    private let receiptSequence: Int
 
     init(element: [String: Any], renderer: @escaping ConciergeCardRenderer,
-         occurrenceId: String = UUID().uuidString,
+         occurrenceId: String = UUID().uuidString, sequence: Int = 0,
          sessionId: String?, conversationId: String?, interactionId: String?) {
         self.occurrenceId = occurrenceId
+        self.sequence = sequence
         self.element = element
         self.renderer = renderer
         self.sessionId = sessionId
         self.conversationId = conversationId
         self.interactionId = interactionId
-        NativeCard.nextReceiptSequence += 1
-        receiptSequence = NativeCard.nextReceiptSequence
     }
 
     var context: [String: Any] {
-        var result: [String: Any] = ["cardId": cardId, "isBusy": isBusy, "isStale": isStale,
-                                     "receiptSequence": receiptSequence]
+        var result: [String: Any] = ["cardId": cardId, "sequence": sequence, "isBusy": isBusy,
+                                     "isStale": isStale, "isLatest": isLatest]
         if let sessionId { result["sessionId"] = sessionId }
         if let conversationId { result["conversationId"] = conversationId }
         if let interactionId { result["interactionId"] = interactionId }
@@ -113,8 +114,14 @@ public final class NativeCard: ObservableObject {
     func dispose() {
         guard !disposed else { return }
         isStale = true
+        isLatest = false
         disposed = true
         state = nil
+    }
+
+    func setLatest(_ latest: Bool) {
+        guard !disposed || !latest, isLatest != latest else { return }
+        isLatest = latest
     }
 
     func setBusy(_ busy: Bool) {
