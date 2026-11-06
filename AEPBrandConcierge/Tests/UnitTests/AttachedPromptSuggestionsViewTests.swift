@@ -14,21 +14,16 @@ import SwiftUI
 import XCTest
 @testable import AEPBrandConcierge
 
-final class ChatMessageViewTests: XCTestCase {
+final class AttachedPromptSuggestionsViewTests: XCTestCase {
     @MainActor
-    func testAttachedSuggestionsRespectHeaderSettingAndEmptySuggestions() {
-        func height(showHeader: Bool, suggestions: [String]) -> CGFloat {
+    func testHeaderFollowsTheSuggestionsSetting() {
+        func height(showHeader: Bool) -> CGFloat {
             var theme = ConciergeTheme()
             theme.behavior.promptSuggestions = ConciergePromptSuggestionsBehavior(showHeader: showHeader)
-            let view = ChatMessageView(template: .nativeCard(cardId: "card"), promptSuggestions: suggestions)
+            let view = AttachedPromptSuggestionsView(suggestions: ["Continue"])
                 .environment(\.conciergeTheme, theme)
-            let controller = UIHostingController(rootView: view)
-            return controller.sizeThatFits(in: CGSize(width: 320, height: 1000)).height
+            return UIHostingController(rootView: view).sizeThatFits(in: CGSize(width: 320, height: 1000)).height
         }
-        let withoutHeader = height(showHeader: false, suggestions: ["Continue"])
-        let withHeader = height(showHeader: true, suggestions: ["Continue"])
-        XCTAssertGreaterThan(withHeader, withoutHeader + 10)
-        XCTAssertEqual(height(showHeader: true, suggestions: []),
-                       height(showHeader: false, suggestions: []), accuracy: 0.5)
+        XCTAssertGreaterThan(height(showHeader: true), height(showHeader: false) + 10)
     }
 }
