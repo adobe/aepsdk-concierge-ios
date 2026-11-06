@@ -114,6 +114,7 @@ struct ChatView: View {
             } onCtaButtonTap: { label, url in
                 controller.trackCtaButtonClicked(label: label, url: url)
             }
+                .environment(\.conciergeNativeCardStore, controller.nativeCards)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)

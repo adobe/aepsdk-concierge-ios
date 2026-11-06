@@ -126,7 +126,21 @@ struct MessageListView: View {
         }
     }
 
+    @ViewBuilder
     private func messageView(_ message: Message) -> some View {
+        if let suggestions = attachedSuggestions(for: message) {
+            VStack(alignment: .leading, spacing: 8) {
+                rowView(message)
+                // Laid out like standalone suggestion rows, whatever insets the card row uses.
+                AttachedPromptSuggestionsView(suggestions: suggestions, onSuggestionTap: onSuggestionTap)
+                    .padding(horizontalPadding(for: .promptSuggestion(text: "")))
+            }
+        } else {
+            rowView(message)
+        }
+    }
+
+    private func rowView(_ message: Message) -> some View {
         ChatMessageView(
             messageId: message.id,
             template: message.template,
@@ -172,6 +186,17 @@ struct MessageListView: View {
         }
     }
 
+    /// Prompt suggestions the SDK attached to a card row of a response that rendered a native card.
+    func attachedSuggestions(for message: Message) -> [String]? {
+        guard let suggestions = message.promptSuggestions, !suggestions.isEmpty else { return nil }
+        switch message.template {
+        case .nativeCard, .productCard, .carouselGroup:
+            return suggestions
+        default:
+            return nil
+        }
+    }
+
     /// Returns the padding insets for a given message template.
     ///
     /// - Carousel messages receive zero container padding. The carousel's `ScrollView` spans
@@ -203,7 +228,7 @@ struct MessageListView: View {
         }
         if theme.hasAgentIcon {
             switch template {
-            case .promptSuggestion, .productCard, .ctaButton, .thumbnail:
+            case .promptSuggestion, .productCard, .ctaButton, .thumbnail, .nativeCard:
                 return EdgeInsets(
                     top: 0,
                     leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,

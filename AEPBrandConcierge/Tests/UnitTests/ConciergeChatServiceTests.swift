@@ -11,6 +11,7 @@
  */
 
 import AEPServices
+import SwiftUI
 import XCTest
 @testable import AEPBrandConcierge
 
@@ -1255,5 +1256,265 @@ private final class LockedBox<T>: @unchecked Sendable {
     var value: T {
         get { lock.lock(); defer { lock.unlock() }; return _value }
         set { lock.lock(); defer { lock.unlock() }; _value = newValue }
+    }
+}
+
+// MARK: - SSE framing
+
+/// Serves a fixed SSE body split into the given fragments, one `didLoad` per fragment, the way a
+/// large response reaches URLSession across several network reads.
+private final class FragmentedSSEURLProtocol: URLProtocol {
+    static var fragments: [Data] = []
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        if let url = request.url,
+           let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        }
+        for fragment in Self.fragments {
+            client?.urlProtocol(self, didLoad: fragment)
+        }
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
+
+private final class PausedSSEURLProtocol: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {}
+    override func stopLoading() {}
+}
+
+final class ConciergeChatServiceSSEFramingTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        NativeCardRegistry.resetForTesting()
+        NativeCardRegistry.register(type: "test.sse") { _, _, _ in AnyView(EmptyView()) }
+    }
+
+    override func tearDown() {
+        NativeCardRegistry.resetForTesting()
+        super.tearDown()
+    }
+
+    func test_streamChat_withoutRenderersKeepsLegacyDeliveryFraming() {
+        NativeCardRegistry.resetForTesting()
+        let service = makeService(protocolClass: PausedSSEURLProtocol.self)
+        let session = URLSession(configuration: .ephemeral)
+        defer {
+            service.invalidateTransportForIdentityReset()
+            session.invalidateAndCancel()
+        }
+        var messages: [String] = []
+        service.streamChat("q", token: nil, onChunk: { messages.append($0.response?.message ?? "") },
+                           onComplete: { _ in })
+        let task = session.dataTask(with: URL(string: "https://test.example.com")!)
+
+        let immediate = event("legacy", state: "in-progress").dropLast(2)
+        service.urlSession(session, dataTask: task, didReceive: Data(immediate.utf8))
+        XCTAssertEqual(messages, ["legacy"], "Legacy delivery does not wait for a newline")
+
+        let fragmented = Data(event("fragmented", state: "completed").utf8)
+        let midpoint = fragmented.count / 2
+        service.urlSession(session, dataTask: task, didReceive: fragmented.prefix(midpoint))
+        service.urlSession(session, dataTask: task, didReceive: fragmented.dropFirst(midpoint))
+        XCTAssertEqual(messages, ["legacy"], "Legacy delivery does not reassemble partial lines")
+    }
+
+    func test_streamChat_withoutRenderersKeepsLegacyLineSizeBehavior() {
+        NativeCardRegistry.resetForTesting()
+        let service = makeService(protocolClass: PausedSSEURLProtocol.self)
+        let session = URLSession(configuration: .ephemeral)
+        defer {
+            service.invalidateTransportForIdentityReset()
+            session.invalidateAndCancel()
+        }
+        var messageLength: Int?
+        service.streamChat("q", token: nil, onChunk: { messageLength = $0.response?.message.count },
+                           onComplete: { _ in })
+        let task = session.dataTask(with: URL(string: "https://test.example.com")!)
+        let message = String(repeating: "x", count: 9 * 1024 * 1024)
+        service.urlSession(session, dataTask: task, didReceive: Data(event(message, state: "completed").utf8))
+        XCTAssertEqual(messageLength, message.count)
+    }
+
+    func test_streamChat_keepsFramingModeUntilTheTaskEnds() {
+        NativeCardRegistry.resetForTesting()
+        let service = makeService(protocolClass: PausedSSEURLProtocol.self)
+        let session = URLSession(configuration: .ephemeral)
+        defer {
+            service.invalidateTransportForIdentityReset()
+            session.invalidateAndCancel()
+        }
+        var messages: [String] = []
+        service.streamChat("q", token: nil, onChunk: { messages.append($0.response?.message ?? "") },
+                           onComplete: { _ in })
+        let first = session.dataTask(with: URL(string: "https://test.example.com/first")!)
+        let second = session.dataTask(with: URL(string: "https://test.example.com/second")!)
+        service.urlSession(session, dataTask: first,
+                           didReceive: Data(event("before", state: "in-progress").dropLast(2).utf8))
+        NativeCardRegistry.register(type: "test.late") { _, _, _ in AnyView(EmptyView()) }
+        service.urlSession(session, dataTask: first,
+                           didReceive: Data(event("after", state: "completed").dropLast(2).utf8))
+
+        let nextEvent = Data(event("native", state: "completed").utf8)
+        let midpoint = nextEvent.count / 2
+        service.urlSession(session, dataTask: second, didReceive: nextEvent.prefix(midpoint))
+        service.urlSession(session, dataTask: second, didReceive: nextEvent.dropFirst(midpoint))
+        XCTAssertEqual(messages, ["before", "after", "native"])
+    }
+
+    func test_streamChat_nativeFramingSeparatesInterleavedTaskBuffers() {
+        let service = makeService(protocolClass: PausedSSEURLProtocol.self)
+        let session = URLSession(configuration: .ephemeral)
+        defer {
+            service.invalidateTransportForIdentityReset()
+            session.invalidateAndCancel()
+        }
+        var messages: [String] = []
+        service.streamChat("q", token: nil, onChunk: { messages.append($0.response?.message ?? "") },
+                           onComplete: { _ in })
+        let first = session.dataTask(with: URL(string: "https://test.example.com/first")!)
+        let second = session.dataTask(with: URL(string: "https://test.example.com/second")!)
+        let firstEvent = Data(event("first", state: "completed").utf8)
+        let midpoint = firstEvent.count / 2
+        service.urlSession(session, dataTask: first, didReceive: firstEvent.prefix(midpoint))
+        service.urlSession(session, dataTask: second, didReceive: Data(event("second", state: "completed").utf8))
+        service.urlSession(session, dataTask: first, didReceive: firstEvent.dropFirst(midpoint))
+        XCTAssertEqual(messages, ["second", "first"])
+    }
+
+    func test_streamChat_nativeFramingSupportsCarriageReturnLineEndings() {
+        let first = event("first", state: "in-progress").replacingOccurrences(of: "\n", with: "\r")
+        let second = event("second", state: "completed").replacingOccurrences(of: "\n", with: "\r\n")
+        let secondData = Data(second.utf8)
+        let carriageReturn = secondData.firstIndex(of: UInt8(ascii: "\r"))!
+        FragmentedSSEURLProtocol.fragments = [
+            Data(first.utf8), secondData.prefix(carriageReturn + 1), secondData.dropFirst(carriageReturn + 1)
+        ]
+        let completed = expectation(description: "carriage-return streams completed")
+        var messages: [String] = []
+        let service = makeService()
+        service.streamChat("q", token: nil, onChunk: { messages.append($0.response?.message ?? "") },
+                           onComplete: { error in
+            XCTAssertNil(error)
+            completed.fulfill()
+        })
+        wait(for: [completed], timeout: 3)
+        XCTAssertEqual(messages, ["first", "second"])
+    }
+
+    /// Like the dev SDK and Android, a line larger than 8 MiB is processed in full, not dropped.
+    func test_streamChat_reassemblesLargeLinesWithoutSizeLimit() {
+        let large = String(repeating: "x", count: 9 * 1024 * 1024)
+        let first = Data(event(large, state: "in-progress").utf8)
+        let last = Data(event("done", state: "completed").dropLast(2).utf8)
+        FragmentedSSEURLProtocol.fragments = [first.prefix(64), first.dropFirst(64), last.prefix(10), last.dropFirst(10)]
+        let completed = expectation(description: "large-line stream completed")
+        completed.assertForOverFulfill = true
+        var messages: [String] = []
+        let service = makeService()
+        service.streamChat("q", token: nil, onChunk: { messages.append($0.response?.message ?? "") },
+                           onComplete: { error in
+            XCTAssertNil(error)
+            completed.fulfill()
+        })
+        wait(for: [completed], timeout: 10)
+        XCTAssertEqual(messages, [large, "done"])
+    }
+
+    func test_streamChat_preservesExactNumbersAndRejectsInexactNativeElements() {
+        let body = #"""
+        data: {"handle":[{"payload":[{"state":"completed","response":{"message":"done","multimodalElements":{"elements":[
+        {"type":"test.sse","value":1.23456789012345678901234567890123456789},
+        {"type":"test.sse","value":1.0000000000000000000000000000000000000001,"entity_info":{"productName":"Fallback"}},
+        {"type":"test.sse","value":42}]}}}]}]}
+
+
+        """#
+        let data = Data((body.components(separatedBy: .newlines).joined() + "\n\n").utf8)
+        FragmentedSSEURLProtocol.fragments = [data.prefix(150), data.dropFirst(150)]
+        let completed = expectation(description: "source-aware native response completed")
+        var elements: [MultimodalElement] = []
+        let service = makeService()
+        service.streamChat("q", token: nil, onChunk: {
+            elements = $0.response?.multimodalElements?.elements ?? []
+        }, onComplete: { error in
+            XCTAssertNil(error)
+            completed.fulfill()
+        })
+        wait(for: [completed], timeout: 3)
+        XCTAssertEqual(elements.count, 3)
+        guard elements.count == 3 else { return }
+        XCTAssertEqual(elements[0].rawElement["value"] as? NSDecimalNumber,
+                       NSDecimalNumber(string: "1.23456789012345678901234567890123456789"))
+        XCTAssertFalse(elements[1].hasCompleteRawElement)
+        XCTAssertEqual(elements[1].entityInfo?.productName, "Fallback")
+        XCTAssertEqual(elements[2].rawElement["value"] as? Int, 42)
+    }
+
+    private func makeService(protocolClass: AnyClass = FragmentedSSEURLProtocol.self) -> ConciergeChatService {
+        let model = ConciergeConfiguration(consentCollectValue: "y",
+                                           datastream: "ds-123",
+                                           ecid: "ecid-123",
+                                           server: "test.example.com",
+                                           surfaces: ["web://test.adobe.com/surface"])
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [protocolClass]
+        return ConciergeChatService(configuration: model, urlSessionConfiguration: sessionConfig)
+    }
+
+    private func event(_ message: String, state: String) -> String {
+        "data: {\"handle\":[{\"payload\":[{\"conversationId\":\"c1\",\"state\":\"\(state)\",\"response\":{\"message\":\"\(message)\"}}]}]}\n\n"
+    }
+
+    /// A large event (ex: a native card payload) split mid-line and mid-character must still decode.
+    func test_streamChat_reassemblesEventsSplitAcrossReads() {
+        let body = Data((event("Card title with ü", state: "in-progress")
+                         + event("done", state: "completed")).utf8)
+        let umlaut = body.firstIndex(of: 0xC3)! // first byte of the two-byte "ü"
+        let cuts = [10, umlaut + 1, body.count / 2 + 3]
+        var fragments: [Data] = []
+        var start = 0
+        for cut in cuts + [body.count] {
+            fragments.append(body.subdata(in: start..<cut))
+            start = cut
+        }
+        FragmentedSSEURLProtocol.fragments = fragments
+
+        var messages: [String] = []
+        let completed = expectation(description: "stream completed")
+        let service = makeService()
+        service.streamChat("view-menu", token: nil, onChunk: { payload in
+            messages.append(payload.response?.message ?? "")
+        }, onComplete: { error in
+            XCTAssertNil(error)
+            completed.fulfill()
+        })
+        wait(for: [completed], timeout: 3)
+
+        XCTAssertEqual(messages, ["Card title with ü", "done"])
+    }
+
+    /// A final event the server closes without a trailing newline is still delivered.
+    func test_streamChat_deliversUnterminatedFinalEvent() {
+        var body = event("last", state: "completed")
+        body.removeLast(2)
+        FragmentedSSEURLProtocol.fragments = [Data(body.utf8)]
+
+        var messages: [String] = []
+        let completed = expectation(description: "stream completed")
+        makeService().streamChat("q", token: nil, onChunk: { payload in
+            messages.append(payload.response?.message ?? "")
+        }, onComplete: { _ in completed.fulfill() })
+        wait(for: [completed], timeout: 3)
+
+        XCTAssertEqual(messages, ["last"])
     }
 }

@@ -47,6 +47,8 @@ private struct DynamicCodingKey: CodingKey {
 /// - `components.feedback` -> feedback notes field visibility overrides
 /// - `theme` -> colors, layout, typography, components (CSS variables mapped to semantic groups)
 public struct ConciergeTheme: Codable {
+    /// Unrecognized CSS variables for app-owned native renderers; never applied to SDK components.
+    public var customVariables: [String: String] = [:]
     public var metadata: ConciergeThemeMetadata
     public var behavior: ConciergeBehaviorConfig
     public var disclaimer: ConciergeDisclaimer
@@ -117,6 +119,7 @@ public struct ConciergeTheme: Codable {
     }
 
     enum CodingKeys: String, CodingKey {
+        case customVariables
         case metadata
         case behavior
         case disclaimer
@@ -150,6 +153,28 @@ public struct ConciergeTheme: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        var retainedVariables: [String: String] = [:]
+        if container.contains(.customVariables), try !container.decodeNil(forKey: .customVariables) {
+            do {
+                let variables = try container.nestedContainer(keyedBy: DynamicCodingKey.self, forKey: .customVariables)
+                var hasInvalidValue = false
+                for key in variables.allKeys.sorted(by: { $0.stringValue < $1.stringValue }) {
+                    do {
+                        let value = try variables.decode(String.self, forKey: key)
+                        CSSKeyMapper.retainCustomVariable(cssKey: key.stringValue, cssValue: value,
+                                                          variables: &retainedVariables)
+                    } catch is DecodingError {
+                        hasInvalidValue = true
+                    }
+                }
+                if hasInvalidValue {
+                    Log.warning(label: ConciergeConstants.LOG_TAG, "Ignoring non-string custom theme variable values.")
+                }
+            } catch is DecodingError {
+                Log.warning(label: ConciergeConstants.LOG_TAG, "Ignoring malformed custom theme variables.")
+            }
+        }
+        customVariables = retainedVariables
 
         // Decode top-level groups
         metadata = try container.decodeIfPresent(ConciergeThemeMetadata.self, forKey: .metadata) ?? ConciergeThemeMetadata()
@@ -195,6 +220,10 @@ public struct ConciergeTheme: Codable {
                 for cssKey in themeContainer.allKeys {
                     if let cssValue = try? themeContainer.decode(String.self, forKey: cssKey) {
                         CSSKeyMapper.apply(cssKey: cssKey.stringValue, cssValue: cssValue, to: &self)
+                    } else if let integerValue = try? themeContainer.decode(Int64.self, forKey: cssKey) {
+                        CSSKeyMapper.applyNumericValue(cssKey: cssKey.stringValue, cssValue: String(integerValue), to: &self)
+                    } else if let numericValue = try? themeContainer.decode(Double.self, forKey: cssKey) {
+                        CSSKeyMapper.applyNumericValue(cssKey: cssKey.stringValue, cssValue: String(numericValue), to: &self)
                     }
                 }
             }
@@ -213,6 +242,9 @@ public struct ConciergeTheme: Codable {
         try container.encode(arrays, forKey: .arrays)
         try container.encode(theme, forKey: .theme)
         try container.encodeIfPresent(decodedComponents, forKey: .components)
+        if !customVariables.isEmpty {
+            try container.encode(customVariables, forKey: .customVariables)
+        }
     }
 }
 
