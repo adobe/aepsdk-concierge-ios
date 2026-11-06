@@ -615,6 +615,10 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 |--------------|----------------|------|---------|-------------|
 | `--font-family` | `typography.fontFamily` | `String` | `""` (system font) | Font family name |
 | `--line-height-body` | `typography.lineHeight` | `CGFloat` | `1.0` | Line height multiplier |
+| `--message-font-size` | `typography.fontSize` | `CGFloat` | `16` | Message body text size (px) |
+| `--message-font-weight` | `typography.fontWeight` | `CodableFontWeight` | `regular` | Message body text weight (`100`–`900`, `normal`, `bold`) |
+| `--message-concierge-link-font-weight` | `typography.linkFontWeight` | `CodableFontWeight?` | `nil` (inherits body weight) | Inline hyperlink text weight in concierge messages |
+| `--message-concierge-link-underline` | `typography.linkUnderline` | `Bool` | `true` | Whether inline hyperlinks are underlined (WCAG 1.4.1) |
 
 ### Colors - Primary
 
@@ -1316,6 +1320,10 @@ This section documents which properties are fully implemented, partially impleme
 |--------------|--------|-------|
 | `--font-family` | ✅ | Used in ChatView, ComposerEditingView |
 | `--line-height-body` | ✅ | Used in ChatMessageView for basic message bubble line spacing |
+| `--message-font-size` | ✅ | Message body text size in BasicMessageView |
+| `--message-font-weight` | ✅ | Message body text weight in BasicMessageView |
+| `--message-concierge-link-font-weight` | ✅ | Inline link weight in MarkdownBlockView.styleLinkText |
+| `--message-concierge-link-underline` | ✅ | Inline link underline in MarkdownText |
 
 ### Theme Tokens - Colors
 

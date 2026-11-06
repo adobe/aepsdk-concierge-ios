@@ -29,6 +29,10 @@ public enum CSSKeyMapper {
         // Typography
         "font-family": { cssValue, theme in theme.typography.fontFamily = CSSValueConverter.parseFontFamily(cssValue) },
         "line-height-body": { cssValue, theme in theme.typography.lineHeight = CSSValueConverter.parseLineHeight(cssValue) },
+        "message-font-size": { cssValue, theme in theme.typography.fontSize = CSSValueConverter.parsePxValue(cssValue) ?? 16 },
+        "message-font-weight": { cssValue, theme in theme.typography.fontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "message-concierge-link-font-weight": { cssValue, theme in theme.typography.linkFontWeight = CSSValueConverter.parseFontWeight(cssValue) },
+        "message-concierge-link-underline": { cssValue, theme in theme.typography.linkUnderline = CSSValueConverter.parseBool(cssValue) ?? true },
 
         // Colors - Primary
         "color-primary": { cssValue, theme in theme.colors.primary.primary = CSSValueConverter.parseColor(cssValue) },

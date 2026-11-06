@@ -43,11 +43,12 @@ struct BasicMessageView: View {
 
     private var resolvedAgentFont: UIFont {
         let fontSize = theme.typography.fontSize
+        let weight = theme.typography.fontWeight.toUIFontWeight()
         if theme.typography.fontFamily.isEmpty {
-            return UIFont.systemFont(ofSize: fontSize)
+            return UIFont.systemFont(ofSize: fontSize, weight: weight)
         }
         return UIFont(name: theme.typography.fontFamily, size: fontSize)
-            ?? UIFont.systemFont(ofSize: fontSize)
+            ?? UIFont.systemFont(ofSize: fontSize, weight: weight)
     }
 
     private var resolvedMessageMaxWidth: CGFloat? {
@@ -209,6 +210,8 @@ struct BasicMessageView: View {
                 // `--message-concierge-link-color`, themeable independently of `--color-primary`.
                 // The icon can still diverge when `citations.linkIconStyle.color` overrides it.
                 linkColor: UIColor(theme.colors.message.conciergeLink.color),
+                linkFontWeight: theme.typography.linkFontWeight,
+                linkUnderline: theme.typography.linkUnderline,
                 baseFont: resolvedAgentFont,
                 citationMarkers: markers,
                 citationStyle: .init(

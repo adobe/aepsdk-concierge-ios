@@ -373,6 +373,10 @@ public struct ConciergeTypography: Codable {
     public var fontSize: CGFloat
     public var lineHeight: CGFloat
     public var fontWeight: CodableFontWeight
+    /// Font weight applied to inline hyperlinks in message text. When nil, links inherit `fontWeight`.
+    public var linkFontWeight: CodableFontWeight?
+    /// Whether inline hyperlinks in message text are underlined. Defaults to `true` (WCAG 1.4.1).
+    public var linkUnderline: Bool
 
     public init(
         fontFamily: String = "",
@@ -380,11 +384,15 @@ public struct ConciergeTypography: Codable {
         // Interpreted as a multiplier (ex: 1.25 means 125% line height).
         // Default is 1.0 to match typical system typography unless a theme explicitly overrides it.
         lineHeight: CGFloat = 1.0,
-        fontWeight: CodableFontWeight = .regular
+        fontWeight: CodableFontWeight = .regular,
+        linkFontWeight: CodableFontWeight? = nil,
+        linkUnderline: Bool = true
     ) {
         self.fontFamily = fontFamily
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.fontWeight = fontWeight
+        self.linkFontWeight = linkFontWeight
+        self.linkUnderline = linkUnderline
     }
 }
