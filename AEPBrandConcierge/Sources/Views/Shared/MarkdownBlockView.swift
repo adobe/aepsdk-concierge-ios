@@ -21,8 +21,12 @@ struct MarkdownBlockView: View {
     let markdown: String
     var textColor: UIColor
     /// Foreground color applied to inline hyperlink text. Defaults to the system link color.
-    /// (Underlining is applied separately by `MarkdownText`, always-on.)
+    /// (Underlining is applied separately by `MarkdownText`, controlled by `linkUnderline`.)
     var linkColor: UIColor = .link
+    /// Font weight applied to inline hyperlink text. When nil, links inherit the body font weight.
+    var linkFontWeight: CodableFontWeight? = nil
+    /// Whether inline links are underlined. Defaults to `true` (WCAG 1.4.1).
+    var linkUnderline: Bool = true
     var baseFont: UIFont = .preferredFont(forTextStyle: .body)
     var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
@@ -55,13 +59,15 @@ struct MarkdownBlockView: View {
                 case .text(let ns):
                     MarkdownText(
                         attributed: ns,
-                        onOpenLink: onOpenLink
+                        onOpenLink: onOpenLink,
+                        linkUnderline: linkUnderline
                     )
                         .fixedSize(horizontal: false, vertical: true)
                 case .code(let ns):
                     MarkdownText(
                         attributed: ns,
-                        onOpenLink: onOpenLink
+                        onOpenLink: onOpenLink,
+                        linkUnderline: linkUnderline
                     )
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(10)
@@ -73,13 +79,15 @@ struct MarkdownBlockView: View {
                 case .blockQuote(let paras):
                     QuoteBlockView(
                         blocks: paras,
-                        onOpenLink: onOpenLink
+                        onOpenLink: onOpenLink,
+                        linkUnderline: linkUnderline
                     )
                 case .list(let type, let items):
                     ListBlockView(
                         type: type,
                         items: items,
-                        onOpenLink: onOpenLink
+                        onOpenLink: onOpenLink,
+                        linkUnderline: linkUnderline
                     )
                 }
             }
@@ -113,7 +121,7 @@ struct MarkdownBlockView: View {
                     iconResolver: resolver
                 )
             }
-            return .text(Self.styleLinkText(replaced, color: linkColor))
+            return .text(Self.styleLinkText(replaced, color: linkColor, fontWeight: linkFontWeight))
         case .code(let ns):
             let replaced = CitationAttachmentBuilder.replaceTokens(
                 in: ns,
@@ -132,16 +140,21 @@ struct MarkdownBlockView: View {
         }
     }
 
-    /// Applies `color` to inline hyperlink text runs. The base foreground set by the renderer
-    /// covers link ranges too, so this overrides it to the theme link color. Underlining is applied
-    /// separately by `MarkdownText`. Inserted link icons carry no `.link` attribute, so they keep
-    /// their own tint.
-    private static func styleLinkText(_ attributed: NSAttributedString, color: UIColor) -> NSAttributedString {
+    /// Applies `color` (and optionally `fontWeight`) to inline hyperlink text runs. The base
+    /// foreground set by the renderer covers link ranges too, so this overrides it to the theme
+    /// link color. Underlining is applied separately by `MarkdownText`. Inserted link icons carry
+    /// no `.link` attribute, so they keep their own tint.
+    private static func styleLinkText(_ attributed: NSAttributedString, color: UIColor, fontWeight: CodableFontWeight?) -> NSAttributedString {
         guard attributed.length > 0 else { return attributed }
         let mutable = NSMutableAttributedString(attributedString: attributed)
         mutable.enumerateAttribute(.link, in: NSRange(location: 0, length: mutable.length)) { value, range, _ in
             guard value != nil else { return }
             mutable.addAttribute(.foregroundColor, value: color, range: range)
+            if let fontWeight,
+               let font = mutable.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont {
+                let weighted = UIFont.systemFont(ofSize: font.pointSize, weight: fontWeight.toUIFontWeight())
+                mutable.addAttribute(.font, value: weighted, range: range)
+            }
         }
         return mutable
     }
@@ -151,6 +164,7 @@ struct MarkdownBlockView: View {
 private struct QuoteBlockView: View {
     let blocks: [MarkdownRenderer.MarkdownBlock]
     let onOpenLink: ((URL) -> Void)?
+    var linkUnderline: Bool = true
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -160,13 +174,15 @@ private struct QuoteBlockView: View {
                     case .text(let ns):
                         MarkdownText(
                             attributed: ns,
-                            onOpenLink: onOpenLink
+                            onOpenLink: onOpenLink,
+                            linkUnderline: linkUnderline
                         )
                             .fixedSize(horizontal: false, vertical: true)
                     case .code(let ns):
                         MarkdownText(
                             attributed: ns,
-                            onOpenLink: onOpenLink
+                            onOpenLink: onOpenLink,
+                            linkUnderline: linkUnderline
                         )
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(10)
@@ -178,13 +194,15 @@ private struct QuoteBlockView: View {
                     case .blockQuote(let nested):
                         QuoteBlockView(
                             blocks: nested,
-                            onOpenLink: onOpenLink
+                            onOpenLink: onOpenLink,
+                            linkUnderline: linkUnderline
                         )
                     case .list(let t, let children):
                         ListBlockView(
                             type: t,
                             items: children,
-                            onOpenLink: onOpenLink
+                            onOpenLink: onOpenLink,
+                            linkUnderline: linkUnderline
                         )
                     }
                 }
@@ -207,6 +225,7 @@ private struct ListBlockView: View {
     let type: MarkdownRenderer.ListType
     let items: [[MarkdownRenderer.MarkdownBlock]]
     let onOpenLink: ((URL) -> Void)?
+    var linkUnderline: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -226,13 +245,15 @@ private struct ListBlockView: View {
                                     case .text(let ns):
                                         MarkdownText(
                                             attributed: ns,
-                                            onOpenLink: onOpenLink
+                                            onOpenLink: onOpenLink,
+                                            linkUnderline: linkUnderline
                                         )
                                             .fixedSize(horizontal: false, vertical: true)
                                     case .code(let ns):
                                         MarkdownText(
                                             attributed: ns,
-                                            onOpenLink: onOpenLink
+                                            onOpenLink: onOpenLink,
+                                            linkUnderline: linkUnderline
                                         )
                                             .fixedSize(horizontal: false, vertical: true)
                                             .padding(10)
@@ -244,13 +265,15 @@ private struct ListBlockView: View {
                                     case .blockQuote(let nested):
                                         QuoteBlockView(
                                             blocks: nested,
-                                            onOpenLink: onOpenLink
+                                            onOpenLink: onOpenLink,
+                                            linkUnderline: linkUnderline
                                         )
                                     case .list(let t, let inner):
                                         ListBlockView(
                                             type: t,
                                             items: inner,
-                                            onOpenLink: onOpenLink
+                                            onOpenLink: onOpenLink,
+                                            linkUnderline: linkUnderline
                                         )
                                     }
                                 }
@@ -290,13 +313,15 @@ private struct ListBlockView: View {
                                         case .text(let ns):
                                             MarkdownText(
                                                 attributed: ns,
-                                                onOpenLink: onOpenLink
+                                                onOpenLink: onOpenLink,
+                                                linkUnderline: linkUnderline
                                             )
                                                 .fixedSize(horizontal: false, vertical: true)
                                         case .code(let ns):
                                             MarkdownText(
                                                 attributed: ns,
-                                                onOpenLink: onOpenLink
+                                                onOpenLink: onOpenLink,
+                                                linkUnderline: linkUnderline
                                             )
                                                 .fixedSize(horizontal: false, vertical: true)
                                                 .padding(10)
@@ -308,13 +333,15 @@ private struct ListBlockView: View {
                                         case .blockQuote(let nested):
                                             QuoteBlockView(
                                                 blocks: nested,
-                                                onOpenLink: onOpenLink
+                                                onOpenLink: onOpenLink,
+                                                linkUnderline: linkUnderline
                                             )
                                         case .list(let t, let inner):
                                             ListBlockView(
                                                 type: t,
                                                 items: inner,
-                                                onOpenLink: onOpenLink
+                                                onOpenLink: onOpenLink,
+                                                linkUnderline: linkUnderline
                                             )
                                         }
                                     }
@@ -328,7 +355,8 @@ private struct ListBlockView: View {
                                         ListBlockView(
                                             type: t,
                                             items: inner,
-                                            onOpenLink: onOpenLink
+                                            onOpenLink: onOpenLink,
+                                            linkUnderline: linkUnderline
                                         )
                                     } else if case .divider = child {
                                         Divider()

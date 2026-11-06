@@ -125,6 +125,10 @@ private extension ThemeKeyCoverageTests {
         // Typography
         "font-family": "typography.fontFamily",
         "line-height-body": "typography.lineHeight",
+        "message-font-size": "typography.fontSize",
+        "message-font-weight": "typography.fontWeight",
+        "message-concierge-link-font-weight": "typography.linkFontWeight",
+        "message-concierge-link-underline": "typography.linkUnderline",
 
         // Colors - Primary
         "color-primary": "colors.primary.primary",
