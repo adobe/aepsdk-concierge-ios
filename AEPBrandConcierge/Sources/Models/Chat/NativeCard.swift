@@ -33,10 +33,6 @@ enum NativeCardRegistry {
         lock.unlock()
     }
 
-    static func renderer(for type: String?) -> ConciergeCardRenderer? {
-        registration(for: type)?.renderer
-    }
-
     static func registration(for type: String?) -> Registration? {
         guard let type else { return nil }
         lock.lock()
@@ -50,6 +46,13 @@ enum NativeCardRegistry {
         return !registrations.isEmpty
     }
 
+    /// The registered element types, read together so a decode can use one consistent set.
+    static var registeredTypes: Set<String> {
+        lock.lock()
+        defer { lock.unlock() }
+        return Set(registrations.keys)
+    }
+
     #if DEBUG
     static func resetForTesting() {
         lock.lock()
@@ -61,9 +64,9 @@ enum NativeCardRegistry {
 
 /// A transcript occurrence owns its renderer and state even while its SwiftUI row is off screen.
 @MainActor
-public final class NativeCard: ObservableObject {
+final class NativeCard: ObservableObject {
+    private let LOG_TAG = "NativeCard"
     let cardId = UUID().uuidString
-    let occurrenceId: String
     /// Activation order within this chat: strictly increasing in transcript order and never reused.
     let sequence: Int
     let element: [String: Any]
@@ -78,10 +81,8 @@ public final class NativeCard: ObservableObject {
     @Published private(set) var isLatest = false
     private(set) var disposed = false
 
-    init(element: [String: Any], renderer: @escaping ConciergeCardRenderer,
-         occurrenceId: String = UUID().uuidString, sequence: Int = 0,
+    init(element: [String: Any], renderer: @escaping ConciergeCardRenderer, sequence: Int = 0,
          sessionId: String?, conversationId: String?, interactionId: String?) {
-        self.occurrenceId = occurrenceId
         self.sequence = sequence
         self.element = element
         self.renderer = renderer
@@ -102,13 +103,17 @@ public final class NativeCard: ObservableObject {
 
     nonisolated func saveState(_ value: [String: Any]) {
         guard let copy = NativeCard.copyJSON(value) else {
-            Log.warning(label: "NativeCard", "Rejected invalid or over-budget saved state.")
+            Log.warning(label: LOG_TAG, "Rejected invalid or over-budget saved state.")
             return
         }
-        Task { @MainActor [weak self] in
-            guard let self, !self.disposed else { return }
-            self.state = copy
-        }
+        Task { @MainActor [weak self] in self?.applySavedState(copy) }
+    }
+
+    /// Applies a validated copy from `saveState` on the main actor. A card disposed before the copy
+    /// arrives ignores it, so late saves never revive a cleared chat.
+    func applySavedState(_ copy: [String: Any]) {
+        guard !disposed else { return }
+        state = copy
     }
 
     func dispose() {
@@ -128,13 +133,14 @@ public final class NativeCard: ObservableObject {
         isBusy = busy
     }
 
-    /// Copy containers without a serialization round trip that could round decimal numbers.
+    /// Copy containers without a serialization round trip that could round decimal numbers. Saved state
+    /// uses the same structural budget as raw native elements.
     nonisolated static func copyJSON(_ value: [String: Any]) -> [String: Any]? {
         var count = 0
         var ancestors = Set<ObjectIdentifier>()
         func copy(_ item: Any, depth: Int) -> Any? {
             count += 1
-            guard depth <= 64, count <= 100_000 else { return nil }
+            guard depth <= CardJSONValue.maximumDepth, count <= CardJSONValue.maximumNodes else { return nil }
             if let dictionary = item as? NSDictionary {
                 let identity = ObjectIdentifier(dictionary)
                 guard ancestors.insert(identity).inserted else { return nil }

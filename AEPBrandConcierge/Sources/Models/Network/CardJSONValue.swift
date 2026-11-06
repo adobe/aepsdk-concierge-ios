@@ -38,15 +38,30 @@ enum CardJSONValue: Codable {
         }
     }
 
-    private static let maximumDepth = 64
-    private static let maximumNodes = 100_000
+    /// The structural budget for native card JSON, shared by raw elements and saved state. The root is
+    /// at depth zero, and every value and container counts as one node.
+    static let maximumDepth = 64
+    static let maximumNodes = 100_000
 
     private static let sourceNumbersKey = CodingUserInfoKey(rawValue: "concierge.cardJSON.sourceNumbers")!
+    private static let nativeCardTypesKey = CodingUserInfoKey(rawValue: "concierge.cardJSON.nativeCardTypes")!
 
-    static func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+    /// Decodes with exact source numbers, capturing raw JSON only for elements of `nativeCardTypes`.
+    static func decode<T: Decodable>(_ type: T.Type, from data: Data,
+                                     nativeCardTypes: Set<String> = NativeCardRegistry.registeredTypes) throws -> T {
         let decoder = JSONDecoder()
         decoder.userInfo[sourceNumbersKey] = SourceNumbers(data: data)
+        decoder.userInfo[nativeCardTypesKey] = nativeCardTypes
         return try decoder.decode(type, from: data)
+    }
+
+    /// Whether `decoder` captures elements of `elementType` as native card JSON. Decoders not created
+    /// by `decode(_:from:nativeCardTypes:)` never do.
+    static func capturesNativeCard(ofType elementType: String?, in decoder: Decoder) -> Bool {
+        guard let elementType, let nativeCardTypes = decoder.userInfo[nativeCardTypesKey] as? Set<String> else {
+            return false
+        }
+        return nativeCardTypes.contains(elementType)
     }
 
     static func decodeObject(from decoder: Decoder) throws -> [String: CardJSONValue] {

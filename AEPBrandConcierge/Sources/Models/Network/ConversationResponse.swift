@@ -123,9 +123,13 @@ public struct MultimodalElement: Codable {
     public let thumbnailHeight: Int?
     public let entityInfo: EntityInfo?
     /// The complete original JSON object, captured only for types with a registered native card renderer.
-    let rawElement: [String: Any]
-    let hasCompleteRawElement: Bool
     private let rawJSON: [String: CardJSONValue]?
+
+    var hasCompleteRawElement: Bool { rawJSON != nil }
+
+    /// A new Foundation copy of the captured JSON object for a native card renderer, or empty when none
+    /// was captured. Builds the copy on each access.
+    var rawElement: [String: Any] { rawJSON?.mapValues(\.foundationValue) ?? [:] }
 
     /// Native occurrence identity follows Android's nonempty scalar ID, otherwise array position.
     var nativeElementId: String? {
@@ -159,27 +163,17 @@ public struct MultimodalElement: Codable {
         self.thumbnailWidth = thumbnailWidth
         self.thumbnailHeight = thumbnailHeight
         self.entityInfo = entityInfo
-        self.rawElement = [:]
-        self.hasCompleteRawElement = false
         self.rawJSON = nil
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Elements for a registered native renderer carry app-defined fields (for example a numeric
-        // `id`), so they are decoded leniently and kept whole. All other elements decode as before.
+        // Native card elements carry app-defined fields (for example a numeric `id`), so they are decoded
+        // leniently and kept whole. All other elements decode as before.
         let rawType = try? container.decode(String.self, forKey: .type)
-        if NativeCardRegistry.registration(for: rawType) != nil {
-            if let raw = try? CardJSONValue.decodeObject(from: decoder) {
-                rawJSON = raw
-                rawElement = raw.mapValues(\.foundationValue)
-                hasCompleteRawElement = true
-            } else {
-                rawJSON = nil
-                rawElement = [:]
-                hasCompleteRawElement = false
-            }
+        if CardJSONValue.capturesNativeCard(ofType: rawType, in: decoder) {
+            rawJSON = try? CardJSONValue.decodeObject(from: decoder)
             id = try? container.decode(String.self, forKey: .id)
             type = rawType
             width = try? container.decode(Int.self, forKey: .width)
@@ -190,8 +184,6 @@ public struct MultimodalElement: Codable {
             return
         }
         rawJSON = nil
-        rawElement = [:]
-        hasCompleteRawElement = false
 
         id = try container.decodeIfPresent(String.self, forKey: .id)
         type = try container.decodeIfPresent(String.self, forKey: .type)

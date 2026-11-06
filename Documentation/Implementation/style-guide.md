@@ -90,6 +90,8 @@ The theme JSON file contains these top-level keys:
 
 Unknown `--`-prefixed variables in the theme object are retained in
 `ConciergeTheme.customVariables` for native app card renderers, not applied to SDK views.
+Each unknown key with a string or numeric value is logged at debug level, whether it's retained
+or ignored, so a misspelled SDK token is easy to spot.
 Keys and values are trimmed; blank values are ignored. Numeric JSON values of unknown keys become
 strings here: whole-number values such as `140` become `"140"` and fractional values
 such as `0.5` become `"0.5"`. Booleans are ignored. Known keys still require string

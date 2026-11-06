@@ -395,10 +395,12 @@ extension ConciergeChatService: URLSessionDataDelegate {
         guard line.hasPrefix(ConciergeConstants.SSE.DATA_PREFIX) else { return }
 
         let handleData = Data(line.dropFirst(ConciergeConstants.SSE.DATA_PREFIX.count).utf8)
+        // One snapshot per line, so registering a renderer mid-decode can't split how its elements decode.
+        let nativeCardTypes = NativeCardRegistry.registeredTypes
         do {
-            let handle = try NativeCardRegistry.hasAnyRenderer
-                ? CardJSONValue.decode(ConversationHandle.self, from: handleData)
-                : JSONDecoder().decode(ConversationHandle.self, from: handleData)
+            let handle = try nativeCardTypes.isEmpty
+                ? JSONDecoder().decode(ConversationHandle.self, from: handleData)
+                : CardJSONValue.decode(ConversationHandle.self, from: handleData, nativeCardTypes: nativeCardTypes)
             if let handler = self.onChunkHandler,
                let payload = handle.handle.first?.payload.first {
                 handler(payload)

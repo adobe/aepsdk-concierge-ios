@@ -221,12 +221,9 @@ public struct ConciergeTheme: Codable {
                     if let cssValue = try? themeContainer.decode(String.self, forKey: cssKey) {
                         CSSKeyMapper.apply(cssKey: cssKey.stringValue, cssValue: cssValue, to: &self)
                     } else if let integerValue = try? themeContainer.decode(Int64.self, forKey: cssKey) {
-                        CSSKeyMapper.retainCustomVariable(cssKey: cssKey.stringValue, cssValue: String(integerValue),
-                                                          variables: &customVariables)
+                        CSSKeyMapper.applyNumericValue(cssKey: cssKey.stringValue, cssValue: String(integerValue), to: &self)
                     } else if let numericValue = try? themeContainer.decode(Double.self, forKey: cssKey) {
-                        // Numbers are retained only as custom variables for app-owned native renderers.
-                        CSSKeyMapper.retainCustomVariable(cssKey: cssKey.stringValue, cssValue: String(numericValue),
-                                                          variables: &customVariables)
+                        CSSKeyMapper.applyNumericValue(cssKey: cssKey.stringValue, cssValue: String(numericValue), to: &self)
                     }
                 }
             }

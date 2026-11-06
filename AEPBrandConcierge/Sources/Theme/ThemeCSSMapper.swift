@@ -316,24 +316,49 @@ public enum CSSKeyMapper {
 
     /// Applies CSS value to ConciergeTheme using the mapped assignment function
     public static func apply(cssKey: String, cssValue: String, to theme: inout ConciergeTheme) {
-        // Remove -- prefix if present
-        let normalizedKey = cssKey.hasPrefix("--") ? String(cssKey.dropFirst(2)) : cssKey
+        let normalizedKey = normalized(cssKey)
 
         // Find and execute the assignment function
         if let assignment = cssToAssignmentMap[normalizedKey] {
             assignment(cssValue, &theme)
         } else {
-            retainCustomVariable(cssKey: cssKey, cssValue: cssValue, variables: &theme.customVariables)
+            retainUnknownKey(cssKey, normalizedKey: normalizedKey, cssValue: cssValue, in: &theme)
         }
     }
 
-    static func retainCustomVariable(cssKey: String, cssValue: String, variables: inout [String: String]) {
+    /// Keeps a numeric theme value as an app-owned custom variable. SDK tokens still require string
+    /// values, so a number for one is ignored.
+    static func applyNumericValue(cssKey: String, cssValue: String, to theme: inout ConciergeTheme) {
+        let normalizedKey = normalized(cssKey)
+        guard cssToAssignmentMap[normalizedKey] == nil else { return }
+        retainUnknownKey(cssKey, normalizedKey: normalizedKey, cssValue: cssValue, in: &theme)
+    }
+
+    /// Stores an app-owned CSS variable, returning `false` when it's invalid, an SDK token, or over the limits.
+    @discardableResult
+    static func retainCustomVariable(cssKey: String, cssValue: String, variables: inout [String: String]) -> Bool {
         let key = cssKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let value = cssValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard key.hasPrefix("--"), !value.isEmpty, key.count <= 512, value.count <= 512,
               cssToAssignmentMap[String(key.dropFirst(2))] == nil,
-              variables[key] != nil || variables.count < 256 else { return }
+              variables[key] != nil || variables.count < 256 else { return false }
         variables[key] = value
+        return true
+    }
+
+    /// Removes the `--` prefix, if present.
+    private static func normalized(_ cssKey: String) -> String {
+        cssKey.hasPrefix("--") ? String(cssKey.dropFirst(2)) : cssKey
+    }
+
+    /// Logs every unknown theme key, so a misspelled SDK token is visible whether it's kept or ignored.
+    private static func retainUnknownKey(_ cssKey: String, normalizedKey: String, cssValue: String,
+                                         in theme: inout ConciergeTheme) {
+        if retainCustomVariable(cssKey: cssKey, cssValue: cssValue, variables: &theme.customVariables) {
+            Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' kept as a custom variable for app renderers.")
+        } else {
+            Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")
+        }
     }
 
     /// Applies one field-mutation on top of whatever gradient (if any) prior CSS keys already built,

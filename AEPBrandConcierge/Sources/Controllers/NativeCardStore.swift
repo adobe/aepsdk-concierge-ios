@@ -27,13 +27,6 @@ final class NativeCardStore {
             self.turnId = turnId
             identity = element.nativeElementId.map(Identity.element) ?? .position(position)
         }
-
-        var id: String {
-            switch identity {
-            case .element(let id): return "\(turnId.uuidString):id:\(id)"
-            case .position(let position): return "\(turnId.uuidString):position:\(position)"
-            }
-        }
     }
 
     struct Activation {
@@ -68,10 +61,15 @@ final class NativeCardStore {
         return entries[cardId]?.position
     }
 
+    /// The live card behind a transcript row, or `nil` once it's been disposed.
+    func card(withId cardId: String) -> NativeCard? {
+        entries[cardId]?.card
+    }
+
     func activate(_ activation: Activation, payload: ConversationPayload, sessionId: String?) -> NativeCard? {
         guard cardIdsByOccurrence[activation.occurrence] == nil else { return nil }
         let card = NativeCard(element: activation.element, renderer: activation.registration.renderer,
-                              occurrenceId: activation.occurrence.id, sequence: nextSequence, sessionId: sessionId,
+                              sequence: nextSequence, sessionId: sessionId,
                               conversationId: payload.conversationId, interactionId: payload.interactionId)
         nextSequence += 1
         card.setBusy(isBusy)
@@ -96,7 +94,7 @@ final class NativeCardStore {
     func reconcile(with messages: [Message]) {
         guard !entries.isEmpty else { return }
         let visible = Set(messages.compactMap { message -> String? in
-            if case .nativeCard(let card) = message.template { return card.cardId }
+            if case .nativeCard(let cardId) = message.template { return cardId }
             return nil
         })
         let removed = entries.keys.filter { !visible.contains($0) }

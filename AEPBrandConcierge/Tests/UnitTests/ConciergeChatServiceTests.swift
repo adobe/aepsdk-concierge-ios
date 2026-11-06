@@ -1474,9 +1474,9 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
         "data: {\"handle\":[{\"payload\":[{\"conversationId\":\"c1\",\"state\":\"\(state)\",\"response\":{\"message\":\"\(message)\"}}]}]}\n\n"
     }
 
-    /// A large event (ex: a menu card) split mid-line and mid-character must still decode.
+    /// A large event (ex: a native card payload) split mid-line and mid-character must still decode.
     func test_streamChat_reassemblesEventsSplitAcrossReads() {
-        let body = Data((event("Menü for Market Cafe", state: "in-progress")
+        let body = Data((event("Card title with ü", state: "in-progress")
                          + event("done", state: "completed")).utf8)
         let umlaut = body.firstIndex(of: 0xC3)! // first byte of the two-byte "ü"
         let cuts = [10, umlaut + 1, body.count / 2 + 3]
@@ -1499,7 +1499,7 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
         })
         wait(for: [completed], timeout: 3)
 
-        XCTAssertEqual(messages, ["Menü for Market Cafe", "done"])
+        XCTAssertEqual(messages, ["Card title with ü", "done"])
     }
 
     /// A final event the server closes without a trailing newline is still delivered.

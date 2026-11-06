@@ -81,7 +81,7 @@ struct ResponseElementPlan {
             case .native(let activation):
                 guard let card = nativeCards.activate(activation, payload: payload, sessionId: sessionId) else { continue }
                 lastNativeIndex = messages.count
-                messages.append(Message(template: .nativeCard(card)))
+                messages.append(Message(template: .nativeCard(cardId: card.cardId)))
             case .product:
                 guard !productEmitted else { continue }
                 productEmitted = true
@@ -108,6 +108,8 @@ struct ResponseElementPlan {
 
 @MainActor
 enum ResponseElementResolver {
+    private static let LOG_TAG = "ResponseElementResolver"
+
     static func resolve(_ elements: [MultimodalElement], turnId: UUID, nativeCards: NativeCardStore,
                         allowsNativeCards: Bool = true) -> ResponseElementPlan {
         var targets: [ResponseElementPlan.Target] = []
@@ -122,26 +124,26 @@ enum ResponseElementResolver {
                 let existingPosition = nativeCards.position(for: occurrence)
                 if let originalPosition = occurrencePositions[occurrence] ?? existingPosition,
                    originalPosition != position {
-                    Log.warning(label: "ResponseElementResolver", "Rejected native card element at position \(position): duplicate element id.")
+                    Log.warning(label: LOG_TAG, "Rejected native card element at position \(position): duplicate element id.")
                 } else if !element.hasCompleteRawElement {
-                    Log.warning(label: "ResponseElementResolver", "Rejected native card element with invalid, over-budget, or inexact raw JSON.")
-                } else if let rawElement = NativeCard.copyJSON(element.rawElement) {
+                    Log.warning(label: LOG_TAG, "Rejected native card element with invalid, over-budget, or inexact raw JSON.")
+                } else {
                     occurrencePositions[occurrence] = position
+                    // Decoding already enforced the JSON budget; build the renderer's copy only for new cards.
                     if existingPosition == nil {
                         targets.append(.native(NativeCardStore.Activation(occurrence: occurrence, position: position,
                                                                          type: element.type ?? "",
-                                                                         element: rawElement, registration: registration)))
+                                                                         element: element.rawElement,
+                                                                         registration: registration)))
                     }
                     continue
-                } else {
-                    Log.warning(label: "ResponseElementResolver", "Rejected invalid or over-budget native card element.")
                 }
             }
             if element.elementType == .ctaButton {
                 if let action = element.entityInfo?.primary {
                     targets.append(.cta(action))
                 } else {
-                    Log.warning(label: "ResponseElementResolver", "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
+                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
                 }
             } else if element.entityInfo != nil || registration == nil {
                 targets.append(.product(element))

@@ -47,13 +47,13 @@ private struct RecoveryRequest {
 final class ChatController: ObservableObject {
     // MARK: - Published State
 
+    /// The transcript, and the single source of truth for native card lifetime. Any write that drops a
+    /// card's row - identity reset, rollback, or a direct edit - disposes that card here, so there is no
+    /// removal path that can leave a live card behind. Every write is checked, including streaming
+    /// updates; the check returns immediately while no native cards exist.
     @Published var messages: [Message] = [] {
-        didSet {
-            guard !isUpdatingPlaceholder else { return }
-            nativeCards.reconcile(with: messages)
-        }
+        didSet { nativeCards.reconcile(with: messages) }
     }
-    private var isUpdatingPlaceholder = false
 
     @Published private(set) var chatState: ChatState = .idle
     @Published var userScrollTick: Int = 0
@@ -109,7 +109,8 @@ final class ChatController: ObservableObject {
             nativeCards.setBusy(activeTurn != nil)
         }
     }
-    private let nativeCards = NativeCardStore()
+    /// The native cards behind this transcript's card rows. Views read it to resolve a row's card.
+    let nativeCards = NativeCardStore()
 
     /// Injectable so tests can exercise the caps without waiting out the production values.
     private let handoffFirstChunkTimeout: TimeInterval
@@ -1064,8 +1065,6 @@ final class ChatController: ObservableObject {
         guard let index = messages.firstIndex(where: { $0.id == turn.placeholderId }) else { return nil }
         var current = messages[index]
         edit(&current)
-        isUpdatingPlaceholder = true
-        defer { isUpdatingPlaceholder = false }
         messages[index] = current
         return current
     }
