@@ -27,6 +27,12 @@ import os
 final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     weak var delegate: VoiceTransportDelegate?
 
+    /// Keeps a conversation running while the screen is locked or the user is in another app. This
+    /// needs `audio` in the app's `UIBackgroundModes`; `connect(_:)` starts the microphone (with the
+    /// preconnect recording), so the conversation can also go to the background while connecting.
+    /// Return `false`, or the value of an in-app setting, to end conversations in the background.
+    var continuesInBackground: Bool { true }
+
     private static let logger = Logger(subsystem: "com.adobe.aep.ConciergeDemoApp", category: "LiveKitTransport")
 
     /// Moves on with every `connect(_:)` and `disconnect()`, so a room created for an
