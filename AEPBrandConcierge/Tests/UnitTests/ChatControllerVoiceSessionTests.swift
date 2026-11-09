@@ -547,7 +547,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     // MARK: - App background
 
-    func test_appBackground_endsTheVoiceSession() {
+    func test_appBackground_withoutTheTransportsOptIn_endsTheVoiceSession() {
         let controller = makeController()
         startListening(controller)
 
@@ -559,7 +559,62 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty, "going to the background is not an error")
     }
 
-    func test_appBackgroundDuringBootstrap_cancelsIt_andNeverConnects() {
+    func test_appBackground_withTheTransportsOptIn_keepsTheConversation_andItsTranscript() {
+        transport.continuesInBackground = true
+        let controller = makeController()
+        startListening(controller)
+
+        enterBackground()
+        settle()
+        userSays("still here", isFinal: true)
+
+        XCTAssertTrue(controller.isVoiceSessionActive)
+        XCTAssertEqual(transport.disconnectCount, 0)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["still here"])
+
+        transport.report(.disconnected)
+        XCTAssertFalse(controller.isVoiceSessionActive)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["still here"], "a transport end in the background is not an error")
+        XCTAssertTrue(events.isEmpty)
+    }
+
+    func test_appBackgroundWhileConnecting_withTheTransportsOptIn_keepsTheConversation() {
+        transport.continuesInBackground = true
+        transport.autoConnect = false
+        let controller = makeController()
+        startVoice(controller)
+        service.emitBootstrap()
+        spinUntil(!transport.connections.isEmpty)
+
+        enterBackground()
+        settle()
+        XCTAssertTrue(controller.isVoiceSessionActive)
+        XCTAssertEqual(transport.disconnectCount, 0)
+
+        transport.report(.connected)
+        XCTAssertTrue(controller.isVoiceSessionActive)
+        XCTAssertFalse(controller.isVoiceConnecting)
+    }
+
+    func test_appBackgroundWhilePermissionIsPending_endsTheConversation_evenWithTheTransportsOptIn() {
+        transport.continuesInBackground = true
+        let controller = makeController(requestPermission: {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            return true
+        })
+        controller.startVoiceSession()
+
+        enterBackground()
+        spinUntil(!controller.isVoiceSessionActive)
+        spinUntil(timeout: 0.5, false)
+
+        XCTAssertFalse(controller.isVoiceSessionActive)
+        XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 0, "a granted permission after the end requests nothing")
+        XCTAssertTrue(transport.connections.isEmpty)
+    }
+
+    func test_appBackgroundDuringBootstrap_cancelsIt_andNeverConnects_evenWithTheTransportsOptIn() {
+        transport.continuesInBackground = true
         let controller = makeController()
         startVoice(controller)
 
@@ -615,6 +670,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
     private func makeController(withVoice: Bool = true,
                                 capturer: SpeechCapturing? = nil,
                                 permission: Bool = true,
+                                requestPermission: (() async -> Bool)? = nil,
                                 appState: ConciergeAppState = ConciergeAppState(),
                                 voiceOwnership: VoiceSessionOwnership = VoiceSessionOwnership()) -> ChatController {
         ChatController(configuration: configuration,
@@ -622,7 +678,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
                        speechCapturer: capturer,
                        speaker: SilentSpeaker(),
                        voiceTransport: withVoice ? transport : nil,
-                       requestMicrophonePermission: { permission },
+                       requestMicrophonePermission: requestPermission ?? { permission },
                        dispatch: { [weak self] in self?.events.append($0) },
                        appState: appState,
                        voiceOwnership: voiceOwnership)

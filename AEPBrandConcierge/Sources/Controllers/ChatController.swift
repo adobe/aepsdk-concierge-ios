@@ -248,8 +248,12 @@ final class ChatController: ObservableObject {
             .sink { [weak self] state in
                 guard let self = self, state == .background else { return }
                 self.activeTurn?.noteAppBackgrounded()
-                // Voice doesn't continue in the background; this also keeps a still-pending bootstrap
-                // from opening the microphone there.
+                // A conversation continues in the background only when the transport opted in and
+                // has been asked to connect, which starts the microphone. iOS doesn't let an app
+                // start the microphone from the background, so one still asking for permission or
+                // fetching credentials ends here, which also keeps a pending bootstrap from opening
+                // the microphone there.
+                guard self.activeVoice?.session?.continuesInBackground != true else { return }
                 self.stopVoiceSession()
             }
             .store(in: &cancellables)

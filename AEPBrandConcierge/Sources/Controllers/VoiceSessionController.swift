@@ -38,6 +38,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     static let defaultConnectTimeout: TimeInterval = 20
     /// How long a lost connection may take to come back before the session fails.
     static let defaultReconnectTimeout: TimeInterval = 30
+    /// How long a conversation may last from its first `.connected` before it ends normally, so a
+    /// forgotten conversation, in the background for example, can't hold a room indefinitely.
+    static let defaultMaxConversationLength: TimeInterval = 60 * 60
 
     private let LOG_TAG = "VoiceSessionController"
     private let transport: VoiceTransport
@@ -45,14 +48,19 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private let requestMicrophonePermission: () async -> Bool
     private let connectTimeout: TimeInterval
     private let reconnectTimeout: TimeInterval
+    private let maxConversationLength: TimeInterval
     private var startTask: Task<Void, Never>?
     /// Runs while waiting for `.connected`, first after `connect` and again while reconnecting.
     private var connectionTimer: DispatchWorkItem?
+    /// Runs from the first `.connected` until the session ends; reconnects don't restart it.
+    private var conversationLengthTimer: DispatchWorkItem?
     private let stateLock = NSLock()
     private var currentState: VoiceSessionState = .connecting
     private var pendingAssistantText = ""
     /// True from `connect` until this session disconnects the transport.
     private var holdsTransport = false
+    /// The transport's `continuesInBackground`, read once at `connect`.
+    private var transportContinuesInBackground = false
     /// True from an audio interruption (a phone call, Siri) until it ends, in any active state.
     /// Tracked apart from the session state, so a `.connected` that arrives during the interruption
     /// doesn't leave the microphone live. The transport has no microphone getter: the microphone is
@@ -70,16 +78,25 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         return currentState == .connecting || currentState == .listening || currentState == .reconnecting
     }
 
+    /// Whether the conversation may keep running while the app is in the background: the transport
+    /// opted in, and `connect` was called, which starts the microphone. False before `connect`
+    /// (permission or credentials still pending) and once the session ended. Read on main.
+    var continuesInBackground: Bool {
+        holdsTransport && transportContinuesInBackground && isActive
+    }
+
     init(transport: VoiceTransport,
          listener: VoiceSessionListener,
          requestMicrophonePermission: @escaping () async -> Bool = VoiceSessionController.requestMicrophonePermission,
          connectTimeout: TimeInterval = VoiceSessionController.defaultConnectTimeout,
-         reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) {
+         reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout,
+         maxConversationLength: TimeInterval = VoiceSessionController.defaultMaxConversationLength) {
         self.transport = transport
         self.listener = listener
         self.requestMicrophonePermission = requestMicrophonePermission
         self.connectTimeout = connectTimeout
         self.reconnectTimeout = reconnectTimeout
+        self.maxConversationLength = maxConversationLength
         super.init()
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleAudioSessionInterruption(_:)),
@@ -91,6 +108,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         NotificationCenter.default.removeObserver(self)
         startTask?.cancel()
         connectionTimer?.cancel()
+        conversationLengthTimer?.cancel()
         guard holdsTransport else { return }
         // The transport's delegate is weak and already nil here.
         let transport = transport
@@ -139,6 +157,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                     return
                 }
                 session.holdsTransport = true
+                session.transportContinuesInBackground = session.transport.continuesInBackground
                 session.transport.delegate = session
                 // The transport is app code; don't wait forever for it to report back.
                 let timeout = session.connectTimeout
@@ -213,6 +232,8 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         guard isActive else { return }
         startTask?.cancel()
         cancelConnectionTimer()
+        conversationLengthTimer?.cancel()
+        conversationLengthTimer = nil
         if holdsTransport {
             holdsTransport = false
             if transport.delegate === self {
@@ -253,6 +274,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             switch state {
             case .connecting:
                 cancelConnectionTimer()
+                startConversationLengthTimer()
                 setState(.listening)
                 if isAudioInterrupted {
                     setMicrophone(enabled: false)
@@ -291,6 +313,19 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private func cancelConnectionTimer() {
         connectionTimer?.cancel()
         connectionTimer = nil
+    }
+
+    /// Ends the session normally, which also disconnects the transport, once it has run for
+    /// `maxConversationLength`, in the foreground or the background.
+    private func startConversationLengthTimer() {
+        conversationLengthTimer?.cancel()
+        let timer = DispatchWorkItem { [weak self] in
+            guard let self, self.isActive else { return }
+            Log.debug(label: self.LOG_TAG, "Ending the voice session: it reached the maximum length of \(Int(self.maxConversationLength)) seconds.")
+            self.finish(.ended)
+        }
+        conversationLengthTimer = timer
+        DispatchQueue.main.asyncAfter(deadline: .now() + maxConversationLength, execute: timer)
     }
 
     private func handle(_ message: DataChannelMessage) {

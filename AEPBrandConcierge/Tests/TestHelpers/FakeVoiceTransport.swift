@@ -27,12 +27,18 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
     private var connectHandler: (() -> Void)?
     private var disconnectHandler: (() -> Void)?
     private var microphoneHandler: ((Bool) -> Void)?
+    private var storedContinuesInBackground = false
 
     var autoConnect = true
 
     var delegate: VoiceTransportDelegate? {
         get { locked { storedDelegate } }
         set { locked { storedDelegate = newValue } }
+    }
+
+    var continuesInBackground: Bool {
+        get { locked { storedContinuesInBackground } }
+        set { locked { storedContinuesInBackground = newValue } }
     }
 
     var connections: [VoiceConnection] { locked { recordedConnections } }
