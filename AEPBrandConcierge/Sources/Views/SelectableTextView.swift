@@ -202,19 +202,18 @@ struct SelectableTextView: UIViewRepresentable {
 
         func textViewDidBeginEditing(_ textView: UITextView) {
             parent.onEditingChanged?(true)
+            // Set synchronously so the focus ring updates in the same pass as the keyboard
+            // animation. Deferring it lands the change mid-animation, and iOS 27 then draws the
+            // ring at its post-keyboard position ahead of the rest of the composer.
             if !parent.isFocused {
-                DispatchQueue.main.async { [parent] in
-                    parent.isFocused = true
-                }
+                parent.isFocused = true
             }
         }
 
         func textViewDidEndEditing(_ textView: UITextView) {
             parent.onEditingChanged?(false)
             if parent.isFocused {
-                DispatchQueue.main.async { [parent] in
-                    parent.isFocused = false
-                }
+                parent.isFocused = false
             }
         }
 
