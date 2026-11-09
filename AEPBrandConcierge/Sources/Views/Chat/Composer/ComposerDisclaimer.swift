@@ -29,45 +29,11 @@ struct ComposerDisclaimer: View {
     }
 
     private var attributedDisclaimerText: AttributedString {
-        let text = theme.disclaimer.text
-        let links = theme.disclaimer.links
-        let disclaimerColor = theme.components.disclaimer.textColor.color
-
-        var result = AttributedString()
-
-        var remainingText = text[...]
-        while let openBraceIndex = remainingText.firstIndex(of: "{"),
-              let closeBraceIndex = remainingText[openBraceIndex...].firstIndex(of: "}") {
-            // Append prefix text.
-            let prefix = String(remainingText[..<openBraceIndex])
-            var prefixString = AttributedString(prefix)
-            prefixString.foregroundColor = disclaimerColor
-            result.append(prefixString)
-
-            // Extract token inside braces.
-            let tokenStart = remainingText.index(after: openBraceIndex)
-            let token = String(remainingText[tokenStart..<closeBraceIndex])
-
-            var tokenString = AttributedString(token)
-            tokenString.foregroundColor = disclaimerColor
-
-            if let link = links.first(where: { $0.text == token }),
-               let url = URL(string: link.url) {
-                tokenString.link = url
-                tokenString.foregroundColor = theme.colors.primary.text.color
-                tokenString.underlineStyle = .single
-            }
-
-            result.append(tokenString)
-
-            // Continue after close brace.
-            remainingText = remainingText[remainingText.index(after: closeBraceIndex)...]
-        }
-
-        // Append trailing text.
-        var trailingString = AttributedString(String(remainingText))
-        trailingString.foregroundColor = disclaimerColor
-        result.append(trailingString)
-        return result
+        LinkedTextFormatter.format(
+            text: theme.disclaimer.text,
+            links: theme.disclaimer.links,
+            textColor: theme.components.disclaimer.textColor.color,
+            linkColor: theme.colors.primary.text.color
+        )
     }
 }

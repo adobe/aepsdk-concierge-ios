@@ -53,8 +53,8 @@ final class MessageBubbleSnapshotTests: XCTestCase {
 
     func test_messageBubbleProbe_agentIconLayout() {
         var probeTheme = ConciergeThemeLoader.default()
-        // Non-empty path activates icon layout mode (asymmetric padding + icon slot).
-        // The asset won't load at test time; the test captures the padding/spacing geometry.
+        // Non-empty path activates icon layout mode. The asset won't load at test time,
+        // so this captures the reserved icon slot and bubble geometry.
         probeTheme.assets.icons.company = "agent-icon"
 
         let view = MessageBubbleAgentIconProbeHost(theme: probeTheme)
@@ -79,7 +79,7 @@ final class MessageBubbleSnapshotTests: XCTestCase {
 
     func test_agentMessage_sourcesAlignWithText_withAgentIcon() {
         var probeTheme = ConciergeThemeLoader.default()
-        // Non-empty path activates icon layout mode; sources should indent to align with agent text.
+        // Non-empty path activates icon layout mode; sources attach flush to the bubble's leading edge.
         probeTheme.assets.icons.company = "agent-icon"
 
         let view = AgentMessageWithSourcesProbeHost(theme: probeTheme)
@@ -202,7 +202,7 @@ private struct MessageBubbleAgentIconProbeHost: View {
 }
 
 /// Probe for sources + agent icon alignment: an agent bubble with sources attached.
-/// The sources row should indent to align with the start of the agent response text.
+/// The sources row attaches flush to the agent message bubble's leading edge.
 private struct AgentMessageWithSourcesProbeHost: View {
     let theme: ConciergeTheme
 
@@ -227,7 +227,7 @@ private struct AgentMessageWithSourcesProbeHost: View {
 }
 
 /// Probe for prompt suggestion alignment: an agent bubble followed by a prompt suggestion pill.
-/// The pill leading edge should align with the agent response text (not the icon).
+/// The pill leading edge should align with the agent message bubble (not the icon).
 private struct PromptSuggestionAlignmentProbeHost: View {
     let theme: ConciergeTheme
 

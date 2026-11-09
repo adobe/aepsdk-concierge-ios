@@ -31,9 +31,21 @@ public struct ConciergeDisclaimerLink: Codable {
     public var text: String
     public var url: String
 
+    private enum CodingKeys: String, CodingKey {
+        case text, url
+    }
+
     public init(text: String = "", url: String = "") {
         self.text = text
         self.url = url
+    }
+
+    /// Missing fields default to empty so one incomplete link does not fail the whole theme.
+    /// A link with an empty URL renders its label as plain text.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decodeIfPresent(String.self, forKey: .text) ?? ""
+        url = try container.decodeIfPresent(String.self, forKey: .url) ?? ""
     }
 }
 

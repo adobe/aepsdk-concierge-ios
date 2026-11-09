@@ -15,6 +15,7 @@ import AEPCore
 import AEPTestUtils
 import Combine
 import AEPServices
+import UIKit
 @testable import AEPCore
 @testable import AEPBrandConcierge
 
@@ -96,6 +97,17 @@ final class ConciergeTests: XCTestCase {
 
     private func accepted(_ response: Event?) -> Bool? {
         response?.data?[ConciergeConstants.DataHandoffEventData.Key.ACCEPTED] as? Bool
+    }
+
+    func test_appStateObserver_tracksUIKitBackgroundAndForegroundNotifications() {
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        XCTAssertEqual(ConciergeAppState.shared.state, .foreground)
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(ConciergeAppState.shared.state, .background)
+
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        XCTAssertEqual(ConciergeAppState.shared.state, .foreground)
     }
 
     // MARK: - Tests
