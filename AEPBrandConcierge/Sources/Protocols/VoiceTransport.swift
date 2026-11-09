@@ -37,10 +37,29 @@ public protocol VoiceTransport: AnyObject {
     /// Receives the connection's state changes and data messages.
     var delegate: VoiceTransportDelegate? { get set }
 
+    /// Whether a conversation keeps running when the app goes to the background (the screen locks or
+    /// the user switches to another app). `false` by default: Brand Concierge then ends the
+    /// conversation when the app goes to the background.
+    ///
+    /// Return `true` only if the app can keep the microphone live there: add `audio` to
+    /// `UIBackgroundModes` in the app's `Info.plist`, or iOS suspends the app shortly after it leaves
+    /// the foreground and the conversation fails. Describe the voice conversation in the App Review
+    /// notes. An app with an in-app setting returns the setting's value.
+    ///
+    /// Brand Concierge reads it once per conversation, when it calls `connect(_:)`. A conversation
+    /// still asking for microphone permission or fetching its credentials ends when the app goes to
+    /// the background either way, because iOS does not let an app start the microphone from there.
+    var continuesInBackground: Bool { get }
+
     /// Joins the voice agent's room, publishes the microphone and plays the agent's audio.
     ///
     /// Report `.connected` once the microphone is live, or `.failed(_:)` if the connection cannot be made.
     /// If neither arrives within 20 seconds, Brand Concierge fails the conversation and calls `disconnect()`.
+    /// 60 minutes after the first `.connected`, Brand Concierge ends the conversation normally and
+    /// calls `disconnect()`. Reconnects within the conversation don't extend it.
+    ///
+    /// If `continuesInBackground` is `true`, start the microphone here, so the conversation can
+    /// continue if the app goes to the background before `.connected`.
     ///
     /// - Parameter connection: where to connect and the credentials to use, from the Concierge service.
     func connect(_ connection: VoiceConnection)
@@ -54,6 +73,10 @@ public protocol VoiceTransport: AnyObject {
     /// Leaves the room and releases the microphone. Safe to call at any time, including while
     /// connecting or when not connected.
     func disconnect()
+}
+
+public extension VoiceTransport {
+    var continuesInBackground: Bool { false }
 }
 
 /// Receives updates from a `VoiceTransport`. Methods can be called on any thread.

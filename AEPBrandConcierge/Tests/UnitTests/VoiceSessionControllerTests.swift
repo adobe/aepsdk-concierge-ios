@@ -313,6 +313,93 @@ final class VoiceSessionControllerTests: XCTestCase {
         session.stop()
     }
 
+    // MARK: - Background opt-in
+
+    func test_continuesInBackground_fromConnect_untilTheEnd_whenTheTransportOptsIn() async {
+        let transport = FakeVoiceTransport()
+        transport.continuesInBackground = true
+        transport.autoConnect = false
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        XCTAssertFalse(session.continuesInBackground, "nothing before connect")
+        let connecting = expectation(description: "connecting")
+        transport.onConnect = { connecting.fulfill() }
+        await fulfillment(of: [connecting], timeout: 2)
+
+        XCTAssertTrue(session.continuesInBackground, "the microphone starts at connect")
+        transport.continuesInBackground = false
+        XCTAssertTrue(session.continuesInBackground, "read once per conversation, at connect")
+
+        session.stop()
+        XCTAssertFalse(session.continuesInBackground)
+    }
+
+    func test_continuesInBackground_isFalse_withoutTheTransportsOptIn() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await listening(listener)
+
+        XCTAssertFalse(session.continuesInBackground)
+        session.stop()
+    }
+
+    // MARK: - Conversation length
+
+    func test_conversationLength_endsNormally_andDisconnects_withOrWithoutTheOptIn() async {
+        for optIn in [false, true] {
+            let transport = FakeVoiceTransport()
+            transport.continuesInBackground = optIn
+            let listener = RecordingVoiceListener()
+            let session = start(transport, listener: listener, maxConversationLength: 0.1)
+            await listening(listener)
+            let ended = expectation(description: "ended at the maximum length")
+            listener.onState = { if $0 == .ended { ended.fulfill() } }
+            await fulfillment(of: [ended], timeout: 2)
+
+            XCTAssertEqual(listener.states, [.connecting, .listening, .ended], "opt-in: \(optIn)")
+            XCTAssertEqual(transport.disconnectCount, 1)
+            XCTAssertNil(transport.delegate)
+            XCTAssertEqual(session.state, .ended)
+        }
+    }
+
+    func test_conversationLength_countsFromTheFirstConnected_notFromAReconnect() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener, maxConversationLength: 0.4)
+        await listening(listener)
+        try? await Task.sleep(nanoseconds: 300_000_000)
+
+        transport.report(.reconnecting)
+        transport.report(.connected)
+        try? await Task.sleep(nanoseconds: 250_000_000)
+
+        XCTAssertEqual(listener.states, [.connecting, .listening, .reconnecting, .listening, .ended])
+        XCTAssertEqual(transport.disconnectCount, 1)
+        XCTAssertEqual(session.state, .ended)
+    }
+
+    func test_conversationLength_ofAnEndedConversation_doesNotEndTheNextOne() async {
+        let transport = FakeVoiceTransport()
+        let firstListener = RecordingVoiceListener()
+        let first = start(transport, listener: firstListener, maxConversationLength: 0.3)
+        await listening(firstListener)
+        first.stop()
+
+        let secondListener = RecordingVoiceListener()
+        let second = start(transport, listener: secondListener, maxConversationLength: 0.3)
+        await listening(secondListener)
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        XCTAssertEqual(second.state, .listening, "the first conversation's time no longer counts")
+        XCTAssertEqual(transport.disconnectCount, 1)
+        let ended = expectation(description: "the second conversation gets its own maximum length")
+        secondListener.onState = { if $0 == .ended { ended.fulfill() } }
+        await fulfillment(of: [ended], timeout: 2)
+        XCTAssertEqual(transport.disconnectCount, 2)
+    }
+
     func test_backgroundStop_reportsEndedOnMain() async {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
@@ -616,12 +703,14 @@ final class VoiceSessionControllerTests: XCTestCase {
                        listener: RecordingVoiceListener,
                        permission: Bool = true,
                        connectTimeout: TimeInterval = VoiceSessionController.defaultConnectTimeout,
-                       reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout) -> VoiceSessionController {
+                       reconnectTimeout: TimeInterval = VoiceSessionController.defaultReconnectTimeout,
+                       maxConversationLength: TimeInterval = VoiceSessionController.defaultMaxConversationLength) -> VoiceSessionController {
         let session = VoiceSessionController(transport: transport,
                                              listener: listener,
                                              requestMicrophonePermission: { permission },
                                              connectTimeout: connectTimeout,
-                                             reconnectTimeout: reconnectTimeout)
+                                             reconnectTimeout: reconnectTimeout,
+                                             maxConversationLength: maxConversationLength)
         session.start(url: url, token: token)
         return session
     }
