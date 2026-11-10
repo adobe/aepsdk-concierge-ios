@@ -73,11 +73,12 @@ struct ChatComposer: View {
                         // Base border
                         RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
                             .stroke(borderStyle, lineWidth: theme.components.inputBar.border.width)
-                        // Focus outline (theme-driven)
-                        if isFocused {
-                            RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
-                                .stroke(focusBorderStyle, lineWidth: theme.layout.inputFocusOutlineWidth)
-                        }
+                        // Focus outline (theme-driven). Kept in the hierarchy and toggled via opacity so
+                        // it rides the keyboard animation with the rest of the composer; a view
+                        // inserted mid-animation is placed directly at its final frame.
+                        RoundedRectangle(cornerRadius: theme.layout.inputBorderRadius)
+                            .stroke(focusBorderStyle, lineWidth: theme.layout.inputFocusOutlineWidth)
+                            .opacity(isFocused ? 1 : 0)
                         // Recording glow border (configurable via theme)
                         if case .recording = inputState, theme.behavior.input.enableRecordingAnimation {
                             RotatingGlowBorder(color: theme.colors.primary.text.color, cornerRadius: theme.layout.inputBorderRadius)
