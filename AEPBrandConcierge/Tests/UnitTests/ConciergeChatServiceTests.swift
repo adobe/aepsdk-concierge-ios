@@ -697,6 +697,120 @@ final class ConciergeChatServiceTests: XCTestCase {
         }
     }
 
+    // MARK: - Voice Bootstrap Payload
+
+    private func extractVoiceBootstrapDictionary(from service: ConciergeChatService) throws -> [String: Any] {
+        let payloadData = try service.createVoiceBootstrapPayload()
+        guard let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
+            throw NSError(domain: "TestError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to parse voice bootstrap payload as dictionary"])
+        }
+        return payload
+    }
+
+    private func voiceBootstrapConversation(from payload: [String: Any]) -> [String: Any]? {
+        guard let event = extractFirstEvent(from: payload),
+              let query = event["query"] as? [String: Any] else {
+            return nil
+        }
+        return query["conversation"] as? [String: Any]
+    }
+
+    func test_createVoiceBootstrapPayload_carriesLivekitBootstrapTypeUnderData() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let conversation = voiceBootstrapConversation(from: try extractVoiceBootstrapDictionary(from: service))
+
+        // Then
+        let data = conversation?["data"] as? [String: Any]
+        XCTAssertEqual(data?["type"] as? String, "livekit-bootstrap")
+        XCTAssertEqual(data?.count, 1, "the bootstrap data part carries only its type")
+        XCTAssertNil(conversation?["type"], "type must not sit at the conversation top level")
+    }
+
+    func test_createVoiceBootstrapPayload_marksXDMEventTypeAsVoice() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let payload = try extractVoiceBootstrapDictionary(from: service)
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+
+        // Then — the service needs both this and `data.type` to treat the request as a bootstrap
+        XCTAssertEqual(xdm["eventType"] as? String, "conversation.voice")
+        XCTAssertNotNil(xdm["identityMap"])
+    }
+
+    func test_createChatPayload_omitsVoiceEventType() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        let payloadData = try service.createChatPayload(query: "hi")
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: payloadData) as? [String: Any])
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+
+        XCTAssertNil(xdm["eventType"], "a chat turn must not be marked as a voice bootstrap")
+    }
+
+    func test_createVoiceBootstrapPayload_omitsMessage() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let conversation = voiceBootstrapConversation(from: try extractVoiceBootstrapDictionary(from: service))
+
+        // Then
+        XCTAssertNil(conversation?["message"], "voice bootstrap must not send a message")
+    }
+
+    func test_createVoiceBootstrapPayload_includesSurfacesIdentityMapAndConsent() throws {
+        // Given
+        let identityMap: [String: Any] = [
+            "ECID": [["id": "test-ecid-12345"]],
+            "Email": [["id": "user@example.com"]]
+        ]
+        let service = ConciergeChatService(configuration: makeConfiguration(consentCollectValue: "y", identityMap: identityMap))
+
+        // When
+        let payload = try extractVoiceBootstrapDictionary(from: service)
+        let event = try XCTUnwrap(extractFirstEvent(from: payload))
+        let conversation = voiceBootstrapConversation(from: payload)
+
+        // Then — same envelope as a chat turn
+        XCTAssertEqual(conversation?["surfaces"] as? [String], ["web://test.adobe.com/surface"])
+        let forwardedIdentityMap = (event["xdm"] as? [String: Any])?["identityMap"] as? [String: Any]
+        XCTAssertNotNil(forwardedIdentityMap?["ECID"])
+        XCTAssertNotNil(forwardedIdentityMap?["Email"], "the full identity map is forwarded, not just the ECID")
+        XCTAssertEqual(extractConsentState(from: event), "in")
+    }
+
+    func test_createVoiceBootstrapPayload_withNilEcid_throwsInvalidEcidError() {
+        // Given
+        let configuration = ConciergeConfiguration(consentCollectValue: "y", ecid: nil, surfaces: ["web://test.adobe.com/surface"])
+        let service = ConciergeChatService(configuration: configuration)
+
+        // When / Then
+        XCTAssertThrowsError(try service.createVoiceBootstrapPayload()) { error in
+            guard case .invalidEcid = error as? ConciergeError else {
+                XCTFail("Expected invalidEcid error, got \(error)")
+                return
+            }
+        }
+    }
+
+    func test_createVoiceBootstrapPayload_withEmptySurfaces_throwsInvalidSurfacesError() {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration(surfaces: []))
+
+        // When / Then
+        XCTAssertThrowsError(try service.createVoiceBootstrapPayload()) { error in
+            guard case .invalidSurfaces = error as? ConciergeError else {
+                XCTFail("Expected invalidSurfaces error, got \(error)")
+                return
+            }
+        }
+    }
+
     // MARK: - Auth Token: Chat Payload
 
     private func chatConversation(from payload: [String: Any]) -> [String: Any]? {
@@ -1133,20 +1247,149 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertFalse(json.contains("athlete-token-123"), "token omitted when there is no conversation node to attach to")
     }
 
+    // MARK: - Voice Bootstrap: Request-path integration (stubbed network)
+
+    /// Frames a `ConversationResponse` JSON inside the SSE `data:` handle wrapper the service decodes.
+    private func sseHandle(responseJSON: String) -> Data {
+        let handle = #"{"handle":[{"payload":[{"response":\#(responseJSON)}]}]}"#
+        return "data: \(handle)\n".data(using: .utf8)!
+    }
+
+    func test_bootstrapVoiceSession_postsToRegionalConversationsEndpointAsEventStream() async throws {
+        StubURLProtocol.reset()
+        let service = makeStubbedService(region: "va7")
+
+        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { _ in })
+        await waitForCondition { StubURLProtocol.count >= 1 }
+
+        let request = try XCTUnwrap(StubURLProtocol.last)
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/brand-concierge/va7/conversations", "voice uses the same regional route as text")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "text/event-stream")
+    }
+
+    func test_bootstrapVoiceSession_deliversCredentials_whenSessionPayloadArrives() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.responseBody = sseHandle(responseJSON: #"""
+        {"message":"","voice":{"type":"livekit_session","livekitUrl":"wss://rtc.example.com","token":"session-abc"}}
+        """#)
+        let service = makeStubbedService()
+
+        let received = LockedBox<VoiceSessionBootstrap?>(nil)
+        let completion = LockedBox<ConciergeError??>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { received.value = $0 }, onComplete: { completion.value = .some($0) })
+        await waitForCondition { completion.value != nil }
+
+        XCTAssertEqual(received.value, VoiceSessionBootstrap(url: "wss://rtc.example.com", token: "session-abc"))
+        XCTAssertNil(completion.value ?? nil, "a clean close completes without an error")
+    }
+
+    func test_bootstrapVoiceSession_firesOnce_whenSessionPayloadRepeats() async {
+        StubURLProtocol.reset()
+        var body = sseHandle(responseJSON: #"{"message":"","voice":{"type":"livekit_session","livekitUrl":"wss://a","token":"t1"}}"#)
+        body.append(sseHandle(responseJSON: #"{"message":"","voice":{"type":"livekit_session","livekitUrl":"wss://b","token":"t2"}}"#))
+        StubURLProtocol.responseBody = body
+        let service = makeStubbedService()
+
+        let received = LockedBox<[VoiceSessionBootstrap]>([])
+        let completed = LockedBox<Bool>(false)
+        service.bootstrapVoiceSession(onBootstrap: { received.value.append($0) }, onComplete: { _ in completed.value = true })
+        await waitForCondition { completed.value }
+
+        XCTAssertEqual(received.value, [VoiceSessionBootstrap(url: "wss://a", token: "t1")])
+    }
+
+    func test_bootstrapVoiceSession_ignoresIncompleteOrOtherVoicePayloads() async {
+        StubURLProtocol.reset()
+        var body = sseHandle(responseJSON: #"{"message":"","voice":{"type":"done"}}"#)
+        body.append(sseHandle(responseJSON: #"{"message":"","voice":{"type":"livekit_session","livekitUrl":"wss://a"}}"#))
+        StubURLProtocol.responseBody = body
+        let service = makeStubbedService()
+
+        let bootstrapped = LockedBox<Bool>(false)
+        let completed = LockedBox<Bool>(false)
+        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { _ in completed.value = true })
+        await waitForCondition { completed.value }
+
+        XCTAssertFalse(bootstrapped.value, "a non-session type or a session without a token must not bootstrap")
+    }
+
+    func test_bootstrapVoiceSession_completesWithoutBootstrap_whenNoVoicePayload() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.responseBody = sseHandle(responseJSON: #"{"message":"hello"}"#)
+        let service = makeStubbedService()
+
+        let bootstrapped = LockedBox<Bool>(false)
+        let completion = LockedBox<ConciergeError??>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
+        await waitForCondition { completion.value != nil }
+
+        XCTAssertFalse(bootstrapped.value)
+        XCTAssertNotNil(completion.value, "the stream closing must still complete")
+        XCTAssertNil(completion.value ?? nil)
+    }
+
+    func test_bootstrapVoiceSession_handoffErrorChunk_completesWithoutBootstrap() async {
+        // A session pinned to an external target (human hand-off, 3rd-party agent) gets an error
+        // chunk instead of credentials; callers treat the credential-less close as a failed bootstrap.
+        StubURLProtocol.reset()
+        let handle = #"{"handle":[{"type":"brand-concierge:conversation","payload":[{"response":{"message":"Something went wrong.","sources":[]},"state":"error","metadata":{"errorCode":"VOICE_NOT_SUPPORTED_DURING_HANDOFF"}}]}]}"#
+        StubURLProtocol.responseBody = "event: error\ndata: \(handle)\n\n".data(using: .utf8)!
+        let service = makeStubbedService()
+
+        let bootstrapped = LockedBox<Bool>(false)
+        let completion = LockedBox<ConciergeError??>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
+        await waitForCondition { completion.value != nil }
+
+        XCTAssertFalse(bootstrapped.value)
+        XCTAssertNotNil(completion.value, "the stream closing must still complete")
+    }
+
+    func test_bootstrapVoiceSession_networkError_completesWithError() async {
+        StubURLProtocol.reset()
+        StubURLProtocol.shouldFail = true
+        let service = makeStubbedService()
+
+        let error = LockedBox<ConciergeError?>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
+        await waitForCondition { error.value != nil }
+
+        XCTAssertNotNil(error.value, "a network failure must surface a ConciergeError, matching streamChat")
+    }
+
+    func test_bootstrapVoiceSession_withUnbuildableURL_completesWithErrorAndSendsNothing() async {
+        StubURLProtocol.reset()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [StubURLProtocol.self]
+        // makeConfiguration() has no server, so createUrl() throws.
+        let service = ConciergeChatService(configuration: makeConfiguration(), urlSessionConfiguration: sessionConfig)
+
+        let error = LockedBox<ConciergeError?>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
+        await waitForCondition { error.value != nil }
+
+        XCTAssertNotNil(error.value, "bootstrap should surface a ConciergeError when the URL can't be built")
+        XCTAssertEqual(StubURLProtocol.count, 0)
+    }
+
     // MARK: - Stubbed-network helpers
 
-    private func makeStubbedService() -> ConciergeChatService {
+    private func makeStubbedService(region: String? = nil) -> ConciergeChatService {
         let model = ConciergeConfiguration(consentCollectValue: "y",
                                            datastream: "ds-123",
                                            ecid: "ecid-123",
                                            server: "test.example.com",
+                                           region: region,
                                            surfaces: ["web://test.adobe.com/surface"])
         let sessionConfig = URLSessionConfiguration.ephemeral
         sessionConfig.protocolClasses = [StubURLProtocol.self]
         return ConciergeChatService(configuration: model, urlSessionConfiguration: sessionConfig)
     }
 
-    private func waitForCondition(timeout: TimeInterval, _ condition: @escaping () -> Bool) async {
+    /// Polls until `condition` holds or `timeout` elapses. Returns as soon as the condition holds, so
+    /// the default is generous: shared CI runners can stall for several seconds.
+    private func waitForCondition(timeout: TimeInterval = 10, _ condition: @escaping () -> Bool) async {
         let start = Date()
         while !condition() && Date().timeIntervalSince(start) < timeout {
             try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
@@ -1155,13 +1398,15 @@ final class ConciergeChatServiceTests: XCTestCase {
 }
 
 /// Intercepts requests from an injected `URLSessionConfiguration` so tests can drive the service's
-/// request path without real networking. Captures requests (thread-safe) and defaults to an empty 200.
+/// request path without real networking. Captures requests (thread-safe) and returns `responseStatusCode`
+/// (200 by default) with `responseBody` (empty by default).
 private final class StubURLProtocol: URLProtocol {
     private static let lock = NSLock()
     private static var requests: [URLRequest] = []
     private static var _shouldFail = false
     private static var _shouldHold = false
     private static var _stoppedCount = 0
+    private static var _responseBody: Data?
     private static var _responseStatusCode = 200
     private var held = false
 
@@ -1171,6 +1416,7 @@ private final class StubURLProtocol: URLProtocol {
         _shouldFail = false
         _shouldHold = false
         _stoppedCount = 0
+        _responseBody = nil
         _responseStatusCode = 200
         lock.unlock()
     }
@@ -1184,6 +1430,11 @@ private final class StubURLProtocol: URLProtocol {
     static var shouldHold: Bool {
         get { lock.lock(); defer { lock.unlock() }; return _shouldHold }
         set { lock.lock(); defer { lock.unlock() }; _shouldHold = newValue }
+    }
+    /// Body delivered as a single chunk before the response finishes. Defaults to empty.
+    static var responseBody: Data? {
+        get { lock.lock(); defer { lock.unlock() }; return _responseBody }
+        set { lock.lock(); defer { lock.unlock() }; _responseBody = newValue }
     }
     static var responseStatusCode: Int {
         get { lock.lock(); defer { lock.unlock() }; return _responseStatusCode }
@@ -1199,6 +1450,7 @@ private final class StubURLProtocol: URLProtocol {
         let shouldFail = StubURLProtocol._shouldFail
         let responseStatusCode = StubURLProtocol._responseStatusCode
         held = StubURLProtocol._shouldHold
+        let body = StubURLProtocol._responseBody
         StubURLProtocol.lock.unlock()
 
         if held { return }
@@ -1210,7 +1462,7 @@ private final class StubURLProtocol: URLProtocol {
            let response = HTTPURLResponse(url: url, statusCode: responseStatusCode, httpVersion: nil, headerFields: nil) {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         }
-        client?.urlProtocol(self, didLoad: Data())
+        client?.urlProtocol(self, didLoad: body ?? Data())
         client?.urlProtocolDidFinishLoading(self)
     }
 
