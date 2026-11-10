@@ -697,32 +697,6 @@ final class ConciergeChatServiceTests: XCTestCase {
         }
     }
 
-    func test_createUrl_voice_usesVoiceServicePath() throws {
-        // Given
-        let configuration = makeConfigurationForUrl(region: nil)
-        let service = ConciergeChatService(configuration: configuration)
-
-        // When
-        let url = try service.createUrl(voice: true)
-
-        // Then
-        XCTAssertEqual(url.path, "/brand-concierge-voice/conversations")
-        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
-        XCTAssertEqual(queryItems?.first(where: { $0.name == "configId" })?.value, "test-datastream")
-    }
-
-    func test_createUrl_voice_withRegion_omitsRegionSegment() throws {
-        // Given — the voice path has no region segment (matches the Web SDK)
-        let configuration = makeConfigurationForUrl(region: "va7")
-        let service = ConciergeChatService(configuration: configuration)
-
-        // When
-        let url = try service.createUrl(voice: true)
-
-        // Then
-        XCTAssertEqual(url.path, "/brand-concierge-voice/conversations")
-    }
-
     // MARK: - Voice Bootstrap Payload
 
     private func extractVoiceBootstrapDictionary(from service: ConciergeChatService) throws -> [String: Any] {
@@ -753,6 +727,29 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(data?["type"] as? String, "livekit-bootstrap")
         XCTAssertEqual(data?.count, 1, "the bootstrap data part carries only its type")
         XCTAssertNil(conversation?["type"], "type must not sit at the conversation top level")
+    }
+
+    func test_createVoiceBootstrapPayload_marksXDMEventTypeAsVoice() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let payload = try extractVoiceBootstrapDictionary(from: service)
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+
+        // Then — the service needs both this and `data.type` to treat the request as a bootstrap
+        XCTAssertEqual(xdm["eventType"] as? String, "conversation.voice")
+        XCTAssertNotNil(xdm["identityMap"])
+    }
+
+    func test_createChatPayload_omitsVoiceEventType() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        let payloadData = try service.createChatPayload(query: "hi")
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: payloadData) as? [String: Any])
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+
+        XCTAssertNil(xdm["eventType"], "a chat turn must not be marked as a voice bootstrap")
     }
 
     func test_createVoiceBootstrapPayload_omitsMessage() throws {
@@ -1258,16 +1255,16 @@ final class ConciergeChatServiceTests: XCTestCase {
         return "data: \(handle)\n".data(using: .utf8)!
     }
 
-    func test_bootstrapVoiceSession_postsToVoiceEndpointAsEventStream() async throws {
+    func test_bootstrapVoiceSession_postsToRegionalConversationsEndpointAsEventStream() async throws {
         StubURLProtocol.reset()
-        let service = makeStubbedService()
+        let service = makeStubbedService(region: "va7")
 
         service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { _ in })
         await waitForCondition { StubURLProtocol.count >= 1 }
 
         let request = try XCTUnwrap(StubURLProtocol.last)
         XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.url?.path, "/brand-concierge-voice/conversations")
+        XCTAssertEqual(request.url?.path, "/brand-concierge/va7/conversations", "voice uses the same regional route as text")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "text/event-stream")
     }
 
@@ -1332,6 +1329,23 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertNil(completion.value ?? nil)
     }
 
+    func test_bootstrapVoiceSession_handoffErrorChunk_completesWithoutBootstrap() async {
+        // A session pinned to an external target (human hand-off, 3rd-party agent) gets an error
+        // chunk instead of credentials; callers treat the credential-less close as a failed bootstrap.
+        StubURLProtocol.reset()
+        let handle = #"{"handle":[{"type":"brand-concierge:conversation","payload":[{"response":{"message":"Something went wrong.","sources":[]},"state":"error","metadata":{"errorCode":"VOICE_NOT_SUPPORTED_DURING_HANDOFF"}}]}]}"#
+        StubURLProtocol.responseBody = "event: error\ndata: \(handle)\n\n".data(using: .utf8)!
+        let service = makeStubbedService()
+
+        let bootstrapped = LockedBox<Bool>(false)
+        let completion = LockedBox<ConciergeError??>(nil)
+        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
+        await waitForCondition { completion.value != nil }
+
+        XCTAssertFalse(bootstrapped.value)
+        XCTAssertNotNil(completion.value, "the stream closing must still complete")
+    }
+
     func test_bootstrapVoiceSession_networkError_completesWithError() async {
         StubURLProtocol.reset()
         StubURLProtocol.shouldFail = true
@@ -1348,7 +1362,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         StubURLProtocol.reset()
         let sessionConfig = URLSessionConfiguration.ephemeral
         sessionConfig.protocolClasses = [StubURLProtocol.self]
-        // makeConfiguration() has no server, so createUrl(voice:) throws.
+        // makeConfiguration() has no server, so createUrl() throws.
         let service = ConciergeChatService(configuration: makeConfiguration(), urlSessionConfiguration: sessionConfig)
 
         let error = LockedBox<ConciergeError?>(nil)
@@ -1361,11 +1375,12 @@ final class ConciergeChatServiceTests: XCTestCase {
 
     // MARK: - Stubbed-network helpers
 
-    private func makeStubbedService() -> ConciergeChatService {
+    private func makeStubbedService(region: String? = nil) -> ConciergeChatService {
         let model = ConciergeConfiguration(consentCollectValue: "y",
                                            datastream: "ds-123",
                                            ecid: "ecid-123",
                                            server: "test.example.com",
+                                           region: region,
                                            surfaces: ["web://test.adobe.com/surface"])
         let sessionConfig = URLSessionConfiguration.ephemeral
         sessionConfig.protocolClasses = [StubURLProtocol.self]
