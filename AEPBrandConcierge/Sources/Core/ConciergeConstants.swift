@@ -213,6 +213,8 @@ public enum ConciergeConstants {
             enum VoiceBootstrap {
                 /// `conversation.data.type` value requesting voice session credentials.
                 static let TYPE_LIVEKIT_BOOTSTRAP = "livekit-bootstrap"
+                /// `xdm.eventType` value marking the request as a voice bootstrap.
+                static let EVENT_TYPE_VOICE = "conversation.voice"
             }
         }
     }
