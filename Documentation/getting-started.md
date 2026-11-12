@@ -140,9 +140,13 @@ Concierge.wrap(AppRootView(), surfaces: ["my-surface"], voiceTransport: Voice.tr
 
 Pass the same instance at every `wrap`, `show` and `present` call, as the demo app does.
 
-When a transport is provided, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat and typed messages, dictation and data handoffs are paused. Only one voice conversation runs at a time across the app: if the overlay chat and a chat opened with `present(on:...)` are both open, the voice button in the other one is disabled until the conversation ends. Brand Concierge asks for microphone permission when the user starts a conversation, before it requests a voice session; if the permission is denied, no conversation starts and the chat offers to open Settings. A failed connection ends the conversation and shows an error message in the chat, as does a transport that does not report `.connected` within 20 seconds of `connect(_:)` (Brand Concierge then calls `disconnect()`). The same message appears when the voice agent ends the session because of a server error; when it ends an idle session, the conversation ends without a message. While the transport reports `.reconnecting`, the conversation stays open and the voice button shows a spinner; if the transport does not report `.connected` again within 30 seconds, the conversation ends with the same error message.
+When a transport is provided, the composer shows a voice button. During a conversation:
 
-Every voice conversation ends 60 minutes after the transport first reports `.connected`, in the foreground or the background, as a normal end without a message (Brand Concierge calls `disconnect()`). Reconnects don't restart the count; a new conversation gets its own 60 minutes.
+- **Chat.** The transcript appears in the chat. Typing, dictation and data handoffs are paused; `Concierge.sendDataHandoff` completes with `.chatInProgress`.
+- **Microphone permission.** Brand Concierge asks for it when the user taps the voice button. If the user denies it, no conversation starts and the chat offers to open Settings.
+- **One at a time.** Only one conversation runs across the app. If the overlay chat and a chat opened with `present(on:...)` are both open, the other chat's voice button is disabled.
+- **Ending.** The conversation ends when the user taps the voice button again, closes the chat, resets identities, or the app goes to the background (unless it [continues in the background](#background-conversations)). It also ends without a message 60 minutes after it first connects (reconnecting doesn't restart the count), or when the voice agent ends an idle session (after about a minute without activity).
+- **Errors.** If the connection fails, can't be restored within 30 seconds (the voice button shows a spinner meanwhile), or the voice agent reports a server error, the conversation ends with an error message in the chat.
 
 #### Background conversations
 
@@ -168,7 +172,7 @@ Without it, iOS suspends the app seconds after it leaves the foreground and the 
 
 - Brand Concierge reads `continuesInBackground` once per conversation, when it calls `connect(_:)`. The reference transport starts the microphone there. A conversation still asking for microphone permission or fetching its credentials ends when the app goes to the background, because iOS doesn't let an app start the microphone from there.
 - While the conversation runs in the background, iOS shows the microphone indicator in the status bar; tapping it returns to the app. Transcripts and product cards that arrive meanwhile are in the chat when the user returns.
-- It ends when the user ends it, closes the chat, force-quits the app, after 60 minutes, or when the voice agent ends an idle session (after about a minute without activity).
+- It ends for the same reasons as in the foreground (see [step 4](#4-pass-the-transport-when-showing-the-chat)), or when the user force-quits the app.
 - App Review: describe the voice conversation, which the user starts and hears, in your review notes as the reason for the `audio` background mode.
 
 #### Audio quality
