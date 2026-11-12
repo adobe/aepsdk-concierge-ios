@@ -31,6 +31,9 @@ struct MessageListView: View {
     /// nothing following it" (e.g. a reopened past conversation, or an empty-response fallback
     /// message), since both look structurally identical.
     var chatState: ChatState = .idle
+    /// The voice conversation's anchor (`ChatController.voiceScrollAnchorId`), or `nil` without voice.
+    /// Voice leaves `chatState` idle, so this is its gate for `shouldFillRemainingHeight`.
+    var voiceScrollAnchorId: UUID?
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
@@ -238,7 +241,12 @@ struct MessageListView: View {
     /// Internal (not private) so `shouldFillRemainingHeight` can be unit tested directly — a
     /// snapshot alone can't detect an inverted or broken condition here, since the reserved space
     /// only affects scrollable content height, which is invisible in a single fixed-frame capture.
+    ///
+    /// During a voice conversation it is also true when the message at `index` is the last one and
+    /// only agent bubbles follow the voice anchor (or it is the anchor): the user's words stay at the
+    /// top and the agent's reply shows below them.
     func shouldFillRemainingHeight(at index: Int) -> Bool {
+        if fillsBelowVoiceAnchor(at: index) { return true }
         guard chatState == .processing,
               messages.indices.contains(index),
               index == messages.count - 1,
@@ -254,6 +262,17 @@ struct MessageListView: View {
         guard let lastUserIndex = messages.lastIndex(where: { if case .basic(true) = $0.template { return true }; return false })
         else { return false }
         return lastUserIndex == index - 1
+    }
+
+    private func fillsBelowVoiceAnchor(at index: Int) -> Bool {
+        guard let anchorId = voiceScrollAnchorId,
+              index == messages.count - 1,
+              let anchorIndex = messages.firstIndex(where: { $0.id == anchorId })
+        else { return false }
+        return messages[(anchorIndex + 1)...].allSatisfy {
+            if case .basic(isUserMessage: false) = $0.template { return true }
+            return false
+        }
     }
 
     /// Returns true when the message at `index` is the anchor the controller scrolled to the top.

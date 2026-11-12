@@ -100,6 +100,46 @@ final class ChatController: ObservableObject {
         didSet { chatState = activeTurn == nil ? .idle : .processing }
     }
 
+    // MARK: - Voice
+
+    /// The transport the app passed to `show`/`present`, or `nil` when the app does not offer voice.
+    private let voiceTransport: VoiceTransport?
+
+    /// Injectable so tests do not depend on the simulator's microphone permission.
+    private let requestMicrophonePermission: () async -> Bool
+
+    /// Shared by every chat in the app, so only one of them runs a voice conversation at a time.
+    private let voiceOwnership: VoiceSessionOwnership
+
+    /// Mirrors `voiceOwnership.isClaimed`, so the voice button updates when another chat starts or
+    /// ends its conversation.
+    @Published private var isVoiceClaimed = false
+
+    /// The voice conversation currently running, or `nil`. Same role as `activeTurn`: callbacks
+    /// that do not belong to this run are stale and dropped.
+    ///
+    /// A running conversation leaves `chatState` at `.idle` (`ChatState` is public, so it gains no
+    /// voice case); the composer, dictation, typed turns and handoffs check this instead.
+    private var activeVoice: VoiceRun? {
+        didSet { isVoiceSessionActive = activeVoice != nil }
+    }
+
+    /// True while a voice conversation runs, from the voice tap until it ends.
+    @Published private(set) var isVoiceSessionActive = false
+
+    /// The transcript bubble a running voice conversation keeps at the top of the list: the latest
+    /// user bubble, or the agent's first one when it speaks before the user. `MessageListView`
+    /// reserves space below it, as for a typed turn, so the scroll reaches it and the agent's replies
+    /// show below it. `nil` when no voice conversation runs.
+    @Published private(set) var voiceScrollAnchorId: UUID?
+
+    /// True from the voice tap until the voice session reports the conversation is live, and again
+    /// while the transport restores a lost connection.
+    @Published private(set) var isVoiceConnecting = false
+
+    /// What the permission dialog asks for while `showPermissionDialog` is true.
+    @Published private(set) var permissionDialogPurpose: PermissionDialogView.Purpose = .dictation
+
     /// Injectable so tests can exercise the caps without waiting out the production values.
     private let handoffFirstChunkTimeout: TimeInterval
     private let handoffTurnTimeout: TimeInterval
@@ -117,9 +157,16 @@ final class ChatController: ObservableObject {
 
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
-    var composerEditable: Bool { identityReady && chatState != .processing }
-    var micEnabled: Bool { identityReady && chatState == .idle }
-    var sendEnabled: Bool { identityReady && chatState == .idle && inputController.data.canSend }
+    var composerEditable: Bool { identityReady && chatState != .processing && !isVoiceSessionActive }
+    var isVoiceAvailable: Bool { voiceTransport != nil }
+    var voiceEnabled: Bool {
+        guard identityReady, voiceTransport != nil else { return false }
+        if isVoiceSessionActive { return true }
+        // A claim without a session of our own belongs to another chat's conversation.
+        return chatState == .idle && !isRecording && !isVoiceClaimed
+    }
+    var micEnabled: Bool { identityReady && chatState == .idle && !isVoiceSessionActive }
+    var sendEnabled: Bool { identityReady && chatState == .idle && !isVoiceSessionActive && inputController.data.canSend }
 
     /// Whether the transcript holds at least one real turn. Welcome content doesn't count.
     ///
@@ -138,7 +185,7 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil, appState: ConciergeAppState = .shared) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil, appState: ConciergeAppState = .shared) {
         let generation = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -147,6 +194,9 @@ final class ChatController: ObservableObject {
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: generation)
         self.dispatch = dispatch
+        self.voiceTransport = voiceTransport
+        self.requestMicrophonePermission = VoiceSessionController.requestMicrophonePermission
+        self.voiceOwnership = .shared
         self.appState = appState
         self.handoffTurnTimeout = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT
         self.handoffFirstChunkTimeout = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT
@@ -155,11 +205,12 @@ final class ChatController: ObservableObject {
         configureSpeech()
         observeComposerState()
         observeAppState()
+        observeVoiceOwnership()
     }
 
     #if DEBUG
     // Internal for testing only
-    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT, appState: ConciergeAppState = .shared, backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS) {
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, requestMicrophonePermission: @escaping () async -> Bool = { true }, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT, appState: ConciergeAppState = .shared, backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS, voiceOwnership: VoiceSessionOwnership = VoiceSessionOwnership()) {
         self.identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -167,6 +218,9 @@ final class ChatController: ObservableObject {
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: identityGeneration)
         self.dispatch = dispatch
+        self.voiceTransport = voiceTransport
+        self.requestMicrophonePermission = requestMicrophonePermission
+        self.voiceOwnership = voiceOwnership
         self.appState = appState
         self.handoffTurnTimeout = handoffTurnTimeout
         self.handoffFirstChunkTimeout = handoffFirstChunkTimeout
@@ -175,6 +229,7 @@ final class ChatController: ObservableObject {
         configureSpeech()
         observeComposerState()
         observeAppState()
+        observeVoiceOwnership()
     }
     #endif
 
@@ -193,6 +248,22 @@ final class ChatController: ObservableObject {
             .sink { [weak self] state in
                 guard let self = self, state == .background else { return }
                 self.activeTurn?.noteAppBackgrounded()
+                // A conversation continues in the background only when the transport opted in and
+                // has been asked to connect, which starts the microphone. iOS doesn't let an app
+                // start the microphone from the background, so one still asking for permission or
+                // fetching credentials ends here, which also keeps a pending bootstrap from opening
+                // the microphone there.
+                guard self.activeVoice?.session?.continuesInBackground != true else { return }
+                self.stopVoiceSession()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func observeVoiceOwnership() {
+        isVoiceClaimed = voiceOwnership.isClaimed
+        voiceOwnership.changes
+            .sink { [weak self] in
+                self?.onMain { $0.isVoiceClaimed = $0.voiceOwnership.isClaimed }
             }
             .store(in: &cancellables)
     }
@@ -253,6 +324,10 @@ final class ChatController: ObservableObject {
             Log.warning(label: LOG_TAG, "startRecording ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
             return
         }
+        guard !isVoiceSessionActive else {
+            Log.warning(label: LOG_TAG, "startRecording ignored. A voice session is in progress.")
+            return
+        }
         guard inputState == .empty || inputState == .editing || {
             if case .error = inputState { return true } else { return false }
         }() else {
@@ -276,7 +351,7 @@ final class ChatController: ObservableObject {
                         self.beginCaptureSession(currentSelectionLocation: currentSelectionLocation)
                     } else {
                         Log.debug(label: self.LOG_TAG, "Permissions not granted after request. Showing permission dialog.")
-                        self.showPermissionDialog = true
+                        self.presentPermissionDialog(for: .dictation)
                     }
                 }
             }
@@ -287,7 +362,7 @@ final class ChatController: ObservableObject {
         if !speechController.isAvailable {
             // Permissions were asked but not granted - show custom dialog
             Log.debug(label: LOG_TAG, "Speech or microphone permissions not granted. Showing permission dialog.")
-            showPermissionDialog = true
+            presentPermissionDialog(for: .dictation)
             return
         }
 
@@ -309,6 +384,11 @@ final class ChatController: ObservableObject {
     }
 
     // MARK: - Permission Dialog
+
+    private func presentPermissionDialog(for purpose: PermissionDialogView.Purpose) {
+        permissionDialogPurpose = purpose
+        showPermissionDialog = true
+    }
 
     func dismissPermissionDialog() {
         showPermissionDialog = false
@@ -338,6 +418,10 @@ final class ChatController: ObservableObject {
         }
         guard chatState == .idle else {
             Log.warning(label: LOG_TAG, "sendMessage ignored. Expected chatState to be 'idle', but was '\(chatState)'.")
+            return
+        }
+        guard !isVoiceSessionActive else {
+            Log.warning(label: LOG_TAG, "sendMessage ignored. A voice session is in progress.")
             return
         }
 
@@ -373,9 +457,9 @@ final class ChatController: ObservableObject {
     /// scrolled to the top like `sendMessage` does, since a handoff is triggered from app UI rather
     /// than the composer and the transcript would otherwise stay where the user left it.
     ///
-    /// Returns `false` without starting anything when a turn is already in flight:
-    /// `ConciergeChatService` keeps a single `dataTask`/handler pair per instance, so a second
-    /// concurrent turn would strand the first one's completion. `.error` is *not* in flight.
+    /// Returns `false` without starting anything when a turn is already in flight or a voice session
+    /// is running: only one conversation activity runs at a time, so the caller can retry once the
+    /// chat is idle again. `.error` is *not* in flight.
     @discardableResult
     func handleDataHandoff(routingHint: String,
                            xdmFields: [String: Any],
@@ -398,6 +482,10 @@ final class ChatController: ObservableObject {
         }
         guard activeTurn == nil else {
             Log.warning(label: LOG_TAG, "handleDataHandoff ignored. A Concierge turn is already in progress.")
+            return false
+        }
+        guard activeVoice == nil else {
+            Log.warning(label: LOG_TAG, "handleDataHandoff ignored. A voice session is in progress.")
             return false
         }
 
@@ -540,6 +628,7 @@ final class ChatController: ObservableObject {
     func endConversationForIdentityReset() {
         endedForIdentityReset = true
         abandonActiveTurn()
+        stopVoiceSession()
         chatService.endFeedbackForIdentityReset()
         chatService.invalidateTransportForIdentityReset()
         speechController.stopSpeaking()
@@ -564,6 +653,165 @@ final class ChatController: ObservableObject {
         userMessageToScrollId = messageId
         DispatchQueue.main.async {
             self.userScrollTick &+= 1
+        }
+    }
+
+    // MARK: - Voice Session
+
+    /// Starts or stops a voice conversation, whichever applies.
+    func toggleVoiceSession() {
+        if isVoiceSessionActive { stopVoiceSession() } else { startVoiceSession() }
+    }
+
+    /// Starts a voice conversation: asks for microphone permission, fetches session credentials
+    /// from the Concierge service, then connects through the app's voice transport. Does nothing
+    /// when the app passed no transport, the chat is busy, or another chat's voice conversation is
+    /// running. A denied permission starts nothing on the service and shows the permission dialog instead.
+    func startVoiceSession() {
+        ConciergeIdentityBoundary.shared.synchronized {
+            startAdmittedVoiceSession()
+        }
+    }
+
+    private func startAdmittedVoiceSession() {
+        guard identityReady, let transport = voiceTransport else { return }
+        guard chatState == .idle, !isVoiceSessionActive, !isRecording else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored. Expected an idle chat, but chatState was '\(chatState)', a voice session active was '\(isVoiceSessionActive)' and inputState was '\(inputState)'.")
+            return
+        }
+
+        guard let claim = voiceOwnership.claim() else {
+            Log.warning(label: LOG_TAG, "startVoiceSession ignored. Another chat's voice conversation is running.")
+            return
+        }
+
+        let run = VoiceRun(claim: claim)
+        activeVoice = run
+        isVoiceConnecting = true
+        // Read-aloud would otherwise talk over the voice agent and leak into its microphone.
+        speechController.stopSpeaking()
+
+        let requestPermission = requestMicrophonePermission
+        Task { @MainActor [weak self] in
+            let granted = await requestPermission()
+            guard let self, self.activeVoice === run else { return }
+            guard granted else {
+                Log.debug(label: self.LOG_TAG, "Microphone permission not granted. Showing permission dialog.")
+                self.finishVoiceSession(run)
+                self.presentPermissionDialog(for: .voiceConversation)
+                return
+            }
+            ConciergeIdentityBoundary.shared.synchronized {
+                guard self.identityReady else {
+                    self.finishVoiceSession(run)
+                    return
+                }
+                self.bootstrapVoiceSession(run, transport: transport)
+            }
+        }
+    }
+
+    private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport) {
+        guard activeVoice === run else { return }
+        run.bootstrapStarted = true
+        chatService.bootstrapVoiceSession(
+            // Weak, so an open request doesn't keep the run, and its claim on voice, alive after the chat goes away.
+            onBootstrap: { [weak self, weak run] bootstrap in
+                Task { @MainActor in
+                    guard let self, let run, self.identityReady, self.activeVoice === run, run.session == nil else { return }
+                    let session = VoiceSessionController(transport: transport,
+                                                         listener: self,
+                                                         requestMicrophonePermission: self.requestMicrophonePermission)
+                    run.session = session
+                    session.start(url: bootstrap.url, token: bootstrap.token)
+                }
+            },
+            onComplete: { [weak self, weak run] error in
+                Task { @MainActor in
+                    guard let self, let run, self.activeVoice === run else { return }
+                    run.bootstrapFinished = true
+                    // Once a session exists, it reports the conversation's own outcome.
+                    guard run.session == nil else { return }
+                    self.failVoiceSession(run, reason: error?.localizedDescription ?? "no voice session in the bootstrap response")
+                }
+            }
+        )
+    }
+
+    /// Ends the running voice conversation, if any, and returns the chat to idle right away.
+    ///
+    /// The session's own `.ended` report arrives after the run is released and is dropped as stale.
+    func stopVoiceSession() {
+        guard let run = activeVoice else { return }
+        finishVoiceSession(run)
+    }
+
+    /// Releases `run` if it is still the live one: stops its session, cancels a still-open
+    /// bootstrap request and returns the chat to idle.
+    private func finishVoiceSession(_ run: VoiceRun) {
+        guard activeVoice === run else { return }
+        activeVoice = nil
+        isVoiceConnecting = false
+        voiceScrollAnchorId = nil
+        run.session?.stop()
+        if run.bootstrapStarted && !run.bootstrapFinished {
+            // No typed turn can start during voice, so the bootstrap is the request in flight.
+            chatService.cancelActiveStream()
+        }
+        // After the session has disconnected, so the next chat finds the transport free.
+        run.claim.release()
+    }
+
+    private func failVoiceSession(_ run: VoiceRun, reason: String) {
+        guard activeVoice === run else { return }
+        Log.error(label: LOG_TAG, "Voice session failed: \(reason)")
+        dispatchTrackingEvent(.errorOccurred(errorMessage: reason))
+        finishVoiceSession(run)
+        messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
+    }
+
+    /// Returns the live run when `session` belongs to it; callbacks from an earlier session are stale.
+    private func voiceRun(for session: VoiceSessionController) -> VoiceRun? {
+        guard identityReady, let run = activeVoice, run.session === session else { return nil }
+        return run
+    }
+
+    fileprivate func handleVoiceState(_ state: VoiceSessionState, of session: VoiceSessionController) {
+        guard let run = voiceRun(for: session) else { return }
+        switch state {
+        case .connecting:
+            break
+        case .listening:
+            isVoiceConnecting = false
+        case .reconnecting:
+            isVoiceConnecting = true
+        case .ended:
+            finishVoiceSession(run)
+        case .failed(let reason):
+            failVoiceSession(run, reason: reason)
+        }
+    }
+
+    /// Renders a transcript update. Text is cumulative per turn, so the role's open bubble is
+    /// rewritten in place; `isFinal` closes it and the next update for that role opens a new one.
+    fileprivate func handleVoiceTranscript(_ text: String, role: VoiceTranscriptRole, isFinal: Bool, of session: VoiceSessionController) {
+        guard let run = voiceRun(for: session) else { return }
+
+        if let openId = run.openMessageIds[role],
+           let index = messages.firstIndex(where: { $0.id == openId }) {
+            messages[index].messageBody = text
+        } else if !text.isEmpty {
+            let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
+            messages.append(message)
+            run.openMessageIds[role] = message.id
+            if role == .user || voiceScrollAnchorId == nil {
+                voiceScrollAnchorId = message.id
+                scrollToTop(messageId: message.id)
+            }
+        }
+
+        if isFinal {
+            run.openMessageIds[role] = nil
         }
     }
 
@@ -1130,5 +1378,48 @@ final class ChatController: ObservableObject {
 extension Array {
     subscript(safe index: Int) -> Element? {
         return indices.contains(index) ? self[index] : nil
+    }
+}
+
+// MARK: - Voice Session Listener
+
+extension ChatController: VoiceSessionListener {
+    // `VoiceSessionController` reports on the main thread; the hop only keeps that assumption safe.
+    nonisolated func voiceSession(_ session: VoiceSessionController, didChangeState state: VoiceSessionState) {
+        onMain { $0.handleVoiceState(state, of: session) }
+    }
+
+    nonisolated func voiceSession(_ session: VoiceSessionController, didUpdateTranscript text: String, role: VoiceTranscriptRole, isFinal: Bool) {
+        onMain { $0.handleVoiceTranscript(text, role: role, isFinal: isFinal, of: session) }
+    }
+
+    private nonisolated func onMain(_ work: @escaping @MainActor (ChatController) -> Void) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { work(self) }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                MainActor.assumeIsolated { work(self) }
+            }
+        }
+    }
+}
+
+/// One voice conversation, from the voice tap until it ends.
+private final class VoiceRun {
+    /// The session, set once the bootstrap delivered credentials.
+    var session: VoiceSessionController?
+    /// This conversation's hold on voice. If the chat goes away without ending the run, it is
+    /// released when the run is deallocated.
+    let claim: VoiceSessionOwnership.Claim
+    /// True once microphone permission was granted and the bootstrap request was sent.
+    var bootstrapStarted = false
+    /// True once the bootstrap request completed; an open one is cancelled when the run ends.
+    var bootstrapFinished = false
+    /// The transcript bubble each role is still speaking into.
+    var openMessageIds: [VoiceTranscriptRole: UUID] = [:]
+
+    init(claim: VoiceSessionOwnership.Claim) {
+        self.claim = claim
     }
 }
