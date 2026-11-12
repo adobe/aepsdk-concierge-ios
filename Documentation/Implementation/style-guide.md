@@ -252,7 +252,7 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.input.enableVoiceInput` | boolean | `false` | Enable voice input button |
+| `behavior.input.enableVoiceInput` | boolean | `false` | Show the speech-to-text (dictation) mic button. It doesn't affect the voice conversation button, which appears whenever the app passes a `voiceTransport` (see [Colors - Input Icons](#colors---input-icons)). |
 | `behavior.input.disableMultiline` | boolean | `true` | Disable multiline text input |
 | `behavior.input.showAiChatIcon` | object | `null` | Leading icon shown before the text field in the input bar. Object with an `icon` property: a local asset name or a remote `http(s)` URL — same resolution rules as `assets.icons.company` (see [Bundling local icons](#bundling-local-icons)). `null` or an empty `icon` hides it. Tooltip/accessibility label is set via `text["input.aiChatIcon.tooltip"]`. |
 | `behavior.input.sendButtonStyle` | string | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
@@ -685,6 +685,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-mic-waveform-gradient-start-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | Start color of the listening waveform bars' gradient. Falls back to `--color-primary` solid fill when unset. |
 | `--input-mic-waveform-gradient-end-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | End color of the listening waveform bars' gradient. |
 | `--input-mic-waveform-gradient-angle` | `colors.input.micWaveformGradient` | `Degrees` | `180` | Waveform bar gradient direction. Defaults to top-to-bottom. |
+
+The voice conversation button appears when the app passes a `voiceTransport` (see [Optional: voice conversations](../getting-started.md#optional-voice-conversations)). While the input field is empty it takes the send button's place, next to the mic button if `enableVoiceInput` is on. It has no tokens of its own: the icon uses `--color-primary` (outlined when idle, filled while a conversation runs), and the `--input-mic-*` tokens don't apply to it.
 
 ### Colors - Welcome Prompts
 

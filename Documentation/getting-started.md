@@ -96,6 +96,13 @@ Brand Concierge can hold a spoken conversation with the agent. The SDK runs the 
 
 The demo app's [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) is a complete transport built on the [LiveKit Swift SDK](https://github.com/livekit/client-sdk-swift). To add voice to your app:
 
+#### Before you start
+
+- **Brand Concierge version.** Voice needs a Brand Concierge version that includes `VoiceTransport`; 5.10.3 and earlier don't.
+- **Xcode 16.3 or later**, which LiveKit Swift SDK 2.17.0 requires.
+- **Voice enabled for your Brand Concierge.** Ask your Adobe contact to confirm it. The agent's voice and language are set there, not in the app.
+- **A physical iPhone** for the checks in [Audio quality](#audio-quality).
+
 #### 1. Add LiveKit to your app
 
 Add the package `https://github.com/livekit/client-sdk-swift.git` with Swift Package Manager and link its `LiveKit` product to your app target. LiveKit is your app's dependency: you choose and update its version, and Brand Concierge does not constrain it. The demo app pins 2.17.0, the version Brand Concierge voice was tested with on devices.
@@ -172,3 +179,11 @@ The transport, and therefore LiveKit, owns the audio session and the audio proce
 - **Speaker output.** The reference transport prefers the built-in speaker over the receiver (`AudioManager.shared.isSpeakerOutputPreferred`). Headphones and Bluetooth devices take over when connected. The setting is LiveKit-wide, so it also applies to any other LiveKit use in your app; the transport puts back your app's value when the conversation ends.
 - **Interruptions.** Brand Concierge mutes the microphone through the transport during an audio interruption (a call, Siri), including one that began while connecting, and unmutes it afterwards. If iOS does not allow the audio to resume, the conversation ends with an error message, because the chat has no unmute control.
 - **Test on a device.** The simulator proves the wiring and the connection, but not echo, audio routes or interruptions. Check a conversation on the speaker, connecting and disconnecting wired and Bluetooth headphones mid-session, a call or Siri during a session, and locking the screen or switching to another app mid-session (with and without the background mode, if you offer a setting). Repeat these checks when you update LiveKit or change its audio settings (for example `AudioManager.shared.sessionConfiguration`) elsewhere in your app.
+
+#### Limitations
+
+- **No authentication token or XDM context.** Brand Concierge doesn't send the token from `Concierge.setAuthTokenProvider` or the context from `Concierge.updateXDMContext(_:)` when it starts a voice conversation, so the voice agent works without them. Typed and dictated messages in the same chat still include them.
+- **Language.** The app doesn't send a locale with voice; the agent speaks the language set for your Brand Concierge.
+- **Voice UI text is English** and not configurable: the voice button's accessibility labels ("Start voice conversation", "Stop voice conversation") and the microphone permission message.
+- **Network.** Voice uses WebRTC (UDP, with TCP and TLS fallback) in addition to the HTTPS chat requests. Networks that block it, such as some corporate or venue Wi-Fi, can prevent voice from connecting while text chat works. Test on the networks your users use.
+- **App Store privacy.** During a conversation, the microphone audio is streamed to Adobe's voice service, which transcribes it. Reflect this in your App Privacy details and privacy policy.
