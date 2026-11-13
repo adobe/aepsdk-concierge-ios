@@ -19,7 +19,8 @@
       "showCancelButton": false
     },
     "citations": {
-      "showLinkIcon": true
+      "showLinkIcon": true,
+      "showCitationNumbers": true
     },
     "multimodalCarousel": {
       "cardClickAction": "openLink",

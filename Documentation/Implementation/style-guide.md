@@ -311,6 +311,7 @@ Both notes flags default to `true`. Set both to `false` to hide the free-form No
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
 | `behavior.citations.showLinkIcon` | boolean | `false` | When `true`, shows an external link icon next to citation URLs in the sources list. |
+| `behavior.citations.showCitationNumbers` | boolean | `true` | When `false`, hides the inline citation number badges in the message text. The "Sources" section below the message still appears. |
 
 ### Privacy Notice
 
@@ -378,7 +379,8 @@ tokens are added.
       "showCancelButton": null
     },
     "citations": {
-      "showLinkIcon": false
+      "showLinkIcon": false,
+      "showCitationNumbers": true
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -979,7 +981,8 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
       "showCancelButton": null
     },
     "citations": {
-      "showLinkIcon": false
+      "showLinkIcon": false,
+      "showCitationNumbers": true
     },
     "privacyNotice": {
       "title": "Privacy Notice",
@@ -1252,6 +1255,7 @@ This section documents which properties are fully implemented, partially impleme
 | `behavior.feedback.showCloseButton` | ✅ | Toggles the top-right X close button in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.feedback.showCancelButton` | ✅ | Toggles the Cancel button in FeedbackOverlayView; defaults by `displayMode` when `null` |
 | `behavior.citations.showLinkIcon` | ✅ | Controls external link icon visibility in SourceRowView |
+| `behavior.citations.showCitationNumbers` | ✅ | Controls inline citation number badge rendering in BasicMessageView; Sources list unaffected |
 | `behavior.chat.messageAlignment` | ✅ | Controls message horizontal alignment |
 | `behavior.chat.messageWidth` | ✅ | Controls max message width |
 | `behavior.chat.userMessageBubbleStyle` | ✅ | Controls user bubble shape (`"balloon"` = speech bubble with squared-off bottom-right; default = fully rounded) |

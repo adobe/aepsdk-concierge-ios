@@ -243,19 +243,53 @@ public struct ConciergeCitationsBehavior: Codable {
     public var defaultLinkIcon: String?
     /// Visual styling (size, spacing, baseline, color) for inline link icons.
     public var linkIconStyle: ConciergeLinkIconStyle?
+    /// Whether inline citation number badges are rendered in the message text. Defaults to `true`.
+    /// The "Sources" section below the message is unaffected.
+    public var showCitationNumbers: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case showLinkIcon
+        case phoneIcon
+        case storeIcon
+        case defaultLinkIcon
+        case linkIconStyle
+        case showCitationNumbers
+    }
 
     public init(
         showLinkIcon: Bool = false,
         phoneIcon: String? = nil,
         storeIcon: String? = nil,
         defaultLinkIcon: String? = nil,
-        linkIconStyle: ConciergeLinkIconStyle? = nil
+        linkIconStyle: ConciergeLinkIconStyle? = nil,
+        showCitationNumbers: Bool = true
     ) {
         self.showLinkIcon = showLinkIcon
         self.phoneIcon = phoneIcon
         self.storeIcon = storeIcon
         self.defaultLinkIcon = defaultLinkIcon
         self.linkIconStyle = linkIconStyle
+        self.showCitationNumbers = showCitationNumbers
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        showLinkIcon = try container.decodeIfPresent(Bool.self, forKey: .showLinkIcon) ?? false
+        phoneIcon = try container.decodeIfPresent(String.self, forKey: .phoneIcon)
+        storeIcon = try container.decodeIfPresent(String.self, forKey: .storeIcon)
+        defaultLinkIcon = try container.decodeIfPresent(String.self, forKey: .defaultLinkIcon)
+        linkIconStyle = try container.decodeIfPresent(ConciergeLinkIconStyle.self, forKey: .linkIconStyle)
+        showCitationNumbers = try container.decodeIfPresent(Bool.self, forKey: .showCitationNumbers) ?? true
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(showLinkIcon, forKey: .showLinkIcon)
+        try container.encodeIfPresent(phoneIcon, forKey: .phoneIcon)
+        try container.encodeIfPresent(storeIcon, forKey: .storeIcon)
+        try container.encodeIfPresent(defaultLinkIcon, forKey: .defaultLinkIcon)
+        try container.encodeIfPresent(linkIconStyle, forKey: .linkIconStyle)
+        try container.encode(showCitationNumbers, forKey: .showCitationNumbers)
     }
 }
 
