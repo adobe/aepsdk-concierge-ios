@@ -83,4 +83,55 @@ final class ConciergeCitationsBehaviorTests: XCTestCase {
         XCTAssertTrue(decoded.showLinkIcon)
         XCTAssertFalse(decoded.showCitationNumbers)
     }
+
+    func test_decoratingWithoutCitationNumbers_preservesSourceReadingOrder() {
+        let markdown = "First source, then second source."
+        let sources = [
+            Source(
+                url: "https://example.com/second",
+                title: "Second",
+                startIndex: 18,
+                endIndex: 32,
+                citationNumber: 2
+            ),
+            Source(
+                url: "https://example.com/first",
+                title: "First",
+                startIndex: 0,
+                endIndex: 12,
+                citationNumber: 1
+            ),
+            Source(
+                url: "https://example.com/first-duplicate",
+                title: "First duplicate",
+                startIndex: 0,
+                endIndex: 12,
+                citationNumber: 1
+            )
+        ]
+
+        let withCitationNumbers = CitationRenderer.decorate(
+            markdown: markdown,
+            sources: sources,
+            showCitationNumbers: true
+        )
+        let withoutCitationNumbers = CitationRenderer.decorate(
+            markdown: markdown,
+            sources: sources,
+            showCitationNumbers: false
+        )
+
+        XCTAssertEqual(withoutCitationNumbers?.annotatedMarkdown, markdown)
+        XCTAssertEqual(withoutCitationNumbers?.markers, [])
+        XCTAssertEqual(
+            withoutCitationNumbers?.deduplicatedSources.map(\.citationNumber),
+            [1, 2]
+        )
+        XCTAssertEqual(
+            withoutCitationNumbers?.deduplicatedSources,
+            withCitationNumbers?.deduplicatedSources
+        )
+        XCTAssertNotEqual(withCitationNumbers?.annotatedMarkdown, markdown)
+        XCTAssertFalse(withCitationNumbers?.markers.isEmpty ?? true)
+    }
 }

@@ -125,11 +125,17 @@ struct BasicMessageView: View {
         // the expensive `CitationRenderer.decorate` call would run 3× per render.
         let rawSources = sources ?? []
         let decoration: CitationDecoration? = {
-            guard !isUserMessage, showCitationNumbers, let body = messageBody, !body.isEmpty else { return nil }
-            return CitationRenderer.decorate(markdown: body, sources: rawSources)
+            guard !isUserMessage, let body = messageBody, !body.isEmpty else { return nil }
+            return CitationRenderer.decorate(
+                markdown: body,
+                sources: rawSources,
+                showCitationNumbers: showCitationNumbers
+            )
         }()
-        let annotatedBody = decoration?.annotatedMarkdown ?? (messageBody ?? "")
-        let markers = decoration?.markers ?? []
+        let annotatedBody = showCitationNumbers
+            ? decoration?.annotatedMarkdown ?? (messageBody ?? "")
+            : (messageBody ?? "")
+        let markers = showCitationNumbers ? decoration?.markers ?? [] : []
         let displayedSources = decoration?.deduplicatedSources ?? CitationRenderer.deduplicate(rawSources)
 
         VStack(alignment: alignment, spacing: 0) {
