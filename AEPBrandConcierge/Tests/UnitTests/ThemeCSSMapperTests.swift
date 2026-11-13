@@ -12,9 +12,159 @@
 
 import SwiftUI
 import XCTest
+import AEPServices
 @testable import AEPBrandConcierge
 
 final class ThemeCSSMapperTests: XCTestCase {
+    func test_unknownCSSKeyLogsWhetherItWasKeptOrIgnored() {
+        let logging = UnknownCSSKeyLogging()
+        let previousLogging = ServiceProvider.shared.loggingService
+        let previousFilter = Log.logFilter
+        ServiceProvider.shared.loggingService = logging
+        Log.logFilter = .debug
+        defer {
+            ServiceProvider.shared.loggingService = previousLogging
+            Log.logFilter = previousFilter
+        }
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "--colour-primary", cssValue: "#123456", to: &theme)
+        CSSKeyMapper.apply(cssKey: "--app-blank", cssValue: " ", to: &theme)
+        CSSKeyMapper.applyNumericValue(cssKey: "--app-width", cssValue: "140", to: &theme)
+        CSSKeyMapper.applyNumericValue(cssKey: "--message-border-radius", cssValue: "99", to: &theme)
+        XCTAssertEqual(logging.messages, [
+            "Unknown CSS key 'colour-primary' kept as a custom variable for app renderers.",
+            "Unknown CSS key 'app-blank' ignored.",
+            "Unknown CSS key 'app-width' kept as a custom variable for app renderers."
+        ], "A misspelled SDK token must stay visible in debug logs; a number for a known token stays silent")
+    }
+
+    func test_decodedCSSVariablesUseTheSameValidationAsCSSTokens() throws {
+        let values = [
+            " --app-color ": "  #abcdef  ",
+            "--app-empty": " ",
+            "not-css": "value",
+            "--color-primary": "#123456",
+            "--" + String(repeating: "k", count: 511): "value",
+            "--app-long": String(repeating: "v", count: 513),
+            "--app-boundary": String(repeating: "v", count: 512)
+        ]
+        let data = try JSONSerialization.data(withJSONObject: ["cssVariables": values])
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(theme.cssVariables, [
+            "--app-color": "#abcdef",
+            "--app-boundary": String(repeating: "v", count: 512)
+        ])
+    }
+
+    func test_decodedCSSVariablesLimitCountAndAllowThemeOverride() throws {
+        var values: [String: String] = [:]
+        for index in 0..<260 {
+            values[String(format: "--app-%03d", index)] = "before"
+        }
+        let data = try JSONSerialization.data(withJSONObject: [
+            "cssVariables": values,
+            "theme": ["--app-000": "after", "--app-overflow": "ignored"]
+        ])
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(theme.cssVariables.count, 256)
+        XCTAssertEqual(theme.cssVariables["--app-000"], "after")
+        XCTAssertNil(theme.cssVariables["--app-256"])
+        XCTAssertNil(theme.cssVariables["--app-overflow"])
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(roundTrip.cssVariables, theme.cssVariables)
+    }
+
+    func test_cssVariablesEncodeWithTheCanonicalKey() throws {
+        let json = """
+        {"cssVariables":{" --app-accent ":" #000000 ","--app-accent":" #123456 ","--bad":42},
+        "theme":{"--message-border-radius":"12px"}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.cssVariables, ["--app-accent": "#123456"])
+        XCTAssertEqual(theme.layout.messageBorderRadius, 12)
+
+        let encoded = try JSONEncoder().encode(theme)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(object["cssVariables"] as? [String: String], theme.cssVariables)
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertEqual(roundTrip.cssVariables, theme.cssVariables)
+        XCTAssertEqual(roundTrip.layout.messageBorderRadius, 12)
+    }
+
+    func test_unknownAppTokenIsRetainedAndKnownTokenIsNotDuplicated() throws {
+        let json = """
+        {"theme":{"--app-accent-color":"  #abcdef  ","--app-spacing":12,
+        "--color-primary":"#123456","--app-blank":"  "}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.cssVariables["--app-accent-color"], "#abcdef")
+        XCTAssertEqual(theme.cssVariables["--app-spacing"], "12")
+        XCTAssertNil(theme.cssVariables["--app-blank"])
+        XCTAssertNil(theme.cssVariables["--color-primary"])
+        let encoded = try JSONEncoder().encode(theme)
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertEqual(roundTrip.cssVariables["--app-accent-color"], "#abcdef")
+    }
+
+    func test_numericCSSVariablesMatchAndroidValues() throws {
+        let json = """
+        {"theme":{"--my-card-tile-width":140,"--my-card-disabled-opacity":0.5,
+        "--my-card-offset":-140,"--my-card-zero":0,"--my-card-flag":true}}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.cssVariables, [
+            "--my-card-tile-width": "140",
+            "--my-card-disabled-opacity": "0.5",
+            "--my-card-offset": "-140",
+            "--my-card-zero": "0"
+        ])
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: JSONEncoder().encode(theme))
+        XCTAssertEqual(roundTrip.cssVariables, theme.cssVariables)
+    }
+
+    func test_numericValueForKnownKeyIsIgnoredAsOnDev() throws {
+        let baseline = try JSONDecoder().decode(ConciergeTheme.self, from: Data(#"{"theme":{}}"#.utf8))
+        let json = #"{"theme":{"--message-border-radius":99}}"#
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+        XCTAssertEqual(theme.layout.messageBorderRadius, baseline.layout.messageBorderRadius)
+        XCTAssertTrue(theme.cssVariables.isEmpty)
+    }
+
+    func test_malformedCSSVariablesDoNotRejectExistingThemeValues() throws {
+        for value in ["42", #""invalid""#, "[]", #"{"--bad":42}"#] {
+            let json = #"{"cssVariables":\#(value),"theme":{"--message-border-radius":"12px"}}"#
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+            XCTAssertEqual(theme.layout.messageBorderRadius, 12)
+            XCTAssertTrue(theme.cssVariables.isEmpty)
+        }
+    }
+
+    func test_invalidCSSVariableDoesNotDiscardValidSibling() throws {
+        let values: [String: Any] = ["--good": "#abcdef", "--bad": 42]
+        let data = try JSONSerialization.data(withJSONObject: ["cssVariables": values])
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+        XCTAssertEqual(theme.cssVariables, ["--good": "#abcdef"])
+    }
+
+    func test_emptyCSSVariablesAreOmittedFromEncodedTheme() throws {
+        let encoded = try JSONEncoder().encode(ConciergeTheme())
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertNil(object["cssVariables"])
+    }
+
+    func test_cssVariables_areBoundedAndOverwritable() {
+        var theme = ConciergeTheme()
+        CSSKeyMapper.apply(cssKey: "--app-accent", cssValue: "  #123456  ", to: &theme)
+        XCTAssertEqual(theme.cssVariables["--app-accent"], "#123456")
+        CSSKeyMapper.apply(cssKey: "not-css", cssValue: "value", to: &theme)
+        XCTAssertNil(theme.cssVariables["not-css"])
+        for index in 0..<260 {
+            CSSKeyMapper.apply(cssKey: "--sample-\(index)", cssValue: "value", to: &theme)
+        }
+        XCTAssertEqual(theme.cssVariables.count, 256)
+        CSSKeyMapper.apply(cssKey: "--app-accent", cssValue: "new", to: &theme)
+        XCTAssertEqual(theme.cssVariables["--app-accent"], "new")
+    }
     
     // MARK: - Key Normalization Tests
     
@@ -1413,5 +1563,23 @@ final class ThemeCSSMapperTests: XCTestCase {
 
         // Then
         XCTAssertNil(theme.layout.thinkingDotVerticalAlignment)
+    }
+}
+
+private final class UnknownCSSKeyLogging: NSObject, Logging {
+    private let lock = NSLock()
+    private var recordedMessages: [String] = []
+
+    var messages: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedMessages
+    }
+
+    func log(level: LogLevel, label: String, message: String) {
+        guard level == .debug, message.hasPrefix("Unknown CSS key ") else { return }
+        lock.lock()
+        recordedMessages.append(message)
+        lock.unlock()
     }
 }

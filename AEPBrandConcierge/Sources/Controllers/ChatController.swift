@@ -47,7 +47,14 @@ private struct RecoveryRequest {
 final class ChatController: ObservableObject {
     // MARK: - Published State
 
-    @Published var messages: [Message] = []
+    /// The transcript, and the single source of truth for native card lifetime. Any write that drops a
+    /// card's row - identity reset, rollback, or a direct edit - disposes that card here, so there is no
+    /// removal path that can leave a live card behind. Every write is checked, including streaming
+    /// updates; the check returns immediately while no native cards exist.
+    @Published var messages: [Message] = [] {
+        didSet { nativeCards.reconcile(with: messages) }
+    }
+
     @Published private(set) var chatState: ChatState = .idle
     @Published var userScrollTick: Int = 0
     @Published var userMessageToScrollId: UUID?
@@ -97,8 +104,13 @@ final class ChatController: ObservableObject {
     /// dead composer - the failure mode behind several of this feature's bugs. Deriving it here
     /// makes that state unreachable: there is nowhere left to end a turn without also going idle.
     private var activeTurn: ChatTurn? {
-        didSet { chatState = activeTurn == nil ? .idle : .processing }
+        didSet {
+            chatState = activeTurn == nil ? .idle : .processing
+            nativeCards.setBusy(activeTurn != nil)
+        }
     }
+    /// The native cards behind this transcript's card rows. Views read it to resolve a row's card.
+    let nativeCards = NativeCardStore()
 
     /// Injectable so tests can exercise the caps without waiting out the production values.
     private let handoffFirstChunkTimeout: TimeInterval
@@ -127,6 +139,7 @@ final class ChatController: ObservableObject {
     /// messages, so a checkout-driven conversation would otherwise still look untouched.
     var hasConversationStarted: Bool {
         messages.contains { message in
+            if message.nativeCardId != nil { return true }
             switch message.template {
             case .welcomeHeader, .welcomePromptSuggestion:
                 return false
@@ -539,6 +552,7 @@ final class ChatController: ObservableObject {
 
     func endConversationForIdentityReset() {
         endedForIdentityReset = true
+        nativeCards.removeAll()
         abandonActiveTurn()
         chatService.endFeedbackForIdentityReset()
         chatService.invalidateTransportForIdentityReset()
@@ -793,6 +807,7 @@ final class ChatController: ObservableObject {
         // and to be able to effectively do a diff of what has already been received and what is new.
         var accumulatedContent = ""
         var latestElements: [MultimodalElement] = []
+        var completedElements: [MultimodalElement] = []
         var responseStartedDispatched = false
         let attemptStartedAt = Date()
         let callbackSequencer = MainActorCallbackSequencer()
@@ -841,14 +856,14 @@ final class ChatController: ObservableObject {
                     let state = payload.state
                     if state == ConciergeConstants.StreamState.COMPLETED {
                         turn.noteResponseCompleted()
+                        completedElements = payload.response?.multimodalElements?.elements ?? []
                     }
 
                     // Serializing + pretty-printing the response is only useful for local debugging,
                     #if DEBUG
                     if let response = payload.response {
-                        if let data = try? JSONEncoder().encode(response),
-                           let json = String(data: data, encoding: .utf8) {
-                            Log.debug(label: self.LOG_TAG, "SSE chunk (state=\(state ?? "n/a")): \(json.prettyPrintedJSON())")
+                        if let description = response.debugLogDescription {
+                            Log.debug(label: self.LOG_TAG, "SSE chunk (state=\(state ?? "n/a")): \(description)")
                         }
                     } else {
                         Log.debug(label: self.LOG_TAG, "SSE chunk: state=\(state ?? "n/a") (no response)")
@@ -896,7 +911,7 @@ final class ChatController: ObservableObject {
                         }
                     }
 
-                    // Capture multimodal elements for rendering on completion
+                    // Retain nonempty elements for legacy built-in buffering.
                     if let elements = payload.response?.multimodalElements?.elements, !elements.isEmpty {
                         latestElements = elements
                     }
@@ -978,17 +993,21 @@ final class ChatController: ObservableObject {
                         }
 
                         self.endTurn(turn)
-                    } else if accumulatedContent.isEmpty && latestElements.isEmpty {
-                        outcome = .invalidResponseData
-                        // Genuinely empty response — no text and no multimodal elements.
-                        self.discardPlaceholder(of: turn)
-
-                        if turn.rendersFailures {
-                            self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
+                    } else {
+                        let plan = ResponseElementResolver.resolve(
+                            completedElements.isEmpty ? latestElements : completedElements,
+                            turnId: turn.placeholderId, nativeCards: self.nativeCards,
+                            allowsNativeCards: !completedElements.isEmpty)
+                        guard !accumulatedContent.isEmpty || plan.hasRenderableElements else {
+                            outcome = .invalidResponseData
+                            self.discardPlaceholder(of: turn)
+                            if turn.rendersFailures {
+                                self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
+                            }
+                            self.endTurn(turn)
+                            return
                         }
 
-                        self.endTurn(turn)
-                    } else {
                         let completed = self.updatePlaceholder(of: turn) { current in
                             current.messageBody = accumulatedContent
                             current.shouldSpeakMessage = !accumulatedContent.isEmpty
@@ -1014,7 +1033,7 @@ final class ChatController: ObservableObject {
                         // placeholder rather than leave an empty one above the cards. Deliberately
                         // after the guard above: removing it on a path that then returns early
                         // would strip the turn's only message and still report success.
-                        if accumulatedContent.isEmpty && !latestElements.isEmpty {
+                        if accumulatedContent.isEmpty {
                             self.discardPlaceholder(of: turn)
                         }
                         self.dispatchTrackingEvent(.responseCompleted(
@@ -1022,17 +1041,8 @@ final class ChatController: ObservableObject {
                             interactionId: completedPayload.interactionId ?? "unknown"
                         ))
 
-                        // Render multimodal elements (cards, CTAs) from the completed response
-                        if !latestElements.isEmpty {
-                            self.renderMultimodalElements(latestElements)
-                        }
-
-                        // Append prompt suggestions as their own message bubbles at the end
-                        if !self.latestPromptSuggestions.isEmpty {
-                            for suggestion in self.latestPromptSuggestions {
-                                self.messages.append(Message(template: .promptSuggestion(text: suggestion)))
-                            }
-                        }
+                        self.appendElements(plan, payload: completedPayload, sessionId: resolvedSessionID,
+                                            promptSuggestions: self.latestPromptSuggestions)
 
                         self.endTurn(turn)
                     }
@@ -1070,59 +1080,22 @@ final class ChatController: ObservableObject {
         latestPromptSuggestions = []
     }
 
-    /// Appends multimodal elements to `messages`, respecting their relative order from
-    /// the server. Card-type elements are collapsed into a single card or carousel at
-    /// the position of the first card encountered.
-    private func renderMultimodalElements(_ elements: [MultimodalElement]) {
-        let cardElements = elements.filter { $0.elementType != .ctaButton }
-
-        // If any cards exist in the multimodal elements list, 
-        // resolves to either single card or carousel of cards depending on number of card elements
-        let cardMessage: Message? = {
-            if cardElements.count == 1, let card = cardElements.first, let entityInfo = card.entityInfo {
-                let cardData = ProductCardData(entityInfo: entityInfo, element: card)
-                return Message(template: .productCard(cardData))
-            } else if cardElements.count > 1 {
-                var carouselItems: [Message] = []
-                for card in cardElements {
-                    guard let entityInfo = card.entityInfo else { continue }
-                    let cardData = ProductCardData(entityInfo: entityInfo, element: card)
-                    carouselItems.append(Message(template: .productCarouselCard(cardData)))
-                }
-                return Message(template: .carouselGroup(carouselItems))
-            }
-            return nil
-        }()
-
-        var cardElementEmitted = false
-
-        for element in elements {
-            if element.elementType == .ctaButton {
-                guard let action = element.entityInfo?.primary else {
-                    Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
-                    continue
-                }
-                messages.append(Message(template: .ctaButton(action)))
-            } else if !cardElementEmitted {
-                if let cardMessage = cardMessage {
-                    messages.append(cardMessage)
-                }
-                cardElementEmitted = true
-            }
-        }
-
-        let elementDicts: [[String: Any]] = cardElements.compactMap { element in
-            guard let entityInfo = element.entityInfo else { return nil }
-            var dict: [String: Any] = [:]
-            if let name = entityInfo.productName { dict["productName"] = name }
-            if let url = entityInfo.productPageURL { dict["productPageURL"] = url }
-            if let price = entityInfo.productPrice { dict["productPrice"] = price }
-            return dict
-        }
-        guard !elementDicts.isEmpty else { return }
-        let displayMode = elementDicts.count == 1 ? "single" : "carousel"
-        dispatchTrackingEvent(.cardsRendered(displayMode: displayMode, elements: elementDicts))
+    private func appendElements(_ plan: ResponseElementPlan, payload: ConversationPayload, sessionId: String?,
+                                promptSuggestions: [String]) {
+        let newMessages = plan.makeMessages(nativeCards: nativeCards, payload: payload, sessionId: sessionId,
+                                            promptSuggestions: promptSuggestions)
+        if !newMessages.isEmpty { messages.append(contentsOf: newMessages) }
+        if let event = plan.cardsRenderedEvent { dispatchTrackingEvent(event) }
     }
+
+    #if DEBUG
+    func renderElementsForTesting(_ elements: [MultimodalElement], turnId: UUID,
+                                  payload: ConversationPayload, sessionId: String? = nil,
+                                  promptSuggestions: [String] = []) {
+        let plan = ResponseElementResolver.resolve(elements, turnId: turnId, nativeCards: nativeCards)
+        appendElements(plan, payload: payload, sessionId: sessionId, promptSuggestions: promptSuggestions)
+    }
+    #endif
 }
 
 // MARK: - Array Safe Access Extension

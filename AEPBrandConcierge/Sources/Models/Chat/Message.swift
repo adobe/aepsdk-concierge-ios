@@ -15,7 +15,22 @@ import SwiftUI
 /// Represents a single message in the chat conversation.
 public struct Message: Identifiable {
     public let id = UUID()
-    let template: MessageTemplate
+    private enum Content {
+        case template(MessageTemplate)
+        case nativeCard(cardId: String)
+    }
+
+    private let content: Content
+    var template: MessageTemplate {
+        guard case .template(let template) = content else {
+            preconditionFailure("Native-card messages do not have a built-in template.")
+        }
+        return template
+    }
+    var nativeCardId: String? {
+        guard case .nativeCard(let cardId) = content else { return nil }
+        return cardId
+    }
     var payload: ConversationPayload?
     var shouldSpeakMessage = false
     var messageBody: String?
@@ -28,6 +43,15 @@ public struct Message: Identifiable {
 
     public static let divider = Message(template: .divider)
 
+    init(nativeCardId: String, promptSuggestions: [String]? = nil) {
+        content = .nativeCard(cardId: nativeCardId)
+        payload = nil
+        sources = nil
+        linkHints = nil
+        self.promptSuggestions = promptSuggestions
+        feedbackSentiment = nil
+    }
+
     /// - Parameter onCtaButtonTap: forwarded into the constructed `ChatMessageView` so CTA taps on
     ///   cards/buttons rendered inside a carousel (see `CarouselGroupView`) still track, matching
     ///   messages rendered directly by `MessageListView`.
@@ -36,7 +60,7 @@ public struct Message: Identifiable {
     }
 
     public init(template: MessageTemplate, shouldSpeakMessage: Bool = false, messageBody: String? = nil, sources: [Source]? = nil, linkHints: [LinkHint]? = nil, promptSuggestions: [String]? = nil, feedbackSentiment: FeedbackSentiment? = nil, feedbackEligible: Bool = false, payload: ConversationPayload? = nil) {
-        self.template = template
+        content = .template(template)
         self.payload = payload
         self.shouldSpeakMessage = shouldSpeakMessage
         self.messageBody = messageBody

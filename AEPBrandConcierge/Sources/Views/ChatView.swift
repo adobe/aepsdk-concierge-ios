@@ -84,6 +84,7 @@ struct ChatView: View {
             // Filter welcome content (header + examples) based on input state and whether the user has interacted
             let shouldShowWelcome = (controller.composerState == .empty) && !controller.hasConversationStarted
             let displayMessages: [Message] = shouldShowWelcome ? controller.messages : controller.messages.filter { message in
+                if message.nativeCardId != nil { return true }
                 switch message.template {
                 case .welcomePromptSuggestion, .welcomeHeader:
                     return false
@@ -114,6 +115,7 @@ struct ChatView: View {
             } onCtaButtonTap: { label, url in
                 controller.trackCtaButtonClicked(label: label, url: url)
             }
+                .environment(\.conciergeNativeCardStore, controller.nativeCards)
                 .frame(maxWidth: theme.layout.chatInterfaceMaxWidth)
             }
             .frame(maxWidth: .infinity)

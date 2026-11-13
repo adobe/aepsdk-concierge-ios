@@ -85,8 +85,8 @@ struct MessageListView: View {
                             .foregroundColor(theme.colors.message.conciergeText.color)
                         Spacer()
                     }
-                    .padding(.leading, horizontalPadding(for: message.template).leading)
-                    .padding(.trailing, horizontalPadding(for: message.template).trailing)
+                    .padding(.leading, horizontalPadding(for: message).leading)
+                    .padding(.trailing, horizontalPadding(for: message).trailing)
                     .padding(.bottom, -4)
                 }
 
@@ -126,26 +126,46 @@ struct MessageListView: View {
         }
     }
 
+    @ViewBuilder
     private func messageView(_ message: Message) -> some View {
-        ChatMessageView(
-            messageId: message.id,
-            template: message.template,
-            messageBody: message.messageBody,
-            sources: message.sources,
-            linkHints: message.linkHints,
-            promptSuggestions: message.promptSuggestions,
-            feedbackSentiment: message.feedbackSentiment,
-            feedbackEligible: message.feedbackEligible,
-            isStreamComplete: message.isStreamComplete,
-            onSuggestionTap: onSuggestionTap,
-            onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
-            onCtaButtonTap: onCtaButtonTap
-        )
-        .padding(horizontalPadding(for: message.template))
-        .onAppear {
-            if message.shouldSpeakMessage, let messageBody = message.chatMessageView().messageBody {
-                onSpeak(messageBody)
+        if let suggestions = attachedSuggestions(for: message) {
+            VStack(alignment: .leading, spacing: 8) {
+                rowView(message)
+                // Laid out like standalone suggestion rows, whatever insets the card row uses.
+                AttachedPromptSuggestionsView(suggestions: suggestions, onSuggestionTap: onSuggestionTap)
+                    .padding(horizontalPadding(for: .promptSuggestion(text: "")))
             }
+        } else {
+            rowView(message)
+        }
+    }
+
+    private func rowView(_ message: Message) -> some View {
+        Group {
+            if let cardId = message.nativeCardId {
+                NativeCardView(cardId: cardId)
+            } else {
+                ChatMessageView(
+                    messageId: message.id,
+                    template: message.template,
+                    messageBody: message.messageBody,
+                    sources: message.sources,
+                    linkHints: message.linkHints,
+                    promptSuggestions: message.promptSuggestions,
+                    feedbackSentiment: message.feedbackSentiment,
+                    feedbackEligible: message.feedbackEligible,
+                    isStreamComplete: message.isStreamComplete,
+                    onSuggestionTap: onSuggestionTap,
+                    onWelcomePromptSuggestionTap: onWelcomePromptSuggestionTap,
+                    onCtaButtonTap: onCtaButtonTap
+                )
+            }
+        }
+        .padding(horizontalPadding(for: message))
+        .onAppear {
+            guard message.nativeCardId == nil, message.shouldSpeakMessage,
+                  let messageBody = message.chatMessageView().messageBody else { return }
+            onSpeak(messageBody)
         }
     }
 
@@ -167,8 +187,21 @@ struct MessageListView: View {
     var privacyNoticeIndex: Int? {
         guard privacyNotice.hasContent else { return nil }
         return messages.firstIndex {
+            guard $0.nativeCardId == nil else { return false }
             if case .basic(isUserMessage: true) = $0.template { return true }
             return false
+        }
+    }
+
+    /// Prompt suggestions the SDK attached to a card row of a response that rendered a native card.
+    func attachedSuggestions(for message: Message) -> [String]? {
+        guard let suggestions = message.promptSuggestions, !suggestions.isEmpty else { return nil }
+        if message.nativeCardId != nil { return suggestions }
+        switch message.template {
+        case .productCard, .carouselGroup:
+            return suggestions
+        default:
+            return nil
         }
     }
 
@@ -218,10 +251,26 @@ struct MessageListView: View {
         return EdgeInsets(top: 0, leading: h, bottom: 0, trailing: h)
     }
 
+    private func horizontalPadding(for message: Message) -> EdgeInsets {
+        guard message.nativeCardId != nil else { return horizontalPadding(for: message.template) }
+        guard theme.hasAgentIcon else {
+            let horizontal = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+            return EdgeInsets(top: 0, leading: horizontal, bottom: 0, trailing: horizontal)
+        }
+        return EdgeInsets(
+            top: 0,
+            leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
+            bottom: 0,
+            trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+        )
+    }
+
     /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.
     private func isFirstInSuggestionGroup(at index: Int) -> Bool {
+        guard messages[index].nativeCardId == nil else { return false }
         guard case .promptSuggestion = messages[index].template else { return false }
         if index == 0 { return true }
+        guard messages[index - 1].nativeCardId == nil else { return true }
         if case .promptSuggestion = messages[index - 1].template { return false }
         return true
     }
@@ -242,6 +291,7 @@ struct MessageListView: View {
         guard chatState == .processing,
               messages.indices.contains(index),
               index == messages.count - 1,
+              messages[index].nativeCardId == nil,
               case .basic(let isUserMessage) = messages[index].template,
               !isUserMessage
         else { return false }
@@ -251,7 +301,11 @@ struct MessageListView: View {
         // the anchor to scroll against, so the scroll clamps part-way.
         if isTurnAnchor(at: index - 1) || isTurnAnchor(at: index) { return true }
 
-        guard let lastUserIndex = messages.lastIndex(where: { if case .basic(true) = $0.template { return true }; return false })
+        guard let lastUserIndex = messages.lastIndex(where: {
+            guard $0.nativeCardId == nil else { return false }
+            if case .basic(true) = $0.template { return true }
+            return false
+        })
         else { return false }
         return lastUserIndex == index - 1
     }

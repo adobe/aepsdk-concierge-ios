@@ -40,6 +40,16 @@ class ConciergeChatService: NSObject {
     private var dataTask: URLSessionDataTask?
     private var onChunkHandler: ((ConversationPayload) -> Void)?
     private var onCompleteHandler: ((ConciergeError?) -> Void)?
+    private final class SSEFramingState {
+        let usesNativeFraming: Bool
+        var lineBuffer = Data()
+
+        init(usesNativeFraming: Bool) {
+            self.usesNativeFraming = usesNativeFraming
+        }
+    }
+    // URLSession's delegate queue is serial; only delegate callbacks access these per-task buffers.
+    private var sseFramingStates: [Int: SSEFramingState] = [:]
     private let feedbackLock = NSLock()
     private var feedbackTasks: [UUID: URLSessionDataTask] = [:]
     private var feedbackEndedForIdentityReset = false
@@ -346,36 +356,62 @@ extension ConciergeChatService: URLSessionDataDelegate {
 
     /// Called each time the server sends a streaming event
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard let dataString = String(data: data, encoding: .utf8) else {
+        let state: SSEFramingState
+        if let existing = sseFramingStates[dataTask.taskIdentifier] {
+            state = existing
+        } else {
+            state = SSEFramingState(usesNativeFraming: NativeCardRegistry.hasAnyRenderer)
+            sseFramingStates[dataTask.taskIdentifier] = state
+        }
+
+        guard state.usesNativeFraming else {
+            guard let dataString = String(data: data, encoding: .utf8) else { return }
+            for component in dataString.components(separatedBy: .newlines) {
+                processSSELine(component)
+            }
             return
         }
 
-        // The response may have multiple chunks of data, we need to process them all
-        let dataComponents = dataString.components(separatedBy: .newlines)
-        for component in dataComponents {
-            // Skip newlines
-            if !component.hasPrefix(ConciergeConstants.SSE.DATA_PREFIX) {
-                continue
+        // A large `data:` line (for example a native card payload) can span several deliveries, and a
+        // delivery can split a multi-byte UTF-8 character, so lines are framed on bytes across calls.
+        var start = data.startIndex
+        while start < data.endIndex {
+            let newline = data[start...].firstIndex {
+                $0 == UInt8(ascii: "\n") || $0 == UInt8(ascii: "\r")
             }
+            let end = newline ?? data.endIndex
+            state.lineBuffer.append(contentsOf: data[start..<end])
+            guard let newline else { return }
+            if let line = String(data: state.lineBuffer, encoding: .utf8) {
+                processSSELine(line)
+            }
+            state.lineBuffer.removeAll(keepingCapacity: true)
+            start = data.index(after: newline)
+        }
+    }
 
-            let trimmedHandle = String(component.dropFirst(6))
-            guard let handleData = trimmedHandle.data(using: .utf8) else {
-                return
-            }
+    /// Parses one complete SSE line, forwarding a decoded `data:` event to the chunk handler.
+    private func processSSELine(_ line: String) {
+        guard line.hasPrefix(ConciergeConstants.SSE.DATA_PREFIX) else { return }
 
-            do {
-                let handle = try JSONDecoder().decode(ConversationHandle.self, from: handleData)
-                if let handler = self.onChunkHandler,
-                   let payload = handle.handle.first?.payload.first {
-                    handler(payload)
-                }
-            } catch {
-                Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
+        let handleData = Data(line.dropFirst(ConciergeConstants.SSE.DATA_PREFIX.count).utf8)
+        // One snapshot per line, so registering a renderer mid-decode can't split how its elements decode.
+        let nativeCardTypes = NativeCardRegistry.registeredTypes
+        do {
+            let handle = try nativeCardTypes.isEmpty
+                ? JSONDecoder().decode(ConversationHandle.self, from: handleData)
+                : CardJSONValue.decode(ConversationHandle.self, from: handleData, nativeCardTypes: nativeCardTypes)
+            if let handler = self.onChunkHandler,
+               let payload = handle.handle.first?.payload.first {
+                handler(payload)
             }
+        } catch {
+            Log.warning(label: LOG_TAG, "An error occurred while decoding the chat response. \(error)")
         }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let state = sseFramingStates.removeValue(forKey: task.taskIdentifier)
         if let error = error {
             // Handle connection errors
             Log.warning(label: LOG_TAG, "An error occurred while connecting to the Concierge server: \(error.localizedDescription)")
@@ -389,6 +425,11 @@ extension ConciergeChatService: URLSessionDataDelegate {
                 onCompleteHandler?(.unreachable)
             }
         } else {
+            // A final event the server did not newline-terminate is still a complete event.
+            if let state, state.usesNativeFraming, !state.lineBuffer.isEmpty,
+               let line = String(data: state.lineBuffer, encoding: .utf8) {
+                processSSELine(line)
+            }
             // Connection completed (e.g., server closed connection)
             Log.trace(label: LOG_TAG, "Concierge server connection closed.")
             onCompleteHandler?(nil)
