@@ -23,8 +23,6 @@ public enum MessageTemplate {
     case productCard(ProductCardData)
     case carouselGroup([Message])
     case ctaButton(ActionButton)
-    /// A card drawn by the app's registered renderer for its element type.
-    case nativeCard(cardId: String)
     case promptSuggestion(text: String)
     case divider
 }

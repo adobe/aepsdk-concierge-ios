@@ -38,10 +38,10 @@ final class CardJSONValueTests: NativeCardTestCase {
         controller.renderElementsForTesting([try element(depth: 64), try element(depth: 65), fallbackElement],
                                             turnId: UUID(), payload: payload)
         XCTAssertEqual(controller.messages.filter {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         }.count, 1)
         XCTAssertTrue(controller.messages.contains {
+            guard $0.nativeCardId == nil else { return false }
             switch $0.template {
             case .productCard(let product):
                 return product.title == "Fallback after rejection"
@@ -63,8 +63,7 @@ final class CardJSONValueTests: NativeCardTestCase {
         XCTAssertFalse(hugeElement.hasCompleteRawElement)
         controller.renderElementsForTesting([hugeElement], turnId: UUID(), payload: payload)
         XCTAssertEqual(controller.messages.filter {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         }.count, 1)
     }
 
@@ -136,7 +135,7 @@ final class CardJSONValueTests: NativeCardTestCase {
             controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
             XCTAssertEqual(controller.messages.count, 2)
             guard case .productCard(let fallback) = controller.messages[0].template,
-                  case .nativeCard = controller.messages[1].template else {
+                  controller.messages[1].nativeCardId != nil else {
                 return XCTFail("Numeric rejection must preserve the built-in fallback and adjacent cards")
             }
             XCTAssertEqual(fallback.title, "Fallback")

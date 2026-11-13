@@ -22,12 +22,12 @@ final class MessageListViewAttachedSuggestionsTests: XCTestCase {
             from: Data(#"{"type":"product","entity_info":{"productName":"Product"}}"#.utf8))
         let product = ProductCardData(entityInfo: try XCTUnwrap(element.entityInfo), element: element)
         let suggestions = ["Continue"]
-        for template in [MessageTemplate.nativeCard(cardId: "card"), .productCard(product), .carouselGroup([])] {
-            let message = Message(template: template, promptSuggestions: suggestions)
-            XCTAssertEqual(view.attachedSuggestions(for: message), suggestions, "\(template)")
+        for message in [Message(nativeCardId: "card", promptSuggestions: suggestions),
+                        Message(template: .productCard(product), promptSuggestions: suggestions),
+                        Message(template: .carouselGroup([]), promptSuggestions: suggestions)] {
+            XCTAssertEqual(view.attachedSuggestions(for: message), suggestions, "\(message.nativeCardId ?? "built-in")")
         }
-        XCTAssertNil(view.attachedSuggestions(for: Message(template: .nativeCard(cardId: "card"), promptSuggestions: [])))
-        XCTAssertNil(view.attachedSuggestions(for: Message(template: .nativeCard(cardId: "card"))))
+        XCTAssertNil(view.attachedSuggestions(for: Message(nativeCardId: "card", promptSuggestions: [])))
         XCTAssertNil(view.attachedSuggestions(for: Message(template: .basic(isUserMessage: false),
                                                            promptSuggestions: suggestions)))
     }
@@ -36,8 +36,9 @@ final class MessageListViewAttachedSuggestionsTests: XCTestCase {
     /// inherit the card row's layout.
     func testAttachedSuggestionsAlignWithStandaloneSuggestionRows() throws {
         let standalone = try XCTUnwrap(suggestionChipLeadingEdge(in: [Message(template: .promptSuggestion(text: "Standalone"))]))
-        for host in [MessageTemplate.carouselGroup([]), .nativeCard(cardId: "card")] {
-            let attached = suggestionChipLeadingEdge(in: [Message(template: host, promptSuggestions: ["Attached"])])
+        for host in [Message(template: .carouselGroup([]), promptSuggestions: ["Attached"]),
+                     Message(nativeCardId: "card", promptSuggestions: ["Attached"])] {
+            let attached = suggestionChipLeadingEdge(in: [host])
             XCTAssertEqual(attached, standalone, "Suggestions attached to \(host) must align with standalone rows")
         }
     }

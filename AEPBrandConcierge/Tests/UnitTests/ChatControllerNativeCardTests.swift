@@ -73,8 +73,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         await fulfillment(of: [receivedFinal], timeout: 2)
         XCTAssertEqual(controller.messages.count, 1)
         XCTAssertFalse(controller.messages.contains {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         })
         service.triggerCompletion()
         await fulfillment(of: [finished], timeout: 2)
@@ -293,8 +292,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         XCTAssertFalse(card.isStale, "Streaming placeholder updates must not dispose existing cards")
 
         let index = try XCTUnwrap(controller.messages.firstIndex {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         })
         controller.messages[index] = Message(template: .basic(isUserMessage: false), messageBody: "Replaced")
         XCTAssertTrue(card.isStale, "Replacing a card's row in place must dispose it like any removal")

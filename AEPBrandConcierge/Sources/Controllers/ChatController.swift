@@ -139,6 +139,7 @@ final class ChatController: ObservableObject {
     /// messages, so a checkout-driven conversation would otherwise still look untouched.
     var hasConversationStarted: Bool {
         messages.contains { message in
+            if message.nativeCardId != nil { return true }
             switch message.template {
             case .welcomeHeader, .welcomePromptSuggestion:
                 return false

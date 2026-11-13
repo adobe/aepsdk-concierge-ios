@@ -94,8 +94,7 @@ final class NativeCardStore {
     func reconcile(with messages: [Message]) {
         guard !entries.isEmpty else { return }
         let visible = Set(messages.compactMap { message -> String? in
-            if case .nativeCard(let cardId) = message.template { return cardId }
-            return nil
+            message.nativeCardId
         })
         let removed = entries.keys.filter { !visible.contains($0) }
         var typesLosingLatest = Set<String>()

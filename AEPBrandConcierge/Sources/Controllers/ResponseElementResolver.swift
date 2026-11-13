@@ -81,7 +81,7 @@ struct ResponseElementPlan {
             case .native(let activation):
                 guard let card = nativeCards.activate(activation, payload: payload, sessionId: sessionId) else { continue }
                 lastNativeIndex = messages.count
-                messages.append(Message(template: .nativeCard(cardId: card.cardId)))
+                messages.append(Message(nativeCardId: card.cardId))
             case .product:
                 guard !productEmitted else { continue }
                 productEmitted = true

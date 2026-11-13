@@ -374,7 +374,7 @@ product card, or below its last native card if it has no product card. Native ca
 `concierge:cards:rendered` tracking event; track their impressions in the app.
 
 To style cards with your own theme values, read them from the chat's theme with
-`@Environment(\.conciergeTheme)`, for example `theme.customVariables["--myapp-accent-color"]`. See
+`@Environment(\.conciergeTheme)`, for example `theme.cssVariables["--myapp-accent-color"]`. See
 [App-owned CSS variables](./style-guide.md#app-owned-css-variables).
 
 ### Card actions

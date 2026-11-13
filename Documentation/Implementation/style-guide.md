@@ -81,6 +81,7 @@ The theme JSON file contains these top-level keys:
 | `assets` | Icon and image assets |
 | `components` | Component-level overrides (currently feedback notes field visibility) |
 | `theme` | Visual styling tokens (CSS variables) |
+| `cssVariables` | Optional app-owned variables retained in encoded theme round trips |
 
 ---
 
@@ -89,7 +90,7 @@ The theme JSON file contains these top-level keys:
 ### App-owned CSS variables
 
 Unknown `--`-prefixed variables in the theme object are retained in
-`ConciergeTheme.customVariables` for native app card renderers, not applied to SDK views.
+`ConciergeTheme.cssVariables` for native app card renderers, not applied to SDK views.
 Each unknown key with a string or numeric value is logged at debug level, whether it's retained
 or ignored, so a misspelled SDK token is easy to spot.
 Keys and values are trimmed; blank values are ignored. Numeric JSON values of unknown keys become
@@ -99,11 +100,10 @@ values, as before.
 At most 256 distinct keys with at most 512 characters per key/value are retained;
 an existing key can still be overwritten at the limit. Known variables remain in the
 typed theme API and are not duplicated here.
-The same validation applies to the top-level `customVariables` dictionary used in
+The same validation applies to the top-level `cssVariables` dictionary used in
 encoded theme round trips. Invalid entries are ignored; non-string values and
 malformed dictionaries generate warnings. CSS variables in `theme` take precedence
-over retained entries. An empty
-dictionary is omitted when encoding a theme.
+over retained entries. An empty dictionary is omitted when encoding a theme.
 
 Understanding the value formats used throughout this document.
 
@@ -639,7 +639,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
-| `--myapp-accent-color` (example) | `customVariables["--myapp-accent-color"]` | `String?` | `nil` | Unrecognized CSS key retained for a host renderer; parsing and defaults are host-owned |
+| `--myapp-accent-color` (example) | `cssVariables["--myapp-accent-color"]` | `String?` | `nil` | Unrecognized CSS key retained for a host renderer; parsing and defaults are host-owned |
 
 ### Colors - Primary
 
@@ -1340,7 +1340,7 @@ This section documents which properties are fully implemented, partially impleme
 
 | CSS Variable | Status | Notes |
 |--------------|--------|-------|
-| `--myapp-accent-color` (example) | ✅ | Retained by `ThemeCSSMapper` in `ConciergeTheme.customVariables`; host-owned, not consumed by SDK views. |
+| `--myapp-accent-color` (example) | ✅ | Retained by `ThemeCSSMapper` in `ConciergeTheme.cssVariables`; host-owned, not consumed by SDK views. |
 
 ### Theme Tokens - Typography
 

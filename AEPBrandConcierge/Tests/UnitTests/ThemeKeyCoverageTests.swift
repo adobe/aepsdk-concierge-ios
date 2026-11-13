@@ -19,7 +19,7 @@ final class ThemeKeyCoverageTests: XCTestCase {
         XCTAssertFalse(CSSKeyMapper.supportedCSSKeys.contains("app-accent-color"))
         var theme = ConciergeTheme()
         CSSKeyMapper.apply(cssKey: "--app-accent-color", cssValue: "#abcdef", to: &theme)
-        XCTAssertEqual(theme.customVariables["--app-accent-color"], "#abcdef")
+        XCTAssertEqual(theme.cssVariables["--app-accent-color"], "#abcdef")
     }
 
     // MARK: - Theme JSON key coverage

@@ -354,7 +354,7 @@ public enum CSSKeyMapper {
     /// Logs every unknown theme key, so a misspelled SDK token is visible whether it's kept or ignored.
     private static func retainUnknownKey(_ cssKey: String, normalizedKey: String, cssValue: String,
                                          in theme: inout ConciergeTheme) {
-        if retainCustomVariable(cssKey: cssKey, cssValue: cssValue, variables: &theme.customVariables) {
+        if retainCustomVariable(cssKey: cssKey, cssValue: cssValue, variables: &theme.cssVariables) {
             Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' kept as a custom variable for app renderers.")
         } else {
             Log.debug(label: ConciergeConstants.LOG_TAG, "Unknown CSS key '\(normalizedKey)' ignored.")

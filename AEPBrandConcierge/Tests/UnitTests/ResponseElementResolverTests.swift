@@ -56,7 +56,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             XCTAssertEqual(controller.messages.count, 3)
             guard let first = nativeCard(at: 0, in: controller),
                   case .productCard(let fallback) = controller.messages[1].template,
-                  case .nativeCard = controller.messages[2].template else {
+                  controller.messages[2].nativeCardId != nil else {
                 return XCTFail("Duplicate IDs must use a fallback or be omitted, not activate twice")
             }
             XCTAssertEqual(fallback.title, "Fallback")
@@ -88,7 +88,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
         XCTAssertEqual(controller.messages.count, 2)
-        guard case .nativeCard = controller.messages[0].template,
+        guard controller.messages[0].nativeCardId != nil,
               case .ctaButton = controller.messages[1].template else {
             return XCTFail("Duplicate native IDs must fall back to the built-in CTA")
         }
@@ -132,6 +132,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             "untyped fallback", "visible", "horizontal fallback"
         ])
         XCTAssertTrue(controller.messages.contains {
+            guard $0.nativeCardId == nil else { return false }
             if case .ctaButton = $0.template { return true }
             return false
         })
@@ -143,8 +144,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         XCTAssertTrue((card.element["custom"] as? [String: Any])?["null"] is NSNull)
         controller.renderElementsForTesting(elements, turnId: turnId, payload: payload, sessionId: "session")
         XCTAssertEqual(controller.messages.filter {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         }.count, 1)
         controller.messages.removeAll()
         XCTAssertTrue(card.isStale)
@@ -171,16 +171,17 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                             promptSuggestions: ["Try another"])
 
         let nativeMessage = try XCTUnwrap(controller.messages.first {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         })
         let builtInMessage = try XCTUnwrap(controller.messages.first {
+            guard $0.nativeCardId == nil else { return false }
             if case .productCard = $0.template { return true }
             return false
         })
         XCTAssertNil(nativeMessage.promptSuggestions)
         XCTAssertEqual(builtInMessage.promptSuggestions, ["Try another"])
         XCTAssertFalse(controller.messages.contains {
+            guard $0.nativeCardId == nil else { return false }
             if case .promptSuggestion = $0.template { return true }
             return false
         })
@@ -205,8 +206,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                             promptSuggestions: ["Continue"])
 
         let nativeMessages = controller.messages.filter {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         }
         XCTAssertEqual(nativeMessages.count, 2)
         XCTAssertNil(nativeMessages.first?.promptSuggestions)
@@ -233,6 +233,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                             promptSuggestions: ["Continue"])
 
         let carousel = try XCTUnwrap(controller.messages.first {
+            guard $0.nativeCardId == nil else { return false }
             if case .carouselGroup = $0.template { return true }
             return false
         })
@@ -240,8 +241,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         XCTAssertEqual(products.count, 2)
         XCTAssertEqual(carousel.promptSuggestions, ["Continue"])
         let nativeMessage = try XCTUnwrap(controller.messages.first {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         })
         XCTAssertNil(nativeMessage.promptSuggestions)
     }
@@ -264,6 +264,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                             promptSuggestions: ["Continue"])
 
         let carousel = try XCTUnwrap(controller.messages.first {
+            guard $0.nativeCardId == nil else { return false }
             if case .carouselGroup = $0.template { return true }
             return false
         })
@@ -271,8 +272,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         XCTAssertTrue(products.isEmpty)
         XCTAssertNil(carousel.promptSuggestions)
         let nativeMessage = try XCTUnwrap(controller.messages.first {
-            if case .nativeCard = $0.template { return true }
-            return false
+            $0.nativeCardId != nil
         })
         XCTAssertEqual(nativeMessage.promptSuggestions, ["Continue"])
     }
@@ -332,7 +332,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                             promptSuggestions: ["Continue"])
         XCTAssertEqual(controller.messages.count, 2)
         guard case .carouselGroup(let products) = controller.messages[0].template,
-              case .nativeCard = controller.messages[1].template else {
+              controller.messages[1].nativeCardId != nil else {
             return XCTFail("Rejected candidates must preserve fallback order without reserving the ID")
         }
         XCTAssertEqual(products.count, 2)

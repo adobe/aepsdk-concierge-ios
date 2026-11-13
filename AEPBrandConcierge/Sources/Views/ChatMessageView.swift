@@ -273,9 +273,6 @@ struct ChatMessageView: View {
         case .ctaButton(let action):
             CtaButtonView(action: action, onTap: onCtaButtonTap)
 
-        case .nativeCard(let cardId):
-            NativeCardView(cardId: cardId)
-
         case .carouselGroup(let items):
             CarouselGroupView(items: items, onCtaButtonTap: onCtaButtonTap)
 

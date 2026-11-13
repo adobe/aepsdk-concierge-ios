@@ -22,9 +22,9 @@ final class NativeCardViewTests: NativeCardTestCase {
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
-        let template = try XCTUnwrap(controller.messages.first?.template)
+        let cardId = try XCTUnwrap(controller.messages.first?.nativeCardId)
         func height(store: NativeCardStore?) -> CGFloat {
-            let view = ChatMessageView(template: template).environment(\.conciergeNativeCardStore, store)
+            let view = NativeCardView(cardId: cardId).environment(\.conciergeNativeCardStore, store)
             return UIHostingController(rootView: view).sizeThatFits(in: CGSize(width: 320, height: 1000)).height
         }
         XCTAssertEqual(height(store: controller.nativeCards), 80, accuracy: 0.5)

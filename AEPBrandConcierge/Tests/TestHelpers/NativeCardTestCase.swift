@@ -51,8 +51,8 @@ class NativeCardTestCase: XCTestCase {
     @MainActor
     func nativeCards(in messages: [Message], store: NativeCardStore) -> [NativeCard] {
         messages.compactMap { message in
-            if case .nativeCard(let cardId) = message.template { return store.card(withId: cardId) }
-            return nil
+            guard let cardId = message.nativeCardId else { return nil }
+            return store.card(withId: cardId)
         }
     }
 
@@ -65,7 +65,7 @@ class NativeCardTestCase: XCTestCase {
     @MainActor
     func nativeCard(at index: Int, in controller: ChatController) -> NativeCard? {
         guard controller.messages.indices.contains(index),
-              case .nativeCard(let cardId) = controller.messages[index].template else { return nil }
+              let cardId = controller.messages[index].nativeCardId else { return nil }
         return controller.nativeCards.card(withId: cardId)
     }
 }

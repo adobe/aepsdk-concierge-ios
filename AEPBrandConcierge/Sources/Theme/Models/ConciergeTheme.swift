@@ -48,7 +48,7 @@ private struct DynamicCodingKey: CodingKey {
 /// - `theme` -> colors, layout, typography, components (CSS variables mapped to semantic groups)
 public struct ConciergeTheme: Codable {
     /// Unrecognized CSS variables for app-owned native renderers; never applied to SDK components.
-    public var customVariables: [String: String] = [:]
+    public var cssVariables: [String: String] = [:]
     public var metadata: ConciergeThemeMetadata
     public var behavior: ConciergeBehaviorConfig
     public var disclaimer: ConciergeDisclaimer
@@ -119,7 +119,7 @@ public struct ConciergeTheme: Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case customVariables
+        case cssVariables
         case metadata
         case behavior
         case disclaimer
@@ -154,9 +154,9 @@ public struct ConciergeTheme: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         var retainedVariables: [String: String] = [:]
-        if container.contains(.customVariables), try !container.decodeNil(forKey: .customVariables) {
+        if container.contains(.cssVariables), try !container.decodeNil(forKey: .cssVariables) {
             do {
-                let variables = try container.nestedContainer(keyedBy: DynamicCodingKey.self, forKey: .customVariables)
+                let variables = try container.nestedContainer(keyedBy: DynamicCodingKey.self, forKey: .cssVariables)
                 var hasInvalidValue = false
                 for key in variables.allKeys.sorted(by: { $0.stringValue < $1.stringValue }) {
                     do {
@@ -174,7 +174,7 @@ public struct ConciergeTheme: Codable {
                 Log.warning(label: ConciergeConstants.LOG_TAG, "Ignoring malformed custom theme variables.")
             }
         }
-        customVariables = retainedVariables
+        cssVariables = retainedVariables
 
         // Decode top-level groups
         metadata = try container.decodeIfPresent(ConciergeThemeMetadata.self, forKey: .metadata) ?? ConciergeThemeMetadata()
@@ -242,8 +242,8 @@ public struct ConciergeTheme: Codable {
         try container.encode(arrays, forKey: .arrays)
         try container.encode(theme, forKey: .theme)
         try container.encodeIfPresent(decodedComponents, forKey: .components)
-        if !customVariables.isEmpty {
-            try container.encode(customVariables, forKey: .customVariables)
+        if !cssVariables.isEmpty {
+            try container.encode(cssVariables, forKey: .cssVariables)
         }
     }
 }
