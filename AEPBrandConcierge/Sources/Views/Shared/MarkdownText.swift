@@ -20,6 +20,8 @@ struct MarkdownText: UIViewRepresentable {
     let attributed: NSAttributedString
     var maxWidth: CGFloat?
     var onOpenLink: ((URL) -> Void)?
+    /// Whether inline links are underlined. Defaults to `true` (WCAG 1.4.1).
+    var linkUnderline: Bool = true
 
     final class AutoSizingTextView: UITextView {
         var targetWidth: CGFloat = 0 { didSet { if oldValue != targetWidth { invalidateIntrinsicContentSize() } } }
@@ -46,10 +48,10 @@ struct MarkdownText: UIViewRepresentable {
         tv.adjustsFontForContentSizeCategory = true
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tv.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        // Underline every inline link. Only the underline is forced here — no foreground — so the
-        // link text color comes from the attributed string (set to the theme primary color in
-        // `MarkdownBlockView`) rather than the text view's inherited tint.
-        tv.linkTextAttributes = [.underlineStyle: NSUnderlineStyle.single.rawValue]
+        // Underline every inline link unless the theme disables it. Only the underline is forced
+        // here — no foreground — so the link text color comes from the attributed string (set to
+        // the theme link color in `MarkdownBlockView`) rather than the text view's inherited tint.
+        tv.linkTextAttributes = linkUnderline ? [.underlineStyle: NSUnderlineStyle.single.rawValue] : [:]
         tv.delegate = context.coordinator
         return tv
     }

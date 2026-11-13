@@ -165,6 +165,15 @@ public enum CSSValueConverter {
         }
     }
 
+    /// Parses a CSS boolean string ("true"/"false") to Bool. Returns nil for anything else.
+    public static func parseBool(_ cssValue: String) -> Bool? {
+        switch cssValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "true": return true
+        case "false": return false
+        default: return nil
+        }
+    }
+
     /// Parses CSS font-weight string to CodableFontWeight enum
     /// Supports: "400", "700", "normal", "bold"
     public static func parseFontWeight(_ cssValue: String) -> CodableFontWeight {

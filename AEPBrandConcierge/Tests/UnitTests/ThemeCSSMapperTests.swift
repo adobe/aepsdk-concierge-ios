@@ -71,7 +71,64 @@ final class ThemeCSSMapperTests: XCTestCase {
         // Then
         XCTAssertEqual(theme.typography.lineHeight, 1.75, accuracy: 0.0001)
     }
-    
+
+    func test_messageFontSize_mapsToTypography() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "message-font-size", cssValue: "18px", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.typography.fontSize, 18, accuracy: 0.0001)
+    }
+
+    func test_messageFontWeight_mapsToTypography() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "message-font-weight", cssValue: "600", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.typography.fontWeight, .semibold)
+    }
+
+    func test_messageConciergeLinkFontWeight_mapsToTypography() {
+        // Given
+        var theme = ConciergeTheme()
+        XCTAssertNil(theme.typography.linkFontWeight)
+
+        // When
+        CSSKeyMapper.apply(cssKey: "message-concierge-link-font-weight", cssValue: "bold", to: &theme)
+
+        // Then
+        XCTAssertEqual(theme.typography.linkFontWeight, .bold)
+    }
+
+    func test_messageConciergeLinkUnderline_mapsToTypography() {
+        // Given
+        var theme = ConciergeTheme()
+        XCTAssertTrue(theme.typography.linkUnderline)
+
+        // When
+        CSSKeyMapper.apply(cssKey: "message-concierge-link-underline", cssValue: "false", to: &theme)
+
+        // Then
+        XCTAssertFalse(theme.typography.linkUnderline)
+    }
+
+    func test_messageConciergeLinkUnderline_invalidValue_keepsDefault() {
+        // Given
+        var theme = ConciergeTheme()
+
+        // When
+        CSSKeyMapper.apply(cssKey: "message-concierge-link-underline", cssValue: "notabool", to: &theme)
+
+        // Then
+        XCTAssertTrue(theme.typography.linkUnderline)
+    }
+
     // MARK: - Color Mapping Tests
     
     func test_colorPrimary_mapsToPrimaryColor() {
