@@ -10,6 +10,7 @@
  governing permissions and limitations under the License.
  */
 
+import SwiftUI
 import UIKit
 import XCTest
 @testable import AEPBrandConcierge
@@ -27,18 +28,32 @@ final class MessageTests: XCTestCase {
             capturedLabel = label
             capturedUrl = url
         })
-        view.onCtaButtonTap?("Buy now", "https://example.com/buy")
+        view?.onCtaButtonTap?("Buy now", "https://example.com/buy")
 
         XCTAssertEqual(capturedLabel, "Buy now")
         XCTAssertEqual(capturedUrl, "https://example.com/buy")
     }
 
-    func test_chatMessageView_defaultsOnCtaButtonTapToNil() {
+    func test_chatMessageView_defaultsOnCtaButtonTapToNil() throws {
         let message = Message(template: .divider)
 
-        let view = message.chatMessageView()
+        let view = try XCTUnwrap(message.chatMessageView())
 
         XCTAssertNil(view.onCtaButtonTap)
+    }
+
+    func test_chatMessageView_isNilForNativeCardRows() {
+        XCTAssertNil(Message(nativeCardId: "card").chatMessageView())
+    }
+
+    // MARK: - isWelcomeContent
+
+    func test_isWelcomeContent_onlyForWelcomeTemplates() {
+        XCTAssertTrue(Message(template: .welcomeHeader(title: "Hi", body: "Welcome")).isWelcomeContent)
+        XCTAssertTrue(Message(template: .welcomePromptSuggestion(imageSource: .remote(nil), text: "Shoes",
+                                                                 background: .clear)).isWelcomeContent)
+        XCTAssertFalse(Message(template: .basic(isUserMessage: false)).isWelcomeContent)
+        XCTAssertFalse(Message(nativeCardId: "card").isWelcomeContent)
     }
 
     // MARK: - BasicMessageView.markdownBlockSpacing

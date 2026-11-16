@@ -137,7 +137,7 @@ final class ChatControllerTests: XCTestCase {
 
         // Only the assistant placeholder should have been appended - no visible user bubble.
         XCTAssertEqual(controller.messages.count, 1)
-        if case .basic(let isUserMessage) = controller.messages[0].template {
+        if case .template(.basic(let isUserMessage)) = controller.messages[0].content {
             XCTAssertFalse(isUserMessage)
         } else {
             XCTFail("Expected a basic message template")
@@ -374,7 +374,7 @@ final class ChatControllerTests: XCTestCase {
 
         XCTAssertEqual(controller.messages.count, 2)
         XCTAssertEqual(controller.messages[0].messageBody, "Your order is confirmed!")
-        if case .basic(let isUserMessage) = controller.messages[0].template {
+        if case .template(.basic(let isUserMessage)) = controller.messages[0].content {
             XCTAssertFalse(isUserMessage)
         } else {
             XCTFail("Expected a basic message template")
@@ -759,7 +759,7 @@ final class ChatControllerTests: XCTestCase {
         // The user message plus the failure notice; the streaming placeholder is gone.
         XCTAssertEqual(controller.messages.count, 2)
         XCTAssertEqual(controller.messages.last?.messageBody, "Themed connection error")
-        if case .basic(let isUserMessage) = controller.messages.last?.template {
+        if case .template(.basic(let isUserMessage)) = controller.messages.last?.content {
             XCTAssertFalse(isUserMessage, "the failure notice must read as an agent message")
         } else {
             XCTFail("expected a basic agent message")
@@ -1576,7 +1576,7 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(controller.messages.count, 3)
 
         let productMessage = controller.messages.last { message in
-            if case .productCard = message.template { return true }
+            if case .template(.productCard) = message.content { return true }
             return false
         }
         XCTAssertNotNil(productMessage, "Expected a .productCard message in the message list")
@@ -1649,19 +1649,19 @@ final class ChatControllerTests: XCTestCase {
 
         // Expect a carouselGroup message containing the product carousel cards
         let carouselMessage = controller.messages.last { message in
-            if case .carouselGroup = message.template { return true }
+            if case .template(.carouselGroup) = message.content { return true }
             return false
         }
         XCTAssertNotNil(carouselMessage, "Expected a .carouselGroup message in the message list")
 
-        if case .carouselGroup(let items) = carouselMessage?.template {
+        if case .template(.carouselGroup(let items)) = carouselMessage?.content {
             XCTAssertEqual(items.count, 2)
-            if case .productCarouselCard(let cardData) = items[0].template {
+            if case .template(.productCarouselCard(let cardData)) = items[0].content {
                 XCTAssertEqual(cardData.title, "Widget Pro")
             } else {
                 XCTFail("Expected first carousel item to be .productCarouselCard")
             }
-            if case .productCarouselCard(let cardData) = items[1].template {
+            if case .template(.productCarouselCard(let cardData)) = items[1].content {
                 XCTAssertEqual(cardData.title, "Gadget Basic")
             } else {
                 XCTFail("Expected second carousel item to be .productCarouselCard")
@@ -1696,12 +1696,12 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(controller.chatState == .idle)
 
         let ctaMessage = controller.messages.first { message in
-            if case .ctaButton = message.template { return true }
+            if case .template(.ctaButton) = message.content { return true }
             return false
         }
         XCTAssertNotNil(ctaMessage, "Expected a .ctaButton message in the message list")
 
-        if case .ctaButton(let action) = ctaMessage?.template {
+        if case .template(.ctaButton(let action)) = ctaMessage?.content {
             XCTAssertEqual(action.text, "Chat now")
             XCTAssertEqual(action.url, "https://example.com/live-chat")
         }
@@ -1726,7 +1726,7 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(controller.chatState == .idle)
 
         let ctaMessage = controller.messages.first { message in
-            if case .ctaButton = message.template { return true }
+            if case .template(.ctaButton) = message.content { return true }
             return false
         }
         XCTAssertNil(ctaMessage, "CTA with missing primary should not produce a message")
@@ -1775,34 +1775,34 @@ final class ChatControllerTests: XCTestCase {
         // messages[0] = user message
         // messages[1] = agent text
         // messages[2] = first CTA
-        if case .ctaButton(let action) = controller.messages[2].template {
+        if case .template(.ctaButton(let action)) = controller.messages[2].content {
             XCTAssertEqual(action.text, "Chat with an agent")
         } else {
-            XCTFail("Expected messages[2] to be .ctaButton, got \(controller.messages[2].template)")
+            XCTFail("Expected messages[2] to be .ctaButton, got \(controller.messages[2].content)")
         }
 
         // messages[3] = carousel with 3 cards
-        if case .carouselGroup(let items) = controller.messages[3].template {
+        if case .template(.carouselGroup(let items)) = controller.messages[3].content {
             XCTAssertEqual(items.count, 3)
-            if case .productCarouselCard(let cardData) = items[0].template {
+            if case .template(.productCarouselCard(let cardData)) = items[0].content {
                 XCTAssertEqual(cardData.title, "Product A")
             } else {
                 XCTFail("Expected first carousel item to be .productCarouselCard")
             }
-            if case .productCarouselCard(let cardData) = items[2].template {
+            if case .template(.productCarouselCard(let cardData)) = items[2].content {
                 XCTAssertEqual(cardData.title, "Product C")
             } else {
                 XCTFail("Expected third carousel item to be .productCarouselCard")
             }
         } else {
-            XCTFail("Expected messages[3] to be .carouselGroup, got \(controller.messages[3].template)")
+            XCTFail("Expected messages[3] to be .carouselGroup, got \(controller.messages[3].content)")
         }
 
         // messages[4] = second CTA
-        if case .ctaButton(let action) = controller.messages[4].template {
+        if case .template(.ctaButton(let action)) = controller.messages[4].content {
             XCTAssertEqual(action.text, "Find a store")
         } else {
-            XCTFail("Expected messages[4] to be .ctaButton, got \(controller.messages[4].template)")
+            XCTFail("Expected messages[4] to be .ctaButton, got \(controller.messages[4].content)")
         }
     }
 
@@ -1946,15 +1946,15 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(controller.chatState == .idle)
 
         let emptyAgentBubbles = controller.messages.filter { message in
-            guard case .basic(let isUserMessage) = message.template, !isUserMessage else { return false }
+            guard case .template(.basic(let isUserMessage)) = message.content, !isUserMessage else { return false }
             return (message.messageBody ?? "").isEmpty
         }
         XCTAssertTrue(emptyAgentBubbles.isEmpty,
                       "Expected no empty agent bubble for a cards-only response, found \(emptyAgentBubbles.count)")
 
         let hasCard = controller.messages.contains { message in
-            if case .productCard = message.template { return true }
-            if case .carouselGroup = message.template { return true }
+            if case .template(.productCard) = message.content { return true }
+            if case .template(.carouselGroup) = message.content { return true }
             return false
         }
         XCTAssertTrue(hasCard, "The cards themselves must still be rendered")

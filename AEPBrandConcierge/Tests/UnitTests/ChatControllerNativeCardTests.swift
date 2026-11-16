@@ -106,7 +106,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         await fulfillment(of: [finished], timeout: 2)
         XCTAssertEqual(controller.messages.count, 1)
         XCTAssertEqual(controller.messages.first?.messageBody, "No menu is available.")
-        guard case .basic(isUserMessage: false) = controller.messages.first?.template else {
+        guard case .template(.basic(isUserMessage: false)) = controller.messages.first?.content else {
             return XCTFail("Expected only the completed text")
         }
     }
@@ -138,7 +138,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
                 }
                 await fulfillment(of: [finished], timeout: 2)
                 XCTAssertEqual(controller.messages.count, 1)
-                guard case .productCard(let card) = controller.messages.first?.template else {
+                guard case .template(.productCard(let card)) = controller.messages.first?.content else {
                     return XCTFail("Expected the buffered built-in product")
                 }
                 XCTAssertEqual(card.title, "Buffered product")
@@ -293,5 +293,95 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         controller.messages[index] = Message(template: .basic(isUserMessage: false), messageBody: "Replaced")
         XCTAssertTrue(card.isStale, "Replacing a card's row in place must dispose it like any removal")
         XCTAssertFalse(card.isLatest)
+    }
+
+    /// A typed turn with nothing to show still offers the response's suggestions, as ordinary
+    /// suggestion rows below the standard error. Handoffs stay silent; see
+    /// `testUnrenderableCardOnlyResponseIsReportedAsEmpty`.
+    @MainActor
+    func testTypedTurnWithNothingRenderableKeepsSuggestionsBelowTheError() async throws {
+        let unregistered = try CardJSONValue.decode([MultimodalElement].self,
+            from: Data(#"[{"type":"custom","rendererId":"not.registered","id":"menu"}]"#.utf8))
+        for suggestions in [["Show the menu", "Talk to someone"], nil] {
+            let service = MockChatService(configuration: ConciergeConfiguration())
+            service.plannedChunks = [streamPayload(state: "completed", elements: unregistered, suggestions: suggestions)]
+            var errorEvents = 0
+            let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil) { event in
+                if event.name == ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED { errorEvents += 1 }
+            }
+
+            await sendTypedTurn("Order food", on: controller)
+
+            XCTAssertEqual(errorEvents, 1, "A typed turn with nothing to show reports errorOccurred")
+            let rows = Array(controller.messages.dropFirst())
+            guard case .template(.basic(isUserMessage: false)) = rows.first?.content else {
+                return XCTFail("Expected the standard error row after the query")
+            }
+            XCTAssertEqual(rows.first?.messageBody,
+                           "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later.")
+            XCTAssertEqual(suggestionTexts(in: Array(rows.dropFirst())), suggestions ?? [])
+            XCTAssertEqual(rows.count, 1 + (suggestions?.count ?? 0))
+
+            guard let suggestion = suggestions?.first else { continue }
+            // Tapping a suggestion sends it as the next query, exactly as ChatView's handler does, and
+            // the error turn's suggestions don't carry over into that turn.
+            service.plannedChunks = [streamPayload(state: "completed", message: "Here is the menu")]
+            let rowCountBeforeTap = controller.messages.count
+            await sendTypedTurn(suggestion, on: controller)
+            XCTAssertEqual(service.lastQuery, suggestion)
+            let tapRows = Array(controller.messages.dropFirst(rowCountBeforeTap))
+            XCTAssertEqual(tapRows.map(\.messageBody), [suggestion, "Here is the menu"])
+            XCTAssertEqual(suggestionTexts(in: tapRows), [])
+        }
+    }
+
+    /// Without a native card, a response's suggestions are always standalone rows after its content,
+    /// whatever else it rendered or omitted.
+    @MainActor
+    func testResponsesWithoutNativeCardsKeepSuggestionsAsStandaloneRows() async throws {
+        NativeCardRegistry.register(rendererId: "test.registered") { _, _, _ in AnyView(EmptyView()) }
+        let nested = String(repeating: "[", count: 64) + "0" + String(repeating: "]", count: 64)
+        let cases: [(name: String, message: String, json: String, rowsBeforeSuggestions: Int)] = [
+            ("text only", "Hello", "[]", 1),
+            ("text with an unregistered custom element", "Hello",
+             #"[{"type":"custom","rendererId":"not.registered"}]"#, 1),
+            ("text with a rejected native element", "Hello",
+             #"[{"type":"custom","rendererId":"test.registered","nested":"# + nested + "}]", 1),
+            ("CTA only", "", #"[{"type":"ctaButton","entity_info":{"primary":{"text":"Go","url":"https://example.com"}}}]"#, 1),
+            ("product only", "", #"[{"type":"product","entity_info":{"productName":"Product"}}]"#, 1)
+        ]
+        for testCase in cases {
+            let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(testCase.json.utf8))
+            let service = MockChatService(configuration: ConciergeConfiguration())
+            service.plannedChunks = [streamPayload(state: "completed", elements: elements, message: testCase.message,
+                                                   suggestions: ["One", "Two"])]
+            let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
+
+            await sendTypedTurn("Hi", on: controller)
+
+            let rows = Array(controller.messages.dropFirst())
+            XCTAssertEqual(rows.count, testCase.rowsBeforeSuggestions + 2, testCase.name)
+            XCTAssertEqual(suggestionTexts(in: Array(rows.dropFirst(testCase.rowsBeforeSuggestions))), ["One", "Two"],
+                           testCase.name)
+            XCTAssertTrue(rows.allSatisfy { $0.promptSuggestions == nil }, "\(testCase.name): nothing is attached")
+        }
+    }
+
+    /// Sends `text` the way the composer does and waits until the turn has settled back to idle.
+    @MainActor
+    private func sendTypedTurn(_ text: String, on controller: ChatController) async {
+        let settled = expectation(description: "Typed turn settled")
+        let observation = controller.$chatState.dropFirst().first { $0 == .idle }.sink { _ in settled.fulfill() }
+        controller.applyTextChange(text)
+        controller.sendMessage(isUser: true)
+        await fulfillment(of: [settled], timeout: 2)
+        observation.cancel()
+    }
+
+    private func suggestionTexts(in messages: [Message]) -> [String] {
+        messages.compactMap { message in
+            guard case .template(.promptSuggestion(let text)) = message.content else { return nil }
+            return text
+        }
     }
 }

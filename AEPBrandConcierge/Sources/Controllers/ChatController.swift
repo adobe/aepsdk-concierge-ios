@@ -138,15 +138,7 @@ final class ChatController: ObservableObject {
     /// Deliberately not "has the *user* sent a message": a data handoff appends only agent-styled
     /// messages, so a checkout-driven conversation would otherwise still look untouched.
     var hasConversationStarted: Bool {
-        messages.contains { message in
-            if message.nativeCardId != nil { return true }
-            switch message.template {
-            case .welcomeHeader, .welcomePromptSuggestion:
-                return false
-            default:
-                return true
-            }
-        }
+        messages.contains { !$0.isWelcomeContent }
     }
 
     // MARK: - Initialization
@@ -1002,7 +994,13 @@ final class ChatController: ObservableObject {
                             outcome = .invalidResponseData
                             self.discardPlaceholder(of: turn)
                             if turn.rendersFailures {
-                                self.messages.append(Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."))
+                                Log.warning(label: self.LOG_TAG, "Completed response had nothing renderable; showing the error message.")
+                                self.dispatchTrackingEvent(.errorOccurred(errorMessage: ConciergeError.invalidResponseData.localizedDescription))
+                                // Nothing in the response could be shown, but its suggestions still offer a next step.
+                                let errorMessage = Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later.")
+                                self.messages.append(contentsOf: [errorMessage] + self.latestPromptSuggestions.map {
+                                    Message(template: .promptSuggestion(text: $0))
+                                })
                             }
                             self.endTurn(turn)
                             return

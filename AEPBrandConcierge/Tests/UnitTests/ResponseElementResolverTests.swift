@@ -26,7 +26,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         let payload = try CardJSONValue.decode(ConversationPayload.self, from: Data("{}".utf8))
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: payload)
         XCTAssertEqual(controller.messages.count, 1)
-        guard case .productCard = controller.messages.first?.template else {
+        guard case .template(.productCard) = controller.messages.first?.content else {
             return XCTFail("No registrations must retain legacy product parsing")
         }
     }
@@ -48,8 +48,8 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         let messages = plan.makeMessages(nativeCards: store, payload: streamPayload(state: "completed"),
                                          sessionId: nil, promptSuggestions: ["Next"])
         XCTAssertEqual(messages.count, 2)
-        guard case .productCard(let product) = messages[0].template,
-              case .promptSuggestion(text: "Next") = messages[1].template else {
+        guard case .template(.productCard(let product)) = messages[0].content,
+              case .template(.promptSuggestion(text: "Next")) = messages[1].content else {
             return XCTFail("Only the non-custom product and its suggestion should render")
         }
         XCTAssertEqual(product.title, "Real product")
@@ -80,7 +80,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
             XCTAssertEqual(controller.messages.count, 2)
             guard let first = nativeCard(at: 0, in: controller),
-                  case .ctaButton = controller.messages[1].template else {
+                  case .template(.ctaButton) = controller.messages[1].content else {
                 return XCTFail("Duplicate custom IDs must be omitted, while a built-in CTA stays built in")
             }
             await saveStateAndWait(["selected": true], on: first)
@@ -111,8 +111,8 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
         XCTAssertEqual(controller.messages.count, 2)
-        guard case .ctaButton(let first) = controller.messages[0].template,
-              case .ctaButton(let second) = controller.messages[1].template else {
+        guard case .template(.ctaButton(let first)) = controller.messages[0].content,
+              case .template(.ctaButton(let second)) = controller.messages[1].content else {
             return XCTFail("An OOTB type must keep its built-in renderer even when its type matches a rendererId")
         }
         XCTAssertEqual(first.text, "First")
@@ -192,12 +192,12 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         let turnId = UUID()
         controller.renderElementsForTesting(elements, turnId: turnId, payload: payload, sessionId: "session")
         XCTAssertEqual(controller.messages.count, 3)
-        guard case .carouselGroup(let products) = controller.messages[1].template else {
+        guard case .template(.carouselGroup(let products)) = controller.messages[1].content else {
             return XCTFail("Expected the allowed productCard fallback")
         }
         XCTAssertEqual(products.count, 5)
         let titles = products.compactMap { message -> String? in
-            if case .productCarouselCard(let product) = message.template { return product.title }
+            if case .template(.productCarouselCard(let product)) = message.content { return product.title }
             return nil
         }
         XCTAssertEqual(titles, [
@@ -206,7 +206,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         ])
         XCTAssertTrue(controller.messages.contains {
             guard $0.nativeCardId == nil else { return false }
-            if case .ctaButton = $0.template { return true }
+            if case .template(.ctaButton) = $0.content { return true }
             return false
         })
         guard let card = nativeCard(at: 0, in: controller) else {
@@ -250,14 +250,14 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         })
         let builtInMessage = try XCTUnwrap(controller.messages.first {
             guard $0.nativeCardId == nil else { return false }
-            if case .productCard = $0.template { return true }
+            if case .template(.productCard) = $0.content { return true }
             return false
         })
         XCTAssertNil(nativeMessage.promptSuggestions)
         XCTAssertEqual(builtInMessage.promptSuggestions, ["Try another"])
         XCTAssertFalse(controller.messages.contains {
             guard $0.nativeCardId == nil else { return false }
-            if case .promptSuggestion = $0.template { return true }
+            if case .template(.promptSuggestion) = $0.content { return true }
             return false
         })
     }
@@ -309,10 +309,10 @@ final class ResponseElementResolverTests: NativeCardTestCase {
 
         let carousel = try XCTUnwrap(controller.messages.first {
             guard $0.nativeCardId == nil else { return false }
-            if case .carouselGroup = $0.template { return true }
+            if case .template(.carouselGroup) = $0.content { return true }
             return false
         })
-        guard case .carouselGroup(let products) = carousel.template else { return XCTFail("Expected carousel") }
+        guard case .template(.carouselGroup(let products)) = carousel.content else { return XCTFail("Expected carousel") }
         XCTAssertEqual(products.count, 2)
         XCTAssertEqual(carousel.promptSuggestions, ["Continue"])
         let nativeMessage = try XCTUnwrap(controller.messages.first {
@@ -340,10 +340,10 @@ final class ResponseElementResolverTests: NativeCardTestCase {
 
         let carousel = try XCTUnwrap(controller.messages.first {
             guard $0.nativeCardId == nil else { return false }
-            if case .carouselGroup = $0.template { return true }
+            if case .template(.carouselGroup) = $0.content { return true }
             return false
         })
-        guard case .carouselGroup(let products) = carousel.template else { return XCTFail("Expected carousel") }
+        guard case .template(.carouselGroup(let products)) = carousel.content else { return XCTFail("Expected carousel") }
         XCTAssertTrue(products.isEmpty)
         XCTAssertNil(carousel.promptSuggestions)
         let nativeMessage = try XCTUnwrap(controller.messages.first {
@@ -442,10 +442,10 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         XCTAssertEqual(controller.messages.count, 6)
         XCTAssertEqual(controller.messages[0].messageBody, "Final text")
         XCTAssertTrue(controller.messages[0].isStreamComplete)
-        guard case .ctaButton(let firstCTA) = controller.messages[1].template,
-              case .carouselGroup(let products) = controller.messages[2].template,
+        guard case .template(.ctaButton(let firstCTA)) = controller.messages[1].content,
+              case .template(.carouselGroup(let products)) = controller.messages[2].content,
               let first = nativeCard(at: 3, in: controller),
-              case .ctaButton(let lastCTA) = controller.messages[4].template,
+              case .template(.ctaButton(let lastCTA)) = controller.messages[4].content,
               let last = nativeCard(at: 5, in: controller) else {
             return XCTFail("Text, batched products and independent element rows must retain their order")
         }
@@ -485,9 +485,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         }
         await fulfillment(of: [finished], timeout: 2)
         XCTAssertEqual(controller.messages.count, 3)
-        guard case .productCard = controller.messages[0].template,
-              case .promptSuggestion(text: "One") = controller.messages[1].template,
-              case .promptSuggestion(text: "Two") = controller.messages[2].template else {
+        guard case .template(.productCard) = controller.messages[0].content,
+              case .template(.promptSuggestion(text: "One")) = controller.messages[1].content,
+              case .template(.promptSuggestion(text: "Two")) = controller.messages[2].content else {
             return XCTFail("Without a native row, suggestions must remain independent rows")
         }
         XCTAssertNil(controller.messages[0].promptSuggestions)

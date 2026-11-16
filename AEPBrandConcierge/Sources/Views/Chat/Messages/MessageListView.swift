@@ -142,12 +142,13 @@ struct MessageListView: View {
 
     private func rowView(_ message: Message) -> some View {
         Group {
-            if let cardId = message.nativeCardId {
+            switch message.content {
+            case .nativeCard(let cardId):
                 NativeCardView(cardId: cardId)
-            } else {
+            case .template(let template):
                 ChatMessageView(
                     messageId: message.id,
-                    template: message.template,
+                    template: template,
                     messageBody: message.messageBody,
                     sources: message.sources,
                     linkHints: message.linkHints,
@@ -163,8 +164,8 @@ struct MessageListView: View {
         }
         .padding(horizontalPadding(for: message))
         .onAppear {
-            guard message.nativeCardId == nil, message.shouldSpeakMessage,
-                  let messageBody = message.chatMessageView().messageBody else { return }
+            guard case .template = message.content, message.shouldSpeakMessage,
+                  let messageBody = message.messageBody else { return }
             onSpeak(messageBody)
         }
     }
@@ -187,8 +188,7 @@ struct MessageListView: View {
     var privacyNoticeIndex: Int? {
         guard privacyNotice.hasContent else { return nil }
         return messages.firstIndex {
-            guard $0.nativeCardId == nil else { return false }
-            if case .basic(isUserMessage: true) = $0.template { return true }
+            if case .template(.basic(isUserMessage: true)) = $0.content { return true }
             return false
         }
     }
@@ -196,11 +196,10 @@ struct MessageListView: View {
     /// Prompt suggestions the SDK attached to a card row of a response that rendered a native card.
     func attachedSuggestions(for message: Message) -> [String]? {
         guard let suggestions = message.promptSuggestions, !suggestions.isEmpty else { return nil }
-        if message.nativeCardId != nil { return suggestions }
-        switch message.template {
-        case .productCard, .carouselGroup:
+        switch message.content {
+        case .nativeCard, .template(.productCard), .template(.carouselGroup):
             return suggestions
-        default:
+        case .template:
             return nil
         }
     }
@@ -252,26 +251,28 @@ struct MessageListView: View {
     }
 
     private func horizontalPadding(for message: Message) -> EdgeInsets {
-        guard message.nativeCardId != nil else { return horizontalPadding(for: message.template) }
-        guard theme.hasAgentIcon else {
-            let horizontal = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
-            return EdgeInsets(top: 0, leading: horizontal, bottom: 0, trailing: horizontal)
+        switch message.content {
+        case .template(let template):
+            return horizontalPadding(for: template)
+        case .nativeCard:
+            guard theme.hasAgentIcon else {
+                let horizontal = theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+                return EdgeInsets(top: 0, leading: horizontal, bottom: 0, trailing: horizontal)
+            }
+            return EdgeInsets(
+                top: 0,
+                leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
+                bottom: 0,
+                trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
+            )
         }
-        return EdgeInsets(
-            top: 0,
-            leading: theme.layout.chatHistoryPadding + theme.layout.agentTextIndent,
-            bottom: 0,
-            trailing: theme.layout.chatHistoryPadding + Self.scrollContentBasePadding
-        )
     }
 
     /// Returns true when the message at `index` is a `promptSuggestion` and the preceding message is not.
     private func isFirstInSuggestionGroup(at index: Int) -> Bool {
-        guard messages[index].nativeCardId == nil else { return false }
-        guard case .promptSuggestion = messages[index].template else { return false }
+        guard case .template(.promptSuggestion) = messages[index].content else { return false }
         if index == 0 { return true }
-        guard messages[index - 1].nativeCardId == nil else { return true }
-        if case .promptSuggestion = messages[index - 1].template { return false }
+        if case .template(.promptSuggestion) = messages[index - 1].content { return false }
         return true
     }
 
@@ -291,9 +292,7 @@ struct MessageListView: View {
         guard chatState == .processing,
               messages.indices.contains(index),
               index == messages.count - 1,
-              messages[index].nativeCardId == nil,
-              case .basic(let isUserMessage) = messages[index].template,
-              !isUserMessage
+              case .template(.basic(isUserMessage: false)) = messages[index].content
         else { return false }
 
         // Either the placeholder sits directly below this turn's anchor, or - for a handoff with no
@@ -302,8 +301,7 @@ struct MessageListView: View {
         if isTurnAnchor(at: index - 1) || isTurnAnchor(at: index) { return true }
 
         guard let lastUserIndex = messages.lastIndex(where: {
-            guard $0.nativeCardId == nil else { return false }
-            if case .basic(true) = $0.template { return true }
+            if case .template(.basic(isUserMessage: true)) = $0.content { return true }
             return false
         })
         else { return false }

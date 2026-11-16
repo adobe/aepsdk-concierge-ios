@@ -218,6 +218,7 @@
 		AE0000030000000000000013 /* CardJSONValueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000030000000000000003 /* CardJSONValueTests.swift */; };
 		AE0000030000000000000014 /* ChatControllerNativeCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000030000000000000004 /* ChatControllerNativeCardTests.swift */; };
 		AE0000030000000000000015 /* NativeCardViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000030000000000000005 /* NativeCardViewTests.swift */; };
+		AE0000030000000000000018 /* MessageListViewNativeRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000030000000000000008 /* MessageListViewNativeRowTests.swift */; };
 		AE0000030000000000000016 /* AttachedPromptSuggestionsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000030000000000000006 /* AttachedPromptSuggestionsViewTests.swift */; };
 		AE0000020000000000000011 /* NativeCardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000020000000000000001 /* NativeCardStore.swift */; };
 		AE0000020000000000000012 /* ResponseElementResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0000020000000000000002 /* ResponseElementResolver.swift */; };
@@ -469,6 +470,7 @@
 		AE0000030000000000000003 /* CardJSONValueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardJSONValueTests.swift; sourceTree = "<group>"; };
 		AE0000030000000000000004 /* ChatControllerNativeCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatControllerNativeCardTests.swift; sourceTree = "<group>"; };
 		AE0000030000000000000005 /* NativeCardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCardViewTests.swift; sourceTree = "<group>"; };
+		AE0000030000000000000008 /* MessageListViewNativeRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewNativeRowTests.swift; sourceTree = "<group>"; };
 		AE0000030000000000000006 /* AttachedPromptSuggestionsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedPromptSuggestionsViewTests.swift; sourceTree = "<group>"; };
 		AE0000020000000000000001 /* NativeCardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCardStore.swift; sourceTree = "<group>"; };
 		AE0000020000000000000002 /* ResponseElementResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseElementResolver.swift; sourceTree = "<group>"; };
@@ -840,6 +842,7 @@
 				AE0000030000000000000003 /* CardJSONValueTests.swift */,
 				AE0000030000000000000004 /* ChatControllerNativeCardTests.swift */,
 				AE0000030000000000000005 /* NativeCardViewTests.swift */,
+				AE0000030000000000000008 /* MessageListViewNativeRowTests.swift */,
 				AE0000030000000000000006 /* AttachedPromptSuggestionsViewTests.swift */,
 				4CDB0DCB2EC82CA2000B85D0 /* ThemeDecodingTests.swift */,
 				4CF60BF02EF3ABAB008CE4F0 /* ThemeKeyCoverageTests.swift */,
@@ -1445,6 +1448,7 @@
 				AE0000030000000000000013 /* CardJSONValueTests.swift in Sources */,
 				AE0000030000000000000014 /* ChatControllerNativeCardTests.swift in Sources */,
 				AE0000030000000000000015 /* NativeCardViewTests.swift in Sources */,
+				AE0000030000000000000018 /* MessageListViewNativeRowTests.swift in Sources */,
 				AE0000030000000000000016 /* AttachedPromptSuggestionsViewTests.swift in Sources */,
 				24CAB3602F2D579B00CEE013 /* SessionManagerTests.swift in Sources */,
 				24CAB3612F2D579B00CEE013 /* SourceCodableTests.swift in Sources */,
