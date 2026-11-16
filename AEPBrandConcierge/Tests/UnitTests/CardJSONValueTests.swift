@@ -20,17 +20,17 @@ final class CardJSONValueTests: NativeCardTestCase {
     func testRawActivationEnforcesExactDepthAndNodeBudgets() throws {
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
-        NativeCardRegistry.register(type: "test.budget") { _, _, _ in
+        NativeCardRegistry.register(rendererId: "test.budget") { _, _, _ in
             AnyView(EmptyView())
         }
         func element(depth: Int) throws -> MultimodalElement {
-            let json = #"{"type":"test.budget","nested":"# +
+            let json = #"{"type":"custom","rendererId":"test.budget","nested":"# +
                 String(repeating: "[", count: depth - 1) + "0" +
                 String(repeating: "]", count: depth - 1) + "}"
             return try CardJSONValue.decode(MultimodalElement.self, from: Data(json.utf8))
         }
         let payload = try CardJSONValue.decode(ConversationPayload.self, from: Data("{}".utf8))
-        let fallbackJSON = #"{"type":"test.budget","nested":"# +
+        let fallbackJSON = #"{"type":"custom","rendererId":"test.budget","nested":"# +
             String(repeating: "[", count: 64) + "0" +
             String(repeating: "]", count: 64) +
             #","entity_info":{"productName":"Fallback after rejection"}}"#
@@ -40,25 +40,10 @@ final class CardJSONValueTests: NativeCardTestCase {
         XCTAssertEqual(controller.messages.filter {
             $0.nativeCardId != nil
         }.count, 1)
-        XCTAssertTrue(controller.messages.contains {
-            guard $0.nativeCardId == nil else { return false }
-            switch $0.template {
-            case .productCard(let product):
-                return product.title == "Fallback after rejection"
-            case .carouselGroup(let items):
-                return items.contains {
-                    if case .productCarouselCard(let product) = $0.template {
-                        return product.title == "Fallback after rejection"
-                    }
-                    return false
-                }
-            default:
-                return false
-            }
-        }, "A rejected native activation must retain its parsed built-in fallback")
+        XCTAssertEqual(controller.messages.count, 1, "Rejected custom elements must not produce built-in cards")
         XCTAssertNotNil(NativeCard.copyJSON(["nodes": Array(repeating: 0, count: 99_998)]))
         XCTAssertNil(NativeCard.copyJSON(["nodes": Array(repeating: 0, count: 99_999)]))
-        let huge = #"{"type":"test.budget","nodes":["# + Array(repeating: "0", count: 100_000).joined(separator: ",") + "]}"
+        let huge = #"{"type":"custom","rendererId":"test.budget","nodes":["# + Array(repeating: "0", count: 100_000).joined(separator: ",") + "]}"
         let hugeElement = try CardJSONValue.decode(MultimodalElement.self, from: Data(huge.utf8))
         XCTAssertFalse(hugeElement.hasCompleteRawElement)
         controller.renderElementsForTesting([hugeElement], turnId: UUID(), payload: payload)
@@ -68,8 +53,8 @@ final class CardJSONValueTests: NativeCardTestCase {
     }
 
     func testRawNumbersBridgeLikeJSONSerializationAndRoundTrip() throws {
-        NativeCardRegistry.register(type: "test.numbers") { _, _, _ in AnyView(EmptyView()) }
-        let json = #"{"type":"test.numbers","qty":3,"price":4.5,"flag":true,"nested":{"id":42},"array":[7]}"#
+        NativeCardRegistry.register(rendererId: "test.numbers") { _, _, _ in AnyView(EmptyView()) }
+        let json = #"{"type":"custom","rendererId":"test.numbers","qty":3,"price":4.5,"flag":true,"nested":{"id":42},"array":[7]}"#
         let data = Data(json.utf8)
         let element = try CardJSONValue.decode(MultimodalElement.self, from: data)
         let reference = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -87,13 +72,13 @@ final class CardJSONValueTests: NativeCardTestCase {
 
     @MainActor
     func testExactDecimalNumbersSurviveActivationStateAndEncoding() async throws {
-        NativeCardRegistry.register(type: "test.precision") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.precision") { _, _, _ in AnyView(EmptyView()) }
         let tokens = [
             "18446744073709551616", "-9223372036854775809",
             "1.23456789012345678901234567890123456789", "1.234567890123456789e30", "1e-120"
         ]
         for token in tokens {
-            let json = #"{"type":"test.precision","nested":{"number":\#(token)},"values":[\#(token)]}"#
+            let json = #"{"type":"custom","rendererId":"test.precision","nested":{"number":\#(token)},"values":[\#(token)]}"#
             let element = try CardJSONValue.decode(MultimodalElement.self, from: Data(json.utf8))
             XCTAssertTrue(element.hasCompleteRawElement, token)
             let expected = NSDecimalNumber(string: token)
@@ -116,16 +101,16 @@ final class CardJSONValueTests: NativeCardTestCase {
     }
 
     @MainActor
-    func testUnrepresentableNumbersRejectOnlyNativeActivationAndKeepFallback() throws {
-        NativeCardRegistry.register(type: "test.precision") { _, _, _ in AnyView(EmptyView()) }
+    func testUnrepresentableNumbersOmitOnlyTheInvalidCustomElement() throws {
+        NativeCardRegistry.register(rendererId: "test.precision") { _, _, _ in AnyView(EmptyView()) }
         let tokens = [
             "123456789012345678901234567890123456789123456789",
             "1.0000000000000000000000000000000000000001", "1e-400", "1e400"
         ]
         for token in tokens {
             let json = """
-            [{"type":"test.precision","nested":{"value":\(token)},"entity_info":{"productName":"Fallback"}},
-             {"type":"test.precision","id":"accepted","value":2}]
+            [{"type":"custom","rendererId":"test.precision","nested":{"value":\(token)},"entity_info":{"productName":"Fallback"}},
+             {"type":"custom","rendererId":"test.precision","id":"accepted","value":2}]
             """
             let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
             XCTAssertFalse(elements[0].hasCompleteRawElement, token)
@@ -133,19 +118,15 @@ final class CardJSONValueTests: NativeCardTestCase {
             let controller = ChatController(configuration: nil,
                 chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
             controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
-            XCTAssertEqual(controller.messages.count, 2)
-            guard case .productCard(let fallback) = controller.messages[0].template,
-                  controller.messages[1].nativeCardId != nil else {
-                return XCTFail("Numeric rejection must preserve the built-in fallback and adjacent cards")
-            }
-            XCTAssertEqual(fallback.title, "Fallback")
+            XCTAssertEqual(controller.messages.count, 1)
+            XCTAssertNotNil(controller.messages[0].nativeCardId)
         }
     }
 
     func testNumberSourcePathsHandleEscapedKeysAndNumberLikeStrings() throws {
-        NativeCardRegistry.register(type: "test.precision") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.precision") { _, _, _ in AnyView(EmptyView()) }
         let json = #"""
-        {"type":"test.precision","text":"\"1e400\"","123":{"a\u0022b":[
+        {"type":"custom","rendererId":"test.precision","text":"\"1e400\"","123":{"a\u0022b":[
         {"number":1.234567890123456789,"text":"\\1e-400"}]},"[0]":42}
         """#
         let element = try CardJSONValue.decode(MultimodalElement.self, from: Data(json.utf8))
@@ -164,23 +145,37 @@ final class CardJSONValueTests: NativeCardTestCase {
         XCTAssertNoThrow(try CardJSONValue.decode(CardJSONValue.self, from: json))
     }
 
-    func testNativeDecodingUsesItsTypeSnapshotRatherThanTheLiveRegistry() throws {
-        let json = Data(#"[{"type":"test.first","id":42},{"type":"test.second","id":"two"}]"#.utf8)
-        let elements = try CardJSONValue.decode([MultimodalElement].self, from: json, nativeCardTypes: ["test.first"])
-        XCTAssertTrue(elements[0].hasCompleteRawElement, "A snapshot type decodes natively without a registration")
-        XCTAssertEqual(elements[0].nativeElementId, "42")
-        XCTAssertFalse(elements[1].hasCompleteRawElement)
+    func testCustomDecodingIsIndependentOfRegistration() throws {
+        let first = Data(#"{"type":"custom","rendererId":"test.first","id":42}"#.utf8)
+        let second = Data(#"{"type":"custom","rendererId":"test.second","id":42}"#.utf8)
+        let element = try CardJSONValue.decode(MultimodalElement.self, from: first)
+        XCTAssertTrue(element.hasCompleteRawElement)
+        XCTAssertEqual(element.nativeElementId, "42")
+        XCTAssertTrue(try CardJSONValue.decode(MultimodalElement.self, from: second).hasCompleteRawElement)
+        NativeCardRegistry.register(rendererId: "test.first") { _, _, _ in AnyView(EmptyView()) }
+        XCTAssertTrue(try CardJSONValue.decode(MultimodalElement.self, from: first).hasCompleteRawElement)
+    }
 
-        NativeCardRegistry.register(type: "test.first") { _, _, _ in AnyView(EmptyView()) }
-        XCTAssertThrowsError(try CardJSONValue.decode([MultimodalElement].self, from: json, nativeCardTypes: []),
-                             "An empty snapshot keeps strict decoding even after a registration")
+    func testUnregisteredCustomElementPreservesRendererOwnedFieldsOnEncode() throws {
+        let data = Data(#"""
+        {"type":"custom","rendererId":"not.installed",
+         "rendererContext":{"eventId":"event-12345","flags":[1,true]},
+         "entity_info":{"productName":"Renderer-owned","opaque":{"value":42}}}
+        """#.utf8)
+        let element = try CardJSONValue.decode(MultimodalElement.self, from: data)
+        XCTAssertTrue(element.hasCompleteRawElement)
+        let encoded = try JSONEncoder().encode(element)
+        let decoded = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let expected = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? NSDictionary)
+        XCTAssertEqual(decoded as NSDictionary, expected)
+        XCTAssertNil(element.entityInfo)
     }
 
     @MainActor
     func testUnsignedIdentifiersRemainExactThroughRendererStateAndEncoding() throws {
-        NativeCardRegistry.register(type: "test.unsigned") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.unsigned") { _, _, _ in AnyView(EmptyView()) }
         for identifier in [UInt64(Int64.max) + 2, UInt64.max] {
-            let json = #"{"type":"test.unsigned","entity_info":{"id":\#(identifier)}}"#
+            let json = #"{"type":"custom","rendererId":"test.unsigned","entity_info":{"id":\#(identifier)}}"#
             let element = try CardJSONValue.decode(MultimodalElement.self, from: Data(json.utf8))
             let info = try XCTUnwrap(element.rawElement["entity_info"] as? [String: Any])
             XCTAssertEqual((info["id"] as? NSNumber)?.stringValue, String(identifier))
@@ -191,7 +186,7 @@ final class CardJSONValueTests: NativeCardTestCase {
                 receivedIdentifier = (info?["id"] as? NSNumber)?.stringValue
                 return AnyView(EmptyView())
             }, sessionId: nil, conversationId: nil, interactionId: nil)
-            _ = card.renderer(card.element, card.context, { _ in })
+            _ = card.renderer(card.element, card.cardContext, { _ in })
             XCTAssertEqual(receivedIdentifier, String(identifier))
 
             let copied = try XCTUnwrap(NativeCard.copyJSON(element.rawElement))

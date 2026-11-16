@@ -17,7 +17,8 @@ import Combine
 import AEPServices
 
 public typealias ConciergeCardRenderer =
-    (_ element: [String: Any], _ context: [String: Any], _ saveState: @escaping ([String: Any]) -> Void) -> AnyView
+    (_ element: [String: Any], _ cardContext: [String: Any],
+     _ saveState: @escaping ([String: Any]) -> Void) -> AnyView
 
 enum NativeCardRegistry {
     struct Registration {
@@ -26,31 +27,24 @@ enum NativeCardRegistry {
     private static let lock = NSLock()
     private static var registrations: [String: Registration] = [:]
 
-    static func register(type: String, renderer: @escaping ConciergeCardRenderer) {
-        guard !type.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+    static func register(rendererId: String, renderer: @escaping ConciergeCardRenderer) {
+        guard !rendererId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         lock.lock()
-        registrations[type] = Registration(renderer: renderer)
+        registrations[rendererId] = Registration(renderer: renderer)
         lock.unlock()
     }
 
-    static func registration(for type: String?) -> Registration? {
-        guard let type else { return nil }
+    static func registration(for rendererId: String?) -> Registration? {
+        guard let rendererId else { return nil }
         lock.lock()
         defer { lock.unlock() }
-        return registrations[type]
+        return registrations[rendererId]
     }
 
     static var hasAnyRenderer: Bool {
         lock.lock()
         defer { lock.unlock() }
         return !registrations.isEmpty
-    }
-
-    /// The registered element types, read together so a decode can use one consistent set.
-    static var registeredTypes: Set<String> {
-        lock.lock()
-        defer { lock.unlock() }
-        return Set(registrations.keys)
     }
 
     #if DEBUG
@@ -77,7 +71,7 @@ final class NativeCard: ObservableObject {
     @Published private(set) var state: [String: Any]?
     @Published private(set) var isBusy = false
     @Published private(set) var isStale = false
-    /// True while this is the most recently activated card of its `type` in this chat.
+    /// True while this is the most recently activated card of its `rendererId` in this chat.
     @Published private(set) var isLatest = false
     private(set) var disposed = false
 
@@ -91,7 +85,7 @@ final class NativeCard: ObservableObject {
         self.interactionId = interactionId
     }
 
-    var context: [String: Any] {
+    var cardContext: [String: Any] {
         var result: [String: Any] = ["cardId": cardId, "sequence": sequence, "isBusy": isBusy,
                                      "isStale": isStale, "isLatest": isLatest]
         if let sessionId { result["sessionId"] = sessionId }

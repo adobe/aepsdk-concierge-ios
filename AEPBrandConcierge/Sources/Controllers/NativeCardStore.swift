@@ -16,23 +16,27 @@ import Foundation
 final class NativeCardStore {
     struct Occurrence: Hashable {
         enum Identity: Hashable {
-            case element(String)
-            case position(Int)
+            case element(rendererId: String, id: String)
+            case position(rendererId: String, index: Int)
         }
 
         let turnId: UUID
         let identity: Identity
 
-        init(element: MultimodalElement, position: Int, turnId: UUID) {
+        init(element: MultimodalElement, rendererId: String, position: Int, turnId: UUID) {
             self.turnId = turnId
-            identity = element.nativeElementId.map(Identity.element) ?? .position(position)
+            if let id = element.nativeElementId {
+                identity = .element(rendererId: rendererId, id: id)
+            } else {
+                identity = .position(rendererId: rendererId, index: position)
+            }
         }
     }
 
     struct Activation {
         let occurrence: Occurrence
         let position: Int
-        let type: String
+        let rendererId: String
         let element: [String: Any]
         let registration: NativeCardRegistry.Registration
     }
@@ -41,12 +45,12 @@ final class NativeCardStore {
         let card: NativeCard
         let occurrence: Occurrence
         let position: Int
-        let type: String
+        let rendererId: String
     }
 
     private var entries: [String: Entry] = [:]
     private var cardIdsByOccurrence: [Occurrence: String] = [:]
-    private var latestCardIdByType: [String: String] = [:]
+    private var latestCardIdByRendererId: [String: String] = [:]
     /// The next activation's `sequence`; never reset, so values aren't reused within this chat.
     private var nextSequence = 0
     private var isBusy = false
@@ -73,13 +77,13 @@ final class NativeCardStore {
                               conversationId: payload.conversationId, interactionId: payload.interactionId)
         nextSequence += 1
         card.setBusy(isBusy)
-        // Cards activate in transcript order, so the newest card of a type is always the latest.
-        if let previousId = latestCardIdByType.updateValue(card.cardId, forKey: activation.type) {
+        // Cards activate in transcript order, so the newest card of a renderer ID is always latest.
+        if let previousId = latestCardIdByRendererId.updateValue(card.cardId, forKey: activation.rendererId) {
             entries[previousId]?.card.setLatest(false)
         }
         card.setLatest(true)
         entries[card.cardId] = Entry(card: card, occurrence: activation.occurrence, position: activation.position,
-                                     type: activation.type)
+                                     rendererId: activation.rendererId)
         cardIdsByOccurrence[activation.occurrence] = card.cardId
         return card
     }
@@ -97,31 +101,32 @@ final class NativeCardStore {
             message.nativeCardId
         })
         let removed = entries.keys.filter { !visible.contains($0) }
-        var typesLosingLatest = Set<String>()
+        var rendererIdsLosingLatest = Set<String>()
         for cardId in removed {
             guard let entry = entries.removeValue(forKey: cardId) else { continue }
             cardIdsByOccurrence.removeValue(forKey: entry.occurrence)
             entry.card.dispose()
-            if latestCardIdByType[entry.type] == cardId {
-                latestCardIdByType.removeValue(forKey: entry.type)
-                typesLosingLatest.insert(entry.type)
+            if latestCardIdByRendererId[entry.rendererId] == cardId {
+                latestCardIdByRendererId.removeValue(forKey: entry.rendererId)
+                rendererIdsLosingLatest.insert(entry.rendererId)
             }
         }
-        typesLosingLatest.forEach(promoteLatest)
+        rendererIdsLosingLatest.forEach(promoteLatest)
     }
 
     func removeAll() {
         for entry in entries.values { entry.card.dispose() }
         entries.removeAll()
         cardIdsByOccurrence.removeAll()
-        latestCardIdByType.removeAll()
+        latestCardIdByRendererId.removeAll()
     }
 
-    /// Makes the remaining card of `type` with the highest sequence the latest, if any remains.
-    private func promoteLatest(_ type: String) {
-        guard let newest = entries.values.filter({ $0.type == type }).max(by: { $0.card.sequence < $1.card.sequence })
+    /// Makes the remaining card of `rendererId` with the highest sequence the latest, if any remains.
+    private func promoteLatest(_ rendererId: String) {
+        guard let newest = entries.values.filter({ $0.rendererId == rendererId })
+            .max(by: { $0.card.sequence < $1.card.sequence })
         else { return }
-        latestCardIdByType[type] = newest.card.cardId
+        latestCardIdByRendererId[rendererId] = newest.card.cardId
         newest.card.setLatest(true)
     }
 }

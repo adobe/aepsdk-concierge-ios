@@ -16,10 +16,10 @@ import AEPServices
 
 /// Public API extensions for showing/hiding the Concierge chat UI.
 public extension Concierge {
-    /// Registers a native SwiftUI renderer for an exact, case-sensitive multimodal element type.
+    /// Registers a native SwiftUI renderer for an exact, case-sensitive custom element renderer ID.
     /// The last registration wins for future cards; already rendered cards keep their renderer.
-    static func registerCardRenderer(type: String, _ renderer: @escaping ConciergeCardRenderer) {
-        NativeCardRegistry.register(type: type, renderer: renderer)
+    static func registerCardRenderer(rendererId: String, _ renderer: @escaping ConciergeCardRenderer) {
+        NativeCardRegistry.register(rendererId: rendererId, renderer: renderer)
     }
 
     // MARK: - Tracking

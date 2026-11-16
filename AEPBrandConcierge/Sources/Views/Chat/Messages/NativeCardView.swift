@@ -30,7 +30,7 @@ private struct RenderedNativeCard: View {
     @ObservedObject var card: NativeCard
 
     var body: some View {
-        card.renderer(card.element, card.context, { [weak card] state in card?.saveState(state) })
+        card.renderer(card.element, card.cardContext, { [weak card] state in card?.saveState(state) })
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

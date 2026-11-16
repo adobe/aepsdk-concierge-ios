@@ -18,9 +18,9 @@ import SwiftUI
 final class ChatControllerNativeCardTests: NativeCardTestCase {
     @MainActor
     func testStreamingNativeCardsRequireCompletedElements() async throws {
-        NativeCardRegistry.register(type: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.streaming","id":"draft"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.streaming","id":"draft"}]"#.utf8))
         let completions: [ConversationPayload?] = [
             streamPayload(state: "completed"),
             streamPayload(state: "completed", elements: []),
@@ -49,9 +49,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
 
     @MainActor
     func testCompletedNativeElementsReplaceStreamingCandidates() async throws {
-        NativeCardRegistry.register(type: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.streaming","id":"draft"},{"type":"test.streaming","id":"final"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.streaming","id":"draft"},{"type":"custom","rendererId":"test.streaming","id":"final"}]"#.utf8))
         let service = MockChatService(configuration: ConciergeConfiguration())
         service.plannedChunks = [
             streamPayload(state: "in-progress", elements: [elements[0]]),
@@ -88,9 +88,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
 
     @MainActor
     func testCompletedTextDoesNotActivateStreamingNativeCards() async throws {
-        NativeCardRegistry.register(type: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.streaming","id":"draft"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.streaming","id":"draft"}]"#.utf8))
         let service = MockChatService(configuration: ConciergeConfiguration())
         service.plannedChunks = [
             streamPayload(state: "in-progress", elements: elements),
@@ -119,9 +119,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         for hasRenderer in [false, true] {
             var streamingElements = product
             if hasRenderer {
-                NativeCardRegistry.register(type: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
+                NativeCardRegistry.register(rendererId: "test.streaming") { _, _, _ in AnyView(EmptyView()) }
                 streamingElements += try CardJSONValue.decode([MultimodalElement].self,
-                    from: Data(#"[{"type":"test.streaming","id":"draft"}]"#.utf8))
+                    from: Data(#"[{"type":"custom","rendererId":"test.streaming","id":"draft"}]"#.utf8))
             }
             for completedElements in completions {
                 let service = MockChatService(configuration: ConciergeConfiguration())
@@ -146,16 +146,19 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         }
     }
 
-    /// Matches Android: a card-only response whose cards all fail to render is an empty response,
-    /// even with prompt suggestions; a built-in fallback still delivers it.
+    /// A card-only response whose custom cards cannot render is empty, even with suggestions.
     @MainActor
     func testUnrenderableCardOnlyResponseIsReportedAsEmpty() async throws {
-        NativeCardRegistry.register(type: "test.unrenderable") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.unrenderable") { _, _, _ in AnyView(EmptyView()) }
         let nested = String(repeating: "[", count: 64) + "0" + String(repeating: "]", count: 64)
-        let rejected = #"{"type":"test.unrenderable","nested":"# + nested + "}"
-        let withFallback = #"{"type":"test.unrenderable","nested":"# + nested +
+        let rejected = #"{"type":"custom","rendererId":"test.unrenderable","nested":"# + nested + "}"
+        let withFallback = #"{"type":"custom","rendererId":"test.unrenderable","nested":"# + nested +
             #","entity_info":{"productName":"Fallback"}}"#
-        for (json, delivered) in [(rejected, false), (withFallback, true)] {
+        let unregistered = #"{"type":"custom","rendererId":"not.registered","id":42,"entity_info":{"productName":"Not a product"}}"#
+        let missingId = #"{"type":"custom","entity_info":{"productName":"Not a product"}}"#
+        for (json, withoutRegistry) in [(rejected, false), (withFallback, false), (unregistered, false),
+                                        (missingId, false), (unregistered, true), (missingId, true)] {
+            if withoutRegistry { NativeCardRegistry.resetForTesting() }
             let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data("[\(json)]".utf8))
             let service = MockChatService(configuration: ConciergeConfiguration())
             service.plannedChunks = [streamPayload(state: "completed", elements: elements, suggestions: ["Next"])]
@@ -169,29 +172,22 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
             }
             await fulfillment(of: [finished], timeout: 2)
             XCTAssertEqual(controller.chatState, .idle)
-            if delivered {
-                XCTAssertNil(outcome)
-                guard case .productCard? = controller.messages.first?.template else {
-                    return XCTFail("A rejected native card with a built-in fallback must render the fallback")
-                }
-            } else {
-                guard case .invalidResponseData? = outcome else {
-                    return XCTFail("Expected invalidResponseData when no element can render")
-                }
-                XCTAssertTrue(controller.messages.isEmpty)
+            guard case .invalidResponseData? = outcome else {
+                return XCTFail("Expected invalidResponseData when no element can render")
             }
+            XCTAssertTrue(controller.messages.isEmpty)
         }
     }
 
     @MainActor
     func testRendererReplacementDuringTurnOnlyAffectsNewOccurrences() async throws {
         var renderedBy: [String] = []
-        NativeCardRegistry.register(type: "test.replacement") { _, _, _ in
+        NativeCardRegistry.register(rendererId: "test.replacement") { _, _, _ in
             renderedBy.append("first")
             return AnyView(EmptyView())
         }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.replacement","id":"same"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.replacement","id":"same"}]"#.utf8))
         let service = MockChatService(configuration: ConciergeConfiguration())
         service.shouldCallComplete = false
         let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil)
@@ -212,7 +208,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         }
         await fulfillment(of: [started], timeout: 2)
         XCTAssertTrue(original.isBusy)
-        NativeCardRegistry.register(type: "test.replacement") { _, _, _ in
+        NativeCardRegistry.register(rendererId: "test.replacement") { _, _, _ in
             renderedBy.append("replacement")
             return AnyView(EmptyView())
         }
@@ -221,7 +217,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         await fulfillment(of: [finished], timeout: 2)
         let cards = nativeCards(in: controller)
         XCTAssertEqual(cards.count, 2)
-        for card in cards { _ = card.renderer(card.element, card.context, { _ in }) }
+        for card in cards { _ = card.renderer(card.element, card.cardContext, { _ in }) }
         XCTAssertEqual(renderedBy, ["first", "replacement"])
         XCTAssertTrue(newCardWasBusy)
         XCTAssertFalse(original.isStale)
@@ -231,9 +227,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
 
     @MainActor
     func testFailedAndCancelledTurnsDoNotDisposeEarlierCards() async throws {
-        NativeCardRegistry.register(type: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.lifecycle","id":"same"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.lifecycle","id":"same"}]"#.utf8))
         for cancel in [false, true] {
             let service = MockChatService(configuration: ConciergeConfiguration())
             service.shouldCallComplete = false
@@ -269,9 +265,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
 
     @MainActor
     func testEveryTranscriptWriteKeepsCardLifetimeInSync() async throws {
-        NativeCardRegistry.register(type: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.lifecycle","id":"live"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.lifecycle","id":"live"}]"#.utf8))
         let service = MockChatService(configuration: ConciergeConfiguration())
         service.plannedChunks = [
             streamPayload(state: "in-progress", message: "Str"),

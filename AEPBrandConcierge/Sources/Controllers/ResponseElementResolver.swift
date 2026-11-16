@@ -116,15 +116,26 @@ enum ResponseElementResolver {
         targets.reserveCapacity(elements.count)
         var occurrencePositions: [NativeCardStore.Occurrence: Int] = [:]
         for (position, element) in elements.enumerated() {
-            let registration = NativeCardRegistry.registration(for: element.type)
-            // Streaming-only native candidates never become either native rows or built-in fallbacks.
-            if !allowsNativeCards, registration != nil { continue }
-            if let registration {
-                let occurrence = NativeCardStore.Occurrence(element: element, position: position, turnId: turnId)
+            if element.type == "custom" {
+                guard let id = element.rendererId,
+                      !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    Log.warning(label: LOG_TAG,
+                                "Rejected custom element at position \(position): missing or invalid rendererId.")
+                    continue
+                }
+                guard let registration = NativeCardRegistry.registration(for: id) else {
+                    Log.warning(label: LOG_TAG, "Skipping custom element at position \(position): no renderer registered for rendererId '\(id)'.")
+                    continue
+                }
+                // Only completed custom elements may activate.
+                guard allowsNativeCards else { continue }
+                let occurrence = NativeCardStore.Occurrence(element: element, rendererId: id,
+                                                            position: position, turnId: turnId)
                 let existingPosition = nativeCards.position(for: occurrence)
                 if let originalPosition = occurrencePositions[occurrence] ?? existingPosition,
                    originalPosition != position {
-                    Log.warning(label: LOG_TAG, "Rejected native card element at position \(position): duplicate element id.")
+                    Log.warning(label: LOG_TAG,
+                                "Rejected native card element at position \(position): duplicate element id for rendererId '\(id)'.")
                 } else if !element.hasCompleteRawElement {
                     Log.warning(label: LOG_TAG, "Rejected native card element with invalid, over-budget, or inexact raw JSON.")
                 } else {
@@ -132,12 +143,12 @@ enum ResponseElementResolver {
                     // Decoding already enforced the JSON budget; build the renderer's copy only for new cards.
                     if existingPosition == nil {
                         targets.append(.native(NativeCardStore.Activation(occurrence: occurrence, position: position,
-                                                                         type: element.type ?? "",
+                                                                         rendererId: id,
                                                                          element: element.rawElement,
                                                                          registration: registration)))
                     }
-                    continue
                 }
+                continue
             }
             if element.elementType == .ctaButton {
                 if let action = element.entityInfo?.primary {
@@ -145,7 +156,7 @@ enum ResponseElementResolver {
                 } else {
                     Log.warning(label: LOG_TAG, "Skipping ctaButton element '\(element.id ?? "unknown")': missing entity_info.primary.")
                 }
-            } else if element.entityInfo != nil || registration == nil {
+            } else {
                 targets.append(.product(element))
             }
         }

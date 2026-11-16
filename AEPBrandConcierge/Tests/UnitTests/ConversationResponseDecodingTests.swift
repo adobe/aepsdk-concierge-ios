@@ -415,15 +415,16 @@ final class ConversationResponseDecodingTests: XCTestCase {
 
     // MARK: - Native card elements
 
-    func test_multimodalElement_nativeType_keepsUnknownValuesAndInvalidBuiltInFields() throws {
+    func test_multimodalElement_registeredCustomTypeKeepsUnknownValuesAndInvalidBuiltInFields() throws {
         let response = """
-        {"type":"test.raw","entity_info":{"products":[{"id":3,"extra":null}],"primary":{"text":42}},
+        {"type":"custom","rendererId":"test.raw","entity_info":{"products":[{"id":3,"extra":null}],"primary":{"text":42}},
         "unknown":{"flags":[true,false,null]},"id":42}
         """
-        let element = try CardJSONValue.decode(MultimodalElement.self, from: Data(response.utf8),
-                                                nativeCardTypes: ["test.raw"])
+        let element = try CardJSONValue.decode(MultimodalElement.self, from: Data(response.utf8))
         XCTAssertNil(element.id)
-        XCTAssertEqual(element.type, "test.raw")
+        XCTAssertEqual(element.type, "custom")
+        XCTAssertEqual(element.rendererId, "test.raw")
+        XCTAssertNil(element.entityInfo)
         XCTAssertTrue(element.hasCompleteRawElement)
         let info = try XCTUnwrap(element.rawElement["entity_info"] as? [String: Any])
         XCTAssertTrue((info["products"] as? [[String: Any]])?[0]["extra"] is NSNull)
@@ -436,10 +437,9 @@ final class ConversationResponseDecodingTests: XCTestCase {
     func test_debugLogDescription_omitsNativePayloadAndKeepsLegacyOutput() throws {
         let nativeJSON = """
         {"message":"hello","multimodalElements":{"elements":[
-        {"type":"test.private","entity_info":{"customer":"sensitive-value"}}]}}
+        {"type":"custom","rendererId":"test.private","entity_info":{"customer":"sensitive-value"}}]}}
         """
-        let native = try CardJSONValue.decode(ConversationResponse.self, from: Data(nativeJSON.utf8),
-                                                nativeCardTypes: ["test.private"])
+        let native = try CardJSONValue.decode(ConversationResponse.self, from: Data(nativeJSON.utf8))
         let description = try XCTUnwrap(native.debugLogDescription)
         XCTAssertEqual(description, "[native card payload omitted]")
         XCTAssertFalse(description.contains("sensitive-value"))
@@ -448,44 +448,42 @@ final class ConversationResponseDecodingTests: XCTestCase {
         {"message":"hello","multimodalElements":{"elements":[
         {"type":"product","entity_info":{"productName":"Visible product"}}]}}
         """
-        let legacy = try CardJSONValue.decode(ConversationResponse.self, from: Data(legacyJSON.utf8),
-                                                nativeCardTypes: ["test.private"])
+        let legacy = try CardJSONValue.decode(ConversationResponse.self, from: Data(legacyJSON.utf8))
         let encoded = try JSONEncoder().encode(legacy)
         let originalDescription = try XCTUnwrap(String(data: encoded, encoding: .utf8)).prettyPrintedJSON()
         XCTAssertEqual(legacy.debugLogDescription, originalDescription)
     }
 
-    func test_multimodalElement_plainDecoder_staysStrictForRegisteredTypes() throws {
+    func test_multimodalElement_plainDecoderKeepsCustomFieldsLenient() throws {
         addTeardownBlock { NativeCardRegistry.resetForTesting() }
-        NativeCardRegistry.register(type: "test.snapshot") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.snapshot") { _, _, _ in AnyView(EmptyView()) }
         let element = try JSONDecoder().decode(MultimodalElement.self,
-            from: Data(#"{"type":"test.snapshot","extra":true}"#.utf8))
-        XCTAssertFalse(element.hasCompleteRawElement, "Only native card decoding captures raw JSON")
-        XCTAssertThrowsError(try JSONDecoder().decode(MultimodalElement.self,
-            from: Data(#"{"type":"test.snapshot","id":42}"#.utf8)), "Registration alone doesn't relax a plain decoder")
+            from: Data(#"{"type":"custom","rendererId":"test.snapshot","extra":true}"#.utf8))
+        XCTAssertTrue(element.hasCompleteRawElement, "Custom JSON is retained when it can be copied safely")
+        let numeric = try JSONDecoder().decode(MultimodalElement.self,
+            from: Data(#"{"type":"custom","rendererId":"test.snapshot","id":42}"#.utf8))
+        XCTAssertNil(numeric.id)
+        XCTAssertNil(numeric.entityInfo)
     }
 
-    func test_multimodalElement_unregisteredType_staysStrictWithoutRawCapture() throws {
+    func test_multimodalElement_unregisteredCustomIsOpaqueAndPreservesRawJSON() throws {
         let element = try CardJSONValue.decode(MultimodalElement.self,
-            from: Data(#"{"id":"1","type":"test.unregistered","entity_info":{"productName":"Built-in"}}"#.utf8),
-            nativeCardTypes: [])
-        XCTAssertTrue(element.rawElement.isEmpty)
-        XCTAssertFalse(element.hasCompleteRawElement)
-        XCTAssertEqual(element.entityInfo?.productName, "Built-in")
-        XCTAssertThrowsError(try CardJSONValue.decode(MultimodalElement.self,
-            from: Data(#"{"id":42,"type":"test.unregistered"}"#.utf8), nativeCardTypes: []), "Unregistered types keep dev's strict decoding")
+            from: Data(#"{"id":42,"type":"custom","rendererId":"test.unregistered","entity_info":{"productName":"Built-in"}}"#.utf8))
+        XCTAssertTrue(element.hasCompleteRawElement)
+        XCTAssertEqual(element.rawElement["rendererId"] as? String, "test.unregistered")
+        XCTAssertEqual((element.rawElement["entity_info"] as? [String: Any])?["productName"] as? String, "Built-in")
+        XCTAssertNil(element.entityInfo)
+        XCTAssertEqual(element.nativeElementId, "42")
     }
 
     func test_conversationResponse_nativeCardOnly_stillRequiresStringMessage() throws {
-        let elements = #""multimodalElements":{"elements":[{"type":"test.required"}]}"#
+        let elements = #""multimodalElements":{"elements":[{"type":"custom","rendererId":"test.required"}]}"#
         for message in ["", #""message":null,"#, #""message":42,"#] {
             let json = "{\(message)\(elements)}"
-            XCTAssertThrowsError(try CardJSONValue.decode(ConversationResponse.self, from: Data(json.utf8),
-                                                      nativeCardTypes: ["test.required"]))
+            XCTAssertThrowsError(try CardJSONValue.decode(ConversationResponse.self, from: Data(json.utf8)))
         }
         let emptyMessage = "{ \"message\":\"\", \(elements) }"
-        let response = try CardJSONValue.decode(ConversationResponse.self, from: Data(emptyMessage.utf8),
-                                                  nativeCardTypes: ["test.required"])
+        let response = try CardJSONValue.decode(ConversationResponse.self, from: Data(emptyMessage.utf8))
         XCTAssertEqual(response.message, "")
         XCTAssertTrue(response.multimodalElements?.elements.first?.hasCompleteRawElement == true)
     }

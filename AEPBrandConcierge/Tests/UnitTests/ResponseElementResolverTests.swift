@@ -32,8 +32,33 @@ final class ResponseElementResolverTests: NativeCardTestCase {
     }
 
     @MainActor
-    func testNativeDuplicateIdsUseBuiltInFallback() async throws {
-        NativeCardRegistry.register(type: "test.identity") { _, _, _ in AnyView(EmptyView()) }
+    func testUnregisteredCustomElementsNeverBecomeBuiltInWithoutAnyRegistry() throws {
+        let json = """
+        [{"type":"custom","rendererId":"not.registered","id":42,"width":"invalid",
+          "entity_info":{"productName":"Not a product","primary":{"text":"Not a CTA"}}},
+         {"type":"custom","rendererId":"  ","entity_info":{"productName":"Not a product"}},
+         {"type":"custom","rendererId":3,"entity_info":{"productName":"Not a product"}},
+         {"type":"custom","entity_info":{"productName":"Not a product"}},
+         {"type":"product","entity_info":{"productName":"Real product"}}]
+        """
+        let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
+        let store = NativeCardStore()
+        let plan = ResponseElementResolver.resolve(elements, turnId: UUID(), nativeCards: store)
+        XCTAssertTrue(plan.hasRenderableElements)
+        let messages = plan.makeMessages(nativeCards: store, payload: streamPayload(state: "completed"),
+                                         sessionId: nil, promptSuggestions: ["Next"])
+        XCTAssertEqual(messages.count, 2)
+        guard case .productCard(let product) = messages[0].template,
+              case .promptSuggestion(text: "Next") = messages[1].template else {
+            return XCTFail("Only the non-custom product and its suggestion should render")
+        }
+        XCTAssertEqual(product.title, "Real product")
+        XCTAssertTrue(elements.prefix(4).allSatisfy { $0.entityInfo == nil })
+    }
+
+    @MainActor
+    func testNativeDuplicateIdsAreOmitted() async throws {
+        NativeCardRegistry.register(rendererId: "test.identity") { _, _, _ in AnyView(EmptyView()) }
         let duplicateIds = [
             ("42", "42"), (#""same""#, #""same""#), ("42", #""42""#),
             ("42.5", "42.5"), ("true", #""true""#),
@@ -43,27 +68,25 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             let controller = ChatController(configuration: nil,
                 chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
             let json = """
-            [{"type":"test.identity","id":\(ids.0)},
-             {"type":"test.identity","id":\(ids.1)},
-             {"type":"test.identity","id":\(ids.1),"entity_info":{"productName":"Fallback"}},
+            [{"type":"custom","rendererId":"test.identity","id":\(ids.0)},
+             {"type":"custom","rendererId":"test.identity","id":\(ids.1)},
+             {"type":"custom","rendererId":"test.identity","id":\(ids.1),"entity_info":{"productName":"Fallback"}},
              {"type":"ctaButton","id":"cta","entity_info":{"primary":{"text":"Tap","url":"https://example.com"}}}]
             """
-            NativeCardRegistry.register(type: "ctaButton") { _, _, _ in AnyView(EmptyView()) }
+            NativeCardRegistry.register(rendererId: "ctaButton") { _, _, _ in AnyView(EmptyView()) }
             let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
             let payload = streamPayload(state: "completed")
             let turn = UUID()
             controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
-            XCTAssertEqual(controller.messages.count, 3)
+            XCTAssertEqual(controller.messages.count, 2)
             guard let first = nativeCard(at: 0, in: controller),
-                  case .productCard(let fallback) = controller.messages[1].template,
-                  controller.messages[2].nativeCardId != nil else {
-                return XCTFail("Duplicate IDs must use a fallback or be omitted, not activate twice")
+                  case .ctaButton = controller.messages[1].template else {
+                return XCTFail("Duplicate custom IDs must be omitted, while a built-in CTA stays built in")
             }
-            XCTAssertEqual(fallback.title, "Fallback")
             await saveStateAndWait(["selected": true], on: first)
             controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
             let cards = nativeCards(in: controller)
-            XCTAssertEqual(cards.count, 2, "Reprocessing must not reactivate an occurrence")
+            XCTAssertEqual(cards.count, 1, "Reprocessing must not reactivate an occurrence")
             XCTAssertEqual(cards.first?.cardId, first.cardId)
             XCTAssertEqual(first.state?["selected"] as? Bool, true)
             controller.messages.removeAll()
@@ -77,21 +100,70 @@ final class ResponseElementResolverTests: NativeCardTestCase {
     }
 
     @MainActor
-    func testNativeDuplicateIdUsesCtaFallback() throws {
-        NativeCardRegistry.register(type: "ctaButton") { _, _, _ in AnyView(EmptyView()) }
+    func testBuiltInCtaIsNotOverriddenByMatchingRendererId() throws {
+        NativeCardRegistry.register(rendererId: "ctaButton") { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"ctaButton","id":"same"},
-         {"type":"ctaButton","id":"same","entity_info":{"primary":{"text":"Tap","url":"https://example.com"}}}]
+        [{"type":"ctaButton","rendererId":"ctaButton","entity_info":{"primary":{"text":"First","url":"https://example.com/first"}}},
+         {"type":"ctaButton","rendererId":"ctaButton","entity_info":{"primary":{"text":"Second","url":"https://example.com/second"}}}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
         XCTAssertEqual(controller.messages.count, 2)
-        guard controller.messages[0].nativeCardId != nil,
-              case .ctaButton = controller.messages[1].template else {
-            return XCTFail("Duplicate native IDs must fall back to the built-in CTA")
+        guard case .ctaButton(let first) = controller.messages[0].template,
+              case .ctaButton(let second) = controller.messages[1].template else {
+            return XCTFail("An OOTB type must keep its built-in renderer even when its type matches a rendererId")
         }
+        XCTAssertEqual(first.text, "First")
+        XCTAssertEqual(second.text, "Second")
+        XCTAssertTrue(nativeCards(in: controller).isEmpty)
+    }
+
+    @MainActor
+    func testCustomElementsRequireRegisteredRendererId() throws {
+        NativeCardRegistry.register(rendererId: "test.valid") { _, _, _ in AnyView(EmptyView()) }
+        let json = """
+        [{"type":"custom","rendererId":"test.valid","rendererContext":{"eventId":"event-1"},
+          "entity_info":{"productName":"Opaque custom entity"},"extra":{"kept":true}},
+         {"type":"custom","id":42,"entity_info":{"productName":"Must be dropped"}},
+         {"type":"custom","rendererId":"","entity_info":{"productName":"Must be dropped"}},
+         {"type":"custom","rendererId":42,"entity_info":{"productName":"Must be dropped"}},
+         {"type":"custom","rendererId":"missing.renderer","entity_info":{"productName":"Built-in fallback"}}]
+        """
+        let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
+        let controller = ChatController(configuration: nil,
+            chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
+        controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
+
+        XCTAssertEqual(controller.messages.count, 1)
+        let card = try XCTUnwrap(nativeCard(at: 0, in: controller))
+        XCTAssertEqual(card.element["type"] as? String, "custom")
+        XCTAssertEqual(card.element["rendererId"] as? String, "test.valid")
+        XCTAssertEqual((card.element["rendererContext"] as? [String: Any])?["eventId"] as? String, "event-1")
+        XCTAssertEqual((card.element["entity_info"] as? [String: Any])?["productName"] as? String,
+                       "Opaque custom entity")
+        XCTAssertEqual((card.element["extra"] as? [String: Any])?["kept"] as? Bool, true)
+    }
+
+    @MainActor
+    func testElementTypeDoesNotSelectRendererAndIdsAreScopedPerRenderer() throws {
+        NativeCardRegistry.register(rendererId: "test.first") { _, _, _ in AnyView(Text("first")) }
+        NativeCardRegistry.register(rendererId: "test.second") { _, _, _ in AnyView(Text("second")) }
+        let json = """
+        [{"type":"test.first","rendererId":"test.first","id":"same"},
+         {"type":"custom","rendererId":"test.first","id":"same"},
+         {"type":"custom","rendererId":"test.second","id":"same"}]
+        """
+        let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
+        let controller = ChatController(configuration: nil,
+            chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
+        controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
+
+        let cards = nativeCards(in: controller)
+        XCTAssertEqual(cards.count, 2, "Only custom elements route; IDs deduplicate per rendererId")
+        XCTAssertEqual(cards.map { $0.element["rendererId"] as? String }, ["test.first", "test.second"])
+        XCTAssertEqual(cards.map(\.isLatest), [true, true])
     }
 
     @MainActor
@@ -99,15 +171,16 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         let controller = ChatController(configuration: nil,
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
-        let type = "test.native.\(UUID().uuidString)"
-        NativeCardRegistry.register(type: type) { _, _, _ in AnyView(EmptyView()) }
+        let rendererId = "test.native.\(UUID().uuidString)"
+        NativeCardRegistry.register(rendererId: rendererId) { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"\(type)","id":"same","custom":{"null":null}},
-         {"type":"\(type)","id":"same"},
+        [{"type":"custom","rendererId":"\(rendererId)","id":"same","rendererContext":{"eventId":"event-1"},
+          "entity_info":{"productName":"Native payload"},"custom":{"null":null}},
+         {"type":"custom","rendererId":"\(rendererId)","id":"same"},
          {"type":"unknown","entity_info":{"productName":"unknown fallback"}},
          {"type":"product","entity_info":{"productName":"legacy product"}},
-         {"type":"unregistered.custom","entity_info":{"productName":"custom fallback"}},
-         {"type":"unregistered.custom","custom":{"name":"no product data"}},
+         {"type":"custom","rendererId":"unregistered.custom","entity_info":{"productName":"custom fallback"}},
+         {"type":"custom","rendererId":"unregistered.custom","custom":{"name":"no product data"}},
          {"entity_info":{"productName":"untyped fallback"}},
          {"type":"productCard","entity_info":{"productName":"visible"}},
          {"type":"horizontalCard","entity_info":{"productName":"horizontal fallback"}},
@@ -122,13 +195,13 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         guard case .carouselGroup(let products) = controller.messages[1].template else {
             return XCTFail("Expected the allowed productCard fallback")
         }
-        XCTAssertEqual(products.count, 6)
+        XCTAssertEqual(products.count, 5)
         let titles = products.compactMap { message -> String? in
             if case .productCarouselCard(let product) = message.template { return product.title }
             return nil
         }
         XCTAssertEqual(titles, [
-            "unknown fallback", "legacy product", "custom fallback",
+            "unknown fallback", "legacy product",
             "untyped fallback", "visible", "horizontal fallback"
         ])
         XCTAssertTrue(controller.messages.contains {
@@ -139,9 +212,11 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         guard let card = nativeCard(at: 0, in: controller) else {
             return XCTFail("Expected native card")
         }
-        XCTAssertEqual(card.context["conversationId"] as? String, "conv")
-        XCTAssertEqual(card.context["sessionId"] as? String, "session")
+        XCTAssertEqual(card.cardContext["conversationId"] as? String, "conv")
+        XCTAssertEqual(card.cardContext["sessionId"] as? String, "session")
         XCTAssertTrue((card.element["custom"] as? [String: Any])?["null"] is NSNull)
+        XCTAssertEqual((card.element["rendererContext"] as? [String: Any])?["eventId"] as? String, "event-1")
+        XCTAssertEqual((card.element["entity_info"] as? [String: Any])?["productName"] as? String, "Native payload")
         controller.renderElementsForTesting(elements, turnId: turnId, payload: payload, sessionId: "session")
         XCTAssertEqual(controller.messages.filter {
             $0.nativeCardId != nil
@@ -158,9 +233,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
         let type = "test.suggestions.\(UUID().uuidString)"
-        NativeCardRegistry.register(type: type) { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: type) { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"\(type)","id":"native"},
+        [{"type":"custom","rendererId":"\(type)","id":"native"},
          {"type":"productCard","entity_info":{"productName":"Product"}}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
@@ -193,10 +268,10 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
         let type = "test.suggestions.\(UUID().uuidString)"
-        NativeCardRegistry.register(type: type) { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: type) { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"\(type)","id":"first"},
-         {"type":"\(type)","id":"last"}]
+        [{"type":"custom","rendererId":"\(type)","id":"first"},
+         {"type":"custom","rendererId":"\(type)","id":"last"}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let payload = try CardJSONValue.decode(ConversationPayload.self,
@@ -219,9 +294,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
         let type = "test.suggestions.\(UUID().uuidString)"
-        NativeCardRegistry.register(type: type) { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: type) { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"\(type)","id":"native"},
+        [{"type":"custom","rendererId":"\(type)","id":"native"},
          {"type":"productCard","entity_info":{"productName":"One"}},
          {"type":"productCard","entity_info":{"productName":"Two"}}]
         """
@@ -252,9 +327,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
         let type = "test.suggestions.\(UUID().uuidString)"
-        NativeCardRegistry.register(type: type) { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: type) { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"unknown-one"},{"type":"unknown-two"},{"type":"\(type)","id":"native"}]
+        [{"type":"unknown-one"},{"type":"unknown-two"},{"type":"custom","rendererId":"\(type)","id":"native"}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let payload = try CardJSONValue.decode(ConversationPayload.self,
@@ -279,12 +354,13 @@ final class ResponseElementResolverTests: NativeCardTestCase {
 
     @MainActor
     func testResolverDoesNotActivateOrReserveOccurrences() throws {
-        NativeCardRegistry.register(type: "test.plan") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.plan") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.plan","id":"same"},{"type":"test.plan","id":"same"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.plan","id":"same"},{"type":"custom","rendererId":"test.plan","id":"same"}]"#.utf8))
         let store = NativeCardStore()
         let turn = UUID()
-        let occurrence = NativeCardStore.Occurrence(element: elements[0], position: 0, turnId: turn)
+        let occurrence = NativeCardStore.Occurrence(element: elements[0], rendererId: "test.plan",
+                                                    position: 0, turnId: turn)
         let plan = ResponseElementResolver.resolve(elements, turnId: turn, nativeCards: store)
         XCTAssertTrue(plan.hasRenderableElements)
         XCTAssertEqual(plan.targets.count, 1)
@@ -303,53 +379,52 @@ final class ResponseElementResolverTests: NativeCardTestCase {
 
     @MainActor
     func testResolverSeparatesExplicitMarkerIdsFromPositionIdentities() throws {
-        NativeCardRegistry.register(type: "test.plan") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.plan") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(##"[{"type":"test.plan","id":"#1"},{"type":"test.plan"}]"##.utf8))
+            from: Data(##"[{"type":"custom","rendererId":"test.plan","id":"#1"},{"type":"custom","rendererId":"test.plan"}]"##.utf8))
         let store = NativeCardStore()
         let turn = UUID()
         let plan = ResponseElementResolver.resolve(elements, turnId: turn, nativeCards: store)
         let messages = plan.makeMessages(nativeCards: store, payload: streamPayload(state: "completed"),
                                         sessionId: nil, promptSuggestions: [])
         XCTAssertEqual(nativeCards(in: messages, store: store).count, 2)
-        XCTAssertEqual(store.position(for: NativeCardStore.Occurrence(element: elements[0], position: 0, turnId: turn)), 0)
-        XCTAssertEqual(store.position(for: NativeCardStore.Occurrence(element: elements[1], position: 1, turnId: turn)), 1)
+        XCTAssertEqual(store.position(for: NativeCardStore.Occurrence(element: elements[0], rendererId: "test.plan",
+                                                                      position: 0, turnId: turn)), 0)
+        XCTAssertEqual(store.position(for: NativeCardStore.Occurrence(element: elements[1], rendererId: "test.plan",
+                                                                      position: 1, turnId: turn)), 1)
     }
 
     @MainActor
     func testRejectedCandidateDoesNotReserveAnIdForItsValidSibling() throws {
-        NativeCardRegistry.register(type: "test.plan") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.plan") { _, _, _ in AnyView(EmptyView()) }
         let nested = String(repeating: "[", count: 64) + "0" + String(repeating: "]", count: 64)
         let json = """
-        [{"type":"test.plan","id":"same","nested":\(nested),"entity_info":{"productName":"Fallback"}},
-         {"type":"test.plan","id":"same"},
-         {"type":"test.plan","id":"same","entity_info":{"productName":"Duplicate fallback"}}]
+        [{"type":"custom","rendererId":"test.plan","id":"same","nested":\(nested),"entity_info":{"productName":"Fallback"}},
+         {"type":"custom","rendererId":"test.plan","id":"same"},
+         {"type":"custom","rendererId":"test.plan","id":"same","entity_info":{"productName":"Duplicate fallback"}}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"),
                                             promptSuggestions: ["Continue"])
-        XCTAssertEqual(controller.messages.count, 2)
-        guard case .carouselGroup(let products) = controller.messages[0].template,
-              controller.messages[1].nativeCardId != nil else {
-            return XCTFail("Rejected candidates must preserve fallback order without reserving the ID")
-        }
-        XCTAssertEqual(products.count, 2)
+        XCTAssertEqual(controller.messages.count, 1)
+        XCTAssertNotNil(controller.messages[0].nativeCardId)
         XCTAssertEqual(controller.messages[0].promptSuggestions, ["Continue"])
         XCTAssertEqual(nativeCards(in: controller).count, 1)
     }
 
     @MainActor
     func testMixedResponseKeepsTextBatchingCtasSuggestionsAndTracking() async throws {
-        NativeCardRegistry.register(type: "test.mixed") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.mixed") { _, _, _ in AnyView(EmptyView()) }
         let json = """
         [{"type":"ctaButton","entity_info":{"primary":{"text":"First CTA","url":"https://example.com/first"}}},
+         {"type":"custom","rendererId":"missing","entity_info":{"productName":"Not a product"}},
          {"type":"product","entity_info":{"productName":"One"}},
-         {"type":"test.mixed","id":"first"},
+         {"type":"custom","rendererId":"test.mixed","id":"first"},
          {"type":"product","entity_info":{"productName":"Two"}},
          {"type":"ctaButton","entity_info":{"primary":{"text":"Last CTA","url":"https://example.com/last"}}},
-         {"type":"test.mixed","id":"last"}]
+         {"type":"custom","rendererId":"test.mixed","id":"last"}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let service = MockChatService(configuration: ConciergeConfiguration())
@@ -420,9 +495,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
 
     @MainActor
     func testNativeSuggestionsArePublishedWithTheirRowBeforeATrailingCta() throws {
-        NativeCardRegistry.register(type: "test.plan") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.plan") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data("""
-        [{"type":"test.plan","id":"first"},{"type":"test.plan","id":"last"},
+        [{"type":"custom","rendererId":"test.plan","id":"first"},{"type":"custom","rendererId":"test.plan","id":"last"},
          {"type":"ctaButton","entity_info":{"primary":{"text":"CTA","url":"https://example.com"}}}]
         """.utf8))
         let controller = ChatController(configuration: nil,

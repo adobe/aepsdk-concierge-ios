@@ -21,9 +21,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
         let controller = ChatController(configuration: nil,
                                         chatService: MockChatService(configuration: ConciergeConfiguration()),
                                         speechCapturer: nil, speaker: nil)
-        NativeCardRegistry.register(type: "test.occurrence") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.occurrence") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.occurrence","id":"1"},{"type":"test.occurrence"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.occurrence","id":"1"},{"type":"custom","rendererId":"test.occurrence"}]"#.utf8))
         let payload = try CardJSONValue.decode(ConversationPayload.self, from: Data("{}".utf8))
         let turn = UUID()
         controller.renderElementsForTesting(elements, turnId: turn, payload: payload)
@@ -40,9 +40,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
     func testControllerTeardownDisposesRetainedCard() async throws {
         var controller: ChatController? = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
-        NativeCardRegistry.register(type: "test.teardown") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.teardown") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-                                                from: Data(#"[{"type":"test.teardown"}]"#.utf8))
+                                                from: Data(#"[{"type":"custom","rendererId":"test.teardown"}]"#.utf8))
         let payload = try CardJSONValue.decode(ConversationPayload.self, from: Data("{}".utf8))
         controller?.renderElementsForTesting(elements, turnId: UUID(), payload: payload)
         guard let card = controller.flatMap({ nativeCard(at: 0, in: $0) }) else {
@@ -62,12 +62,12 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     func testNativeEmptyNullAndMissingIdsUsePosition() throws {
-        NativeCardRegistry.register(type: "test.identity") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.identity") { _, _, _ in AnyView(EmptyView()) }
         let json = """
-        [{"type":"test.identity","id":""},{"type":"test.identity","id":""},
-         {"type":"test.identity","id":null},{"type":"test.identity","id":null},
-         {"type":"test.identity"},{"type":"test.identity"},
-         {"type":"test.identity","id":" "}]
+        [{"type":"custom","rendererId":"test.identity","id":""},{"type":"custom","rendererId":"test.identity","id":""},
+         {"type":"custom","rendererId":"test.identity","id":null},{"type":"custom","rendererId":"test.identity","id":null},
+         {"type":"custom","rendererId":"test.identity"},{"type":"custom","rendererId":"test.identity"},
+         {"type":"custom","rendererId":"test.identity","id":" "}]
         """
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let controller = ChatController(configuration: nil,
@@ -85,10 +85,10 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     func testTenThousandNativeCardsAppendOnceAndDisposeRemovedOccurrences() throws {
-        NativeCardRegistry.register(type: "test.large") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.large") { _, _, _ in AnyView(EmptyView()) }
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
-        let json = "[" + (0..<10_000).map { #"{"type":"test.large","id":\#($0)}"# }.joined(separator: ",") + "]"
+        let json = "[" + (0..<10_000).map { #"{"type":"custom","rendererId":"test.large","id":\#($0)}"# }.joined(separator: ",") + "]"
         let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(json.utf8))
         let payload = streamPayload(state: "completed")
         let turn = UUID()
@@ -117,9 +117,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     func testRollbackDisposesOnlyRemovedCardsAndRejectsQueuedSaves() async throws {
-        NativeCardRegistry.register(type: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.lifecycle","id":"older"},{"type":"test.lifecycle","id":"removed"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.lifecycle","id":"older"},{"type":"custom","rendererId":"test.lifecycle","id":"removed"}]"#.utf8))
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         let turn = UUID()
@@ -145,9 +145,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     func testIdentityResetDisposesLiveCardsAndIgnoresQueuedSaves() throws {
-        NativeCardRegistry.register(type: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.lifecycle"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.lifecycle"}]"#.utf8))
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
@@ -166,9 +166,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     func testCardsAndSavedStateRemainPrivateToEachChat() async throws {
-        NativeCardRegistry.register(type: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.lifecycle") { _, _, _ in AnyView(EmptyView()) }
         let elements = try CardJSONValue.decode([MultimodalElement].self,
-            from: Data(#"[{"type":"test.lifecycle","id":"same"}]"#.utf8))
+            from: Data(#"[{"type":"custom","rendererId":"test.lifecycle","id":"same"}]"#.utf8))
         let controllers = (0..<2).map { _ in
             ChatController(configuration: nil, chatService: MockChatService(configuration: ConciergeConfiguration()),
                            speechCapturer: nil, speaker: nil)
@@ -190,8 +190,8 @@ final class NativeCardStoreTests: NativeCardTestCase {
 
     @MainActor
     private func makeOrderingController() -> ChatController {
-        NativeCardRegistry.register(type: "test.menu") { _, _, _ in AnyView(EmptyView()) }
-        NativeCardRegistry.register(type: "test.cart") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.menu") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.cart") { _, _, _ in AnyView(EmptyView()) }
         return ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
     }
@@ -201,25 +201,25 @@ final class NativeCardStoreTests: NativeCardTestCase {
     }
 
     @MainActor
-    func testLastCardOfATypeInOneResponseIsLatestAndTypesAreIndependent() throws {
+    func testLastCardOfARendererInOneResponseIsLatestAndRenderersAreIndependent() throws {
         let controller = makeOrderingController()
         let elements = try orderingElements(
-            #"[{"type":"test.menu","id":"m1"},{"type":"test.cart","id":"c1"},{"type":"test.menu","id":"m2"}]"#)
+            #"[{"type":"custom","rendererId":"test.menu","id":"m1"},{"type":"custom","rendererId":"test.cart","id":"c1"},{"type":"custom","rendererId":"test.menu","id":"m2"}]"#)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
         let cards = nativeCards(in: controller)
         XCTAssertEqual(cards.map(\.sequence), [0, 1, 2])
         XCTAssertEqual(cards.map(\.isLatest), [false, true, true])
-        XCTAssertEqual(cards[2].context["sequence"] as? Int, 2)
-        XCTAssertEqual(cards[2].context["isLatest"] as? Bool, true)
-        XCTAssertEqual(cards[0].context["isLatest"] as? Bool, false)
+        XCTAssertEqual(cards[2].cardContext["sequence"] as? Int, 2)
+        XCTAssertEqual(cards[2].cardContext["isLatest"] as? Bool, true)
+        XCTAssertEqual(cards[0].cardContext["isLatest"] as? Bool, false)
     }
 
     @MainActor
-    func testNewerTurnTakesOverLatestForItsTypeOnly() throws {
+    func testNewerTurnTakesOverLatestForItsRendererOnly() throws {
         let controller = makeOrderingController()
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.cart"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"},{"type":"custom","rendererId":"test.cart"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
         let cards = nativeCards(in: controller)
         XCTAssertEqual(cards.map(\.sequence), [0, 1, 2])
@@ -227,23 +227,23 @@ final class NativeCardStoreTests: NativeCardTestCase {
     }
 
     @MainActor
-    func testRollbackPromotesTheNewestRemainingCardOfTheType() throws {
+    func testRollbackPromotesTheNewestRemainingCardOfTheRenderer() throws {
         let controller = makeOrderingController()
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.menu"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"},{"type":"custom","rendererId":"test.menu"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"},{"type":"test.cart"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"},{"type":"custom","rendererId":"test.cart"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
         let cards = nativeCards(in: controller)
         XCTAssertEqual(cards.map(\.isLatest), [false, false, true, true])
 
         controller.messages.removeLast(2)
-        XCTAssertTrue(cards[1].isLatest, "the highest remaining sequence of the type is promoted")
+        XCTAssertTrue(cards[1].isLatest, "the highest remaining sequence for the renderer is promoted")
         XCTAssertFalse(cards[0].isLatest)
         XCTAssertFalse(cards[2].isLatest)
         XCTAssertFalse(cards[3].isLatest, "a disposed card is never latest")
         XCTAssertTrue(cards[3].disposed)
 
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.cart"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.cart"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
         let newCart = try XCTUnwrap(nativeCards(in: controller).last)
         XCTAssertTrue(newCart.isLatest, "rolling back the only card of a type leaves no latest to demote")
@@ -254,7 +254,7 @@ final class NativeCardStoreTests: NativeCardTestCase {
     func testRejectedAndDuplicateElementsDoNotConsumeASequence() throws {
         let controller = makeOrderingController()
         let elements = try orderingElements(
-            #"[{"type":"test.menu","id":"same"},{"type":"test.menu","id":"same"},{"type":"test.menu","id":"next"}]"#)
+            #"[{"type":"custom","rendererId":"test.menu","id":"same"},{"type":"custom","rendererId":"test.menu","id":"same"},{"type":"custom","rendererId":"test.menu","id":"next"}]"#)
         let turn = UUID()
         controller.renderElementsForTesting(elements, turnId: turn, payload: streamPayload(state: "completed"))
         controller.renderElementsForTesting(elements, turnId: turn, payload: streamPayload(state: "completed"))
@@ -266,12 +266,12 @@ final class NativeCardStoreTests: NativeCardTestCase {
     @MainActor
     func testRemovingAllCardsKeepsTheSequenceCounter() throws {
         let controller = makeOrderingController()
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
         let first = try XCTUnwrap(nativeCards(in: controller).first)
         controller.messages.removeAll()
         XCTAssertFalse(first.isLatest)
-        controller.renderElementsForTesting(try orderingElements(#"[{"type":"test.menu"}]"#),
+        controller.renderElementsForTesting(try orderingElements(#"[{"type":"custom","rendererId":"test.menu"}]"#),
                                             turnId: UUID(), payload: streamPayload(state: "completed"))
         let second = try XCTUnwrap(nativeCards(in: controller).first)
         XCTAssertEqual(second.sequence, 1)

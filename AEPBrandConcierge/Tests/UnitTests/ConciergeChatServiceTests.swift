@@ -1295,7 +1295,7 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
     override func setUp() {
         super.setUp()
         NativeCardRegistry.resetForTesting()
-        NativeCardRegistry.register(type: "test.sse") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.sse") { _, _, _ in AnyView(EmptyView()) }
     }
 
     override func tearDown() {
@@ -1325,6 +1325,32 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
         service.urlSession(session, dataTask: task, didReceive: fragmented.prefix(midpoint))
         service.urlSession(session, dataTask: task, didReceive: fragmented.dropFirst(midpoint))
         XCTAssertEqual(messages, ["legacy"], "Legacy delivery does not reassemble partial lines")
+    }
+
+    func test_streamChat_withoutRenderersDeliversOpaqueCustomAndAdjacentProduct() {
+        NativeCardRegistry.resetForTesting()
+        let service = makeService(protocolClass: PausedSSEURLProtocol.self)
+        let session = URLSession(configuration: .ephemeral)
+        defer {
+            service.invalidateTransportForIdentityReset()
+            session.invalidateAndCancel()
+        }
+        var elements: [MultimodalElement] = []
+        service.streamChat("q", token: nil, onChunk: {
+            elements = $0.response?.multimodalElements?.elements ?? []
+        }, onComplete: { _ in })
+        let task = session.dataTask(with: URL(string: "https://test.example.com")!)
+        let body = #"""
+        data: {"handle":[{"payload":[{"state":"completed","response":{"message":"done","multimodalElements":{"elements":[{"type":"custom","rendererId":"missing","id":42,"entity_info":{"productName":"Opaque"}},{"type":"product","entity_info":{"productName":"Visible"}}]}}}]}]}
+
+
+        """#
+        service.urlSession(session, dataTask: task, didReceive: Data(body.utf8))
+        XCTAssertEqual(elements.count, 2)
+        guard elements.count == 2 else { return }
+        XCTAssertNil(elements[0].entityInfo)
+        XCTAssertEqual((elements[0].rawElement["entity_info"] as? [String: Any])?["productName"] as? String, "Opaque")
+        XCTAssertEqual(elements[1].entityInfo?.productName, "Visible")
     }
 
     func test_streamChat_withoutRenderersKeepsLegacyLineSizeBehavior() {
@@ -1359,7 +1385,7 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
         let second = session.dataTask(with: URL(string: "https://test.example.com/second")!)
         service.urlSession(session, dataTask: first,
                            didReceive: Data(event("before", state: "in-progress").dropLast(2).utf8))
-        NativeCardRegistry.register(type: "test.late") { _, _, _ in AnyView(EmptyView()) }
+        NativeCardRegistry.register(rendererId: "test.late") { _, _, _ in AnyView(EmptyView()) }
         service.urlSession(session, dataTask: first,
                            didReceive: Data(event("after", state: "completed").dropLast(2).utf8))
 
@@ -1432,9 +1458,9 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
     func test_streamChat_preservesExactNumbersAndRejectsInexactNativeElements() {
         let body = #"""
         data: {"handle":[{"payload":[{"state":"completed","response":{"message":"done","multimodalElements":{"elements":[
-        {"type":"test.sse","value":1.23456789012345678901234567890123456789},
-        {"type":"test.sse","value":1.0000000000000000000000000000000000000001,"entity_info":{"productName":"Fallback"}},
-        {"type":"test.sse","value":42}]}}}]}]}
+        {"type":"custom","rendererId":"test.sse","value":1.23456789012345678901234567890123456789},
+        {"type":"custom","rendererId":"test.sse","value":1.0000000000000000000000000000000000000001,"entity_info":{"productName":"Fallback"}},
+        {"type":"custom","rendererId":"test.sse","value":42}]}}}]}]}
 
 
         """#
@@ -1455,7 +1481,7 @@ final class ConciergeChatServiceSSEFramingTests: XCTestCase {
         XCTAssertEqual(elements[0].rawElement["value"] as? NSDecimalNumber,
                        NSDecimalNumber(string: "1.23456789012345678901234567890123456789"))
         XCTAssertFalse(elements[1].hasCompleteRawElement)
-        XCTAssertEqual(elements[1].entityInfo?.productName, "Fallback")
+        XCTAssertNil(elements[1].entityInfo)
         XCTAssertEqual(elements[2].rawElement["value"] as? Int, 42)
     }
 

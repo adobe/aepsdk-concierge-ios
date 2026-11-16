@@ -17,8 +17,8 @@ import XCTest
 final class NativeCardViewTests: NativeCardTestCase {
     @MainActor
     func testCardRowRendersItsCardFromTheChatStore() throws {
-        NativeCardRegistry.register(type: "test.row") { _, _, _ in AnyView(Color.clear.frame(height: 80)) }
-        let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(#"[{"type":"test.row"}]"#.utf8))
+        NativeCardRegistry.register(rendererId: "test.row") { _, _, _ in AnyView(Color.clear.frame(height: 80)) }
+        let elements = try CardJSONValue.decode([MultimodalElement].self, from: Data(#"[{"type":"custom","rendererId":"test.row"}]"#.utf8))
         let controller = ChatController(configuration: nil,
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))

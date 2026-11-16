@@ -17,25 +17,25 @@ import SwiftUI
 
 final class NativeCardTests: NativeCardTestCase {
     func testRegistryExactMatchingAndReplacement() {
-        let type = "test.card.\(UUID().uuidString)"
+        let rendererId = "test.card.\(UUID().uuidString)"
         let first: ConciergeCardRenderer = { _, _, _ in AnyView(Text("first")) }
         let second: ConciergeCardRenderer = { _, _, _ in AnyView(Text("second")) }
-        NativeCardRegistry.register(type: "", renderer: first)
+        NativeCardRegistry.register(rendererId: "", renderer: first)
         XCTAssertNil(NativeCardRegistry.registration(for: ""))
-        NativeCardRegistry.register(type: type, renderer: first)
-        XCTAssertNil(NativeCardRegistry.registration(for: type.uppercased()))
-        let captured = NativeCardRegistry.registration(for: type)
-        NativeCardRegistry.register(type: type, renderer: second)
+        NativeCardRegistry.register(rendererId: rendererId, renderer: first)
+        XCTAssertNil(NativeCardRegistry.registration(for: rendererId.uppercased()))
+        let captured = NativeCardRegistry.registration(for: rendererId)
+        NativeCardRegistry.register(rendererId: rendererId, renderer: second)
         XCTAssertNotNil(captured)
-        XCTAssertNotNil(NativeCardRegistry.registration(for: type))
+        XCTAssertNotNil(NativeCardRegistry.registration(for: rendererId))
     }
 
     @MainActor
     func testStateIsReplacedAndDisposedCardsIgnoreLateSaves() async {
         let card = NativeCard(element: [:], renderer: { _, _, _ in AnyView(EmptyView()) },
                               sessionId: "session", conversationId: "conversation", interactionId: "turn")
-        XCTAssertNil(card.context["state"])
-        XCTAssertEqual(card.context["interactionId"] as? String, "turn")
+        XCTAssertNil(card.cardContext["state"])
+        XCTAssertEqual(card.cardContext["interactionId"] as? String, "turn")
         let mutable = NSMutableDictionary(dictionary: ["value": "before", "null": NSNull()])
         await saveStateAndWait(["data": mutable], on: card)
         mutable["value"] = "after"

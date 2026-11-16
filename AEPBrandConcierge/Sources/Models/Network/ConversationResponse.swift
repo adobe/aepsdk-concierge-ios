@@ -117,18 +117,19 @@ enum MultimodalElementType: Equatable {
 public struct MultimodalElement: Codable {
     public let id: String?
     public let type: String?
+    public let rendererId: String?
     public let width: Int?
     public let height: Int?
     public let thumbnailWidth: Int?
     public let thumbnailHeight: Int?
     public let entityInfo: EntityInfo?
-    /// The complete original JSON object, captured only for types with a registered native card renderer.
+    /// The complete original JSON object for in-budget custom elements, retained so renderer-owned fields survive encoding.
     private let rawJSON: [String: CardJSONValue]?
 
     var hasCompleteRawElement: Bool { rawJSON != nil }
 
-    /// A new Foundation copy of the captured JSON object for a native card renderer, or empty when none
-    /// was captured. Builds the copy on each access.
+    /// A new Foundation copy of the captured custom JSON object, or empty when no raw object was captured.
+    /// Builds the copy on each access.
     var rawElement: [String: Any] { rawJSON?.mapValues(\.foundationValue) ?? [:] }
 
     /// Native occurrence identity follows Android's nonempty scalar ID, otherwise array position.
@@ -148,6 +149,7 @@ public struct MultimodalElement: Codable {
     enum CodingKeys: String, CodingKey {
         case id
         case type
+        case rendererId
         case width
         case height
         case thumbnail_width
@@ -155,38 +157,42 @@ public struct MultimodalElement: Codable {
         case entity_info
     }
 
-    public init(id: String? = nil, type: String? = nil, width: Int? = nil, height: Int? = nil, thumbnailWidth: Int? = nil, thumbnailHeight: Int? = nil, entityInfo: EntityInfo? = nil) {
+    public init(id: String? = nil, type: String? = nil, rendererId: String? = nil, width: Int? = nil,
+                height: Int? = nil, thumbnailWidth: Int? = nil, thumbnailHeight: Int? = nil,
+                entityInfo: EntityInfo? = nil) {
         self.id = id
         self.type = type
+        self.rendererId = rendererId
         self.width = width
         self.height = height
         self.thumbnailWidth = thumbnailWidth
         self.thumbnailHeight = thumbnailHeight
-        self.entityInfo = entityInfo
+        self.entityInfo = type == "custom" ? nil : entityInfo
         self.rawJSON = nil
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Native card elements carry app-defined fields (for example a numeric `id`), so they are decoded
-        // leniently and kept whole. All other elements decode as before.
         let rawType = try? container.decode(String.self, forKey: .type)
-        if CardJSONValue.capturesNativeCard(ofType: rawType, in: decoder) {
+        let rawRendererId = try? container.decode(String.self, forKey: .rendererId)
+        if rawType == "custom" {
+            // Custom data is renderer-owned, even when no renderer is currently registered.
             rawJSON = try? CardJSONValue.decodeObject(from: decoder)
             id = try? container.decode(String.self, forKey: .id)
             type = rawType
+            rendererId = rawRendererId
             width = try? container.decode(Int.self, forKey: .width)
             height = try? container.decode(Int.self, forKey: .height)
             thumbnailWidth = try? container.decode(Int.self, forKey: .thumbnail_width)
             thumbnailHeight = try? container.decode(Int.self, forKey: .thumbnail_height)
-            entityInfo = try? container.decode(EntityInfo.self, forKey: .entity_info)
+            entityInfo = nil
             return
         }
         rawJSON = nil
-
         id = try container.decodeIfPresent(String.self, forKey: .id)
         type = try container.decodeIfPresent(String.self, forKey: .type)
+        rendererId = rawRendererId
         width = try container.decodeIfPresent(Int.self, forKey: .width)
         height = try container.decodeIfPresent(Int.self, forKey: .height)
         thumbnailWidth = try container.decodeIfPresent(Int.self, forKey: .thumbnail_width)
@@ -204,6 +210,7 @@ public struct MultimodalElement: Codable {
 
         try container.encodeIfPresent(id, forKey: .id)
         try container.encodeIfPresent(type, forKey: .type)
+        try container.encodeIfPresent(rendererId, forKey: .rendererId)
         try container.encodeIfPresent(width, forKey: .width)
         try container.encodeIfPresent(height, forKey: .height)
         try container.encodeIfPresent(thumbnailWidth, forKey: .thumbnail_width)
