@@ -70,10 +70,10 @@ final class NativeCard: ObservableObject {
     let interactionId: String?
     @Published private(set) var state: [String: Any]?
     @Published private(set) var isBusy = false
-    @Published private(set) var isStale = false
     /// True while this is the most recently activated card of its `rendererId` in this chat.
     @Published private(set) var isLatest = false
-    private(set) var disposed = false
+    /// Set once the card leaves the transcript. Published so its row stops rendering it.
+    @Published private(set) var disposed = false
 
     init(element: [String: Any], renderer: @escaping ConciergeCardRenderer, sequence: Int = 0,
          sessionId: String?, conversationId: String?, interactionId: String?) {
@@ -86,8 +86,9 @@ final class NativeCard: ObservableObject {
     }
 
     var cardContext: [String: Any] {
+        // `isStale` is reserved for possible session-expiry handling and is always `false` for now.
         var result: [String: Any] = ["cardId": cardId, "sequence": sequence, "isBusy": isBusy,
-                                     "isStale": isStale, "isLatest": isLatest]
+                                     "isStale": false, "isLatest": isLatest]
         if let sessionId { result["sessionId"] = sessionId }
         if let conversationId { result["conversationId"] = conversationId }
         if let interactionId { result["interactionId"] = interactionId }
@@ -112,9 +113,8 @@ final class NativeCard: ObservableObject {
 
     func dispose() {
         guard !disposed else { return }
-        isStale = true
-        isLatest = false
         disposed = true
+        isLatest = false
         state = nil
     }
 

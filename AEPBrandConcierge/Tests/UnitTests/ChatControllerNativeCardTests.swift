@@ -220,7 +220,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         for card in cards { _ = card.renderer(card.element, card.cardContext, { _ in }) }
         XCTAssertEqual(renderedBy, ["first", "replacement"])
         XCTAssertTrue(newCardWasBusy)
-        XCTAssertFalse(original.isStale)
+        XCTAssertFalse(original.disposed)
         XCTAssertFalse(original.isBusy)
         XCTAssertNotEqual(cards[0].cardId, cards[1].cardId)
     }
@@ -258,7 +258,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
             XCTAssertEqual(controller.messages.count, 1)
             XCTAssertEqual(nativeCards(in: controller).first?.cardId, card.cardId)
             XCTAssertEqual(card.state?["kept"] as? Bool, true)
-            XCTAssertFalse(card.isStale)
+            XCTAssertFalse(card.disposed)
             XCTAssertFalse(card.isBusy)
         }
     }
@@ -285,13 +285,13 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
         }
         await fulfillment(of: [finished], timeout: 2)
         XCTAssertEqual(controller.messages.last?.messageBody, "Streamed")
-        XCTAssertFalse(card.isStale, "Streaming placeholder updates must not dispose existing cards")
+        XCTAssertFalse(card.disposed, "Streaming placeholder updates must not dispose existing cards")
 
         let index = try XCTUnwrap(controller.messages.firstIndex {
             $0.nativeCardId != nil
         })
         controller.messages[index] = Message(template: .basic(isUserMessage: false), messageBody: "Replaced")
-        XCTAssertTrue(card.isStale, "Replacing a card's row in place must dispose it like any removal")
+        XCTAssertTrue(card.disposed, "Replacing a card's row in place must dispose it like any removal")
         XCTAssertFalse(card.isLatest)
     }
 

@@ -360,7 +360,7 @@ The renderer receives:
   | `sequence` | `Int`. The card's activation order in the chat: increases in transcript order and is never reused. Compare it only between cards of the same chat. |
   | `isLatest` | `true` while this is the newest card of its `rendererId` in the chat |
   | `isBusy` | `true` while a chat or data handoff turn is in progress |
-  | `isStale` | `true` after `MobileCore.resetIdentities()`. Session expiry doesn't make a card stale. |
+  | `isStale` | Currently always `false`; reserved for possible future session-expiry handling. Session expiry or replacement does not mark cards stale. |
   | `sessionId`, `conversationId`, `interactionId` | IDs of the response that created the card; each may be absent |
   | `state` | The card's last saved state, if any |
 
@@ -368,7 +368,8 @@ The renderer receives:
   next render. To change one key, merge with the current state first. It can be called from any
   thread, is applied on the main thread, and is never sent to Brand Concierge. State lasts as long
   as the chat's transcript, including while the row is off screen, and isn't persisted across app
-  restarts. Saves made after the card becomes stale are ignored.
+  restarts. `MobileCore.resetIdentities()` removes the chat's native cards together with their rows,
+  and saves made after a card is removed are ignored.
 
 Element JSON and saved state must be JSON within a depth of 64 and 100,000 values. An element that
 exceeds these limits, contains a number that can't be represented exactly, or reuses another
@@ -397,6 +398,8 @@ Each card gates its own controls:
   a tap. Re-enable them in the completion handler if the turn never started.
 - Read `isBusy`, `isStale` and `isLatest` from the current `cardContext` instead of copying them into
   `@State`.
+- Checking `isStale` prepares for possible future staleness support; it does not currently cancel
+  asynchronous actions. Manage cancellation in the app when needed.
 - Keep workflow flags such as `confirmed` in `saveState`, so recreating the view never sends an
   action again. The SDK doesn't deduplicate handoffs.
 - Call SDK APIs and `saveState` from actions and completion handlers, never from `body`.

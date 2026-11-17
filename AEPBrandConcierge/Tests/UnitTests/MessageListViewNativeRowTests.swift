@@ -90,15 +90,57 @@ final class MessageListViewNativeRowTests: NativeCardTestCase {
                                    isInputFocused: .constant(false), onSpeak: { spoken.append($0) })
             .environment(\.conciergeTheme, theme)
             .environment(\.conciergeNativeCardStore, controller.nativeCards)
-        let host = UIHostingController(rootView: list)
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 1200))
-        window.rootViewController = host
-        window.makeKeyAndVisible()
+        let window = showInWindow(list)
         defer { window.isHidden = true }
-        host.view.layoutIfNeeded()
-        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 
         XCTAssertGreaterThanOrEqual(renderCount, 2, "Both native rows render through the transcript")
         XCTAssertEqual(spoken, ["Spoken"], "Native rows are never spoken")
+    }
+
+    /// `isStale` is reserved and currently always `false`, so renderers only ever receive `false`.
+    /// An identity reset removes a card together with its row, and a removed card doesn't render again.
+    func testRenderersAlwaysReceiveIsStaleFalseAcrossIdentityReset() throws {
+        var staleValues: [Bool?] = []
+        NativeCardRegistry.register(rendererId: "test.row") { _, cardContext, _ in
+            staleValues.append(cardContext["isStale"] as? Bool)
+            return AnyView(Color.clear.frame(height: 40))
+        }
+        let controller = ChatController(configuration: nil,
+            chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
+        let elements = try CardJSONValue.decode([MultimodalElement].self,
+            from: Data(#"[{"type":"custom","rendererId":"test.row"}]"#.utf8))
+        controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
+        let window = showInWindow(TranscriptHost(controller: controller))
+        defer { window.isHidden = true }
+        XCTAssertFalse(staleValues.isEmpty, "The native card rendered")
+        XCTAssertTrue(staleValues.allSatisfy { $0 == false }, "Every render reports isStale as false")
+        let rendersBeforeReset = staleValues.count
+
+        controller.endConversationForIdentityReset()
+        window.rootViewController?.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertEqual(staleValues.count, rendersBeforeReset, "The reset card is removed without rendering again")
+    }
+
+    /// Hosts `view` in a visible window and lets it lay out and run its appearance callbacks.
+    private func showInWindow<Content: View>(_ view: Content) -> UIWindow {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 1200))
+        window.rootViewController = UIHostingController(rootView: view)
+        window.makeKeyAndVisible()
+        window.rootViewController?.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+        return window
+    }
+}
+
+/// A transcript bound to its controller, the way `ChatView` hosts it.
+private struct TranscriptHost: View {
+    @ObservedObject var controller: ChatController
+
+    var body: some View {
+        MessageListView(messages: controller.messages, isInputFocused: .constant(false), onSpeak: { _ in })
+            .environment(\.conciergeNativeCardStore, controller.nativeCards)
     }
 }

@@ -49,7 +49,7 @@ final class NativeCardStoreTests: NativeCardTestCase {
             return XCTFail("Missing native card")
         }
         let disposed = expectation(description: "Releasing the chat disposes its card")
-        let observation = card.$isStale.first { $0 }.sink { _ in disposed.fulfill() }
+        let observation = card.$disposed.first { $0 }.sink { _ in disposed.fulfill() }
         defer { observation.cancel() }
         let isReleased = { [weak controller] in controller == nil }
         controller = nil
@@ -130,10 +130,9 @@ final class NativeCardStoreTests: NativeCardTestCase {
         controller.messages.removeLast()
         // A save queued before the rollback arrives after it; the disposed card must ignore it.
         cards[1].applySavedState(["queued": true])
-        XCTAssertTrue(cards[1].isStale)
         XCTAssertTrue(cards[1].disposed)
         XCTAssertNil(cards[1].state)
-        XCTAssertFalse(cards[0].isStale)
+        XCTAssertFalse(cards[0].disposed)
         XCTAssertEqual(cards[0].state?["kept"] as? Bool, true)
         controller.renderElementsForTesting(elements, turnId: turn, payload: streamPayload(state: "completed"))
         let restored = nativeCards(in: controller)
@@ -152,13 +151,13 @@ final class NativeCardStoreTests: NativeCardTestCase {
             chatService: MockChatService(configuration: ConciergeConfiguration()), speechCapturer: nil, speaker: nil)
         controller.renderElementsForTesting(elements, turnId: UUID(), payload: streamPayload(state: "completed"))
         let card = try XCTUnwrap(nativeCards(in: controller).first)
-        var observedStaleness = false
-        let observation = card.$isStale.dropFirst().sink { observedStaleness = $0 }
+        var observedDisposal = false
+        let observation = card.$disposed.dropFirst().sink { observedDisposal = $0 }
         defer { observation.cancel() }
         controller.endConversationForIdentityReset()
         // A save queued before the reset arrives after it; the disposed card must ignore it.
         card.applySavedState(["queued": true])
-        XCTAssertTrue(observedStaleness)
+        XCTAssertTrue(observedDisposal)
         XCTAssertTrue(card.disposed)
         XCTAssertNil(card.state)
         XCTAssertTrue(controller.messages.isEmpty)
@@ -184,8 +183,8 @@ final class NativeCardStoreTests: NativeCardTestCase {
         XCTAssertNil(second.state)
         XCTAssertNotEqual(first.cardId, second.cardId)
         controllers[0].messages.removeAll()
-        XCTAssertTrue(first.isStale)
-        XCTAssertFalse(second.isStale)
+        XCTAssertTrue(first.disposed)
+        XCTAssertFalse(second.disposed)
     }
 
     @MainActor

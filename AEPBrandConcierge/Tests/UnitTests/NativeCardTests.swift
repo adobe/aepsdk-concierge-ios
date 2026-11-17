@@ -53,8 +53,28 @@ final class NativeCardTests: NativeCardTestCase {
         XCTAssertEqual(card.state?["next"] as? Int, 3)
         card.dispose()
         card.applySavedState(["late": 1])
-        XCTAssertTrue(card.isStale)
+        XCTAssertTrue(card.disposed)
+        XCTAssertEqual(card.cardContext["isStale"] as? Bool, false, "isStale is reserved and stays false after disposal")
         XCTAssertNil(card.state)
+    }
+
+    @MainActor
+    func testDisposalPrecedesLatestAndStateUpdates() {
+        let card = NativeCard(element: [:], renderer: { _, _, _ in AnyView(EmptyView()) },
+                              sessionId: nil, conversationId: nil, interactionId: nil)
+        card.setLatest(true)
+        card.applySavedState(["status": "draft"])
+        var disposedWhenUpdated: [Bool] = []
+        let latestObservation = card.$isLatest.dropFirst().sink { _ in disposedWhenUpdated.append(card.disposed) }
+        let stateObservation = card.$state.dropFirst().sink { _ in disposedWhenUpdated.append(card.disposed) }
+        defer {
+            latestObservation.cancel()
+            stateObservation.cancel()
+        }
+
+        card.dispose()
+
+        XCTAssertEqual(disposedWhenUpdated, [true, true])
     }
 
     @MainActor

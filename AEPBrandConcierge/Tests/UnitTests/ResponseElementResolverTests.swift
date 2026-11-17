@@ -222,7 +222,7 @@ final class ResponseElementResolverTests: NativeCardTestCase {
             $0.nativeCardId != nil
         }.count, 1)
         controller.messages.removeAll()
-        XCTAssertTrue(card.isStale)
+        XCTAssertTrue(card.disposed)
         card.applySavedState(["late": true])
         XCTAssertNil(card.state)
     }

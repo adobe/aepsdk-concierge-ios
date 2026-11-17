@@ -30,8 +30,12 @@ private struct RenderedNativeCard: View {
     @ObservedObject var card: NativeCard
 
     var body: some View {
-        card.renderer(card.element, card.cardContext, { [weak card] state in card?.saveState(state) })
-            .frame(maxWidth: .infinity, alignment: .leading)
+        // Disposal publishes before the row leaves the transcript. Rendering then would hand the app a
+        // removed card without its saved state, so a disposed card renders nothing.
+        if !card.disposed {
+            card.renderer(card.element, card.cardContext, { [weak card] state in card?.saveState(state) })
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
