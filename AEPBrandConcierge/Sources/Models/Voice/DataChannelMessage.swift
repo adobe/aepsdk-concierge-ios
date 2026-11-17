@@ -19,12 +19,14 @@ import Foundation
 /// The worker sends two on-wire formats — type-based (user STT `transcript_delta`, `session_notice`)
 /// and event-based (assistant `text_delta`/`turn_completed`/…) — which `DataChannelMessageParser`
 /// normalizes into these cases (mirroring web's `parseDataChannelMessage`). Only the subset the
-/// voice transcript consumes is modeled; richer `ui_payload` content is parsed but not yet rendered.
-enum DataChannelMessage: Equatable {
+/// voice conversation consumes is modeled.
+enum DataChannelMessage {
     case transcriptDelta(TranscriptDeltaData)
     case turnDone(TurnDoneData)
     case uiPayload(UiPayloadData)
     case sessionNotice(SessionNoticeData)
+    /// The worker rejected a `text_prompt` this client sent.
+    case textInputError(TextInputErrorData)
     /// A coarse worker state signal (`turn_started`, `state_update`, `response_metadata`, `tts_hint`).
     case stateUpdate(state: String)
 }
@@ -52,12 +54,26 @@ struct TurnDoneData: Equatable {
     let turnId: String?
 }
 
-/// Rich turn content (product cards / CTAs / suggestions). Parsed for contract completeness but not
-/// rendered in the voice transcript yet. Mirrors web's `UiPayloadData`; only
-/// `promptSuggestions` is typed — `sources`/`widgets`/`multimodalElements` are `unknown[]` on the
-/// wire and have no v1 consumer.
-struct UiPayloadData: Equatable {
+/// A turn's rich content: citation sources, prompt suggestions, and product cards and CTAs. Mirrors
+/// web's `UiPayloadData`, decoded into the models typed chat uses. The worker can send several per
+/// turn; each is a snapshot of the whole turn so far, so the latest one replaces the earlier ones.
+/// `widgets` is not modeled: the SDK has no widget support.
+struct UiPayloadData {
+    let turnId: String?
+    let sources: [Source]
     let promptSuggestions: [String]
+    let multimodalElements: [MultimodalElement]
+
+    var isEmpty: Bool {
+        sources.isEmpty && promptSuggestions.isEmpty && multimodalElements.isEmpty
+    }
+}
+
+/// The worker's rejection of a `text_prompt`, for example `voice_turn_in_progress` when the user is
+/// speaking. `turnId` is the client's `turn_id` for that prompt.
+struct TextInputErrorData: Equatable {
+    let turnId: String?
+    let reason: String
 }
 
 /// The worker's terminal EndReason for a session, validated against the known set rather than

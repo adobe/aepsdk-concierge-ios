@@ -19,8 +19,8 @@ import Foundation
 /// - **Event-based** (assistant turn messages): `{ "event": "turn_completed", "fullText": "…" }`
 ///
 /// Returns `nil` for a message that matches no known format, so callers drop it rather than acting
-/// on a malformed shape. `text_input_error` is intentionally not handled here — it is a
-/// client→worker text-input concern with no consumer in a voice conversation.
+/// on a malformed shape. Web handles `text_input_error` before this parser; here it is one more
+/// type-based case.
 enum DataChannelMessageParser {
 
     /// Parses raw `Data` (a single data-channel frame) into a typed message, or `nil` if the bytes
@@ -65,6 +65,13 @@ enum DataChannelMessageParser {
             guard let notice = parseSessionNoticeData(raw["data"]) else { return nil }
             return .sessionNotice(notice)
 
+        case "text_input_error":
+            let payload = raw["data"] as? [String: Any] ?? [:]
+            return .textInputError(TextInputErrorData(
+                turnId: asTurnId(payload["turnId"]),
+                reason: asString(payload["reason"])
+            ))
+
         default:
             // Other type-based messages (e.g. state carriers) surface as a coarse state update.
             return .stateUpdate(state: type)
@@ -93,9 +100,7 @@ enum DataChannelMessageParser {
             ))
 
         case "ui_payload":
-            return .uiPayload(UiPayloadData(
-                promptSuggestions: (raw["promptSuggestions"] as? [String]) ?? []
-            ))
+            return .uiPayload(parseUiPayloadData(raw))
 
         case "turn_started":
             return .stateUpdate(state: "turn_started")
@@ -109,6 +114,26 @@ enum DataChannelMessageParser {
         default:
             return nil
         }
+    }
+
+    // MARK: - UI payload
+
+    /// Decodes each field on its own, so one malformed field drops only that field's content.
+    private static func parseUiPayloadData(_ raw: [String: Any]) -> UiPayloadData {
+        UiPayloadData(
+            turnId: asTurnId(raw["turnId"]),
+            sources: decode([Source].self, from: raw["sources"]) ?? [],
+            promptSuggestions: (raw["promptSuggestions"] as? [Any])?.compactMap { $0 as? String } ?? [],
+            multimodalElements: decode(MultimodalElements.self, from: raw["multimodalElements"])?.elements ?? []
+        )
+    }
+
+    private static func decode<T: Decodable>(_ type: T.Type, from value: Any?) -> T? {
+        guard let value, JSONSerialization.isValidJSONObject(value),
+              let data = try? JSONSerialization.data(withJSONObject: value) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(type, from: data)
     }
 
     // MARK: - Session notice (mirrors parseSessionNoticeData)

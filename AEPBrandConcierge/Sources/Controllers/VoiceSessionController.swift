@@ -344,7 +344,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             emit(.assistant, text, isFinal: true)
         case .sessionNotice(.sessionEnded(let reason)):
             handleSessionEnded(reason)
-        case .uiPayload, .sessionNotice, .stateUpdate:
+        case .uiPayload, .textInputError, .sessionNotice, .stateUpdate:
             break
         }
     }
