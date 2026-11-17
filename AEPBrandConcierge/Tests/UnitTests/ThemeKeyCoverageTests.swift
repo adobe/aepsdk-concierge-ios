@@ -317,6 +317,7 @@ private extension ThemeKeyCoverageTests {
 
         // Colors - Input Icons
         "input-send-icon-color": "colors.input.sendIconColor",
+        "input-clear-icon-color": "colors.input.clearIconColor",
         "input-send-arrow-icon-color": "colors.input.sendArrowIconColor",
         "input-send-arrow-background-color": "colors.input.sendArrowBackgroundColor",
         "input-send-arrow-background-gradient-start-color": "colors.input.sendArrowBackgroundGradient",

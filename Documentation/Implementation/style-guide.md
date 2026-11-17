@@ -678,6 +678,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | CSS Variable | Swift Property | Type | Default | Description |
 |--------------|----------------|------|---------|-------------|
 | `--input-send-icon-color` | `colors.input.sendIconColor` | `Color?` | `nil` | Default send button icon tint |
+| `--input-clear-icon-color` | `colors.input.clearIconColor` | `Color?` | `nil` | Clear (X) icon tint beside send when text is entered. Falls back to black. Set to `"#FFFFFF"` for a white icon on dark input backgrounds |
 | `--input-send-arrow-icon-color` | `colors.input.sendArrowIconColor` | `Color?` | `nil` | Arrow-style send button arrow color |
 | `--input-send-arrow-background-color` | `colors.input.sendArrowBackgroundColor` | `Color?` | `nil` | Arrow-style send button circle background |
 | `--input-send-arrow-background-gradient-start-color` | `colors.input.sendArrowBackgroundGradient` | `Color?` | `nil` | Arrow-style send button circle gradient start color. See [Gradients](#gradients). |
@@ -1174,6 +1175,7 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     "--cta-button-icon-size": "16px",
     "--header-title-font-size": "18px",
     "--input-send-icon-color": "",
+    "--input-clear-icon-color": "",
     "--input-send-arrow-icon-color": "",
     "--input-send-arrow-background-color": "",
     "--input-send-arrow-background-gradient-start-color": "",
@@ -1377,6 +1379,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--feedback-cancel-button-border-color` | ✅ | Used in FeedbackOverlayView Cancel button |
 | `--disclaimer-color` | ✅ | Used in ComposerDisclaimer via components.disclaimer.textColor |
 | `--input-send-icon-color` | ✅ | Used in ComposerSendButtonStyle |
+| `--input-clear-icon-color` | ✅ | Used in ComposerEditingView for the clear (X) icon |
 | `--input-send-arrow-icon-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
 | `--input-send-arrow-background-color` | ✅ | Used in ComposerEditingView for arrow-style send button |
 | `--input-send-arrow-background-gradient-start-color` | ✅ | Used in ComposerEditingView for arrow-style send button gradient |

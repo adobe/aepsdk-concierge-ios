@@ -219,6 +219,7 @@
     "--input-height-mobile": "52px",
     "--input-border-radius-mobile": "26px",
     "--input-send-icon-color": "#006554",
+    "--input-clear-icon-color": "#006554",
     "--input-mic-icon-color": "#006554",
     "--input-mic-recording-icon-color" : "#FFFFFF",
     "--input-mic-waveform-gradient-start-color": "#00F5D4",

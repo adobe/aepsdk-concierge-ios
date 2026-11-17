@@ -209,6 +209,36 @@ final class ThemeCSSMapperTests: XCTestCase {
         XCTAssertEqual(theme.colors.input.background.color.toHexString(), "#FFFFFF")
     }
     
+    func test_clearIconColor_decodesFromThemeJSON_independentlyOfSendAndMic() throws {
+        let json = """
+        {"theme":{
+            "--input-clear-icon-color":"#FFFFFF",
+            "--input-send-icon-color":"#FF0000",
+            "--input-mic-icon-color":"#0000FF"
+        }}
+        """
+        let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+
+        XCTAssertEqual(theme.colors.input.clearIconColor?.color.toHexString(), "#FFFFFF")
+        XCTAssertEqual(theme.colors.input.sendIconColor?.color.toHexString(), "#FF0000")
+        XCTAssertEqual(theme.colors.input.micIconColor?.color.toHexString(), "#0000FF")
+    }
+
+    func test_clearIconColor_omittedOrNull_preservesDefault() throws {
+        for json in [
+            """
+            {"theme":{"--input-send-icon-color":"#FF0000"}}
+            """,
+            """
+            {"theme":{"--input-clear-icon-color":null,"--input-send-icon-color":"#FF0000"}}
+            """
+        ] {
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(json.utf8))
+            XCTAssertNil(theme.colors.input.clearIconColor)
+            XCTAssertEqual(theme.colors.input.sendIconColor?.color.toHexString(), "#FF0000")
+        }
+    }
+
     func test_disclaimerColor_mapsToDisclaimer() {
         // Given
         var theme = ConciergeTheme()
