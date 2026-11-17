@@ -450,16 +450,26 @@ public struct ConciergePromptSuggestionsBehavior: Codable {
 
 /// Privacy notice configuration
 public struct ConciergePrivacyNoticeBehavior: Codable {
+    public enum Presentation: String, Codable {
+        case inline
+        case collapsible
+    }
+
     public var title: String
     public var text: String
     public var links: [ConciergeDisclaimerLink]
+    public var presentation: Presentation = .inline
+    public var summary: String = ""
+    public var collapsedMaxLines: Int = 3
+    public var readMoreLabel: String = "Read more"
+    public var showLessLabel: String = "Show less"
 
     var hasContent: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private enum CodingKeys: String, CodingKey {
-        case title, text, links
+        case title, text, links, presentation, summary, collapsedMaxLines, readMoreLabel, showLessLabel
     }
 
     public init(
@@ -486,6 +496,16 @@ public struct ConciergePrivacyNoticeBehavior: Codable {
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? defaults.title
         text = try container.decodeIfPresent(String.self, forKey: .text) ?? defaults.text
         links = try container.decodeIfPresent([ConciergeDisclaimerLink].self, forKey: .links) ?? defaults.links
+        presentation = try container.decodeIfPresent(Presentation.self, forKey: .presentation) ?? defaults.presentation
+        summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? defaults.summary
+        collapsedMaxLines = try container.decodeIfPresent(Int.self, forKey: .collapsedMaxLines) ?? defaults.collapsedMaxLines
+        guard collapsedMaxLines > 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .collapsedMaxLines, in: container, debugDescription: "collapsedMaxLines must be positive"
+            )
+        }
+        readMoreLabel = try container.decodeIfPresent(String.self, forKey: .readMoreLabel) ?? defaults.readMoreLabel
+        showLessLabel = try container.decodeIfPresent(String.self, forKey: .showLessLabel) ?? defaults.showLessLabel
     }
 }
 

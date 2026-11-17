@@ -268,8 +268,39 @@ final class ThemeDecodingTests: XCTestCase {
     }
 
     func test_privacyNotice_invalidFieldTypes_throw() {
-        for json in [#"{"title":42}"#, #"{"text":false}"#, #"{"links":{}}"#, #"{"links":[{"text":"Policy","url":42}]}"#] {
+        for json in [
+            #"{"title":42}"#, #"{"text":false}"#, #"{"links":{}}"#, #"{"links":[{"text":"Policy","url":42}]}"#,
+            #"{"presentation":"sheet"}"#, #"{"summary":false}"#, #"{"collapsedMaxLines":0}"#,
+            #"{"collapsedMaxLines":-1}"#, #"{"collapsedMaxLines":1.5}"#, #"{"collapsedMaxLines":"3"}"#,
+            #"{"readMoreLabel":42}"#, #"{"showLessLabel":false}"#
+        ] {
             XCTAssertThrowsError(try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8)))
+        }
+    }
+
+    func test_privacyNotice_collapsibleConfiguration_roundTripsAndDefaultsToInline() throws {
+        let json = """
+        {"text":"Full notice","presentation":"collapsible","summary":"Short summary","collapsedMaxLines":2,
+         "readMoreLabel":"Details","showLessLabel":"Less"}
+        """
+        let notice = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(json.utf8))
+        let copy = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: JSONEncoder().encode(notice))
+        XCTAssertEqual(copy.presentation, .collapsible)
+        XCTAssertEqual(copy.summary, "Short summary")
+        XCTAssertEqual(copy.collapsedMaxLines, 2)
+        XCTAssertEqual(copy.readMoreLabel, "Details")
+        XCTAssertEqual(copy.showLessLabel, "Less")
+
+        for defaultsJSON in [
+            #"{"text":"Full notice"}"#,
+            #"{"presentation":null,"summary":null,"collapsedMaxLines":null,"readMoreLabel":null,"showLessLabel":null}"#
+        ] {
+            let defaults = try JSONDecoder().decode(ConciergePrivacyNoticeBehavior.self, from: Data(defaultsJSON.utf8))
+            XCTAssertEqual(defaults.presentation, .inline)
+            XCTAssertEqual(defaults.summary, "")
+            XCTAssertEqual(defaults.collapsedMaxLines, 3)
+            XCTAssertEqual(defaults.readMoreLabel, "Read more")
+            XCTAssertEqual(defaults.showLessLabel, "Show less")
         }
     }
 
