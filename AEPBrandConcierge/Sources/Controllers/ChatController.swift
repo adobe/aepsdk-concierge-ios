@@ -61,6 +61,10 @@ final class ChatController: ObservableObject {
     /// Copy rendered into the transcript when a turn fails. Pushed in from the view's theme (see
     /// `ChatView`) because the theme lives in the SwiftUI environment rather than on the session.
     var networkErrorMessage: String = ConciergeCopy.defaultErrorNetwork
+    /// Copy that replaces the voice agent's reply when a voice turn fails. Pushed in like `networkErrorMessage`.
+    var voiceTurnFailedMessage: String = ConciergeCopy.defaultVoiceTurnFailed
+    /// Copy that replaces the voice agent's reply when a message sent during voice can't be delivered.
+    var voiceMessageSendFailedMessage: String = ConciergeCopy.defaultVoiceTurnMessageSendFailed
 
     // MARK: - Input Controller
 
@@ -804,6 +808,7 @@ final class ChatController: ObservableObject {
             let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
             messages.append(message)
             run.openMessageIds[role] = message.id
+            run.replyMessageId = role == .assistant ? message.id : nil
             if role == .user || voiceScrollAnchorId == nil {
                 voiceScrollAnchorId = message.id
                 scrollToTop(messageId: message.id)
@@ -812,6 +817,47 @@ final class ChatController: ObservableObject {
 
         if isFinal {
             run.openMessageIds[role] = nil
+        }
+    }
+
+    /// Renders the end of a voice turn the way a typed turn ends: the reply bubble gets the final
+    /// text (or the failure copy) and the sources, then the cards, CTAs and suggestions follow.
+    /// Voice replies have no conversation payload, so no feedback controls are shown.
+    fileprivate func handleVoiceTurnFinished(_ result: VoiceTurnResult, of session: VoiceSessionController) {
+        guard let run = voiceRun(for: session) else { return }
+        let text: String
+        switch result.outcome {
+        case .completed(let fullText):
+            text = fullText
+        case .failed(.turnFailed):
+            text = voiceTurnFailedMessage
+        case .failed(.messageSendFailed):
+            text = voiceMessageSendFailedMessage
+        }
+        let sources = result.uiPayload?.sources ?? []
+
+        if let replyId = run.replyMessageId,
+           let index = messages.firstIndex(where: { $0.id == replyId }) {
+            messages[index].messageBody = text
+            if !sources.isEmpty { messages[index].sources = sources }
+        } else {
+            let message = Message(template: .basic(isUserMessage: false), messageBody: text,
+                                  sources: sources.isEmpty ? nil : sources)
+            messages.append(message)
+            if voiceScrollAnchorId == nil {
+                voiceScrollAnchorId = message.id
+                scrollToTop(messageId: message.id)
+            }
+        }
+        run.openMessageIds[.assistant] = nil
+        run.replyMessageId = nil
+
+        guard let payload = result.uiPayload else { return }
+        if !payload.multimodalElements.isEmpty {
+            renderMultimodalElements(payload.multimodalElements)
+        }
+        for suggestion in payload.promptSuggestions {
+            messages.append(Message(template: .promptSuggestion(text: suggestion)))
         }
     }
 
@@ -1393,6 +1439,10 @@ extension ChatController: VoiceSessionListener {
         onMain { $0.handleVoiceTranscript(text, role: role, isFinal: isFinal, of: session) }
     }
 
+    nonisolated func voiceSession(_ session: VoiceSessionController, didFinishTurn result: VoiceTurnResult) {
+        onMain { $0.handleVoiceTurnFinished(result, of: session) }
+    }
+
     private nonisolated func onMain(_ work: @escaping @MainActor (ChatController) -> Void) {
         if Thread.isMainThread {
             MainActor.assumeIsolated { work(self) }
@@ -1418,6 +1468,9 @@ private final class VoiceRun {
     var bootstrapFinished = false
     /// The transcript bubble each role is still speaking into.
     var openMessageIds: [VoiceTranscriptRole: UUID] = [:]
+    /// The current turn's reply bubble, kept after it closes so the turn's end can rewrite it.
+    /// Cleared when the user's next bubble opens.
+    var replyMessageId: UUID?
 
     init(claim: VoiceSessionOwnership.Claim) {
         self.claim = claim

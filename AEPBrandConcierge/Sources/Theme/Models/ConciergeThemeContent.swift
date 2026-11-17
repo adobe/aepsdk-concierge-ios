@@ -138,11 +138,17 @@ public struct ConciergeCopy: Codable {
     public var sourcesLabel: String
     public var feedbackHelpfulLabel: String
     public var suggestionsHeader: String
+    public var voiceTurnFailed: String
+    public var voiceTurnMessageSendFailed: String
 
     /// Fallback copy for a failed conversation turn. Shared so the controller can render the same
     /// text into the transcript when no themed value has been applied (a data handoff can fail
     /// before the chat UI has ever appeared).
     public static let defaultErrorNetwork = "I'm sorry, I'm having trouble connecting to our services right now."
+    /// Fallback copy for a voice turn that ended with an error or an empty reply.
+    public static let defaultVoiceTurnFailed = "Sorry, I couldn't process that. Please try again."
+    /// Fallback copy for a message sent during a voice conversation that could not be delivered.
+    public static let defaultVoiceTurnMessageSendFailed = "Sorry, your message couldn't be sent. Please try again."
 
     enum CodingKeys: String, CodingKey {
         case welcomeHeading = "welcome.heading"
@@ -172,6 +178,8 @@ public struct ConciergeCopy: Codable {
         case sourcesLabel = "sourcesLabel"
         case feedbackHelpfulLabel = "feedbackHelpfulLabel"
         case suggestionsHeader = "suggestions.header"
+        case voiceTurnFailed = "voice.turn.failed"
+        case voiceTurnMessageSendFailed = "voice.turn.messageSendFailed"
     }
 
     public init(
@@ -201,7 +209,9 @@ public struct ConciergeCopy: Codable {
         feedbackThumbsDownAria: String = "Thumbs down",
         sourcesLabel: String = "Sources",
         feedbackHelpfulLabel: String = "Was this helpful?",
-        suggestionsHeader: String = "Suggestions"
+        suggestionsHeader: String = "Suggestions",
+        voiceTurnFailed: String = ConciergeCopy.defaultVoiceTurnFailed,
+        voiceTurnMessageSendFailed: String = ConciergeCopy.defaultVoiceTurnMessageSendFailed
     ) {
         self.welcomeHeading = welcomeHeading
         self.welcomeSubheading = welcomeSubheading
@@ -230,6 +240,8 @@ public struct ConciergeCopy: Codable {
         self.sourcesLabel = sourcesLabel
         self.feedbackHelpfulLabel = feedbackHelpfulLabel
         self.suggestionsHeader = suggestionsHeader
+        self.voiceTurnFailed = voiceTurnFailed
+        self.voiceTurnMessageSendFailed = voiceTurnMessageSendFailed
     }
 
     /// To-do: Move strings to a defaults file and load from there instead of hardcoding in the init.
@@ -262,6 +274,8 @@ public struct ConciergeCopy: Codable {
         sourcesLabel = try container.decodeIfPresent(String.self, forKey: .sourcesLabel) ?? "Sources"
         feedbackHelpfulLabel = try container.decodeIfPresent(String.self, forKey: .feedbackHelpfulLabel) ?? "Was this helpful?"
         suggestionsHeader = try container.decodeIfPresent(String.self, forKey: .suggestionsHeader) ?? "Suggestions"
+        voiceTurnFailed = try container.decodeIfPresent(String.self, forKey: .voiceTurnFailed) ?? ConciergeCopy.defaultVoiceTurnFailed
+        voiceTurnMessageSendFailed = try container.decodeIfPresent(String.self, forKey: .voiceTurnMessageSendFailed) ?? ConciergeCopy.defaultVoiceTurnMessageSendFailed
     }
 }
 

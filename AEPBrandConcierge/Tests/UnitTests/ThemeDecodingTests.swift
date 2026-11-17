@@ -1138,6 +1138,30 @@ final class ThemeDecodingTests: XCTestCase {
         XCTAssertEqual(decoded.text.suggestionsHeader, "Suggestions")
     }
 
+    // MARK: - voice.turn Text String Tests
+
+    func test_text_voiceTurnCopy_decodesCorrectly() throws {
+        let json = """
+        { "text": { "voice.turn.failed": "Try again", "voice.turn.messageSendFailed": "Not sent" } }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.voiceTurnFailed, "Try again")
+        XCTAssertEqual(decoded.text.voiceTurnMessageSendFailed, "Not sent")
+    }
+
+    func test_text_voiceTurnCopy_defaultsMatchWeb() throws {
+        let json = """
+        { "text": {} }
+        """
+        let data = json.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(ConciergeTheme.self, from: data)
+
+        XCTAssertEqual(decoded.text.voiceTurnFailed, "Sorry, I couldn't process that. Please try again.")
+        XCTAssertEqual(decoded.text.voiceTurnMessageSendFailed, "Sorry, your message couldn't be sent. Please try again.")
+    }
+
     // MARK: - primary.container defaults
 
     func test_primaryColors_container_defaultsToNil() {

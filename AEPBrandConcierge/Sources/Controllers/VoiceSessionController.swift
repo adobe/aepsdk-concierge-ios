@@ -23,6 +23,10 @@ protocol VoiceSessionListener: AnyObject {
     /// Called whenever a transcript turn is updated. `text` is the turn's full text so far, not a
     /// delta. `isFinal` closes the turn; the next update for the same role starts a new one.
     func voiceSession(_ session: VoiceSessionController, didUpdateTranscript text: String, role: VoiceTranscriptRole, isFinal: Bool)
+
+    /// Called once when a turn ends, after its last transcript update. Replaces the open assistant
+    /// reply with the result and renders the turn's UI payload.
+    func voiceSession(_ session: VoiceSessionController, didFinishTurn result: VoiceTurnResult)
 }
 
 /// One voice conversation over the app's `VoiceTransport`: microphone permission, the connection
@@ -56,7 +60,16 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private var conversationLengthTimer: DispatchWorkItem?
     private let stateLock = NSLock()
     private var currentState: VoiceSessionState = .connecting
+    /// The turn in flight, from the user's first words (or the agent's, when it speaks first) until
+    /// its `turn_completed` or the next user turn.
+    private var turn: Turn?
+    /// Turns that ended. Their late messages, such as the worker's second `turn_completed` after a
+    /// playback error, are dropped.
+    private var closedTurnIds: Set<String> = []
+    /// The in-flight turn's assistant text so far.
     private var pendingAssistantText = ""
+    /// The in-flight turn's latest UI payload. Each one is a snapshot of the whole turn.
+    private var latestUiPayload: UiPayloadData?
     /// True from `connect` until this session disconnects the transport.
     private var holdsTransport = false
     /// The transport's `continuesInBackground`, read once at `connect`.
@@ -331,22 +344,119 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private func handle(_ message: DataChannelMessage) {
         switch message {
         case .transcriptDelta(let delta) where delta.role == .user:
-            emit(.user, delta.delta, isFinal: delta.final)
+            handleUserTranscript(delta)
         case .transcriptDelta(let delta):
-            pendingAssistantText += delta.delta
-            let text = pendingAssistantText
-            if delta.final { pendingAssistantText = "" }
-            emit(.assistant, text, isFinal: delta.final)
-        case .turnDone(let turn):
-            let fullText = turn.fullText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let text = fullText.isEmpty ? pendingAssistantText : fullText
-            pendingAssistantText = ""
-            emit(.assistant, text, isFinal: true)
+            handleAssistantTranscript(delta)
+        case .uiPayload(let payload):
+            guard acceptsTurnMessage(turnId: payload.turnId, startsTurn: false) else { return }
+            latestUiPayload = payload
+        case .turnDone(let done):
+            handleTurnDone(done)
         case .sessionNotice(.sessionEnded(let reason)):
             handleSessionEnded(reason)
-        case .uiPayload, .textInputError, .sessionNotice, .stateUpdate:
+        case .textInputError, .sessionNotice, .stateUpdate:
             break
         }
+    }
+
+    // MARK: - Turns
+
+    /// Mirrors web's turn handling (`LiveKitVoiceManager`): the user's transcript decides the
+    /// current turn, and messages for any other turn are dropped.
+    private struct Turn {
+        /// The worker's turn id, `nil` until a message for the turn carries one.
+        var id: String?
+        var userFinal = false
+        var replyStarted = false
+    }
+
+    private func handleUserTranscript(_ delta: TranscriptDeltaData) {
+        if !delta.delta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let id = delta.turnId, closedTurnIds.contains(id) {
+                Log.trace(label: LOG_TAG, "Dropped a user transcript for a turn that already ended.")
+                return
+            }
+            if startsNewTurn(userTurnId: delta.turnId) {
+                beginTurn(id: delta.turnId)
+            } else if turn?.id == nil {
+                turn?.id = delta.turnId
+            }
+            if delta.final { turn?.userFinal = true }
+        }
+        emit(.user, delta.delta, isFinal: delta.final)
+    }
+
+    private func startsNewTurn(userTurnId id: String?) -> Bool {
+        guard let turn else { return true }
+        if let id, let currentId = turn.id { return id != currentId }
+        return turn.userFinal || turn.replyStarted
+    }
+
+    private func handleAssistantTranscript(_ delta: TranscriptDeltaData) {
+        guard acceptsTurnMessage(turnId: delta.turnId, startsTurn: true) else { return }
+        turn?.replyStarted = true
+        pendingAssistantText += delta.delta
+        let text = pendingAssistantText
+        if delta.final { pendingAssistantText = "" }
+        emit(.assistant, text, isFinal: delta.final)
+    }
+
+    /// Mirrors web's `handleTurnDone`. An error or an empty reply fails the turn; `interrupted`
+    /// counts as completed.
+    private func handleTurnDone(_ done: TurnDoneData) {
+        guard turn != nil, acceptsTurnMessage(turnId: done.turnId, startsTurn: false) else {
+            Log.trace(label: LOG_TAG, "Dropped a turn_completed for a turn that is not in flight.")
+            return
+        }
+        let fullText = done.fullText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if done.state == .error || fullText.isEmpty {
+            finishTurn(.failed(.turnFailed))
+        } else {
+            finishTurn(.completed(fullText))
+        }
+    }
+
+    /// Whether an assistant message belongs to the turn in flight. A turn without an id adopts the
+    /// message's id. With no turn in flight, only a message that `startsTurn` is kept, as the start
+    /// of a turn the agent opens.
+    private func acceptsTurnMessage(turnId id: String?, startsTurn: Bool) -> Bool {
+        if let id, closedTurnIds.contains(id) { return false }
+        guard let current = turn else {
+            guard startsTurn else { return false }
+            beginTurn(id: id)
+            return true
+        }
+        guard let id else { return true }
+        guard let currentId = current.id else {
+            turn?.id = id
+            return true
+        }
+        return id == currentId
+    }
+
+    /// Closes the turn in flight, if any, and opens a new one.
+    private func beginTurn(id: String?) {
+        if turn != nil {
+            // The previous turn got no turn_completed, for example because the user interrupted it.
+            // Close its reply bubble and drop its UI payload.
+            let text = pendingAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty { emit(.assistant, text, isFinal: true) }
+            closeTurn()
+        }
+        turn = Turn(id: id)
+    }
+
+    private func finishTurn(_ outcome: VoiceTurnResult.Outcome) {
+        let result = VoiceTurnResult(outcome: outcome, uiPayload: latestUiPayload)
+        closeTurn()
+        listener?.voiceSession(self, didFinishTurn: result)
+    }
+
+    private func closeTurn() {
+        if let id = turn?.id { closedTurnIds.insert(id) }
+        turn = nil
+        pendingAssistantText = ""
+        latestUiPayload = nil
     }
 
     /// The voice agent ended the session. Only its timeouts are a normal end. An error, a shutdown or

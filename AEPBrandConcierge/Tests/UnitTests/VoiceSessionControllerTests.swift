@@ -439,10 +439,97 @@ final class VoiceSessionControllerTests: XCTestCase {
         XCTAssertEqual(listener.transcripts, [
             .init(text: "Hello", role: .assistant, isFinal: false),
             .init(text: "Hello world", role: .assistant, isFinal: false),
-            .init(text: "Corrected reply", role: .assistant, isFinal: true),
-            .init(text: "Next turn", role: .assistant, isFinal: false),
-            .init(text: "Next turn", role: .assistant, isFinal: true)
+            .init(text: "Next turn", role: .assistant, isFinal: false)
         ])
+        XCTAssertEqual(listener.outcomes, [.completed("Corrected reply"), .failed(.turnFailed)],
+                       "the turn ends with the authoritative text; an empty one fails the turn")
+        session.stop()
+    }
+
+    // MARK: - Turns
+
+    func test_turnCompleted_attachesTheTurnsLatestUiPayload() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Show me shoes", turnId: "t1")
+        transport.receive(json: ["event": "text_delta", "delta": "Here you go", "turnId": "t1"])
+        transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["a"]])
+        transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["a", "b"],
+                                 "multimodalElements": ["elements": [["id": "p1"]]]])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Here you go", "state": "completed"])
+
+        XCTAssertEqual(listener.outcomes, [.completed("Here you go")])
+        XCTAssertEqual(listener.results.first?.uiPayload?.promptSuggestions, ["a", "b"], "the latest snapshot wins")
+        XCTAssertEqual(listener.results.first?.uiPayload?.multimodalElements.map(\.id), ["p1"])
+        session.stop()
+    }
+
+    func test_turnCompleted_withAnErrorOrNoText_failsTheTurnButKeepsThePayloadAndSession() async {
+        for (state, fullText) in [("error", "Partial"), ("completed", "  ")] {
+            let (transport, listener, session) = await listeningSession()
+            userSays(transport, "Hi", turnId: "t1")
+            transport.receive(json: ["event": "text_delta", "delta": "Partial", "turnId": "t1"])
+            transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["a"]])
+            transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": fullText, "state": state])
+
+            XCTAssertEqual(listener.outcomes, [.failed(.turnFailed)], state)
+            XCTAssertEqual(listener.results.first?.uiPayload?.promptSuggestions, ["a"], state)
+            XCTAssertEqual(session.state, .listening, state)
+            session.stop()
+        }
+    }
+
+    func test_turnCompleted_interrupted_countsAsCompleted() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Hello", "state": "interrupted"])
+        XCTAssertEqual(listener.outcomes, [.completed("Hello")])
+        session.stop()
+    }
+
+    func test_turnCompleted_forAnotherTurn_isDropped() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        transport.receive(json: ["event": "turn_completed", "turnId": "t0", "fullText": "Stale"])
+        transport.receive(json: ["event": "ui_payload", "turnId": "t0", "promptSuggestions": ["stale"]])
+        XCTAssertTrue(listener.results.isEmpty)
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Hello"])
+        XCTAssertEqual(listener.outcomes, [.completed("Hello")])
+        XCTAssertNil(listener.results.first?.uiPayload)
+        session.stop()
+    }
+
+    func test_errorAfterTheTurnCompleted_isDropped() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Hello"])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "", "state": "error"])
+        transport.receive(json: ["event": "turn_completed", "fullText": "", "state": "error"])
+        XCTAssertEqual(listener.outcomes, [.completed("Hello")])
+        session.stop()
+    }
+
+    func test_newUserTurn_closesTheOpenReply_andDropsTheOldTurnsLateMessages() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        transport.receive(json: ["event": "text_delta", "delta": "Partial", "turnId": "t1"])
+        transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["old"]])
+        userSays(transport, "Wait", turnId: "t2", final: false)
+        transport.receive(json: ["event": "text_delta", "delta": " more", "turnId": "t1"])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Partial more"])
+        userSays(transport, "Wait", turnId: "t2")
+        transport.receive(json: ["event": "text_delta", "delta": "Sure", "turnId": "t2"])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t2", "fullText": "Sure"])
+
+        XCTAssertEqual(listener.transcripts, [
+            .init(text: "Hi", role: .user, isFinal: true),
+            .init(text: "Partial", role: .assistant, isFinal: false),
+            .init(text: "Partial", role: .assistant, isFinal: true),
+            .init(text: "Wait", role: .user, isFinal: false),
+            .init(text: "Wait", role: .user, isFinal: true),
+            .init(text: "Sure", role: .assistant, isFinal: false)
+        ])
+        XCTAssertEqual(listener.outcomes, [.completed("Sure")])
+        XCTAssertNil(listener.results.first?.uiPayload, "the interrupted turn's payload is discarded")
         session.stop()
     }
 
@@ -538,6 +625,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         await listening(listener)
         for raw: [String: Any] in [
             ["event": "ui_payload", "promptSuggestions": ["one"]],
+            ["event": "turn_completed", "fullText": "No turn in flight"],
             ["event": "turn_started"],
             ["type": "session_notice", "data": ["kind": "user_silence_warning"]],
             ["event": "unknown"]
@@ -546,6 +634,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         }
         transport.receive(Data([0, 1, 2]))
         XCTAssertTrue(listener.transcripts.isEmpty)
+        XCTAssertTrue(listener.results.isEmpty)
         XCTAssertEqual(session.state, .listening)
         session.stop()
     }
@@ -715,6 +804,19 @@ final class VoiceSessionControllerTests: XCTestCase {
         return session
     }
 
+    private func listeningSession() async -> (FakeVoiceTransport, RecordingVoiceListener, VoiceSessionController) {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await listening(listener)
+        return (transport, listener, session)
+    }
+
+    private func userSays(_ transport: FakeVoiceTransport, _ text: String, turnId: String, final: Bool = true) {
+        transport.receive(json: ["type": "transcript_delta",
+                                 "data": ["role": "user", "delta": text, "final": final, "turnId": turnId]])
+    }
+
     private func listening(_ listener: RecordingVoiceListener) async {
         let connected = expectation(description: "listening")
         listener.onState = { if $0 == .listening { connected.fulfill() } }
@@ -750,6 +852,8 @@ private final class RecordingVoiceListener: VoiceSessionListener {
 
     var states: [VoiceSessionState] = []
     var transcripts: [Transcript] = []
+    var results: [VoiceTurnResult] = []
+    var outcomes: [VoiceTurnResult.Outcome] { results.map(\.outcome) }
     var onState: ((VoiceSessionState) -> Void)?
     var onTranscript: (() -> Void)?
 
@@ -764,6 +868,11 @@ private final class RecordingVoiceListener: VoiceSessionListener {
         XCTAssertTrue(Thread.isMainThread)
         transcripts.append(.init(text: text, role: role, isFinal: isFinal))
         onTranscript?()
+    }
+
+    func voiceSession(_ session: VoiceSessionController, didFinishTurn result: VoiceTurnResult) {
+        XCTAssertTrue(Thread.isMainThread)
+        results.append(result)
     }
 }
 

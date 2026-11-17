@@ -212,7 +212,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         userSays("Hello there", isFinal: true)
         transport.receive(json: ["event": "text_delta", "delta": "Hi"])
         transport.receive(json: ["event": "text_delta", "delta": ", how can I help?"])
-        transport.receive(json: ["event": "turn_completed"])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Hi, how can I help?"])
         userSays("Shoes", isFinal: true)
 
         XCTAssertEqual(controller.messages.map(\.messageBody), ["Hello there", "Hi, how can I help?", "Shoes"])
@@ -240,7 +240,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(controller.userMessageToScrollId, firstUserBubble)
 
         transport.receive(json: ["event": "text_delta", "delta": "Sure"])
-        transport.receive(json: ["event": "turn_completed"])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Sure"])
         XCTAssertEqual(controller.voiceScrollAnchorId, firstUserBubble, "the reply shows below the user's words")
         XCTAssertEqual(controller.userMessageToScrollId, firstUserBubble)
 
@@ -278,11 +278,85 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
+    // MARK: - Turn end
+
+    func test_turnEnd_rendersTheReplyWithSources_thenCardsCtasAndSuggestions_likeATypedTurn() {
+        let controller = makeController()
+        startListening(controller)
+
+        userSays("Shoes", isFinal: true)
+        transport.receive(json: ["event": "text_delta", "delta": "Here are"])
+        transport.receive(json: [
+            "event": "ui_payload",
+            "sources": [["url": "https://example.com", "title": "Example", "start_index": 0, "end_index": 4, "citation_number": 1]],
+            "multimodalElements": ["elements": [
+                ["id": "p1", "entity_info": ["productName": "Runner"]],
+                ["id": "cta", "type": "ctaButton", "entity_info": ["primary": ["text": "Shop", "url": "https://example.com/shop"]]]
+            ]],
+            "promptSuggestions": ["Red ones", "Blue ones"]
+        ])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Here are some shoes"])
+
+        XCTAssertEqual(controller.messages.count, 6)
+        XCTAssertEqual(controller.messages[1].messageBody, "Here are some shoes")
+        XCTAssertEqual(controller.messages[1].sources?.map(\.url), ["https://example.com"])
+        XCTAssertFalse(controller.messages[1].feedbackEligible, "a voice reply has no payload to send feedback on")
+        XCTAssertFalse(controller.messages[1].isStreamComplete)
+        guard case .productCard(let card) = controller.messages[2].template else { return XCTFail("expected a product card") }
+        XCTAssertEqual(card.title, "Runner")
+        guard case .ctaButton(let action) = controller.messages[3].template else { return XCTFail("expected a CTA") }
+        XCTAssertEqual(action.text, "Shop")
+        XCTAssertEqual(controller.messages.suffix(2).map(suggestionText), ["Red ones", "Blue ones"])
+        XCTAssertEqual(events.map(\.name), [ConciergeConstants.TrackingEvent.Name.CARDS_RENDERED])
+    }
+
+    func test_failedTurn_replacesTheReplyWithTheCopy_andStillRendersThePayload() {
+        let controller = makeController()
+        controller.voiceTurnFailedMessage = "Try again"
+        startListening(controller)
+
+        userSays("Shoes", isFinal: true)
+        transport.receive(json: ["event": "text_delta", "delta": "Here are"])
+        transport.receive(json: ["event": "ui_payload", "promptSuggestions": ["Red ones"]])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Here are", "state": "error"])
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Try again", nil])
+        XCTAssertEqual(controller.messages.last.flatMap(suggestionText), "Red ones")
+        XCTAssertTrue(controller.isVoiceSessionActive, "a failed turn keeps the conversation open")
+        XCTAssertTrue(events.isEmpty)
+    }
+
+    func test_failedTurnWithoutAReply_addsTheCopyAsANewBubble() {
+        let controller = makeController()
+        startListening(controller)
+
+        userSays("Shoes", isFinal: true)
+        transport.receive(json: ["event": "turn_completed", "fullText": "", "state": "error"])
+        userSays("Hello", isFinal: true)
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", ConciergeCopy.defaultVoiceTurnFailed, "Hello"])
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false, true])
+    }
+
+    func test_turnEnd_afterTheNextUserTurnStarted_isDropped() {
+        let controller = makeController()
+        startListening(controller)
+
+        transport.receive(json: ["type": "transcript_delta", "data": ["delta": "Shoes", "final": true, "turnId": "t1"]])
+        transport.receive(json: ["event": "text_delta", "delta": "Here", "turnId": "t1"])
+        transport.receive(json: ["type": "transcript_delta", "data": ["delta": "Stop", "final": true, "turnId": "t2"]])
+        transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["Red ones"]])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Here are shoes"])
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here", "Stop"])
+    }
+
     // MARK: - End
 
     func test_transportDisconnecting_returnsToIdle_withoutAnErrorBubble() {
         let controller = makeController()
         startListening(controller)
+        transport.receive(json: ["event": "text_delta", "delta": "Bye"])
         transport.receive(json: ["event": "turn_completed", "fullText": "Bye"])
 
         transport.report(.disconnected)
@@ -714,6 +788,11 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     private func userSays(_ text: String, isFinal: Bool = false) {
         transport.receive(json: ["type": "transcript_delta", "data": ["delta": text, "final": isFinal]])
+    }
+
+    private func suggestionText(_ message: Message) -> String? {
+        if case .promptSuggestion(let text) = message.template { return text }
+        return nil
     }
 
     private func isUserMessage(_ message: Message) -> Bool {

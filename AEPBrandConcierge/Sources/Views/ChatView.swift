@@ -178,6 +178,8 @@ struct ChatView: View {
             hapticFeedback.prepare()
             controller.trackChatOpened()
             controller.networkErrorMessage = theme.text.errorNetwork
+            controller.voiceTurnFailedMessage = theme.text.voiceTurnFailed
+            controller.voiceMessageSendFailedMessage = theme.text.voiceTurnMessageSendFailed
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         .onDisappear {
