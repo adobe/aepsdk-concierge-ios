@@ -317,8 +317,7 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
             guard case .template(.basic(isUserMessage: false)) = rows.first?.content else {
                 return XCTFail("Expected the standard error row after the query")
             }
-            XCTAssertEqual(rows.first?.messageBody,
-                           "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later.")
+            XCTAssertEqual(rows.first?.messageBody, emptyResponseMessage)
             XCTAssertEqual(suggestionTexts(in: Array(rows.dropFirst())), suggestions ?? [])
             XCTAssertEqual(rows.count, 1 + (suggestions?.count ?? 0))
 
@@ -333,6 +332,41 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
             XCTAssertEqual(tapRows.map(\.messageBody), [suggestion, "Here is the menu"])
             XCTAssertEqual(suggestionTexts(in: tapRows), [])
         }
+    }
+
+    /// The server can close the stream with a transport error after it already sent `COMPLETED`.
+    /// The completed response stays authoritative: the late error is neither shown nor retried, and the
+    /// empty placeholder gives way to the standard error and the response's suggestions.
+    @MainActor
+    func testLateTransportErrorAfterAnEmptyCompletedResponseKeepsTheErrorAndSuggestions() async throws {
+        let unsupported = try CardJSONValue.decode([MultimodalElement].self,
+            from: Data(#"[{"type":"custom","rendererId":"not.registered","id":"menu"}]"#.utf8))
+        let service = MockChatService(configuration: ConciergeConfiguration())
+        service.plannedChunks = [streamPayload(state: "completed", elements: unsupported,
+                                               suggestions: ["Show the menu", "Talk to someone"])]
+        service.plannedError = .unreachable
+        var errorEvents = 0
+        let controller = ChatController(configuration: nil, chatService: service, speechCapturer: nil, speaker: nil) { event in
+            if event.name == ConciergeConstants.TrackingEvent.Name.ERROR_OCCURRED { errorEvents += 1 }
+        }
+        var placeholderIds = Set<UUID>()
+        let observation = controller.$messages.sink { messages in
+            for message in messages where message.messageBody?.isEmpty == true {
+                if case .template(.basic(isUserMessage: false)) = message.content { placeholderIds.insert(message.id) }
+            }
+        }
+        defer { observation.cancel() }
+
+        await sendTypedTurn("Order food", on: controller)
+
+        XCTAssertEqual(placeholderIds.count, 1, "The turn streamed into one placeholder")
+        XCTAssertFalse(controller.messages.contains { placeholderIds.contains($0.id) }, "The placeholder is replaced")
+        XCTAssertEqual(controller.messages.map(\.messageBody),
+                       ["Order food", emptyResponseMessage, nil, nil], "The late error is not shown")
+        XCTAssertEqual(suggestionTexts(in: controller.messages), ["Show the menu", "Talk to someone"])
+        XCTAssertEqual(service.streamChatCallCount, 1, "The late error is not retried")
+        XCTAssertEqual(errorEvents, 1, "Only the empty response is reported")
+        XCTAssertEqual(controller.chatState, .idle)
     }
 
     /// Without a native card, a response's suggestions are always standalone rows after its content,
@@ -366,6 +400,9 @@ final class ChatControllerNativeCardTests: NativeCardTestCase {
             XCTAssertTrue(rows.allSatisfy { $0.promptSuggestions == nil }, "\(testCase.name): nothing is attached")
         }
     }
+
+    private let emptyResponseMessage =
+        "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later."
 
     /// Sends `text` the way the composer does and waits until the turn has settled back to idle.
     @MainActor
