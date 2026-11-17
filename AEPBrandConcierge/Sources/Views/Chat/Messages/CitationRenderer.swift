@@ -23,8 +23,13 @@ enum CitationRenderer {
     /// - Parameters:
     ///   - markdown: Original agent response text.
     ///   - sources: Sources supplied by the concierge service.
+    ///   - showCitationNumbers: Whether to insert inline citation markers.
     /// - Returns: A `CitationDecoration` describing the annotated string, or `nil` when no decoration is required.
-    static func decorate(markdown: String, sources: [Source]) -> CitationDecoration? {
+    static func decorate(
+        markdown: String,
+        sources: [Source],
+        showCitationNumbers: Bool = true
+    ) -> CitationDecoration? {
         guard !markdown.isEmpty, !sources.isEmpty else { return nil }
 
         let characterCount = markdown.count
@@ -63,31 +68,33 @@ enum CitationRenderer {
         var markers: [CitationMarker] = []
         var uniqueTokenId = 0
 
-        // Insert tokens starting from the highest offset so earlier inserts do not shift later indexes.
-        for item in processed.sorted(by: { $0.end > $1.end }) {
-            let token = makeToken(id: uniqueTokenId)
-            uniqueTokenId += 1
+        if showCitationNumbers {
+            // Insert tokens starting from the highest offset so earlier inserts do not shift later indexes.
+            for item in processed.sorted(by: { $0.end > $1.end }) {
+                let token = makeToken(id: uniqueTokenId)
+                uniqueTokenId += 1
 
-            guard let insertIndex = annotated.index(annotated.startIndex, offsetBy: item.end, limitedBy: annotated.endIndex) else {
-                continue
+                guard let insertIndex = annotated.index(annotated.startIndex, offsetBy: item.end, limitedBy: annotated.endIndex) else {
+                    continue
+                }
+
+                annotated.insert(contentsOf: token, at: insertIndex)
+
+                // Capture metadata so downstream code can swap the token for a badge.
+                let marker = CitationMarker(
+                    token: token,
+                    citationNumber: item.normalized.citationNumber,
+                    source: item.normalized,
+                    endOffset: item.end
+                )
+                markers.append(marker)
             }
 
-            annotated.insert(contentsOf: token, at: insertIndex)
-
-            // Capture metadata so downstream code can swap the token for a badge.
-            let marker = CitationMarker(
-                token: token,
-                citationNumber: item.normalized.citationNumber,
-                source: item.normalized,
-                endOffset: item.end
-            )
-            markers.append(marker)
+            // Present markers in natural reading order for consumers.
+            markers.sort { $0.endOffset < $1.endOffset }
         }
 
-        // Present markers in natural reading order for consumers.
-        markers.sort { $0.endOffset < $1.endOffset }
-
-        let deduplicated = deduplicatedSources(from: markers)
+        let deduplicated = deduplicateByCitationNumber(processed.map(\.normalized))
 
         return CitationDecoration(
             annotatedMarkdown: annotated,
@@ -96,22 +103,7 @@ enum CitationRenderer {
         )
     }
 
-    /// Deduplicates sources by citation number while preserving first appearance order.
-    /// - Parameter markers: Markers ordered by their appearance in the text.
-    /// - Returns: Array containing a single representative per citation number.
-    private static func deduplicatedSources(from markers: [CitationMarker]) -> [Source] {
-        var seenNumbers: Set<Int> = []
-        var result: [Source] = []
-
-        for marker in markers where seenNumbers.insert(marker.citationNumber).inserted {
-            result.append(marker.source)
-        }
-
-        return result
-    }
-
-    /// Deduplicates the provided array by citation number while preserving order.
-    static func deduplicate(_ sources: [Source]) -> [Source] {
+    private static func deduplicateByCitationNumber(_ sources: [Source]) -> [Source] {
         var seenNumbers: Set<Int> = []
         var result: [Source] = []
 
@@ -120,6 +112,11 @@ enum CitationRenderer {
         }
 
         return result
+    }
+
+    /// Deduplicates the provided array by citation number while preserving order.
+    static func deduplicate(_ sources: [Source]) -> [Source] {
+        deduplicateByCitationNumber(sources)
     }
 
     /// Generates a unique placeholder token for a given identifier.
