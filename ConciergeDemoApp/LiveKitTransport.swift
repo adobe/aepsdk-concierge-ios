@@ -99,6 +99,16 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
         }
     }
 
+    /// Sends reliably: LiveKit's default is lossy, which can drop a message under load and leave the
+    /// user's turn without a reply. LiveKit throws if the room can't send it.
+    @MainActor
+    func send(_ data: Data, topic: String) async throws {
+        guard let room else {
+            throw LiveKitError(.invalidState, message: "No voice connection to send on")
+        }
+        try await room.localParticipant.publish(data: data, options: DataPublishOptions(topic: topic, reliable: true))
+    }
+
     /// Plays the agent through the built-in speaker rather than the receiver; headphones and
     /// Bluetooth devices still take over. `AudioManager.shared` is LiveKit-wide: the setting applies
     /// to every LiveKit room in the app, not just this transport's. So the app's own value is saved
