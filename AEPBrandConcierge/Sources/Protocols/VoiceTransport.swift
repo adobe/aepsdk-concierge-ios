@@ -23,8 +23,8 @@ import Foundation
 /// Without one, the voice button is hidden.
 ///
 /// Implementations must follow these rules:
-/// - Brand Concierge calls every method on the main thread. Each method returns immediately and
-///   reports its outcome to `delegate`.
+/// - Brand Concierge calls every method on the main thread. Each method except `send(_:topic:)`
+///   returns immediately and reports its outcome to `delegate`.
 /// - One instance serves every conversation: `connect(_:)` can be called again after
 ///   `disconnect()`. Brand Concierge runs one conversation at a time across the app, so it never
 ///   calls `connect(_:)` while an earlier connection is still open.
@@ -69,6 +69,17 @@ public protocol VoiceTransport: AnyObject {
     /// interruption that began while connecting, and unmutes it when iOS allows the audio to resume.
     /// If iOS does not, Brand Concierge ends the conversation instead. Called only while connected.
     func setMicrophoneEnabled(_ enabled: Bool)
+
+    /// Sends a data message to the voice agent, for example a prompt suggestion the user tapped
+    /// during the conversation. Brand Concierge builds `data` and picks `topic`; send both unchanged.
+    ///
+    /// Deliver it reliably: in order, and retransmitted if lost (in LiveKit, publish it with
+    /// `reliable: true`). A lost message leaves the user's turn without a reply.
+    ///
+    /// Return once the connection has accepted the message, and throw if it can't be sent, for
+    /// example because the connection is not open. Brand Concierge then shows the user that the
+    /// message wasn't sent. Called only while connected.
+    func send(_ data: Data, topic: String) async throws
 
     /// Leaves the room and releases the microphone. Safe to call at any time, including while
     /// connecting or when not connected.

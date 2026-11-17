@@ -72,6 +72,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private var latestUiPayload: UiPayloadData?
     /// True from `connect` until this session disconnects the transport.
     private var holdsTransport = false
+    /// The topic the voice agent reads text prompts from.
+    static let textInputTopic = "bc-text-input"
+
     /// The transport's `continuesInBackground`, read once at `connect`.
     private var transportContinuesInBackground = false
     /// True from an audio interruption (a phone call, Siri) until it ends, in any active state.
@@ -185,6 +188,46 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     /// Calling it again, or after the session has already ended or failed, has no effect.
     func stop() {
         onMain { $0.finish(.ended) }
+    }
+
+    /// Whether `sendText(_:)` can start a turn now: the conversation is connected, and no user
+    /// turn is waiting for the agent to start replying. Mirrors web, which holds text back from the
+    /// start of the user's speech until the reply starts, and while reconnecting. Read on main.
+    var canSendText: Bool {
+        guard holdsTransport, state == .listening else { return false }
+        guard let turn else { return true }
+        return turn.replyStarted
+    }
+
+    /// Sends `text` to the voice agent as the user's next turn, as if they had said it, and reports
+    /// it as the user's final transcript right away. Returns `false`, sending nothing, when
+    /// `canSendText` is `false` or the text is blank. Call on main.
+    @discardableResult
+    func sendText(_ text: String) -> Bool {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canSendText, !text.isEmpty else { return false }
+        let turnId = "txt-" + UUID().uuidString.lowercased()
+        let message: [String: Any] = ["type": "text_prompt", "turn_id": turnId, "text": text]
+        guard let data = try? JSONSerialization.data(withJSONObject: message) else { return false }
+
+        beginTurn(id: nil)
+        turn?.textTurnId = turnId
+        turn?.echoText = text
+        turn?.userFinal = true
+        emit(.user, text, isFinal: true)
+
+        let transport = transport
+        Task { @MainActor [weak self] in
+            do {
+                try await transport.send(data, topic: Self.textInputTopic)
+            } catch {
+                guard let self else { return }
+                Log.warning(label: self.LOG_TAG, "Could not send a text prompt to the voice agent: \(error.localizedDescription)")
+                guard self.isActive, self.turn?.textTurnId == turnId else { return }
+                self.finishTurn(.failed(.messageSendFailed))
+            }
+        }
+        return true
     }
 
     static func requestMicrophonePermission() async -> Bool {
@@ -354,7 +397,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             handleTurnDone(done)
         case .sessionNotice(.sessionEnded(let reason)):
             handleSessionEnded(reason)
-        case .textInputError, .sessionNotice, .stateUpdate:
+        case .textInputError(let error):
+            handleTextInputError(error)
+        case .sessionNotice, .stateUpdate:
             break
         }
     }
@@ -366,17 +411,35 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private struct Turn {
         /// The worker's turn id, `nil` until a message for the turn carries one.
         var id: String?
+        /// The `turn_id` sent with the text prompt that started the turn, if text started it.
+        var textTurnId: String?
+        /// The prompt's text, until the worker echoes it back as the user's transcript.
+        var echoText: String?
         var userFinal = false
         var replyStarted = false
     }
 
     private func handleUserTranscript(_ delta: TranscriptDeltaData) {
-        if !delta.delta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let text = delta.delta.trimmingCharacters(in: .whitespacesAndNewlines)
+        if delta.final, let echo = turn?.echoText, text == echo {
+            // The worker's echo of the text prompt carries the worker's id for the turn. The user's
+            // bubble is already shown.
+            turn?.echoText = nil
+            if turn?.id == nil { turn?.id = delta.turnId }
+            return
+        }
+        if !text.isEmpty {
             if let id = delta.turnId, closedTurnIds.contains(id) {
                 Log.trace(label: LOG_TAG, "Dropped a user transcript for a turn that already ended.")
                 return
             }
             if startsNewTurn(userTurnId: delta.turnId) {
+                if let current = turn, current.textTurnId != nil, current.echoText != nil, !current.replyStarted {
+                    // The user spoke before the worker took the text prompt. The worker rejects a prompt
+                    // once the user is speaking, and its text_input_error would arrive after this turn
+                    // was replaced, so fail the prompt now.
+                    finishTurn(.failed(.turnFailed))
+                }
                 beginTurn(id: delta.turnId)
             } else if turn?.id == nil {
                 turn?.id = delta.turnId
@@ -399,6 +462,18 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         let text = pendingAssistantText
         if delta.final { pendingAssistantText = "" }
         emit(.assistant, text, isFinal: delta.final)
+    }
+
+    /// The worker rejected a text prompt, for example because the user started speaking. Fails the
+    /// prompt's turn unless the reply already started or a newer turn replaced it.
+    private func handleTextInputError(_ error: TextInputErrorData) {
+        guard let current = turn, let textTurnId = current.textTurnId, !current.replyStarted,
+              error.turnId == nil || error.turnId == textTurnId else {
+            Log.trace(label: LOG_TAG, "Dropped a text_input_error for a turn that is not in flight.")
+            return
+        }
+        Log.debug(label: LOG_TAG, "The voice agent rejected a text prompt (\(error.reason)).")
+        finishTurn(.failed(.turnFailed))
     }
 
     /// Mirrors web's `handleTurnDone`. An error or an empty reply fails the turn; `interrupted`

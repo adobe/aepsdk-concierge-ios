@@ -351,6 +351,71 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here", "Stop"])
     }
 
+    // MARK: - Prompt suggestions
+
+    func test_suggestionTapDuringVoice_goesToTheVoiceAgent_notToTheService() {
+        let controller = makeController()
+        startListening(controller)
+
+        controller.sendPromptSuggestion("Red ones")
+        spinUntil(!transport.sends.isEmpty)
+
+        XCTAssertEqual(transport.sends.map(\.topic), ["bc-text-input"])
+        XCTAssertEqual(transport.sentJSON.first?["text"] as? String, "Red ones")
+        XCTAssertEqual(service.streamChatCallCount, 0)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Red ones"])
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true])
+        XCTAssertEqual(controller.userMessageToScrollId, controller.messages[0].id)
+        XCTAssertEqual(controller.inputText, "", "the composer is left alone")
+        XCTAssertEqual(events.map(\.name), [ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED])
+    }
+
+    func test_suggestionTapDuringVoice_isDroppedWhileConnectingOrWhileATurnWaitsForItsReply() {
+        transport.autoConnect = false
+        let controller = makeController()
+        startVoice(controller)
+        service.emitBootstrap()
+        spinUntil(!transport.connections.isEmpty)
+        controller.sendPromptSuggestion("Red ones")
+
+        transport.report(.connected)
+        userSays("I want shoes", isFinal: true)
+        controller.sendPromptSuggestion("Red ones")
+        settle()
+
+        XCTAssertTrue(transport.sends.isEmpty)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes"])
+        XCTAssertTrue(events.isEmpty)
+        XCTAssertEqual(service.streamChatCallCount, 0)
+    }
+
+    func test_suggestionSendFailureDuringVoice_showsTheMessageSendFailedCopy() {
+        transport.sendError = URLError(.notConnectedToInternet)
+        let controller = makeController()
+        controller.voiceMessageSendFailedMessage = "Not sent"
+        startListening(controller)
+
+        controller.sendPromptSuggestion("Red ones")
+        spinUntil(controller.messages.count == 2)
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Red ones", "Not sent"])
+        XCTAssertTrue(controller.isVoiceSessionActive)
+    }
+
+    func test_suggestionTapAfterVoiceEnds_streamsLikeATypedMessage() {
+        let controller = makeController()
+        startListening(controller)
+        controller.stopVoiceSession()
+
+        controller.sendPromptSuggestion("Red ones")
+        spinUntil(service.streamChatCallCount == 1)
+
+        XCTAssertEqual(service.streamChatCallCount, 1)
+        XCTAssertTrue(transport.sends.isEmpty)
+        XCTAssertEqual(controller.messages.first?.messageBody, "Red ones")
+        XCTAssertEqual(events.first?.name, ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED)
+    }
+
     // MARK: - End
 
     func test_transportDisconnecting_returnsToIdle_withoutAnErrorBubble() {

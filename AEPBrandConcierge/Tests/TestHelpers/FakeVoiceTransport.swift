@@ -27,6 +27,8 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
     private var connectHandler: (() -> Void)?
     private var disconnectHandler: (() -> Void)?
     private var microphoneHandler: ((Bool) -> Void)?
+    private var recordedSends: [(data: Data, topic: String)] = []
+    private var storedSendError: Error?
     private var storedContinuesInBackground = false
 
     var autoConnect = true
@@ -44,6 +46,18 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
     var connections: [VoiceConnection] { locked { recordedConnections } }
     var disconnectCount: Int { locked { recordedDisconnectCount } }
     var microphoneChanges: [Bool] { locked { recordedMicrophoneChanges } }
+    var sends: [(data: Data, topic: String)] { locked { recordedSends } }
+
+    /// The sent messages decoded as JSON objects.
+    var sentJSON: [[String: Any]] {
+        sends.compactMap { (try? JSONSerialization.jsonObject(with: $0.data)) as? [String: Any] }
+    }
+
+    /// When set, `send` records the message and then throws it.
+    var sendError: Error? {
+        get { locked { storedSendError } }
+        set { locked { storedSendError = newValue } }
+    }
 
     /// Runs inside `connect`, after it is recorded.
     var onConnect: (() -> Void)? {
@@ -75,6 +89,14 @@ final class FakeVoiceTransport: VoiceTransport, @unchecked Sendable {
     func setMicrophoneEnabled(_ enabled: Bool) {
         locked { recordedMicrophoneChanges.append(enabled) }
         onMicrophoneChange?(enabled)
+    }
+
+    func send(_ data: Data, topic: String) async throws {
+        let error: Error? = locked {
+            recordedSends.append((data, topic))
+            return storedSendError
+        }
+        if let error { throw error }
     }
 
     func disconnect() {

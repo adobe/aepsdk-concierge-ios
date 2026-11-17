@@ -456,6 +456,30 @@ final class ChatController: ObservableObject {
         }
     }
 
+    /// Sends a tapped prompt suggestion. During a voice conversation it goes to the voice agent as
+    /// the user's next turn, like on web; otherwise it is sent as a typed message.
+    func sendPromptSuggestion(_ suggestion: String) {
+        guard isVoiceSessionActive else {
+            applyTextChange(suggestion)
+            sendMessage(isUser: true)
+            return
+        }
+        ConciergeIdentityBoundary.shared.synchronized {
+            sendAdmittedVoiceText(suggestion)
+        }
+    }
+
+    private func sendAdmittedVoiceText(_ text: String) {
+        guard identityReady, let session = activeVoice?.session else { return }
+        guard session.sendText(text) else {
+            Log.warning(label: LOG_TAG, "Prompt suggestion ignored. The voice conversation is connecting or a turn is waiting for its reply.")
+            return
+        }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: chatService.resolveSessionID())
+        dispatchTrackingEvent(.querySubmitted(query: trimmed, xdmFields: xdmContext))
+    }
+
     /// Forwards an app-originated data-handoff turn (e.g. a checkout outcome) to Brand Concierge.
     /// The routing hint never renders; only `localMessage` and the eventual reply do. The turn is
     /// scrolled to the top like `sendMessage` does, since a handoff is triggered from app UI rather
