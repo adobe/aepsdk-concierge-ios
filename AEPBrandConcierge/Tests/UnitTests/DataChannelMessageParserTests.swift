@@ -96,12 +96,50 @@ final class DataChannelMessageParserTests: XCTestCase {
         XCTAssertEqual(d.state, .interrupted)
     }
 
-    func test_uiPayload_eventBased_parsesPromptSuggestions() {
-        let raw: [String: Any] = ["event": "ui_payload", "promptSuggestions": ["a", "b"], "sources": []]
+    func test_uiPayload_eventBased_decodesIntoTypedChatModels() {
+        let raw: [String: Any] = [
+            "event": "ui_payload",
+            "turnId": "turn_9",
+            "promptSuggestions": ["a", "b"],
+            "sources": [["url": "https://example.com", "title": "Example", "start_index": 0, "end_index": 4, "citation_number": 1]],
+            "multimodalElements": ["elements": [
+                ["id": "p1", "entity_info": ["productName": "Shoe"]],
+                ["id": "cta", "type": "ctaButton"]
+            ]],
+            "widgets": [["type": "unsupported"]]
+        ]
         guard case let .uiPayload(d)? = DataChannelMessageParser.parse(raw) else {
             return XCTFail("expected uiPayload")
         }
+        XCTAssertEqual(d.turnId, "turn_9")
         XCTAssertEqual(d.promptSuggestions, ["a", "b"])
+        XCTAssertEqual(d.sources, [Source(url: "https://example.com", title: "Example", startIndex: 0, endIndex: 4, citationNumber: 1)])
+        XCTAssertEqual(d.multimodalElements.map(\.id), ["p1", "cta"])
+        XCTAssertEqual(d.multimodalElements.first?.entityInfo?.productName, "Shoe")
+        XCTAssertFalse(d.isEmpty)
+    }
+
+    func test_uiPayload_malformedField_dropsOnlyThatField() {
+        let raw: [String: Any] = [
+            "event": "ui_payload",
+            "promptSuggestions": ["a", 1],
+            "sources": [["url": "https://example.com"]],
+            "multimodalElements": ["elements": [["id": "p1"]]]
+        ]
+        guard case let .uiPayload(d)? = DataChannelMessageParser.parse(raw) else {
+            return XCTFail("expected uiPayload")
+        }
+        XCTAssertTrue(d.sources.isEmpty, "a source missing required fields drops the sources")
+        XCTAssertEqual(d.promptSuggestions, ["a"])
+        XCTAssertEqual(d.multimodalElements.map(\.id), ["p1"])
+    }
+
+    func test_uiPayload_withNoContent_isEmpty() {
+        guard case let .uiPayload(d)? = DataChannelMessageParser.parse(["event": "ui_payload"]) else {
+            return XCTFail("expected uiPayload")
+        }
+        XCTAssertNil(d.turnId)
+        XCTAssertTrue(d.isEmpty)
     }
 
     func test_stateEvents_mapToStateUpdate() {
@@ -120,6 +158,23 @@ final class DataChannelMessageParserTests: XCTestCase {
 
     func test_unknownEvent_returnsNil() {
         XCTAssertNil(DataChannelMessageParser.parse(["event": "not_a_real_event"]))
+    }
+
+    // MARK: - Text input error
+
+    func test_textInputError_parsesTurnIdAndReason() {
+        let raw: [String: Any] = ["type": "text_input_error", "data": ["turnId": "txt-1", "reason": "voice_turn_in_progress"]]
+        guard case let .textInputError(d)? = DataChannelMessageParser.parse(raw) else {
+            return XCTFail("expected textInputError")
+        }
+        XCTAssertEqual(d, TextInputErrorData(turnId: "txt-1", reason: "voice_turn_in_progress"))
+    }
+
+    func test_textInputError_withoutData_hasNoTurnId() {
+        guard case let .textInputError(d)? = DataChannelMessageParser.parse(["type": "text_input_error"]) else {
+            return XCTFail("expected textInputError")
+        }
+        XCTAssertEqual(d, TextInputErrorData(turnId: nil, reason: ""))
     }
 
     // MARK: - Session notice

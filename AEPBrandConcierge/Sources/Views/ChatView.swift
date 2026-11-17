@@ -106,12 +106,10 @@ struct ChatView: View {
                 controller.speak(text)
             } onSuggestionTap: { suggestion in
                 controller.trackPromptSuggestionClicked(suggestion: suggestion)
-                controller.applyTextChange(suggestion)
-                controller.sendMessage(isUser: true)
+                controller.sendPromptSuggestion(suggestion)
             } onWelcomePromptSuggestionTap: { suggestion in
                 controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
-                controller.applyTextChange(suggestion)
-                controller.sendMessage(isUser: true)
+                controller.sendPromptSuggestion(suggestion)
             } onCtaButtonTap: { label, url in
                 controller.trackCtaButtonClicked(label: label, url: url)
             }
@@ -178,6 +176,8 @@ struct ChatView: View {
             hapticFeedback.prepare()
             controller.trackChatOpened()
             controller.networkErrorMessage = theme.text.errorNetwork
+            controller.voiceTurnFailedMessage = theme.text.voiceTurnFailed
+            controller.voiceMessageSendFailedMessage = theme.text.voiceTurnMessageSendFailed
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         .onDisappear {

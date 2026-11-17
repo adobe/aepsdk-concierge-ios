@@ -116,9 +116,9 @@ Add `NSMicrophoneUsageDescription` to your app's `Info.plist`. iOS terminates th
 
 #### 3. Copy the transport
 
-Copy [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) into your app (change the logger subsystem to your own). A `VoiceTransport` connects to the URL and token in the `VoiceConnection` Brand Concierge passes to `connect(_:)`, publishes the microphone, plays the agent's audio, and reports its state and incoming data messages to its `delegate`. The reference transport also records the microphone while the room connects and sends that audio once the agent joins, so the user can start speaking right away.
+Copy [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) into your app (change the logger subsystem to your own). A `VoiceTransport` connects to the URL and token in the `VoiceConnection` Brand Concierge passes to `connect(_:)`, publishes the microphone, plays the agent's audio, reports its state and incoming data messages to its `delegate`, and sends the data messages Brand Concierge passes to `send(_:topic:)`. The reference transport also records the microphone while the room connects and sends that audio once the agent joins, so the user can start speaking right away.
 
-If you change the transport, keep the rules in the `VoiceTransport` documentation. When you update LiveKit, check that the file still builds and repeat the device checks below.
+If you change the transport, keep the rules in the `VoiceTransport` documentation. In particular, `send(_:topic:)` must use reliable delivery (with LiveKit, `publish(data:options:)` with `reliable: true`) and throw if the message can't be sent; Brand Concierge then shows an error message in the chat. When you update LiveKit, check that the file still builds and repeat the device checks below.
 
 #### 4. Pass the transport when showing the chat
 
@@ -142,7 +142,7 @@ Pass the same instance at every `wrap`, `show` and `present` call, as the demo a
 
 When a transport is provided, the composer shows a voice button. During a conversation:
 
-- **Chat.** The transcript appears in the chat. Typing, dictation and data handoffs are paused; `Concierge.sendDataHandoff` completes with `.chatInProgress`.
+- **Chat.** The transcript appears in the chat, and each reply's product cards, sources and prompt suggestions appear when the agent finishes it. Tapping a prompt suggestion sends it to the voice agent, which answers by voice; taps are ignored while the user is speaking and until the agent starts to reply. Typing, dictation and data handoffs are paused; `Concierge.sendDataHandoff` completes with `.chatInProgress`.
 - **Microphone permission.** Brand Concierge asks for it when the user taps the voice button. If the user denies it, no conversation starts and the chat offers to open Settings.
 - **One at a time.** Only one conversation runs across the app. If the overlay chat and a chat opened with `present(on:...)` are both open, the other chat's voice button is disabled.
 - **Ending.** The conversation ends when the user taps the voice button again, closes the chat, resets identities, or the app goes to the background (unless it [continues in the background](#background-conversations)). It also ends without a message 60 minutes after it first connects (reconnecting doesn't restart the count), or when the voice agent ends an idle session (after about a minute without activity).
