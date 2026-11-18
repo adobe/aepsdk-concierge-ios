@@ -81,10 +81,29 @@ The theme JSON file contains these top-level keys:
 | `assets` | Icon and image assets |
 | `components` | Component-level overrides (currently feedback notes field visibility) |
 | `theme` | Visual styling tokens (CSS variables) |
+| `cssVariables` | Optional app-owned variables retained in encoded theme round trips |
 
 ---
 
 ## Value Formats
+
+### App-owned CSS variables
+
+Unknown `--`-prefixed variables in the theme object are retained in
+`ConciergeTheme.cssVariables` for native app card renderers, not applied to SDK views.
+Each unknown key with a string or numeric value is logged at debug level, whether it's retained
+or ignored, so a misspelled SDK token is easy to spot.
+Keys and values are trimmed; blank values are ignored. Numeric JSON values of unknown keys become
+strings here: whole-number values such as `140` become `"140"` and fractional values
+such as `0.5` become `"0.5"`. Booleans are ignored. Known keys still require string
+values, as before.
+At most 256 distinct keys with at most 512 characters per key/value are retained;
+an existing key can still be overwritten at the limit. Known variables remain in the
+typed theme API and are not duplicated here.
+The same validation applies to the top-level `cssVariables` dictionary used in
+encoded theme round trips. Invalid entries are ignored; non-string values and
+malformed dictionaries generate warnings. CSS variables in `theme` take precedence
+over retained entries. An empty dictionary is omitted when encoding a theme.
 
 Understanding the value formats used throughout this document.
 
@@ -622,6 +641,12 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-concierge-link-font-weight` | `typography.linkFontWeight` | `CodableFontWeight?` | `nil` (inherits body weight) | Inline hyperlink text weight in concierge messages |
 | `--message-concierge-link-underline` | `typography.linkUnderline` | `Bool` | `true` | Whether inline hyperlinks are underlined (WCAG 1.4.1) |
 
+### App-owned native card variables
+
+| CSS Variable | Swift Property | Type | Default | Description |
+|--------------|----------------|------|---------|-------------|
+| `--myapp-accent-color` (example) | `cssVariables["--myapp-accent-color"]` | `String?` | `nil` | Unrecognized CSS key retained for a host renderer; parsing and defaults are host-owned |
+
 ### Colors - Primary
 
 | CSS Variable | Swift Property | Type | Default | Description |
@@ -1045,6 +1070,7 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     }
   },
   "theme": {
+    "--myapp-accent-color": "",
     "--welcome-input-order": "3",
     "--welcome-cards-order": "2",
     "--font-family": "",
@@ -1317,6 +1343,12 @@ This section documents which properties are fully implemented, partially impleme
 | Property | Status | Notes |
 |----------|--------|-------|
 | `assets.icons.company` | ✅ | Rendered as circular icon to the left of agent text message bubbles |
+
+### Theme Tokens - App-owned native cards
+
+| CSS Variable | Status | Notes |
+|--------------|--------|-------|
+| `--myapp-accent-color` (example) | ✅ | Retained by `ThemeCSSMapper` in `ConciergeTheme.cssVariables`; host-owned, not consumed by SDK views. |
 
 ### Theme Tokens - Typography
 

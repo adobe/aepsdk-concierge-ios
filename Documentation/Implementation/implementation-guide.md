@@ -314,6 +314,155 @@ Concierge.sendDataHandoff(
 
 ---
 
+## Native card renderers
+
+Register a SwiftUI renderer by its `rendererId`. Only elements with `"type": "custom"` are matched;
+each element's `rendererId` selects its renderer, so one response can contain multiple custom
+renderers alongside built-in element types. Built-in types always keep their built-in rendering,
+even when a renderer ID has the same value as the built-in type. Each matched custom element becomes
+its own card, at its natural height and the full transcript width. Custom `entity_info` is opaque
+renderer-owned data and is never rendered as a built-in card. An unregistered custom element is
+omitted and a warning is logged.
+
+```swift
+import SwiftUI
+import AEPBrandConcierge
+
+// Once at app start, after MobileCore setup.
+Concierge.registerCardRenderer(rendererId: "myapp.appointment") { element, cardContext, saveState in
+    AnyView(AppointmentCard(element: element, cardContext: cardContext, saveState: saveState))
+}
+```
+
+#### `Concierge.registerCardRenderer(rendererId:_:)`
+
+- **`rendererId`** *(required)*: The exact, case-sensitive ID used by a custom response element.
+  Blank registration IDs are ignored. A custom element must include a nonblank string
+  `rendererId`; otherwise it is dropped and a warning is logged. Registering the same ID again
+  replaces its renderer for cards created afterwards; existing cards keep their renderer.
+- **`renderer`** *(required)*: A `ConciergeCardRenderer` that returns the card as an `AnyView`.
+
+The renderer receives:
+
+- **`element`**: The complete element JSON, including unknown fields and `NSNull` values. Numbers
+  are `NSNumber`s that you can read with `as? Int` or `as? Double`. Non-integer numbers and integers
+  outside the 64-bit range are `NSDecimalNumber`s; read them directly when precision matters.
+  The optional payload `rendererContext` is metadata inside this dictionary (for example
+  `element["rendererContext"] as? [String: Any]`). The SDK doesn't validate your fields, so handle
+  missing or unexpected values. The SDK preserves custom `entity_info` and `rendererContext`
+  unchanged within the element safety limits, including when a renderer isn't registered.
+- **`cardContext`**: The SDK's card state and flags, rebuilt on every render. This is separate from
+  the payload's `element["rendererContext"]`:
+
+  | Key | Value |
+  | --- | --- |
+  | `cardId` | Stable ID for this card |
+  | `sequence` | `Int`. The card's activation order in the chat: increases in transcript order and is never reused. Compare it only between cards of the same chat. |
+  | `isLatest` | `true` while this is the newest card of its `rendererId` in the chat |
+  | `isBusy` | `true` while a chat or data handoff turn is in progress |
+  | `isStale` | Currently always `false`; reserved for possible future session-expiry handling. Session expiry or replacement does not mark cards stale. |
+  | `sessionId`, `conversationId`, `interactionId` | IDs of the response that created the card; each may be absent |
+  | `state` | The card's last saved state, if any |
+
+- **`saveState`**: Replaces the card's private state, which comes back in `cardContext["state"]` on the
+  next render. To change one key, merge with the current state first. It can be called from any
+  thread, is applied on the main thread, and is never sent to Brand Concierge. State lasts as long
+  as the chat's transcript, including while the row is off screen, and isn't persisted across app
+  restarts. `MobileCore.resetIdentities()` removes the chat's native cards together with their rows,
+  and saves made after a card is removed are ignored.
+
+Element JSON and saved state must be JSON within a depth of 64 and 100,000 values. An element that
+exceeds these limits, contains a number that can't be represented exactly, or reuses another
+element's `id` for the same `rendererId` in the same response is omitted with a warning. IDs are
+deduplicated independently for each renderer; elements without an ID use their position within the
+response, scoped by `rendererId`. Invalid saves are logged and ignored.
+
+When a response renders a native card, its prompt suggestions appear below the response's built-in
+product card, or below its last native card if it has no product card. Native cards don't emit the
+`concierge:cards:rendered` tracking event; track their impressions in the app.
+
+To style cards with your own theme values, read them from the chat's theme with
+`@Environment(\.conciergeTheme)`, for example `theme.cssVariables["--myapp-accent-color"]`. See
+[App-owned CSS variables](./style-guide.md#app-owned-css-variables).
+
+### Card actions
+
+Cards talk back to Brand Concierge with the existing APIs: [`sendDataHandoff`](#data-handoff)
+starts a turn with data, and [`updateXDMContext`](#xdm-context) holds committed facts that later
+turns need. Keep drafts and unsubmitted input in `saveState`, not in the XDM context, which is sent
+with every later turn.
+
+Each card gates its own controls:
+
+- Disable `sendDataHandoff` controls while `isBusy` or `isStale`, and on tap, since `isBusy` can lag
+  a tap. Re-enable them in the completion handler if the turn never started.
+- Read `isBusy`, `isStale` and `isLatest` from the current `cardContext` instead of copying them into
+  `@State`.
+- Checking `isStale` prepares for possible future staleness support; it does not currently cancel
+  asynchronous actions. Manage cancellation in the app when needed.
+- Keep workflow flags such as `confirmed` in `saveState`, so recreating the view never sends an
+  action again. The SDK doesn't deduplicate handoffs.
+- Call SDK APIs and `saveState` from actions and completion handlers, never from `body`.
+
+Card order comes from the SDK, not the view lifecycle. SwiftUI doesn't create transcript rows in
+transcript order, so the card whose `onAppear` ran last isn't necessarily the newest. Use `isLatest`
+when only the newest card of a renderer ID should be actionable, and `sequence` for other cross-card rules.
+Older cards stay active unless the card disables its own controls.
+
+```swift
+struct AppointmentCard: View {
+    let element: [String: Any]
+    let cardContext: [String: Any]
+    let saveState: ([String: Any]) -> Void
+
+    /// Covers only the moment between a tap and the next render.
+    @State private var isPending = false
+
+    private var state: [String: Any] { cardContext["state"] as? [String: Any] ?? [:] }
+    private var isConfirmed: Bool { state["status"] as? String == "confirmed" }
+    private var canAct: Bool {
+        cardContext["isLatest"] as? Bool == true
+            && cardContext["isBusy"] as? Bool != true
+            && cardContext["isStale"] as? Bool != true
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(element["title"] as? String ?? "Appointment").font(.headline)
+            if isConfirmed {
+                Text("Confirmed")
+            } else {
+                Button("Confirm", action: confirm)
+                    .disabled(!canAct || isPending)
+            }
+        }
+        .padding()
+    }
+
+    private func confirm() {
+        guard canAct, !isPending else { return }
+        isPending = true
+        let previousState = state
+        // saveState replaces the whole dictionary, so merge first.
+        saveState(state.merging(["status": "confirmed"]) { _, new in new })
+        Concierge.sendDataHandoff(
+            routingHint: "confirm-appointment",
+            xdmFields: ["_myapp": ["appointmentId": element["id"] as? String ?? ""]]
+        ) { result in
+            isPending = false
+            switch result {
+            case .failure(.chatInProgress), .failure(.noActiveSession):
+                saveState(previousState) // The turn never started, so the user can try again.
+            default:
+                break // The request was sent; stay confirmed rather than risk a duplicate.
+            }
+        }
+    }
+}
+```
+
+---
+
 ## Basic usage
 
 ### Data handoff

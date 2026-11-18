@@ -104,10 +104,10 @@ struct CarouselGroupView: View {
     /// pass and cannot oscillate.
     private var anyCardHasCta: Bool {
         items.contains { message in
-            switch message.template {
-            case .productCarouselCard(let data), .productCard(let data):
+            switch message.content {
+            case .template(.productCarouselCard(let data)), .template(.productCard(let data)):
                 return !data.ctas.isEmpty
-            default:
+            case .template, .nativeCard:
                 return false
             }
         }
