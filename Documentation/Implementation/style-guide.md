@@ -306,6 +306,8 @@ Feature toggles and interaction configuration.
 
 Both notes flags default to `true`. Set both to `false` to hide the free-form Notes field while keeping the feedback options and submission buttons. Partial overrides are supported, and the flags are preserved when a theme is encoded and decoded again. Each flag is decoded independently — a malformed value for one flag falls back to `true` without discarding a valid value for the other, and unrelated malformed component styles do not discard them. Other component styles continue to be derived from the canonical theme tokens.
 
+In modal mode, the form content scrolls while Submit and Cancel (when enabled) remain outside the scrolling area above the keyboard. Tap Done in the keyboard toolbar or tap the modal backdrop to dismiss the keyboard without closing the feedback form.
+
 ### Citations
 
 | JSON Key | Type | Default | Description |

@@ -11,12 +11,54 @@
 */
 
 import Foundation
+import SwiftUI
 import XCTest
 
 @testable import AEPBrandConcierge
 
 /// Tests visibility defaults and overrides for the feedback close (X) and Cancel buttons.
 final class ConciergeFeedbackBehaviorTests: XCTestCase {
+
+    @MainActor
+    func test_modalCompactHeight_scrollsToNotes() throws {
+        let controller = UIHostingController(
+            rootView: FeedbackOverlayView(
+                sentiment: .positive,
+                onCancel: {},
+                onSubmit: { _ in }
+            )
+            .conciergeTheme(ConciergeThemeLoader.default())
+        )
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        controller.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        controller.view.layoutIfNeeded()
+
+        let editor = try XCTUnwrap(descendant(of: UITextView.self, in: controller.view))
+        let scrollView = try XCTUnwrap(enclosingScrollView(of: editor))
+        XCTAssertGreaterThan(scrollView.contentSize.height, scrollView.bounds.height)
+        XCTAssertGreaterThan(scrollView.bounds.height, 0)
+        let viewport = scrollView.convert(scrollView.bounds, to: controller.view)
+        XCTAssertGreaterThanOrEqual(viewport.minY, 0)
+        XCTAssertLessThanOrEqual(viewport.maxY + 84, controller.view.bounds.maxY)
+
+        scrollView.scrollRectToVisible(editor.convert(editor.bounds, to: scrollView), animated: false)
+        XCTAssertGreaterThan(scrollView.contentOffset.y, 0)
+        XCTAssertTrue(scrollView.bounds.intersects(editor.convert(editor.bounds, to: scrollView)))
+    }
+
+    private func descendant<T: UIView>(of type: T.Type, in view: UIView) -> T? {
+        if let match = view as? T { return match }
+        return view.subviews.lazy.compactMap { self.descendant(of: type, in: $0) }.first
+    }
+
+    private func enclosingScrollView(of view: UIView) -> UIScrollView? {
+        guard let parent = view.superview else { return nil }
+        return (parent as? UIScrollView) ?? enclosingScrollView(of: parent)
+    }
 
     // MARK: - Default resolution by displayMode
 
