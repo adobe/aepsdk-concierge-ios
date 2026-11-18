@@ -154,7 +154,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
               let host = parsedURL.host, !host.isEmpty,
               let serverURL = parsedURL.url,
               !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            fail("Voice connection requires a valid server URL and a non-empty token.")
+            fail(.invalidCredentials)
             return
         }
         let connection = VoiceConnection(url: serverURL, token: token)
@@ -169,7 +169,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             self?.onMain { session in
                 guard session.isActive else { return }
                 guard granted else {
-                    session.fail("Microphone permission was not granted.")
+                    session.fail(.microphonePermissionDenied)
                     return
                 }
                 session.holdsTransport = true
@@ -178,7 +178,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 // The transport is app code; don't wait forever for it to report back.
                 let timeout = session.connectTimeout
                 session.startConnectionTimer(timeout: timeout, while: .connecting,
-                                             reason: "The voice connection was not established within \(Int(timeout)) seconds.")
+                                             failure: .connectTimeout(seconds: Int(timeout)))
                 session.transport.connect(connection)
             }
         }
@@ -222,7 +222,9 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 try await transport.send(data, topic: Self.textInputTopic)
             } catch {
                 guard let self else { return }
-                Log.warning(label: self.LOG_TAG, "Could not send a text prompt to the voice agent: \(error.localizedDescription)")
+                Log.warning(label: self.LOG_TAG, "Could not send a text prompt to the voice agent.")
+                // The transport's error can carry the server URL or a server response.
+                Log.debug(label: self.LOG_TAG, "Voice transport send error: \(error.localizedDescription)")
                 guard self.isActive, self.turn?.textTurnId == turnId else { return }
                 self.finishTurn(.failed(.messageSendFailed))
             }
@@ -259,7 +261,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                 guard options.contains(.shouldResume) else {
                     // iOS often omits it, and the chat has no unmute control, so a muted call would
                     // look live while the agent hears nothing. End it so the user knows.
-                    session.fail("The audio interruption ended without the system allowing the conversation to resume.")
+                    session.fail(.audioNotResumable)
                     return
                 }
                 session.setMicrophone(enabled: true)
@@ -276,10 +278,10 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         transport.setMicrophoneEnabled(enabled)
     }
 
-    private func fail(_ reason: String) {
+    private func fail(_ failure: VoiceSessionFailure) {
         guard isActive else { return }
-        Log.warning(label: LOG_TAG, "Voice session failed: \(reason)")
-        finish(.failed(reason))
+        Log.warning(label: LOG_TAG, "Voice session failed: \(failure.message)")
+        finish(.failed(failure))
     }
 
     /// Moves to a terminal state. The transport is released first, so it is free again by the
@@ -346,21 +348,24 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             guard state == .listening else { return }
             setState(.reconnecting)
             startConnectionTimer(timeout: reconnectTimeout, while: .reconnecting,
-                                 reason: "The voice connection was not restored within \(Int(reconnectTimeout)) seconds.")
+                                 failure: .reconnectTimeout(seconds: Int(reconnectTimeout)))
         case .disconnected:
             finish(.ended)
         case .failed(let error):
-            fail(error.localizedDescription)
+            // The error is app code's and can carry the server URL or a server response, so it is
+            // logged at debug level only and never tracked.
+            Log.debug(label: LOG_TAG, "Voice transport error: \(error.localizedDescription)")
+            fail(.transportFailed)
         }
     }
 
-    /// Fails the session with `reason`, which also disconnects the transport, if it is still in
+    /// Fails the session with `failure`, which also disconnects the transport, if it is still in
     /// `waitingState` after `timeout`.
-    private func startConnectionTimer(timeout: TimeInterval, while waitingState: VoiceSessionState, reason: String) {
+    private func startConnectionTimer(timeout: TimeInterval, while waitingState: VoiceSessionState, failure: VoiceSessionFailure) {
         cancelConnectionTimer()
         let timer = DispatchWorkItem { [weak self] in
             guard let self, self.state == waitingState else { return }
-            self.fail(reason)
+            self.fail(failure)
         }
         connectionTimer = timer
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timer)
@@ -541,7 +546,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         case .roomEmptyTimeout, .userJoinTimeout, .userInactivityTimeout:
             finish(.ended)
         case .error, .workerShutdown, nil:
-            fail("The voice agent ended the session (\(reason?.rawValue ?? "unknown reason")).")
+            fail(.agentEnded(reason))
         }
     }
 

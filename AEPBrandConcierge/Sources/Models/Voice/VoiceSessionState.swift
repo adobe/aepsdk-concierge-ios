@@ -24,8 +24,50 @@ enum VoiceSessionState: Equatable {
     case reconnecting
     /// Ended normally, for example after `VoiceSessionController.stop()`.
     case ended
-    /// Could not start, or the connection was lost. The reason is for logging, not for display.
-    case failed(String)
+    /// Could not start, or the connection was lost. The reason is for logging and tracking, not for display.
+    case failed(VoiceSessionFailure)
+}
+
+/// Why a voice session failed. Each case has a fixed `message`, which is logged and sent to Edge
+/// with `errorOccurred`. Error text from the transport or the network is never part of it: a
+/// transport's error can carry the server URL or a server response.
+enum VoiceSessionFailure: Equatable {
+    /// The credentials had no `wss`/`https` server URL or no token.
+    case invalidCredentials
+    case microphonePermissionDenied
+    /// The transport reported neither `.connected` nor `.failed` in time.
+    case connectTimeout(seconds: Int)
+    /// The transport did not restore a lost connection in time.
+    case reconnectTimeout(seconds: Int)
+    /// An audio interruption ended without iOS allowing the audio to resume.
+    case audioNotResumable
+    /// The voice agent ended the session with an error, a shutdown, or a reason this SDK doesn't know (`nil`).
+    case agentEnded(EndReason?)
+    /// The transport reported `.failed`.
+    case transportFailed
+    /// The Concierge service returned no voice credentials.
+    case bootstrapFailed
+
+    var message: String {
+        switch self {
+        case .invalidCredentials:
+            return "Voice connection requires a valid server URL and a non-empty token."
+        case .microphonePermissionDenied:
+            return "Microphone permission was not granted."
+        case .connectTimeout(let seconds):
+            return "The voice connection was not established within \(seconds) seconds."
+        case .reconnectTimeout(let seconds):
+            return "The voice connection was not restored within \(seconds) seconds."
+        case .audioNotResumable:
+            return "The audio interruption ended without the system allowing the conversation to resume."
+        case .agentEnded(let reason):
+            return "The voice agent ended the session (\(reason?.rawValue ?? "unknown reason"))."
+        case .transportFailed:
+            return "The voice transport reported a failure."
+        case .bootstrapFailed:
+            return "The Concierge service did not return voice session credentials."
+        }
+    }
 }
 
 /// Who is speaking in a transcript update.

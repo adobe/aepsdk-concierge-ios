@@ -760,7 +760,8 @@ final class ChatController: ObservableObject {
                     run.bootstrapFinished = true
                     // Once a session exists, it reports the conversation's own outcome.
                     guard run.session == nil else { return }
-                    self.failVoiceSession(run, reason: error?.localizedDescription ?? "no voice session in the bootstrap response")
+                    Log.debug(label: self.LOG_TAG, "Voice bootstrap ended without credentials: \(error?.localizedDescription ?? "no voice session in the response")")
+                    self.failVoiceSession(run, failure: .bootstrapFailed)
                 }
             }
         )
@@ -790,10 +791,10 @@ final class ChatController: ObservableObject {
         run.claim.release()
     }
 
-    private func failVoiceSession(_ run: VoiceRun, reason: String) {
+    private func failVoiceSession(_ run: VoiceRun, failure: VoiceSessionFailure) {
         guard activeVoice === run else { return }
-        Log.error(label: LOG_TAG, "Voice session failed: \(reason)")
-        dispatchTrackingEvent(.errorOccurred(errorMessage: reason))
+        Log.error(label: LOG_TAG, "Voice session failed: \(failure.message)")
+        dispatchTrackingEvent(.errorOccurred(errorMessage: failure.message))
         finishVoiceSession(run)
         messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
     }
@@ -815,8 +816,8 @@ final class ChatController: ObservableObject {
             isVoiceConnecting = true
         case .ended:
             finishVoiceSession(run)
-        case .failed(let reason):
-            failVoiceSession(run, reason: reason)
+        case .failed(let failure):
+            failVoiceSession(run, failure: failure)
         }
     }
 

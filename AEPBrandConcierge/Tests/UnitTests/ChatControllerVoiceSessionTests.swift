@@ -156,6 +156,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         spinUntil(!controller.isVoiceSessionActive)
 
         XCTAssertEqual(controller.messages.count, 1)
+        XCTAssertEqual(trackedErrorMessage(), VoiceSessionFailure.bootstrapFailed.message)
         XCTAssertEqual(service.cancelActiveStreamCallCount, 0, "a finished bootstrap is not cancelled")
     }
 
@@ -468,6 +469,18 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(transport.disconnectCount, 1)
     }
 
+    func test_transportFailure_tracksAFixedMessage_withoutTheTransportsErrorText() {
+        struct ErrorWithCredentials: LocalizedError {
+            var errorDescription: String? { "Invalid URL: wss://voice.example.com/rtc?access_token=secret-token" }
+        }
+        let controller = makeController()
+        startListening(controller)
+
+        transport.report(.failed(ErrorWithCredentials()))
+
+        XCTAssertEqual(trackedErrorMessage(), VoiceSessionFailure.transportFailed.message)
+    }
+
     func test_stop_disconnectsTheTransport_andReturnsToIdle() {
         let controller = makeController()
         startListening(controller)
@@ -544,7 +557,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         let stranger = VoiceSessionController(transport: FakeVoiceTransport(), listener: controller)
 
         controller.voiceSession(stranger, didUpdateTranscript: "old", role: .assistant, isFinal: true)
-        controller.voiceSession(stranger, didChangeState: .failed("late"))
+        controller.voiceSession(stranger, didChangeState: .failed(.transportFailed))
         controller.voiceSession(stranger, didChangeState: .ended)
 
         XCTAssertTrue(controller.isVoiceSessionActive)
@@ -853,6 +866,10 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     private func userSays(_ text: String, isFinal: Bool = false) {
         transport.receive(json: ["type": "transcript_delta", "data": ["delta": text, "final": isFinal]])
+    }
+
+    private func trackedErrorMessage() -> String? {
+        events.last?.data?[ConciergeConstants.TrackingEvent.EventData.Key.ERROR_MESSAGE] as? String
     }
 
     private func suggestionText(_ message: Message) -> String? {
