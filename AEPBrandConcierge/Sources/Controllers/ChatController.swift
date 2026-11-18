@@ -823,12 +823,20 @@ final class ChatController: ObservableObject {
 
     /// Renders a transcript update. Text is cumulative per turn, so the role's open bubble is
     /// rewritten in place; `isFinal` closes it and the next update for that role opens a new one.
+    /// A final update with no text removes the open bubble: the recognizer withdrew what it showed.
     fileprivate func handleVoiceTranscript(_ text: String, role: VoiceTranscriptRole, isFinal: Bool, of session: VoiceSessionController) {
         guard let run = voiceRun(for: session) else { return }
 
         if let openId = run.openMessageIds[role],
            let index = messages.firstIndex(where: { $0.id == openId }) {
-            messages[index].messageBody = text
+            if isFinal && text.isEmpty {
+                messages.remove(at: index)
+                if run.replyMessageId == openId { run.replyMessageId = nil }
+                // The next bubble becomes the anchor and scrolls to the top.
+                if voiceScrollAnchorId == openId { voiceScrollAnchorId = nil }
+            } else {
+                messages[index].messageBody = text
+            }
         } else if !text.isEmpty {
             let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
             messages.append(message)

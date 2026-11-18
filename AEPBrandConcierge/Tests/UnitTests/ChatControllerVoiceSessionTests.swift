@@ -279,6 +279,22 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
+    func test_transcript_emptyFinal_removesTheOpenBubble_andTheNextBubbleBecomesTheAnchor() {
+        let controller = makeController()
+        startListening(controller)
+        userSays("Show me")
+        XCTAssertEqual(controller.messages.count, 1)
+
+        userSays("", isFinal: true)
+
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertNil(controller.voiceScrollAnchorId)
+
+        transport.receive(json: ["event": "text_delta", "delta": "Hi"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Hi"])
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[0].id)
+    }
+
     // MARK: - Turn end
 
     func test_turnEnd_rendersTheReplyWithSources_thenCardsCtasAndSuggestions_likeATypedTurn() {
