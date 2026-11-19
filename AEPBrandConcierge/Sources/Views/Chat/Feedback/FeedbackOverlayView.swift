@@ -45,6 +45,8 @@ struct FeedbackOverlayView: View {
     @Environment(\.conciergeTheme) private var theme
     @State private var selectedOptions: Set<String> = []
     @State private var notes: String = ""
+    @FocusState private var isNotesFocused: Bool
+    @State private var modalContentHeight: CGFloat?
     /// Vertical offset while dragging the action sheet down (action layout only).
     @State private var actionSheetDragOffset: CGFloat = 0
 
@@ -140,12 +142,24 @@ struct FeedbackOverlayView: View {
             Rectangle()
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
+                .onTapGesture { isNotesFocused = false }
 
             VStack(spacing: 0) {
-                feedbackContent
-                    .padding(20)
+                ScrollView {
+                    feedbackContent
+                        .padding(20)
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onAppear { modalContentHeight = geometry.size.height }
+                                    .onChange(of: geometry.size.height) { modalContentHeight = $0 }
+                            }
+                        )
+                }
+                .frame(maxHeight: modalContentHeight)
                 feedbackActionButtons
                     .padding(20)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: 560)
             .background(
@@ -162,6 +176,15 @@ struct FeedbackOverlayView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if isNotesFocused {
+                    Spacer()
+                    Button("Done") { isNotesFocused = false }
+                }
+            }
         }
         .accessibilityElement(children: .contain)
     }
@@ -294,6 +317,7 @@ struct FeedbackOverlayView: View {
                         .foregroundStyle(.secondary)
                     ZStack(alignment: .topLeading) {
                         TextEditor(text: $notes)
+                            .focused($isNotesFocused)
                             .frame(minHeight: 120)
                             .padding(12)
                             .background(
