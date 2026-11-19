@@ -39,6 +39,26 @@ final class PrivacyNoticeSnapshotTests: XCTestCase {
         )
     }
 
+    func test_collapsibleNotice_summary() {
+        var notice = longNotice
+        notice.presentation = .collapsible
+        notice.summary = "Your messages are used to answer your questions."
+        assertSnapshot(of: noticeView(notice), as: .image(layout: .fixed(width: 390, height: 240)))
+    }
+
+    func test_collapsibleNotice_lineLimitedPreview() {
+        var notice = longNotice
+        notice.presentation = .collapsible
+        notice.collapsedMaxLines = 2
+        assertSnapshot(of: noticeView(notice), as: .image(layout: .fixed(width: 320, height: 240)))
+    }
+
+    func test_collapsibleNotice_shortTextNeedsNoToggle() {
+        var notice = shortNotice
+        notice.presentation = .collapsible
+        assertSnapshot(of: noticeView(notice), as: .image(layout: .fixed(width: 390, height: 180)))
+    }
+
     func test_noticeWithDisclaimerStyleLinks() {
         let notice = ConciergePrivacyNoticeBehavior(
             title: "Privacy Notice",

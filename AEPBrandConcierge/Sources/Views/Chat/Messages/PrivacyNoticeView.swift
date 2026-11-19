@@ -19,8 +19,30 @@ struct PrivacyNoticeView: View {
     @Environment(\.conciergeLinkInterceptor) private var linkInterceptor
     @Environment(\.conciergeLinkClickTracker) private var linkClickTracker
     @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
+    @State private var isExpanded = false
+    @State private var isTruncated = false
 
     let notice: ConciergePrivacyNoticeBehavior
+
+    private var hasSummary: Bool {
+        let summary = notice.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !summary.isEmpty && summary != notice.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isCollapsible: Bool { notice.presentation == .collapsible }
+
+    private var formattedText: AttributedString {
+        linkedText(notice.text)
+    }
+
+    private func linkedText(_ text: String) -> AttributedString {
+        LinkedTextFormatter.format(
+            text: text,
+            links: notice.links,
+            textColor: theme.colors.message.conciergeText.color.opacity(0.75),
+            linkColor: theme.colors.message.conciergeLink.color
+        )
+    }
 
     private var bodyFont: Font {
         let size = theme.typography.fontSize * textScale
@@ -38,17 +60,34 @@ struct PrivacyNoticeView: View {
                         .foregroundColor(theme.colors.primary.text.color)
                         .accessibilityAddTraits(.isHeader)
                 }
-                Text(LinkedTextFormatter.format(
-                    text: notice.text,
-                    links: notice.links,
-                    textColor: theme.colors.message.conciergeText.color.opacity(0.75),
-                    linkColor: theme.colors.message.conciergeLink.color
-                ))
-                    .font(bodyFont)
-                    .environment(\.openURL, OpenURLAction { url in
-                        handleLinkTap(url)
-                        return .handled
-                    })
+                if isCollapsible {
+                    noticeBody
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background {
+                            if !hasSummary {
+                                truncationProbe
+                            }
+                        }
+                } else {
+                    noticeBody
+                }
+                if isCollapsible && (hasSummary || isTruncated) {
+                    Button {
+                        isExpanded.toggle()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(verbatim: isExpanded ? notice.showLessLabel : notice.readMoreLabel)
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .accessibilityHidden(true)
+                        }
+                        .font(bodyFont.weight(.semibold))
+                        .foregroundColor(theme.colors.message.conciergeLink.color)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("privacyNotice.toggle")
+                }
             }
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -64,7 +103,52 @@ struct PrivacyNoticeView: View {
                     .strokeBorder(theme.colors.message.conciergeText.color.opacity(0.12), lineWidth: 1)
             )
             .accessibilityElement(children: .contain)
+            .onPreferenceChange(PrivacyNoticeHeightKey.self) { heights in
+                if let full = heights[true], let preview = heights[false] {
+                    isTruncated = full > preview + 0.5
+                }
+            }
+            .onChange(of: notice.text) { _ in isExpanded = false }
+            .onChange(of: notice.summary) { _ in isExpanded = false }
         }
+    }
+
+    @ViewBuilder
+    private var noticeBody: some View {
+        if isCollapsible && !isExpanded {
+            Text(verbatim: String((hasSummary ? linkedText(notice.summary) : formattedText).characters))
+                .font(bodyFont)
+                .foregroundColor(theme.colors.message.conciergeText.color.opacity(0.75))
+                .lineLimit(hasSummary ? nil : max(1, notice.collapsedMaxLines))
+        } else {
+            Text(formattedText)
+                .font(bodyFont)
+                .environment(\.openURL, OpenURLAction { url in
+                    handleLinkTap(url)
+                    return .handled
+                })
+        }
+    }
+
+    // Measure both layouts at the same width, even while the full notice is expanded.
+    private var truncationProbe: some View {
+        Text(verbatim: String(formattedText.characters))
+            .font(bodyFont)
+            .lineLimit(max(1, notice.collapsedMaxLines))
+            .fixedSize(horizontal: false, vertical: true)
+            .background(GeometryReader { geometry in
+                Color.clear.preference(key: PrivacyNoticeHeightKey.self, value: [false: geometry.size.height])
+            })
+            .overlay(alignment: .topLeading) {
+                Text(verbatim: String(formattedText.characters))
+                    .font(bodyFont)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .background(GeometryReader { geometry in
+                        Color.clear.preference(key: PrivacyNoticeHeightKey.self, value: [true: geometry.size.height])
+                    })
+            }
+            .hidden()
+            .accessibilityHidden(true)
     }
 
     private func handleLinkTap(_ url: URL) {
@@ -75,5 +159,13 @@ struct PrivacyNoticeView: View {
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )
+    }
+
+    private struct PrivacyNoticeHeightKey: PreferenceKey {
+        static var defaultValue: [Bool: CGFloat] = [:]
+
+        static func reduce(value: inout [Bool: CGFloat], nextValue: () -> [Bool: CGFloat]) {
+            value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+        }
     }
 }
