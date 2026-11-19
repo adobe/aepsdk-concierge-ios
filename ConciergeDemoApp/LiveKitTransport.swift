@@ -71,12 +71,17 @@ final class LiveKitTransport: NSObject, VoiceTransport, @unchecked Sendable {
     func setMicrophoneEnabled(_ enabled: Bool) {
         guard let room else { return }
         let previous = microphoneTask
-        microphoneTask = Task.detached {
+        microphoneTask = Task.detached { [weak self] in
             await previous?.value
             do {
                 try await room.localParticipant.setMicrophone(enabled: enabled)
             } catch {
                 Self.logger.warning("Could not set the microphone enabled=\(enabled): \(error.localizedDescription, privacy: .public)")
+                // Brand Concierge can't tell whether the microphone is live, so the conversation ends.
+                self?.onMain(ifCurrent: room) { transport in
+                    transport.disconnect()
+                    transport.report(.failed(error))
+                }
             }
         }
     }
