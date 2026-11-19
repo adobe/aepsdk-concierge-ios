@@ -101,6 +101,7 @@ public struct ConciergeInputColors: Codable {
     public var outlineGradient: ConciergeGradient?
     public var outlineFocus: CodableColor
     public var sendIconColor: CodableColor?
+    public var clearIconColor: CodableColor?
     public var sendArrowIconColor: CodableColor?
     public var sendArrowBackgroundColor: CodableColor?
     public var sendArrowBackgroundGradient: ConciergeGradient?
@@ -122,13 +123,15 @@ public struct ConciergeInputColors: Codable {
         micWaveformGradient: ConciergeGradient? = nil,
         outlineGradient: ConciergeGradient? = nil,
         sendArrowBackgroundGradient: ConciergeGradient? = nil,
-        micIconGradient: ConciergeGradient? = nil
+        micIconGradient: ConciergeGradient? = nil,
+        clearIconColor: CodableColor? = nil
     ) {
         self.background = background
         self.text = text
         self.outline = outline
         self.outlineFocus = outlineFocus
         self.sendIconColor = sendIconColor
+        self.clearIconColor = clearIconColor
         self.sendArrowIconColor = sendArrowIconColor
         self.sendArrowBackgroundColor = sendArrowBackgroundColor
         self.micIconColor = micIconColor

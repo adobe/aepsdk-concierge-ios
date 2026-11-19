@@ -254,6 +254,7 @@ public enum CSSKeyMapper {
 
         // Colors - Input Icons
         "input-send-icon-color": { cssValue, theme in theme.colors.input.sendIconColor = CSSValueConverter.parseColor(cssValue) },
+        "input-clear-icon-color": { cssValue, theme in theme.colors.input.clearIconColor = CSSValueConverter.parseColor(cssValue) },
         "input-send-arrow-icon-color": { cssValue, theme in theme.colors.input.sendArrowIconColor = CSSValueConverter.parseColor(cssValue) },
         "input-send-arrow-background-color": { cssValue, theme in
             theme.colors.input.sendArrowBackgroundColor = CSSValueConverter.parseColor(cssValue)

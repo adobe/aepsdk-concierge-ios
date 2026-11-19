@@ -112,7 +112,7 @@ struct ComposerEditingView: View {
                 }) {
                     BrandIcon(assetName: "S2_Icon_Close_20_N", systemName: "xmark")
                         .font(.system(size: 18))
-                        .foregroundColor(Color.black)
+                        .foregroundColor(theme.colors.input.clearIconColor?.color ?? Color.black)
                         .frame(width: theme.layout.inputButtonWidth, height: theme.layout.inputButtonHeight, alignment: .center)
                 }
                 .buttonStyle(.plain)
