@@ -195,8 +195,8 @@ After reset, if a conversation was in progress, Concierge dispatches a **Brand C
 ## XDM context
 
 Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
-later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
-requests don't include it, and neither do voice conversations.
+later chat message (typed, dictated, or a tapped prompt suggestion), every voice conversation, and
+every data handoff. Feedback requests don't include it.
 
 ```swift
 try Concierge.updateXDMContext([
@@ -222,6 +222,10 @@ try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
   clears it, as does showing chat with a different ECID, server, datastream, region or surfaces.
 - **Timing:** A chat message captures the context when it's sent. Updates made after that don't
   change a message that's already in flight.
+- **Voice conversations:** A voice conversation captures the context once, when it starts. The
+  service uses that context for every spoken turn and every prompt suggestion tapped during the
+  conversation, and the Query Submitted event for a tapped suggestion carries the same context.
+  Updates made during the conversation apply from the next voice conversation or typed message.
 - **Data handoffs:** The handoff's `xdmFields` are deep-merged over the held context, and the
   handoff values win. `NSNull()` in a handoff is sent as JSON null rather than removing a key. The
   held context itself isn't changed.

@@ -68,6 +68,10 @@ public protocol VoiceTransport: AnyObject {
     /// another app interrupts the audio session (for example, a phone call), including an
     /// interruption that began while connecting, and unmutes it when iOS allows the audio to resume.
     /// If iOS does not, Brand Concierge ends the conversation instead. Called only while connected.
+    ///
+    /// If the microphone cannot be changed, report `.failed(_:)`, including when the change fails
+    /// after this method has returned: Brand Concierge can't tell whether the microphone is live, so
+    /// it ends the conversation.
     func setMicrophoneEnabled(_ enabled: Bool)
 
     /// Sends a data message to the voice agent, for example a prompt suggestion the user tapped

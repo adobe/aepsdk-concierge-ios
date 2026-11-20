@@ -33,9 +33,11 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         transport = FakeVoiceTransport()
         service = MockChatService(configuration: configuration)
         events = []
+        ConciergeXDMContextStore.shared.clear()
     }
 
     override func tearDown() {
+        ConciergeXDMContextStore.shared.clear()
         transport = nil
         service = nil
         Concierge.voiceTransport = nil
@@ -93,6 +95,25 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(service.bootstrapVoiceSessionCallCount, 1)
         settle()
         XCTAssertTrue(transport.connections.isEmpty, "no connection before the backend supplies credentials")
+    }
+
+    func test_bootstrap_sendsTheHeldXDMContext_forTheResolvedSession() throws {
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "gold"]])
+        let controller = makeController()
+
+        startVoice(controller)
+
+        let expected: [String: Any] = ["loyalty": ["tier": "gold"]]
+        XCTAssertTrue((service.lastBootstrapXDMFields as NSDictionary?)?.isEqual(to: expected) ?? false)
+        XCTAssertEqual(service.lastBootstrapSessionID, configuration.sessionId)
+    }
+
+    func test_bootstrap_withNoHeldXDMContext_sendsNoExtraXDMFields() {
+        let controller = makeController()
+
+        startVoice(controller)
+
+        XCTAssertNil(service.lastBootstrapXDMFields)
     }
 
     func test_bootstrap_connectsTheTransport_withTheBackendsUrlAndToken() {
@@ -156,6 +177,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         spinUntil(!controller.isVoiceSessionActive)
 
         XCTAssertEqual(controller.messages.count, 1)
+        XCTAssertEqual(trackedErrorMessage(), VoiceSessionFailure.bootstrapFailed.message)
         XCTAssertEqual(service.cancelActiveStreamCallCount, 0, "a finished bootstrap is not cancelled")
     }
 
@@ -278,6 +300,22 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(controller.messages.isEmpty)
     }
 
+    func test_transcript_emptyFinal_removesTheOpenBubble_andTheNextBubbleBecomesTheAnchor() {
+        let controller = makeController()
+        startListening(controller)
+        userSays("Show me")
+        XCTAssertEqual(controller.messages.count, 1)
+
+        userSays("", isFinal: true)
+
+        XCTAssertTrue(controller.messages.isEmpty)
+        XCTAssertNil(controller.voiceScrollAnchorId)
+
+        transport.receive(json: ["event": "text_delta", "delta": "Hi"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Hi"])
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[0].id)
+    }
+
     // MARK: - Turn end
 
     func test_turnEnd_rendersTheReplyWithSources_thenCardsCtasAndSuggestions_likeATypedTurn() {
@@ -368,6 +406,20 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(controller.userMessageToScrollId, controller.messages[0].id)
         XCTAssertEqual(controller.inputText, "", "the composer is left alone")
         XCTAssertEqual(events.map(\.name), [ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED])
+    }
+
+    func test_suggestionTapDuringVoice_tracksTheContextSentWithTheBootstrap() throws {
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "gold"]])
+        let controller = makeController()
+        startListening(controller)
+        try ConciergeXDMContextStore.shared.update(["loyalty": ["tier": "platinum"]])
+
+        controller.sendPromptSuggestion("Red ones")
+        spinUntil(!events.isEmpty)
+
+        let tracked = events.first?.data?[ConciergeConstants.TrackingEvent.EventData.Key.XDM_FIELDS] as? [String: Any]
+        XCTAssertEqual((tracked?["loyalty"] as? [String: Any])?["tier"] as? String, "gold",
+                       "a running voice conversation keeps the context it started with")
     }
 
     func test_suggestionTapDuringVoice_isDroppedWhileConnectingOrWhileATurnWaitsForItsReply() {
@@ -468,6 +520,18 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(transport.disconnectCount, 1)
     }
 
+    func test_transportFailure_tracksAFixedMessage_withoutTheTransportsErrorText() {
+        struct ErrorWithCredentials: LocalizedError {
+            var errorDescription: String? { "Invalid URL: wss://voice.example.com/rtc?access_token=secret-token" }
+        }
+        let controller = makeController()
+        startListening(controller)
+
+        transport.report(.failed(ErrorWithCredentials()))
+
+        XCTAssertEqual(trackedErrorMessage(), VoiceSessionFailure.transportFailed.message)
+    }
+
     func test_stop_disconnectsTheTransport_andReturnsToIdle() {
         let controller = makeController()
         startListening(controller)
@@ -544,7 +608,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         let stranger = VoiceSessionController(transport: FakeVoiceTransport(), listener: controller)
 
         controller.voiceSession(stranger, didUpdateTranscript: "old", role: .assistant, isFinal: true)
-        controller.voiceSession(stranger, didChangeState: .failed("late"))
+        controller.voiceSession(stranger, didChangeState: .failed(.transportFailed))
         controller.voiceSession(stranger, didChangeState: .ended)
 
         XCTAssertTrue(controller.isVoiceSessionActive)
@@ -853,6 +917,10 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     private func userSays(_ text: String, isFinal: Bool = false) {
         transport.receive(json: ["type": "transcript_delta", "data": ["delta": text, "final": isFinal]])
+    }
+
+    private func trackedErrorMessage() -> String? {
+        events.last?.data?[ConciergeConstants.TrackingEvent.EventData.Key.ERROR_MESSAGE] as? String
     }
 
     private func suggestionText(_ message: Message) -> String? {

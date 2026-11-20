@@ -470,14 +470,14 @@ final class ChatController: ObservableObject {
     }
 
     private func sendAdmittedVoiceText(_ text: String) {
-        guard identityReady, let session = activeVoice?.session else { return }
+        guard identityReady, let run = activeVoice, let session = run.session else { return }
         guard session.sendText(text) else {
             Log.warning(label: LOG_TAG, "Prompt suggestion ignored. The voice conversation is connecting or a turn is waiting for its reply.")
             return
         }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: chatService.resolveSessionID())
-        dispatchTrackingEvent(.querySubmitted(query: trimmed, xdmFields: xdmContext))
+        // The context the service sends with this turn, not the store's current one.
+        dispatchTrackingEvent(.querySubmitted(query: trimmed, xdmFields: run.xdmContext))
     }
 
     /// Forwards an app-originated data-handoff turn (e.g. a checkout outcome) to Brand Concierge.
@@ -742,7 +742,14 @@ final class ChatController: ObservableObject {
     private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport) {
         guard activeVoice === run else { return }
         run.bootstrapStarted = true
+        // The service replays the bootstrap's context on every voice turn, so this snapshot is the
+        // context for the whole conversation. Later updates apply from the next conversation or typed turn.
+        let sessionID = chatService.resolveSessionID()
+        let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
+        run.xdmContext = xdmContext
         chatService.bootstrapVoiceSession(
+            xdmFields: xdmContext.isEmpty ? nil : xdmContext,
+            sessionID: sessionID,
             // Weak, so an open request doesn't keep the run, and its claim on voice, alive after the chat goes away.
             onBootstrap: { [weak self, weak run] bootstrap in
                 Task { @MainActor in
@@ -760,7 +767,8 @@ final class ChatController: ObservableObject {
                     run.bootstrapFinished = true
                     // Once a session exists, it reports the conversation's own outcome.
                     guard run.session == nil else { return }
-                    self.failVoiceSession(run, reason: error?.localizedDescription ?? "no voice session in the bootstrap response")
+                    Log.debug(label: self.LOG_TAG, "Voice bootstrap ended without credentials: \(error?.localizedDescription ?? "no voice session in the response")")
+                    self.failVoiceSession(run, failure: .bootstrapFailed)
                 }
             }
         )
@@ -790,10 +798,10 @@ final class ChatController: ObservableObject {
         run.claim.release()
     }
 
-    private func failVoiceSession(_ run: VoiceRun, reason: String) {
+    private func failVoiceSession(_ run: VoiceRun, failure: VoiceSessionFailure) {
         guard activeVoice === run else { return }
-        Log.error(label: LOG_TAG, "Voice session failed: \(reason)")
-        dispatchTrackingEvent(.errorOccurred(errorMessage: reason))
+        Log.error(label: LOG_TAG, "Voice session failed: \(failure.message)")
+        dispatchTrackingEvent(.errorOccurred(errorMessage: failure.message))
         finishVoiceSession(run)
         messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
     }
@@ -815,19 +823,27 @@ final class ChatController: ObservableObject {
             isVoiceConnecting = true
         case .ended:
             finishVoiceSession(run)
-        case .failed(let reason):
-            failVoiceSession(run, reason: reason)
+        case .failed(let failure):
+            failVoiceSession(run, failure: failure)
         }
     }
 
     /// Renders a transcript update. Text is cumulative per turn, so the role's open bubble is
     /// rewritten in place; `isFinal` closes it and the next update for that role opens a new one.
+    /// A final update with no text removes the open bubble: the recognizer withdrew what it showed.
     fileprivate func handleVoiceTranscript(_ text: String, role: VoiceTranscriptRole, isFinal: Bool, of session: VoiceSessionController) {
         guard let run = voiceRun(for: session) else { return }
 
         if let openId = run.openMessageIds[role],
            let index = messages.firstIndex(where: { $0.id == openId }) {
-            messages[index].messageBody = text
+            if isFinal && text.isEmpty {
+                messages.remove(at: index)
+                if run.replyMessageId == openId { run.replyMessageId = nil }
+                // The next bubble becomes the anchor and scrolls to the top.
+                if voiceScrollAnchorId == openId { voiceScrollAnchorId = nil }
+            } else {
+                messages[index].messageBody = text
+            }
         } else if !text.isEmpty {
             let message = Message(template: .basic(isUserMessage: role == .user), messageBody: text)
             messages.append(message)
@@ -1490,6 +1506,8 @@ private final class VoiceRun {
     var bootstrapStarted = false
     /// True once the bootstrap request completed; an open one is cancelled when the run ends.
     var bootstrapFinished = false
+    /// The held XDM context sent with the bootstrap, which the service uses for every voice turn.
+    var xdmContext: [String: Any] = [:]
     /// The transcript bubble each role is still speaking into.
     var openMessageIds: [VoiceTranscriptRole: UUID] = [:]
     /// The current turn's reply bubble, kept after it closes so the turn's end can rewrite it.

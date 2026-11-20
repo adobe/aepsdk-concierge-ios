@@ -784,6 +784,24 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(extractConsentState(from: event), "in")
     }
 
+    func test_createVoiceBootstrapPayload_withXDMFields_mergesHeldContextAlongsideIdentityMap() throws {
+        let service = ConciergeChatService(configuration: makeConfiguration(ecid: "real-ecid"))
+        let held: [String: Any] = [
+            "loyalty": ["tier": "gold"],
+            "identityMap": ["ECID": [["id": "attacker-ecid"]]],
+            "eventType": "app.custom"
+        ]
+
+        let payloadData = try service.createVoiceBootstrapPayload(xdmFields: held)
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: payloadData) as? [String: Any])
+        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+
+        XCTAssertEqual((xdm["loyalty"] as? [String: Any])?["tier"] as? String, "gold")
+        let ecidEntries = (xdm["identityMap"] as? [String: Any])?["ECID"] as? [[String: Any]]
+        XCTAssertEqual(ecidEntries?.first?["id"] as? String, "real-ecid", "the SDK's identityMap wins")
+        XCTAssertEqual(xdm["eventType"] as? String, "conversation.voice", "the SDK's eventType wins")
+    }
+
     func test_createVoiceBootstrapPayload_withNilEcid_throwsInvalidEcidError() {
         // Given
         let configuration = ConciergeConfiguration(consentCollectValue: "y", ecid: nil, surfaces: ["web://test.adobe.com/surface"])
@@ -1266,6 +1284,18 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertEqual(request.url?.path, "/brand-concierge/va7/conversations", "voice uses the same regional route as text")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "text/event-stream")
+    }
+
+    func test_bootstrapVoiceSession_sendsTheGivenSessionID() async throws {
+        StubURLProtocol.reset()
+        let service = makeStubbedService()
+
+        service.bootstrapVoiceSession(sessionID: "resolved-session-id", onBootstrap: { _ in }, onComplete: { _ in })
+        await waitForCondition { StubURLProtocol.count >= 1 }
+
+        let url = try XCTUnwrap(StubURLProtocol.last?.url)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        XCTAssertEqual(items.first { $0.name == "sessionId" }?.value, "resolved-session-id")
     }
 
     func test_bootstrapVoiceSession_deliversCredentials_whenSessionPayloadArrives() async {

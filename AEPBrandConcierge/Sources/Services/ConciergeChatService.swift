@@ -109,12 +109,18 @@ class ConciergeChatService: NSObject {
     /// as in `streamChat`: an error on failure, `nil` when the stream closes. A stream that closes
     /// without a session payload completes with `nil`; callers treat that as a failed bootstrap.
     ///
+    /// `xdmFields` is the held XDM context snapshot. The service keeps the bootstrap's `xdm` for the
+    /// voice session and sends it with every voice turn, so later context updates don't reach a
+    /// running voice session. Pass `sessionID` from the same `resolveSessionID()` call as the snapshot.
+    ///
     /// Shares the per-request streaming state with `streamChat`, so callers must not run a bootstrap
     /// and a chat turn on the same instance at the same time.
-    func bootstrapVoiceSession(onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
+    func bootstrapVoiceSession(xdmFields: [String: Any]? = nil,
+                               sessionID: String? = nil,
+                               onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
                                onComplete: @escaping (ConciergeError?) -> Void) {
         do {
-            let url = try createUrl()
+            let url = try createUrl(sessionID: sessionID)
 
             var didBootstrap = false
             onChunkHandler = { payload in
@@ -130,7 +136,7 @@ class ConciergeChatService: NSObject {
             }
             onCompleteHandler = onComplete
 
-            let payload = try createVoiceBootstrapPayload()
+            let payload = try createVoiceBootstrapPayload(xdmFields: xdmFields)
 
             var request = URLRequest(url: url)
             request.httpMethod = ConciergeConstants.HTTPMethods.POST
@@ -292,9 +298,11 @@ class ConciergeChatService: NSObject {
     /// instead of `message`, and `xdm.eventType` is `conversation.voice`. The service needs both to
     /// treat the request as a bootstrap rather than a chat turn. No auth token is attached: the `data`
     /// slot holds the bootstrap discriminator, and the service identifies the user through the identity map.
+    /// - Parameter xdmFields: The held XDM context, merged into `xdm` as in a chat turn. The SDK's
+    ///   `identityMap` and `eventType` win on collision.
     /// - Returns: JSON data for the request body.
     /// - Note: Internal visibility for testing.
-    func createVoiceBootstrapPayload() throws -> Data {
+    func createVoiceBootstrapPayload(xdmFields: [String: Any]? = nil) throws -> Data {
         try requireConversationPrerequisites()
 
         let conversation: [String: Any] = [
@@ -304,10 +312,9 @@ class ConciergeChatService: NSObject {
             ]
         ]
 
-        let payload = makeConversationEventPayload(
-            conversation: conversation,
-            extraXDMFields: [ConciergeConstants.Request.Keys.EVENT_TYPE: ConciergeConstants.Request.Values.VoiceBootstrap.EVENT_TYPE_VOICE]
-        )
+        var extraXDMFields = xdmFields ?? [:]
+        extraXDMFields[ConciergeConstants.Request.Keys.EVENT_TYPE] = ConciergeConstants.Request.Values.VoiceBootstrap.EVENT_TYPE_VOICE
+        let payload = makeConversationEventPayload(conversation: conversation, extraXDMFields: extraXDMFields)
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
             throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge voice bootstrap request.")

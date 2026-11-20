@@ -28,8 +28,9 @@ final class VoiceSessionControllerTests: XCTestCase {
     }
 
     func test_state_failedEquality_comparesReason() {
-        XCTAssertEqual(VoiceSessionState.failed("x"), .failed("x"))
-        XCTAssertNotEqual(VoiceSessionState.failed("x"), .failed("y"))
+        XCTAssertEqual(VoiceSessionState.failed(.agentEnded(.error)), .failed(.agentEnded(.error)))
+        XCTAssertNotEqual(VoiceSessionState.failed(.agentEnded(.error)), .failed(.agentEnded(nil)))
+        XCTAssertNotEqual(VoiceSessionState.failed(.transportFailed), .failed(.bootstrapFailed))
         XCTAssertNotEqual(VoiceSessionState.connecting, .listening)
     }
 
@@ -83,7 +84,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         listener.onState = { if case .failed = $0 { failure.fulfill() } }
         let session = start(transport, listener: listener, permission: false)
         await fulfillment(of: [failure], timeout: 2)
-        XCTAssertEqual(session.state, .failed("Microphone permission was not granted."))
+        XCTAssertEqual(session.state, .failed(.microphonePermissionDenied))
         XCTAssertTrue(transport.connections.isEmpty)
         XCTAssertNil(transport.delegate)
         session.stop()
@@ -99,11 +100,11 @@ final class VoiceSessionControllerTests: XCTestCase {
         listener.onState = { if case .failed = $0 { failure.fulfill() } }
         let session = start(transport, listener: listener)
         await fulfillment(of: [failure], timeout: 2)
-        XCTAssertEqual(session.state, .failed("Test connection error"))
+        XCTAssertEqual(session.state, .failed(.transportFailed))
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertNil(transport.delegate)
         session.stop()
-        XCTAssertEqual(listener.states, [.connecting, .failed("Test connection error")])
+        XCTAssertEqual(listener.states, [.connecting, .failed(.transportFailed)])
     }
 
     func test_stop_releasesTransportBeforeReporting_isIdempotent_andIgnoresLateEvents() async {
@@ -207,13 +208,13 @@ final class VoiceSessionControllerTests: XCTestCase {
             await listening(listener)
             let terminal = expectation(description: "terminal callback on main")
             listener.onState = { state in
-                if state == .ended || state == .failed("Test connection error") { terminal.fulfill() }
+                if state == .ended || state == .failed(.transportFailed) { terminal.fulfill() }
             }
             DispatchQueue.global().async {
                 transport.report(failed ? .failed(TestVoiceError()) : .disconnected)
             }
             await fulfillment(of: [terminal], timeout: 2)
-            XCTAssertEqual(session.state, failed ? .failed("Test connection error") : .ended)
+            XCTAssertEqual(session.state, failed ? .failed(.transportFailed) : .ended)
             XCTAssertEqual(transport.disconnectCount, 1)
             XCTAssertNil(transport.delegate)
             session.voiceTransport(transport, didChange: .failed(TestVoiceError()))
@@ -276,8 +277,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         let session = start(transport, listener: listener, connectTimeout: 0.05)
         await fulfillment(of: [failed], timeout: 2)
 
-        guard case .failed(let reason) = session.state else { return XCTFail("expected failed, got \(session.state)") }
-        XCTAssertTrue(reason.hasPrefix("The voice connection was not established"), reason)
+        XCTAssertEqual(session.state, .failed(.connectTimeout(seconds: 0)))
         XCTAssertEqual(transport.connections.count, 1)
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertNil(transport.delegate)
@@ -599,11 +599,11 @@ final class VoiceSessionControllerTests: XCTestCase {
     }
 
     func test_sessionEnded_byAnErrorShutdownOrUnknownReason_fails() async {
-        let cases: [(reason: String?, expected: String)] = [
-            ("error", "error"),
-            ("worker_shutdown", "worker_shutdown"),
-            ("brand_new_reason", "unknown reason"),
-            (nil, "unknown reason")
+        let cases: [(reason: String?, expected: EndReason?)] = [
+            ("error", .error),
+            ("worker_shutdown", .workerShutdown),
+            ("brand_new_reason", nil),
+            (nil, nil)
         ]
         for (reason, expected) in cases {
             let transport = FakeVoiceTransport()
@@ -613,8 +613,8 @@ final class VoiceSessionControllerTests: XCTestCase {
             var data: [String: Any] = ["kind": "session_ended"]
             data["reason"] = reason
             transport.receive(json: ["type": "session_notice", "data": data])
-            XCTAssertEqual(session.state, .failed("The voice agent ended the session (\(expected))."), expected)
-            XCTAssertEqual(transport.disconnectCount, 1, expected)
+            XCTAssertEqual(session.state, .failed(.agentEnded(expected)), "\(String(describing: reason))")
+            XCTAssertEqual(transport.disconnectCount, 1, "\(String(describing: reason))")
         }
     }
 
@@ -782,10 +782,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         interruption(.ended)
 
         XCTAssertEqual(transport.microphoneChanges, [false])
-        guard case .failed(let reason) = session.state else {
-            return XCTFail("expected failed, got \(session.state)")
-        }
-        XCTAssertTrue(reason.hasPrefix("The audio interruption ended"), reason)
+        XCTAssertEqual(session.state, .failed(.audioNotResumable))
         XCTAssertEqual(transport.disconnectCount, 1)
         XCTAssertNil(transport.delegate)
     }
