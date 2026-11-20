@@ -470,14 +470,14 @@ final class ChatController: ObservableObject {
     }
 
     private func sendAdmittedVoiceText(_ text: String) {
-        guard identityReady, let session = activeVoice?.session else { return }
+        guard identityReady, let run = activeVoice, let session = run.session else { return }
         guard session.sendText(text) else {
             Log.warning(label: LOG_TAG, "Prompt suggestion ignored. The voice conversation is connecting or a turn is waiting for its reply.")
             return
         }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: chatService.resolveSessionID())
-        dispatchTrackingEvent(.querySubmitted(query: trimmed, xdmFields: xdmContext))
+        // The context the service sends with this turn, not the store's current one.
+        dispatchTrackingEvent(.querySubmitted(query: trimmed, xdmFields: run.xdmContext))
     }
 
     /// Forwards an app-originated data-handoff turn (e.g. a checkout outcome) to Brand Concierge.
@@ -742,7 +742,14 @@ final class ChatController: ObservableObject {
     private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport) {
         guard activeVoice === run else { return }
         run.bootstrapStarted = true
+        // The service replays the bootstrap's context on every voice turn, so this snapshot is the
+        // context for the whole conversation. Later updates apply from the next conversation or typed turn.
+        let sessionID = chatService.resolveSessionID()
+        let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
+        run.xdmContext = xdmContext
         chatService.bootstrapVoiceSession(
+            xdmFields: xdmContext.isEmpty ? nil : xdmContext,
+            sessionID: sessionID,
             // Weak, so an open request doesn't keep the run, and its claim on voice, alive after the chat goes away.
             onBootstrap: { [weak self, weak run] bootstrap in
                 Task { @MainActor in
@@ -1499,6 +1506,8 @@ private final class VoiceRun {
     var bootstrapStarted = false
     /// True once the bootstrap request completed; an open one is cancelled when the run ends.
     var bootstrapFinished = false
+    /// The held XDM context sent with the bootstrap, which the service uses for every voice turn.
+    var xdmContext: [String: Any] = [:]
     /// The transcript bubble each role is still speaking into.
     var openMessageIds: [VoiceTranscriptRole: UUID] = [:]
     /// The current turn's reply bubble, kept after it closes so the turn's end can rewrite it.

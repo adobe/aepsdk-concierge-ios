@@ -84,12 +84,18 @@ final class MockChatService: ConciergeChatService {
     // Captures for the voice bootstrap path. Handlers are held so a test decides when the backend
     // answers and closes the stream.
     private(set) var bootstrapVoiceSessionCallCount = 0
+    private(set) var lastBootstrapXDMFields: [String: Any]?
+    private(set) var lastBootstrapSessionID: String?
     private var pendingOnBootstrap: ((VoiceSessionBootstrap) -> Void)?
     private var pendingBootstrapComplete: ((ConciergeError?) -> Void)?
 
-    override func bootstrapVoiceSession(onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
+    override func bootstrapVoiceSession(xdmFields: [String: Any]? = nil,
+                                        sessionID: String? = nil,
+                                        onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
                                         onComplete: @escaping (ConciergeError?) -> Void) {
         bootstrapVoiceSessionCallCount += 1
+        lastBootstrapXDMFields = xdmFields
+        lastBootstrapSessionID = sessionID
         pendingOnBootstrap = onBootstrap
         pendingBootstrapComplete = onComplete
     }
