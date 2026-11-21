@@ -92,7 +92,9 @@
     "header.subtitle": "",
     "sourcesLabel": "Sources",
     "feedbackHelpfulLabel": "Was this helpful?",
-    "suggestions.header": "Suggestions"
+    "suggestions.header": "Suggestions",
+    "voice.turn.failed": "Sorry, I couldn't process that. Please try again.",
+    "voice.turn.messageSendFailed": "Sorry, your message couldn't be sent. Please try again."
   },
   "arrays": {
     "welcome.examples": [

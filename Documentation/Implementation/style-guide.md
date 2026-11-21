@@ -504,6 +504,13 @@ While there are no strict requirements for character limits in many of these tex
 |----------|---------|-------------|
 | `text["suggestions.header"]` | `"Suggestions"` | Header label shown above prompt suggestion chips when `behavior.promptSuggestions.showHeader` is `true`. |
 
+### Voice
+
+| JSON Key | Default | Description |
+|----------|---------|-------------|
+| `text["voice.turn.failed"]` | `"Sorry, I couldn't process that. Please try again."` | Replaces the voice agent's reply when a voice turn ends with an error or an empty reply. The conversation stays open. |
+| `text["voice.turn.messageSendFailed"]` | `"Sorry, your message couldn't be sent. Please try again."` | Replaces the voice agent's reply when a prompt suggestion tapped during a voice conversation can't be delivered. |
+
 ### Example
 
 ```json
@@ -1005,7 +1012,9 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     "header.subtitle": "",
     "sourcesLabel": "Sources",
     "feedbackHelpfulLabel": "Was this helpful?",
-    "suggestions.header": "Suggestions"
+    "suggestions.header": "Suggestions",
+    "voice.turn.failed": "Sorry, I couldn't process that. Please try again.",
+    "voice.turn.messageSendFailed": "Sorry, your message couldn't be sent. Please try again."
   },
   "arrays": {
     "welcome.examples": [
@@ -1295,6 +1304,8 @@ This section documents which properties are fully implemented, partially impleme
 | `text["sourcesLabel"]` | ✅ | Used in SourcesListView for accordion header label |
 | `text["feedbackHelpfulLabel"]` | ✅ | Used in SourcesListView when thumbsPlacement is "below" |
 | `text["suggestions.header"]` | ✅ | Used in MessageListView as the header above suggestion chip groups when `behavior.promptSuggestions.showHeader` is `true` |
+| `text["voice.turn.failed"]` | ✅ | Rendered into the transcript by ChatController when a voice turn fails; synced from the theme by ChatView |
+| `text["voice.turn.messageSendFailed"]` | ✅ | Rendered into the transcript by ChatController when a message sent during voice can't be delivered; synced from the theme by ChatView |
 
 ### Arrays
 

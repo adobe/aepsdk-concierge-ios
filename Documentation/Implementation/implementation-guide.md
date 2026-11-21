@@ -191,8 +191,8 @@ After reset, if a conversation was in progress, Concierge dispatches a **Brand C
 ## XDM context
 
 Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
-later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
-requests don't include it.
+later chat message (typed, dictated, or a tapped prompt suggestion), every voice conversation, and
+every data handoff. Feedback requests don't include it.
 
 ```swift
 try Concierge.updateXDMContext([
@@ -218,6 +218,10 @@ try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
   clears it, as does showing chat with a different ECID, server, datastream, region or surfaces.
 - **Timing:** A chat message captures the context when it's sent. Updates made after that don't
   change a message that's already in flight.
+- **Voice conversations:** A voice conversation captures the context once, when it starts. The
+  service uses that context for every spoken turn and every prompt suggestion tapped during the
+  conversation, and the Query Submitted event for a tapped suggestion carries the same context.
+  Updates made during the conversation apply from the next voice conversation or typed message.
 - **Data handoffs:** The handoff's `xdmFields` are deep-merged over the held context, and the
   handoff values win. `NSNull()` in a handoff is sent as JSON null rather than removing a key. The
   held context itself isn't changed.
@@ -364,38 +368,41 @@ the local message and the streamed Brand Concierge/Product Advisor response.
 
 The callback completes after the forwarding stream finishes, reporting either the
 delivered response or the first error encountered along the way. A handoff submitted
-while another chat turn is still processing is rejected immediately with
-`ConciergeDataHandoffError.chatInProgress`; the SDK does not queue or retain it, and
-nothing is rendered for the rejected handoff — not even `localMessage`. The host app
-owns the retry and can resubmit the same handoff once the in-flight turn finishes,
-whether it succeeded or failed. An empty `routingHint` is allowed when the XDM fields
+while another chat turn is still processing, or while a voice conversation is running,
+is rejected immediately with `ConciergeDataHandoffError.chatInProgress`; the SDK does
+not queue or retain it, and nothing is rendered for the rejected handoff — not even
+`localMessage`. The host app owns the retry and can resubmit the same handoff once the
+in-flight turn finishes, whether it succeeded or failed, or once the voice conversation
+ends. An empty `routingHint` is allowed when the XDM fields
 provide the necessary routing context.
 
 ### API reference
 
 Brand Concierge requires a list of **surface identifiers** to resolve the correct chat configuration on the BC server. Every chat session is started with surfaces, either directly via `show(...)` / `present(on:...)` or, when using the built-in floating button, via the value stored by `wrap(...)`.
 
-#### `Concierge.wrap(_:surfaces:title:subtitle:hideButton:handleLink:)`
+#### `Concierge.wrap(_:surfaces:title:subtitle:hideButton:voiceTransport:handleLink:)`
 
-> [!IMPORTANT]: The `surfaces`, `title`, `subtitle`, and `handleLink` parameters on `wrap(...)` only apply when chat is triggered via the built-in floating button. When chat is triggered via `Concierge.show(...)` or `Concierge.present(on:...)`, the values passed to those APIs are used instead.
+> [!IMPORTANT]: The `surfaces`, `title`, `subtitle`, `voiceTransport`, and `handleLink` parameters on `wrap(...)` only apply when chat is triggered via the built-in floating button. When chat is triggered via `Concierge.show(...)` or `Concierge.present(on:...)`, the values passed to those APIs are used instead.
 
 - **`content`** *(required)*: The SwiftUI content to wrap.
 - **`surfaces`**: Surfaces for the chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat.
 - **`subtitle`**: Header subtitle text shown at the top of the chat.
 - **`hideButton`**: When `true`, hides the built-in floating button so chat can be triggered from custom host-app UI. Defaults to `false`.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, the transport stored by an earlier call is kept; if none was ever provided, voice conversations are disabled. `wrap(...)` runs on every SwiftUI body update, so pass the same long-lived instance each time. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat for this session.
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
+#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
 
 - **`on presentingViewController`** *(required)*: The UIKit view controller that will host the chat UI as a child view controller, filling its view.
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
@@ -403,6 +410,7 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
+- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
 ### Option A - Manual API call (no floating button)

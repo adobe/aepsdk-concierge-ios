@@ -100,17 +100,16 @@ struct ChatView: View {
                 userMessageToScrollId: controller.userMessageToScrollId,
                 scrollToLastOnAppear: controller.hasConversationStarted,
                 chatState: controller.chatState,
+                voiceScrollAnchorId: controller.voiceScrollAnchorId,
                 isInputFocused: $isInputFocused
             ) { text in
                 controller.speak(text)
             } onSuggestionTap: { suggestion in
                 controller.trackPromptSuggestionClicked(suggestion: suggestion)
-                controller.applyTextChange(suggestion)
-                controller.sendMessage(isUser: true)
+                controller.sendPromptSuggestion(suggestion)
             } onWelcomePromptSuggestionTap: { suggestion in
                 controller.trackWelcomePromptSuggestionClicked(suggestion: suggestion)
-                controller.applyTextChange(suggestion)
-                controller.sendMessage(isUser: true)
+                controller.sendPromptSuggestion(suggestion)
             } onCtaButtonTap: { label, url in
                 controller.trackCtaButtonClicked(label: label, url: url)
             }
@@ -177,9 +176,12 @@ struct ChatView: View {
             hapticFeedback.prepare()
             controller.trackChatOpened()
             controller.networkErrorMessage = theme.text.errorNetwork
+            controller.voiceTurnFailedMessage = theme.text.voiceTurnFailed
+            controller.voiceMessageSendFailedMessage = theme.text.voiceTurnMessageSendFailed
             Task { await controller.loadWelcomeIfNeeded(theme: theme) }
         }
         .onDisappear {
+            controller.stopVoiceSession()
             controller.trackChatClosed()
         }
         .onChange(of: controller.endedForIdentityReset) { ended in
@@ -240,6 +242,7 @@ struct ChatView: View {
 
                     // Dialog card with scale animation
                     PermissionDialogView(
+                        purpose: controller.permissionDialogPurpose,
                         onCancel: {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 controller.dismissPermissionDialog()
@@ -337,7 +340,7 @@ private struct ChatComposerContainer: View {
             isFocused: $isFocused,
             inputState: inputController.state,
             chatState: controller.chatState,
-            composerEditable: controller.chatState != .processing,
+            composerEditable: controller.composerEditable,
             micEnabled: controller.micEnabled && theme.behavior.input.enableVoiceInput,
             sendEnabled: inputController.data.canSend,
             audioLevel: controller.audioLevel,
@@ -346,7 +349,15 @@ private struct ChatComposerContainer: View {
             onCancel: onCancel,
             onComplete: onComplete,
             onSend: onSend,
-            onLinkTap: onLinkTap
+            onLinkTap: onLinkTap,
+            isVoiceAvailable: controller.isVoiceAvailable,
+            isVoiceSessionActive: controller.isVoiceSessionActive,
+            isVoiceConnecting: controller.isVoiceConnecting,
+            voiceEnabled: controller.voiceEnabled,
+            onVoiceTap: {
+                isFocused = false
+                controller.toggleVoiceSession()
+            }
         )
     }
 }
