@@ -558,6 +558,96 @@ final class VoiceSessionControllerTests: XCTestCase {
         session.stop()
     }
 
+    // MARK: - Awaiting the reply
+
+    func test_awaitingReply_fromTheUsersFinal_untilAfterTheReplysFirstText() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Show me", turnId: "t1", final: false)
+        XCTAssertTrue(listener.awaitingChanges.isEmpty, "the user is still speaking")
+        userSays(transport, "Show me shoes", turnId: "t1")
+        userSays(transport, "Show me shoes", turnId: "t1")
+        transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["a"]])
+        transport.receive(json: ["event": "text_delta", "delta": "Here", "turnId": "t1"])
+        transport.receive(json: ["event": "text_delta", "delta": " you go", "turnId": "t1"])
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Here you go"])
+
+        XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 2), awaiting(false, afterTranscripts: 4)])
+        session.stop()
+    }
+
+    func test_awaitingReply_endsAfterTheTurnEnds_whenNoReplyStarted() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "", "state": "error"])
+
+        XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 1),
+                                                  awaiting(false, afterTranscripts: 1, afterResults: 1)])
+        session.stop()
+    }
+
+    func test_awaitingReply_forASentText_fromTheUsersWords_untilAfterTheTurnFails() async {
+        let (transport, listener, session) = await listeningSession()
+        session.sendText("Red ones")
+        await waitUntil(!transport.sends.isEmpty)
+        let turnId = transport.sentJSON.first?["turn_id"] as? String
+        userSays(transport, "Red ones", turnId: "w1")
+        XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 1)], "the echo changes nothing")
+
+        transport.receive(json: ["type": "text_input_error", "data": ["turnId": turnId ?? "", "reason": "voice_turn_in_progress"]])
+
+        XCTAssertEqual(listener.awaitingChanges.last, awaiting(false, afterTranscripts: 1, afterResults: 1))
+        session.stop()
+    }
+
+    func test_awaitingReply_forATextThatFailsToSend_endsAfterTheTurnFails() async {
+        let (transport, listener, session) = await listeningSession()
+        transport.sendError = TestVoiceError()
+        session.sendText("Red ones")
+        await waitUntil(!listener.results.isEmpty)
+
+        XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 1),
+                                                  awaiting(false, afterTranscripts: 1, afterResults: 1)])
+        session.stop()
+    }
+
+    func test_awaitingReply_endsBeforeANewerTurnsWords_andStartsAgainAtItsFinal() async {
+        let (transport, listener, session) = await listeningSession()
+        userSays(transport, "Hi", turnId: "t1")
+        userSays(transport, "Wait", turnId: "t2", final: false)
+        userSays(transport, "Wait", turnId: "t2")
+
+        XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 1),
+                                                  awaiting(false, afterTranscripts: 1),
+                                                  awaiting(true, afterTranscripts: 3)])
+        session.stop()
+    }
+
+    func test_awaitingReply_endsBeforeTheSessionEnds() async {
+        for end in ["stop", "failure"] {
+            let (transport, listener, session) = await listeningSession()
+            userSays(transport, "Hi", turnId: "t1")
+            if end == "stop" { session.stop() } else { transport.report(.failed(TestVoiceError())) }
+            await waitUntil(listener.states.count == 3)
+
+            XCTAssertEqual(listener.awaitingChanges, [awaiting(true, afterTranscripts: 1),
+                                                      awaiting(false, afterTranscripts: 1)], end)
+            transport.receive(json: ["type": "transcript_delta", "data": ["role": "user", "delta": "Late", "final": true]])
+            XCTAssertEqual(listener.awaitingChanges.count, 2, end)
+        }
+    }
+
+    func test_awaitingReply_isNotReported_forAWithdrawnUtterance_orATurnTheAgentOpens() async {
+        let (transport, listener, session) = await listeningSession()
+        transport.receive(json: ["event": "text_delta", "delta": "Hi! How can I help?", "turnId": "a1"])
+        transport.receive(json: ["event": "turn_completed", "turnId": "a1", "fullText": "Hi! How can I help?"])
+        userSays(transport, "Um", turnId: "t1", final: false)
+        userSays(transport, "", turnId: "t1")
+
+        XCTAssertEqual(listener.outcomes, [.completed("Hi! How can I help?")])
+        XCTAssertTrue(listener.awaitingChanges.isEmpty)
+        session.stop()
+    }
+
     func test_dataFromBackground_isDeliveredOnMain() async {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
@@ -936,6 +1026,11 @@ final class VoiceSessionControllerTests: XCTestCase {
                                  "data": ["role": "user", "delta": text, "final": final, "turnId": turnId]])
     }
 
+    private func awaiting(_ awaiting: Bool, afterTranscripts: Int, afterResults: Int = 0,
+                          afterStates: Int = 2) -> RecordingVoiceListener.AwaitingChange {
+        .init(awaiting: awaiting, afterTranscripts: afterTranscripts, afterResults: afterResults, afterStates: afterStates)
+    }
+
     private func waitUntil(timeout: TimeInterval = 2, _ predicate: @autoclosure () -> Bool) async {
         let end = Date().addingTimeInterval(timeout)
         while !predicate() && Date() < end {
@@ -980,8 +1075,17 @@ private final class RecordingVoiceListener: VoiceSessionListener {
     var transcripts: [Transcript] = []
     var results: [VoiceTurnResult] = []
     var outcomes: [VoiceTurnResult.Outcome] { results.map(\.outcome) }
+    /// Each `didChangeAwaitingReply`, with how many other reports came before it.
+    var awaitingChanges: [AwaitingChange] = []
     var onState: ((VoiceSessionState) -> Void)?
     var onTranscript: (() -> Void)?
+
+    struct AwaitingChange: Equatable {
+        let awaiting: Bool
+        let afterTranscripts: Int
+        let afterResults: Int
+        let afterStates: Int
+    }
 
     func voiceSession(_ session: VoiceSessionController, didChangeState state: VoiceSessionState) {
         XCTAssertTrue(Thread.isMainThread)
@@ -999,6 +1103,12 @@ private final class RecordingVoiceListener: VoiceSessionListener {
     func voiceSession(_ session: VoiceSessionController, didFinishTurn result: VoiceTurnResult) {
         XCTAssertTrue(Thread.isMainThread)
         results.append(result)
+    }
+
+    func voiceSession(_ session: VoiceSessionController, didChangeAwaitingReply awaitingReply: Bool) {
+        XCTAssertTrue(Thread.isMainThread)
+        awaitingChanges.append(.init(awaiting: awaitingReply, afterTranscripts: transcripts.count,
+                                     afterResults: results.count, afterStates: states.count))
     }
 }
 

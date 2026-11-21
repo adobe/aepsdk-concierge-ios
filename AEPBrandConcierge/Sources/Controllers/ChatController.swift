@@ -789,6 +789,7 @@ final class ChatController: ObservableObject {
         activeVoice = nil
         isVoiceConnecting = false
         voiceScrollAnchorId = nil
+        removeVoiceThinkingIndicator(of: run)
         run.session?.stop()
         if run.bootstrapStarted && !run.bootstrapFinished {
             // No typed turn can start during voice, so the bootstrap is the request in flight.
@@ -899,6 +900,32 @@ final class ChatController: ObservableObject {
         for suggestion in payload.promptSuggestions {
             messages.append(Message(template: .promptSuggestion(text: suggestion)))
         }
+    }
+
+    /// Shows the thinking indicator the way a typed turn does: an empty reply bubble, which the
+    /// reply's first text or the turn's end then fills. When the wait ends with the bubble still
+    /// empty, for example because a newer turn replaced this one, the bubble is removed.
+    fileprivate func handleVoiceAwaitingReply(_ awaitingReply: Bool, of session: VoiceSessionController) {
+        guard let run = voiceRun(for: session) else { return }
+        guard awaitingReply else {
+            removeVoiceThinkingIndicator(of: run)
+            return
+        }
+        guard run.thinkingMessageId == nil else { return }
+        let message = Message(template: .basic(isUserMessage: false), messageBody: "")
+        messages.append(message)
+        run.thinkingMessageId = message.id
+        run.openMessageIds[.assistant] = message.id
+        run.replyMessageId = message.id
+    }
+
+    private func removeVoiceThinkingIndicator(of run: VoiceRun) {
+        guard let id = run.thinkingMessageId else { return }
+        run.thinkingMessageId = nil
+        guard let index = messages.firstIndex(where: { $0.id == id }), messages[index].messageBody?.isEmpty ?? true else { return }
+        messages.remove(at: index)
+        if run.openMessageIds[.assistant] == id { run.openMessageIds[.assistant] = nil }
+        if run.replyMessageId == id { run.replyMessageId = nil }
     }
 
     // MARK: - Welcome Content
@@ -1483,6 +1510,10 @@ extension ChatController: VoiceSessionListener {
         onMain { $0.handleVoiceTurnFinished(result, of: session) }
     }
 
+    nonisolated func voiceSession(_ session: VoiceSessionController, didChangeAwaitingReply awaitingReply: Bool) {
+        onMain { $0.handleVoiceAwaitingReply(awaitingReply, of: session) }
+    }
+
     private nonisolated func onMain(_ work: @escaping @MainActor (ChatController) -> Void) {
         if Thread.isMainThread {
             MainActor.assumeIsolated { work(self) }
@@ -1513,6 +1544,9 @@ private final class VoiceRun {
     /// The current turn's reply bubble, kept after it closes so the turn's end can rewrite it.
     /// Cleared when the user's next bubble opens.
     var replyMessageId: UUID?
+    /// The empty reply bubble shown as the thinking indicator while the turn waits for its reply.
+    /// The reply's first text fills it, as in a typed turn.
+    var thinkingMessageId: UUID?
 
     init(claim: VoiceSessionOwnership.Claim) {
         self.claim = claim

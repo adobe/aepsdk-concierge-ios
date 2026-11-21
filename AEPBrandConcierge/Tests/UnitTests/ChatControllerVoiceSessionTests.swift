@@ -237,8 +237,8 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         transport.receive(json: ["event": "turn_completed", "fullText": "Hi, how can I help?"])
         userSays("Shoes", isFinal: true)
 
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["Hello there", "Hi, how can I help?", "Shoes"])
-        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false, true])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Hello there", "Hi, how can I help?", "Shoes", ""])
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false, true, false])
     }
 
     func test_transcript_interleavedRoles_keepSeparateBubbles() {
@@ -249,7 +249,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         transport.receive(json: ["event": "text_delta", "delta": "Sure"])
         userSays("I want shoes", isFinal: true)
 
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes", "Sure"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes", "Sure", ""])
     }
 
     func test_transcript_scrollsTheUsersWordsToTheTop_andKeepsThemThereForTheReply() {
@@ -364,16 +364,18 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertTrue(events.isEmpty)
     }
 
-    func test_failedTurnWithoutAReply_addsTheCopyAsANewBubble() {
+    func test_failedTurnWithoutAReply_showsTheCopyInPlaceOfTheThinkingIndicator() {
         let controller = makeController()
         startListening(controller)
 
         userSays("Shoes", isFinal: true)
+        let thinking = controller.messages.last?.id
         transport.receive(json: ["event": "turn_completed", "fullText": "", "state": "error"])
         userSays("Hello", isFinal: true)
 
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", ConciergeCopy.defaultVoiceTurnFailed, "Hello"])
-        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false, true])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", ConciergeCopy.defaultVoiceTurnFailed, "Hello", ""])
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false, true, false])
+        XCTAssertEqual(controller.messages[1].id, thinking)
     }
 
     func test_turnEnd_afterTheNextUserTurnStarted_isDropped() {
@@ -386,7 +388,73 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         transport.receive(json: ["event": "ui_payload", "turnId": "t1", "promptSuggestions": ["Red ones"]])
         transport.receive(json: ["event": "turn_completed", "turnId": "t1", "fullText": "Here are shoes"])
 
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here", "Stop"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here", "Stop", ""])
+    }
+
+    // MARK: - Thinking indicator
+
+    func test_thinkingIndicator_showsAfterTheUsersFinal_andTheReplyFillsIt() {
+        let controller = makeController()
+        startListening(controller)
+
+        userSays("Shoes")
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes"], "the user is still speaking")
+        userSays("Shoes", isFinal: true)
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", ""])
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false])
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[0].id, "the user's words stay at the top")
+        let thinking = controller.messages[1].id
+
+        transport.receive(json: ["event": "text_delta", "delta": "Here"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here"])
+        transport.receive(json: ["event": "text_delta", "delta": " are shoes"])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Here are shoes"])
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Here are shoes"])
+        XCTAssertEqual(controller.messages[1].id, thinking, "the reply takes the indicator's place, as in a typed turn")
+        XCTAssertEqual(controller.voiceScrollAnchorId, controller.messages[0].id)
+    }
+
+    func test_thinkingIndicator_isRemoved_whenANewerTurnReplacesIt() {
+        let controller = makeController()
+        startListening(controller)
+
+        transport.receive(json: ["type": "transcript_delta", "data": ["delta": "Shoes", "final": true, "turnId": "t1"]])
+        transport.receive(json: ["type": "transcript_delta", "data": ["delta": "Stop", "final": false, "turnId": "t2"]])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Stop"])
+
+        transport.receive(json: ["type": "transcript_delta", "data": ["delta": "Stop", "final": true, "turnId": "t2"]])
+        transport.receive(json: ["event": "text_delta", "delta": "OK", "turnId": "t2"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Shoes", "Stop", "OK"])
+    }
+
+    func test_thinkingIndicator_isNotShown_forAWithdrawnUtterance_orATurnTheAgentOpens() {
+        let controller = makeController()
+        startListening(controller)
+
+        transport.receive(json: ["event": "text_delta", "delta": "Hi!"])
+        transport.receive(json: ["event": "turn_completed", "fullText": "Hi!"])
+        userSays("Um")
+        userSays("", isFinal: true)
+
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Hi!"])
+    }
+
+    func test_thinkingIndicator_isRemoved_whenVoiceStopsOrFails() {
+        for fails in [false, true] {
+            let controller = makeController()
+            controller.networkErrorMessage = "network down"
+            startListening(controller)
+            userSays("Shoes", isFinal: true)
+
+            if fails {
+                transport.report(.failed(URLError(.networkConnectionLost)))
+            } else {
+                controller.stopVoiceSession()
+            }
+
+            XCTAssertEqual(controller.messages.map(\.messageBody), fails ? ["Shoes", "network down"] : ["Shoes"])
+        }
     }
 
     // MARK: - Prompt suggestions
@@ -401,8 +469,8 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(transport.sends.map(\.topic), ["bc-text-input"])
         XCTAssertEqual(transport.sentJSON.first?["text"] as? String, "Red ones")
         XCTAssertEqual(service.streamChatCallCount, 0)
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["Red ones"])
-        XCTAssertEqual(controller.messages.map(isUserMessage), [true])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["Red ones", ""], "the thinking indicator follows the user's words")
+        XCTAssertEqual(controller.messages.map(isUserMessage), [true, false])
         XCTAssertEqual(controller.userMessageToScrollId, controller.messages[0].id)
         XCTAssertEqual(controller.inputText, "", "the composer is left alone")
         XCTAssertEqual(events.map(\.name), [ConciergeConstants.TrackingEvent.Name.QUERY_SUBMITTED])
@@ -436,7 +504,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         settle()
 
         XCTAssertTrue(transport.sends.isEmpty)
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["I want shoes", ""])
         XCTAssertTrue(events.isEmpty)
         XCTAssertEqual(service.streamChatCallCount, 0)
     }
@@ -448,7 +516,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         startListening(controller)
 
         controller.sendPromptSuggestion("Red ones")
-        spinUntil(controller.messages.count == 2)
+        spinUntil(controller.messages.last?.messageBody == "Not sent")
 
         XCTAssertEqual(controller.messages.map(\.messageBody), ["Red ones", "Not sent"])
         XCTAssertTrue(controller.isVoiceSessionActive)
@@ -598,7 +666,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertEqual(transport.connections.count, 2)
         XCTAssertEqual(transport.disconnectCount, 1)
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["first", "second"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["first", "second", ""])
         XCTAssertTrue(controller.isVoiceSessionActive)
     }
 
@@ -640,7 +708,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(transport.disconnectCount, 0)
         XCTAssertFalse(other.isVoiceSessionActive)
         XCTAssertTrue(other.messages.isEmpty)
-        XCTAssertEqual(owner.messages.map(\.messageBody), ["hello"])
+        XCTAssertEqual(owner.messages.map(\.messageBody), ["hello", ""])
         XCTAssertTrue(owner.voiceEnabled, "the owner can still stop its conversation")
     }
 
@@ -655,7 +723,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         startListening(other)
         userSays("hi", isFinal: true)
 
-        XCTAssertEqual(other.messages.map(\.messageBody), ["hi"])
+        XCTAssertEqual(other.messages.map(\.messageBody), ["hi", ""])
         XCTAssertTrue(owner.messages.isEmpty)
         XCTAssertFalse(owner.voiceEnabled)
         XCTAssertEqual(transport.disconnectCount, 1)
@@ -773,7 +841,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
         XCTAssertTrue(controller.isVoiceSessionActive)
         XCTAssertEqual(transport.disconnectCount, 0)
-        XCTAssertEqual(controller.messages.map(\.messageBody), ["still here"])
+        XCTAssertEqual(controller.messages.map(\.messageBody), ["still here", ""])
 
         transport.report(.disconnected)
         XCTAssertFalse(controller.isVoiceSessionActive)
@@ -863,7 +931,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         startListening(second)
         userSays("hello", isFinal: true)
 
-        XCTAssertEqual(second.messages.map(\.messageBody), ["hello"])
+        XCTAssertEqual(second.messages.map(\.messageBody), ["hello", ""])
         XCTAssertTrue(first.messages.isEmpty)
         XCTAssertEqual(transport.disconnectCount, 1)
     }
