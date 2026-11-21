@@ -90,6 +90,7 @@ struct TestingHubView: View {
                         surfaces: ["web://edge-int.adobedc.net/brand-concierge/pages/745F37C35E4B776E0A49421B@AdobeOrg/acom_m15/index.html"],
                         title: "Concierge",
                         subtitle: "Powered by Adobe",
+                        voiceTransport: DemoVoice.transport,
                         handleLink: handleLink
                     )
                 }

@@ -252,7 +252,7 @@ Feature toggles and interaction configuration.
 
 | JSON Key | Type | Default | Description |
 |----------|------|---------|-------------|
-| `behavior.input.enableVoiceInput` | boolean | `false` | Enable voice input button |
+| `behavior.input.enableVoiceInput` | boolean | `false` | Show the speech-to-text (dictation) mic button. It doesn't affect the voice conversation button, which appears whenever the app passes a `voiceTransport` (see [Colors - Input Icons](#colors---input-icons)). |
 | `behavior.input.disableMultiline` | boolean | `true` | Disable multiline text input |
 | `behavior.input.showAiChatIcon` | object | `null` | Leading icon shown before the text field in the input bar. Object with an `icon` property: a local asset name or a remote `http(s)` URL — same resolution rules as `assets.icons.company` (see [Bundling local icons](#bundling-local-icons)). `null` or an empty `icon` hides it. Tooltip/accessibility label is set via `text["input.aiChatIcon.tooltip"]`. |
 | `behavior.input.sendButtonStyle` | string | `"default"` | Send button style. `"default"` shows a paper airplane icon. `"arrow"` shows a filled circle with an upward arrow. |
@@ -504,6 +504,13 @@ While there are no strict requirements for character limits in many of these tex
 |----------|---------|-------------|
 | `text["suggestions.header"]` | `"Suggestions"` | Header label shown above prompt suggestion chips when `behavior.promptSuggestions.showHeader` is `true`. |
 
+### Voice
+
+| JSON Key | Default | Description |
+|----------|---------|-------------|
+| `text["voice.turn.failed"]` | `"Sorry, I couldn't process that. Please try again."` | Replaces the voice agent's reply when a voice turn ends with an error or an empty reply. The conversation stays open. |
+| `text["voice.turn.messageSendFailed"]` | `"Sorry, your message couldn't be sent. Please try again."` | Replaces the voice agent's reply when a prompt suggestion tapped during a voice conversation can't be delivered. |
+
 ### Example
 
 ```json
@@ -685,6 +692,8 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--input-mic-waveform-gradient-start-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | Start color of the listening waveform bars' gradient. Falls back to `--color-primary` solid fill when unset. |
 | `--input-mic-waveform-gradient-end-color` | `colors.input.micWaveformGradient` | `Color?` | `nil` | End color of the listening waveform bars' gradient. |
 | `--input-mic-waveform-gradient-angle` | `colors.input.micWaveformGradient` | `Degrees` | `180` | Waveform bar gradient direction. Defaults to top-to-bottom. |
+
+The voice conversation button appears when the app passes a `voiceTransport` (see [Optional: voice conversations](../getting-started.md#optional-voice-conversations)). While the input field is empty it takes the send button's place, next to the mic button if `enableVoiceInput` is on. It has no tokens of its own: the icon uses `--color-primary` (outlined when idle, filled while a conversation runs), and the `--input-mic-*` tokens don't apply to it.
 
 ### Colors - Welcome Prompts
 
@@ -1005,7 +1014,9 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     "header.subtitle": "",
     "sourcesLabel": "Sources",
     "feedbackHelpfulLabel": "Was this helpful?",
-    "suggestions.header": "Suggestions"
+    "suggestions.header": "Suggestions",
+    "voice.turn.failed": "Sorry, I couldn't process that. Please try again.",
+    "voice.turn.messageSendFailed": "Sorry, your message couldn't be sent. Please try again."
   },
   "arrays": {
     "welcome.examples": [
@@ -1295,6 +1306,8 @@ This section documents which properties are fully implemented, partially impleme
 | `text["sourcesLabel"]` | ✅ | Used in SourcesListView for accordion header label |
 | `text["feedbackHelpfulLabel"]` | ✅ | Used in SourcesListView when thumbsPlacement is "below" |
 | `text["suggestions.header"]` | ✅ | Used in MessageListView as the header above suggestion chip groups when `behavior.promptSuggestions.showHeader` is `true` |
+| `text["voice.turn.failed"]` | ✅ | Rendered into the transcript by ChatController when a voice turn fails; synced from the theme by ChatView |
+| `text["voice.turn.messageSendFailed"]` | ✅ | Rendered into the transcript by ChatController when a message sent during voice can't be delivered; synced from the theme by ChatView |
 
 ### Arrays
 
