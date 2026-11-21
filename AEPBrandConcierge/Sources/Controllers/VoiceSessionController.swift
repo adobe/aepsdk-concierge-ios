@@ -27,6 +27,12 @@ protocol VoiceSessionListener: AnyObject {
     /// Called once when a turn ends, after its last transcript update. Replaces the open assistant
     /// reply with the result and renders the turn's UI payload.
     func voiceSession(_ session: VoiceSessionController, didFinishTurn result: VoiceTurnResult)
+
+    /// Called when the current turn starts or stops waiting for its reply. It waits from the user's
+    /// final transcript, spoken or sent as text, until the reply's first transcript update, the
+    /// turn's end, a newer turn or the session's end. Turned off after that transcript update or
+    /// turn end has been reported.
+    func voiceSession(_ session: VoiceSessionController, didChangeAwaitingReply awaitingReply: Bool)
 }
 
 /// One voice conversation over the app's `VoiceTransport`: microphone permission, the connection
@@ -70,6 +76,8 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
     private var pendingAssistantText = ""
     /// The in-flight turn's latest UI payload. Each one is a snapshot of the whole turn.
     private var latestUiPayload: UiPayloadData?
+    /// The last value reported through `didChangeAwaitingReply`.
+    private var awaitingReply = false
     /// True from `connect` until this session disconnects the transport.
     private var holdsTransport = false
     /// The topic the voice agent reads text prompts from.
@@ -215,6 +223,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         turn?.echoText = text
         turn?.userFinal = true
         emit(.user, text, isFinal: true)
+        updateAwaitingReply()
 
         let transport = transport
         Task { @MainActor [weak self] in
@@ -299,6 +308,8 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             }
             transport.disconnect()
         }
+        closeTurn()
+        updateAwaitingReply()
         setState(terminalState)
     }
 
@@ -452,6 +463,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             if delta.final { turn?.userFinal = true }
         }
         emit(.user, delta.delta, isFinal: delta.final)
+        updateAwaitingReply()
     }
 
     private func startsNewTurn(userTurnId id: String?) -> Bool {
@@ -467,6 +479,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         let text = pendingAssistantText
         if delta.final { pendingAssistantText = "" }
         emit(.assistant, text, isFinal: delta.final)
+        updateAwaitingReply()
     }
 
     /// The worker rejected a text prompt, for example because the user started speaking. Fails the
@@ -522,6 +535,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
             let text = pendingAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
             if !text.isEmpty { emit(.assistant, text, isFinal: true) }
             closeTurn()
+            updateAwaitingReply()
         }
         turn = Turn(id: id)
     }
@@ -530,6 +544,7 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         let result = VoiceTurnResult(outcome: outcome, uiPayload: latestUiPayload)
         closeTurn()
         listener?.voiceSession(self, didFinishTurn: result)
+        updateAwaitingReply()
     }
 
     private func closeTurn() {
@@ -537,6 +552,15 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
         turn = nil
         pendingAssistantText = ""
         latestUiPayload = nil
+    }
+
+    /// Reports a change in whether the turn in flight waits for its reply: the user's final
+    /// transcript was shown and the reply has not started.
+    private func updateAwaitingReply() {
+        let awaiting = isActive && turn.map { $0.userFinal && !$0.replyStarted } == true
+        guard awaiting != awaitingReply else { return }
+        awaitingReply = awaiting
+        listener?.voiceSession(self, didChangeAwaitingReply: awaiting)
     }
 
     /// The voice agent ended the session. Only its timeouts are a normal end. An error, a shutdown or
