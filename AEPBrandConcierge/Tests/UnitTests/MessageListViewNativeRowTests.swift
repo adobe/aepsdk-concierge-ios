@@ -29,18 +29,13 @@ final class MessageListViewNativeRowTests: NativeCardTestCase {
         XCTAssertEqual(view.transcriptRows.map(\.showsPrivacyNotice), [false, true])
     }
 
-    func testNativeRowsNeitherFillNorAnchorTheTurnInFlight() {
+    func testNativeRowsRetainHandoffTurnWhenPlaceholderIsRemoved() {
         let user = Message(template: .basic(isUserMessage: true), messageBody: "Hi")
-        let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
-        func fills(_ messages: [Message]) -> Bool {
-            MessageListView(messages: messages, chatState: .processing, isInputFocused: .constant(false),
-                            onSpeak: { _ in })
-                .shouldFillRemainingHeight(at: messages.count - 1)
-        }
-
-        XCTAssertTrue(fills([user, placeholder]), "Control: a placeholder below its query fills")
-        XCTAssertFalse(fills([user, Message(nativeCardId: "card")]), "A native card is never the in-flight bubble")
-        XCTAssertFalse(fills([Message(nativeCardId: "card"), placeholder]), "A native card is not a user query")
+        let turnID = UUID()
+        let card = Message(nativeCardId: "card").inTurn(turnID)
+        let target = MessageListView.newestTurn(in: [user, card])
+        XCTAssertEqual(target?.id, turnID)
+        XCTAssertEqual(target?.anchorId, card.id)
     }
 
     func testWelcomeFilteringKeepsNativeRows() {
@@ -86,7 +81,7 @@ final class MessageListViewNativeRowTests: NativeCardTestCase {
         var spoken: [String] = []
         var theme = ConciergeTheme()
         theme.behavior.promptSuggestions = ConciergePromptSuggestionsBehavior(showHeader: true)
-        let list = MessageListView(messages: messages, privacyNotice: privacyNotice, chatState: .processing,
+        let list = MessageListView(messages: messages, privacyNotice: privacyNotice,
                                    isInputFocused: .constant(false), onSpeak: { spoken.append($0) })
             .environment(\.conciergeTheme, theme)
             .environment(\.conciergeNativeCardStore, controller.nativeCards)

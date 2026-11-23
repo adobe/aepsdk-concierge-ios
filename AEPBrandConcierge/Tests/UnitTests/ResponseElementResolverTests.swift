@@ -440,6 +440,9 @@ final class ResponseElementResolverTests: NativeCardTestCase {
         }
         await fulfillment(of: [finished], timeout: 2)
         XCTAssertEqual(controller.messages.count, 6)
+        let turnId = try XCTUnwrap(controller.messages.first?.turnId)
+        XCTAssertTrue(controller.messages.allSatisfy { $0.turnId == turnId },
+                      "Text, CTA and card rows share the handoff's transcript turn")
         XCTAssertEqual(controller.messages[0].messageBody, "Final text")
         XCTAssertTrue(controller.messages[0].isStreamComplete)
         guard case .template(.ctaButton(let firstCTA)) = controller.messages[1].content,
