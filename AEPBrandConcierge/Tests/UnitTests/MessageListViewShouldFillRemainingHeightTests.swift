@@ -12,238 +12,61 @@
 
 import SwiftUI
 import XCTest
-
 @testable import AEPBrandConcierge
 
-/// Direct logic coverage for `MessageListView.shouldFillRemainingHeight(at:)`.
-///
-/// A snapshot alone can't detect an inverted or broken condition here: `.frame(minHeight:)` only
-/// affects the ScrollView's total (scrollable) content height, which is invisible in a single
-/// fixed-frame capture taken at the default scroll offset. These tests exercise the boolean
-/// directly instead, and — unlike the snapshot tests in `WhiteSpaceReservationSnapshotTests` —
-/// actually run in CI, since they involve no rendering.
 @MainActor
 final class MessageListViewShouldFillRemainingHeightTests: XCTestCase {
-    func test_privacyNotice_derivesFirstUserQuery_withoutChangingTurnFiller() {
-        let first = Message(template: .basic(isUserMessage: true), messageBody: "First")
-        let second = Message(template: .basic(isUserMessage: true), messageBody: "Second")
-        let response = Message(template: .basic(isUserMessage: false), messageBody: "")
-        let messages = [first, second, response]
-        var view = MessageListView(
-            messages: messages,
-            privacyNotice: ConciergePrivacyNoticeBehavior(title: "Privacy Notice", text: "Configured privacy copy."),
-            userMessageToScrollId: second.id,
-            chatState: .processing,
-            isInputFocused: .constant(false),
-            onSpeak: { _ in }
-        )
-        XCTAssertEqual(view.privacyNoticeIndex, 0)
-        XCTAssertTrue(view.shouldFillRemainingHeight(at: 2))
-        view.chatState = .idle
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 2))
-        view.privacyNotice.text = " \n "
-        XCTAssertNil(view.privacyNoticeIndex)
+    func testPrivacyNoticeUsesFirstTypedQueryRowEvenAfterHandoff() {
+        let handoff = message("Order request sent", turnId: UUID())
+        let first = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?").inTurn(UUID())
+        let latest = Message(template: .basic(isUserMessage: true), messageBody: "Hours?").inTurn(UUID())
+        let view = MessageListView(messages: [handoff, first, latest],
+                                   privacyNotice: ConciergePrivacyNoticeBehavior(text: "Configured privacy copy"),
+                                   isInputFocused: .constant(false), onSpeak: { _ in })
+        XCTAssertEqual(view.transcriptRows.filter(\.showsPrivacyNotice).map(\.id), [first.id])
+        XCTAssertEqual(MessageListView.newestTurn(in: view.messages)?.anchorId, latest.id)
     }
 
-    func test_privacyNotice_skipsWelcomeAndHandoffMessages_andSupportsRestoredHistory() {
-        let welcome = Message(template: .welcomeHeader(title: "Welcome", body: "Ask a question"))
-        let handoff = Message(template: .basic(isUserMessage: false), messageBody: "Order confirmed")
-        let user = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?")
-        let failure = Message(template: .basic(isUserMessage: false), messageBody: "Network error")
-        let laterUser = Message(template: .basic(isUserMessage: true), messageBody: "Try again")
-        let cases: [(messages: [Message], expectedIndex: Int?)] = [
-            ([], nil),
-            ([welcome], nil),
-            ([welcome, handoff], nil),
-            ([welcome, handoff, user], 2),
-            ([welcome, handoff, user, failure, laterUser], 2),
-            ([user, failure, laterUser], 0)
-        ]
-        for (messages, expectedIndex) in cases {
-            let view = MessageListView(
-                messages: messages,
-                privacyNotice: ConciergePrivacyNoticeBehavior(text: "Configured privacy copy"),
-                isInputFocused: .constant(false),
-                onSpeak: { _ in }
-            )
-            XCTAssertEqual(view.privacyNoticeIndex, expectedIndex)
-        }
+    func testHandoffAnchorsToLocalMessageUntilNextTurn() throws {
+        let preceding = Message(template: .basic(isUserMessage: true), messageBody: "Show my cart").inTurn(UUID())
+        let turnId = UUID()
+        let local = message("Order request sent", turnId: turnId)
+        let response = message("Check the cart", turnId: turnId)
+        let card = Message(nativeCardId: "cart").inTurn(turnId)
+        let initial = try XCTUnwrap(MessageListView.newestTurn(in: [preceding, local]))
+        let completed = try XCTUnwrap(MessageListView.newestTurn(in: [preceding, local, response, card]))
+        XCTAssertEqual(initial, completed)
+        XCTAssertEqual(completed.anchorId, local.id)
     }
 
-    func test_privacyNotice_sharesFirstQueryScrollAnchor() {
-        let welcome = Message(template: .welcomeHeader(title: "Welcome", body: "Ask a question"))
-        let first = Message(template: .basic(isUserMessage: true), messageBody: "Where is the store?")
-        let response = Message(template: .basic(isUserMessage: false), messageBody: "123 Main Street.")
-        let later = Message(template: .basic(isUserMessage: true), messageBody: "What are its hours?")
-        let messages = [welcome, first, response, later]
-        var view = MessageListView(
-            messages: messages,
-            privacyNotice: ConciergePrivacyNoticeBehavior(text: "Configured privacy copy"),
-            userMessageToScrollId: first.id,
-            isInputFocused: .constant(false),
-            onSpeak: { _ in }
-        )
-
-        // The notice adds no anchor of its own: it lives in the first query's row, so
-        // `scrollTo(userMessageToScrollId)` brings both to the top.
-        let rows = view.transcriptRows
-        XCTAssertEqual(rows.map(\.id), messages.map(\.id))
-        XCTAssertEqual(rows.filter(\.showsPrivacyNotice).map(\.id), [first.id])
-        XCTAssertEqual(rows.first(where: \.showsPrivacyNotice)?.id, view.userMessageToScrollId)
-
-        view.privacyNotice.text = " "
-        XCTAssertFalse(view.transcriptRows.contains(where: \.showsPrivacyNotice))
+    func testPlaceholderReplacementAndRollbackDoNotNavigateAgain() throws {
+        let previous = Message(template: .basic(isUserMessage: true), messageBody: "Earlier").inTurn(UUID())
+        let handoffId = UUID()
+        let placeholder = message("", turnId: handoffId)
+        let card = Message(nativeCardId: "cart").inTurn(handoffId)
+        var navigation = MessageListView.TurnNavigation()
+        let first = try XCTUnwrap(MessageListView.newestTurn(in: [previous, placeholder]))
+        let replacement = try XCTUnwrap(MessageListView.newestTurn(in: [previous, card]))
+        let rollback = try XCTUnwrap(MessageListView.newestTurn(in: [previous]))
+        XCTAssertTrue(navigation.consume(first, older: [previous][...]))
+        XCTAssertEqual(replacement.anchorId, card.id)
+        XCTAssertFalse(navigation.consume(replacement, older: [previous][...]))
+        XCTAssertFalse(navigation.consume(rollback, older: []))
+        var reopened = MessageListView.TurnNavigation()
+        XCTAssertTrue(reopened.consume(replacement, older: [previous][...]))
     }
 
-    private func makeView(messages: [Message], chatState: ChatState) -> MessageListView {
-        MessageListView(messages: messages, chatState: chatState, isInputFocused: .constant(false), onSpeak: { _ in })
+    func testLegacyHistoryUsesLastUserAndShortTurnGetsOnlyMissingSpace() {
+        let user = Message(template: .basic(isUserMessage: true), messageBody: "Legacy")
+        let reply = Message(template: .basic(isUserMessage: false), messageBody: "Reply")
+        XCTAssertEqual(MessageListView.newestTurn(in: [user, reply])?.anchorId, user.id)
+        XCTAssertNil(MessageListView.newestTurn(in: [reply]))
+        XCTAssertEqual(MessageListView.trailingSpace(viewport: 500, turnHeight: 100, bottomPadding: 20), 380)
+        XCTAssertEqual(MessageListView.trailingSpace(viewport: 500, turnHeight: 550, bottomPadding: 20), 0)
+        XCTAssertEqual(MessageListView.trailingSpace(viewport: 500, turnHeight: nil, bottomPadding: 20), 0)
     }
 
-    private func makeView(messages: [Message], chatState: ChatState, anchorId: UUID?) -> MessageListView {
-        MessageListView(messages: messages,
-                        userMessageToScrollId: anchorId,
-                        chatState: chatState,
-                        isInputFocused: .constant(false),
-                        onSpeak: { _ in })
-    }
-
-    /// A `sendDataHandoff(...)` local message is an *agent* message - the user never typed it - so
-    /// the "last user message sits directly above" test can't see it. Without the filler the
-    /// anchor has nothing to scroll against and the response lands below the fold.
-    func test_handoffLocalMessageAnchor_returnsTrue() {
-        let localMessage = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "Show me headphones"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Here are a couple of products:"),
-                Message(template: .carouselGroup([]), messageBody: nil),
-                localMessage,
-                Message(template: .basic(isUserMessage: false), messageBody: "")
-            ],
-            chatState: .processing,
-            anchorId: localMessage.id
-        )
-        XCTAssertTrue(view.shouldFillRemainingHeight(at: 4))
-    }
-
-    /// A handoff with no local message anchors on the streaming placeholder itself.
-    func test_handoffWithNoLocalMessage_placeholderIsItsOwnAnchor_returnsTrue() {
-        let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "Show me headphones"),
-                Message(template: .carouselGroup([]), messageBody: nil),
-                placeholder
-            ],
-            chatState: .processing,
-            anchorId: placeholder.id
-        )
-        XCTAssertTrue(view.shouldFillRemainingHeight(at: 2))
-    }
-
-    /// The anchor only counts for the turn that's actually in flight.
-    func test_handoffLocalMessageAnchor_idle_returnsFalse() {
-        let localMessage = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
-        let view = makeView(
-            messages: [
-                localMessage,
-                Message(template: .basic(isUserMessage: false), messageBody: "Great pick!")
-            ],
-            chatState: .idle,
-            anchorId: localMessage.id
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 1))
-    }
-
-    /// A stale anchor from a previous turn must not resurrect the filler for a settled message.
-    func test_staleAnchorFromEarlierTurn_returnsFalse() {
-        let oldAnchor = Message(template: .basic(isUserMessage: false), messageBody: "Your order is confirmed!")
-        let view = makeView(
-            messages: [
-                oldAnchor,
-                Message(template: .basic(isUserMessage: false), messageBody: "Great pick!"),
-                Message(template: .carouselGroup([]), messageBody: nil),
-                Message(template: .basic(isUserMessage: false), messageBody: "Anything else?")
-            ],
-            chatState: .processing,
-            anchorId: oldAnchor.id
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 3))
-    }
-
-    func test_activeResponse_returnsTrue() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Here are a few")
-            ],
-            chatState: .processing
-        )
-        XCTAssertTrue(view.shouldFillRemainingHeight(at: 1))
-    }
-
-    func test_sameShape_idle_returnsFalse() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Go with a 10.")
-            ],
-            chatState: .idle
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 1))
-    }
-
-    /// `.error` is non-idle too — must not be treated as "in flight" even though it isn't `.idle`.
-    func test_sameShape_error_returnsFalse() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Go with a 10.")
-            ],
-            chatState: .error(.networkFailure)
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 1))
-    }
-
-    func test_processingWithTrailingSuggestions_responseIsNoLongerLast_returnsFalse() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Here are a few sizes:"),
-                Message(template: .promptSuggestion(text: "8.5"))
-            ],
-            chatState: .processing
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 1), "the response is no longer the last message")
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 2), "suggestion chips are never eligible")
-    }
-
-    func test_processing_lastMessageIsUsersOwn_returnsFalse() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?")
-            ],
-            chatState: .processing
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 0))
-    }
-
-    /// Response is last, but a prior assistant message sits between it and the user's message —
-    /// `lastUserIndex == index - 1` must fail.
-    func test_processing_responseNotImmediatelyAfterUserMessage_returnsFalse() {
-        let view = makeView(
-            messages: [
-                Message(template: .basic(isUserMessage: true), messageBody: "What size should I get?"),
-                Message(template: .basic(isUserMessage: false), messageBody: "Let me check..."),
-                Message(template: .basic(isUserMessage: false), messageBody: "Here are a few")
-            ],
-            chatState: .processing
-        )
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 2))
-    }
-
-    func test_emptyMessages_returnsFalse() {
-        let view = makeView(messages: [], chatState: .processing)
-        XCTAssertFalse(view.shouldFillRemainingHeight(at: 0))
+    private func message(_ text: String, turnId: UUID) -> Message {
+        Message(template: .basic(isUserMessage: false), messageBody: text).inTurn(turnId)
     }
 }

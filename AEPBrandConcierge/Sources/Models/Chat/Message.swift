@@ -24,6 +24,15 @@ public struct Message: Identifiable {
     }
 
     public let id = UUID()
+    /// Transcript navigation identity, independent of the transport attempt or card occurrence.
+    var turnId: UUID?
+
+    func inTurn(_ turnId: UUID) -> Message {
+        var message = self
+        message.turnId = turnId
+        return message
+    }
+
     let content: Content
     var nativeCardId: String? {
         guard case .nativeCard(let cardId) = content else { return nil }

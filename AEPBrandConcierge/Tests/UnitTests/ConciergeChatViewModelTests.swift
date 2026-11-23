@@ -80,7 +80,9 @@ final class ChatControllerTests: XCTestCase {
 
         let firstID = controller.messages.first?.id
         XCTAssertNotNil(firstID)
-        XCTAssertEqual(controller.userMessageToScrollId, firstID)
+        XCTAssertEqual(MessageListView.newestTurn(in: controller.messages)?.anchorId, firstID)
+        XCTAssertNotNil(controller.messages.first?.turnId)
+        XCTAssertEqual(controller.messages.first?.turnId, controller.messages.last?.turnId)
         spinUntil(service.streamChatCallCount == 1)
         service.plannedError = .unreachable
         service.triggerCompletion()
@@ -90,7 +92,7 @@ final class ChatControllerTests: XCTestCase {
         controller.applyTextChange("What are its hours?")
         controller.sendMessage(isUser: true)
         XCTAssertEqual(controller.messages.first?.id, firstID)
-        XCTAssertNotEqual(controller.userMessageToScrollId, firstID)
+        XCTAssertNotEqual(MessageListView.newestTurn(in: controller.messages)?.anchorId, firstID)
         // Let the turn resolve its auth token now so it cannot run during a later test.
         spinUntil(service.streamChatCallCount == 2)
         XCTAssertEqual(service.streamChatCallCount, 2)
@@ -120,7 +122,7 @@ final class ChatControllerTests: XCTestCase {
         spinUntil(service.streamChatCallCount == 2)
         XCTAssertEqual(service.streamChatCallCount, 2)
         XCTAssertEqual(Array(controller.messages.prefix(historyIDs.count)).map(\.id), historyIDs)
-        XCTAssertFalse(historyIDs.contains(try XCTUnwrap(controller.userMessageToScrollId)))
+        XCTAssertFalse(historyIDs.contains(try XCTUnwrap(MessageListView.newestTurn(in: controller.messages)?.anchorId)))
         controller.abandonActiveTurn()
     }
 
@@ -511,17 +513,15 @@ final class ChatControllerTests: XCTestCase {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.shouldCallComplete = false
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
-        let tickBefore = controller.userScrollTick
 
         controller.handleDataHandoff(routingHint: "successful-checkout",
                                      xdmFields: [:],
                                      localMessage: "Thank you for purchasing Headphones")
-        spinUntil(controller.userScrollTick > tickBefore)
-
-        XCTAssertGreaterThan(controller.userScrollTick, tickBefore)
         let anchor = controller.messages.first { $0.messageBody == "Thank you for purchasing Headphones" }
         XCTAssertNotNil(anchor)
-        XCTAssertEqual(controller.userMessageToScrollId, anchor?.id)
+        XCTAssertNotNil(anchor?.turnId)
+        XCTAssertEqual(anchor?.turnId, controller.messages.last?.turnId)
+        XCTAssertEqual(MessageListView.newestTurn(in: controller.messages)?.anchorId, anchor?.id)
     }
 
     /// With no local message the streaming placeholder is the first thing the turn renders, so it
@@ -530,13 +530,11 @@ final class ChatControllerTests: XCTestCase {
         let fakeService = MockChatService(configuration: mockConciergeConfiguration)
         fakeService.shouldCallComplete = false
         let controller = makeController(configuration: mockConciergeConfiguration, service: fakeService)
-        let tickBefore = controller.userScrollTick
 
         controller.handleDataHandoff(routingHint: "successful-checkout", xdmFields: [:])
-        spinUntil(controller.userScrollTick > tickBefore)
-
         XCTAssertEqual(controller.messages.count, 1)
-        XCTAssertEqual(controller.userMessageToScrollId, controller.messages.first?.id)
+        XCTAssertNotNil(controller.messages.first?.turnId)
+        XCTAssertEqual(MessageListView.newestTurn(in: controller.messages)?.anchorId, controller.messages.first?.id)
     }
 
     func test_handleDataHandoff_whenRejected_doesNotScroll() {
@@ -546,15 +544,10 @@ final class ChatControllerTests: XCTestCase {
 
         controller.handleDataHandoff(routingHint: "first", xdmFields: [:])
         spinUntil(fakeService.streamChatCallCount == 1)
-        spinUntil(timeout: 0.3, false) // let the accepted turn's own scroll land first
-        let tickBefore = controller.userScrollTick
-        let anchorBefore = controller.userMessageToScrollId
+        let anchorBefore = MessageListView.newestTurn(in: controller.messages)
 
         controller.handleDataHandoff(routingHint: "successful-checkout", xdmFields: [:], localMessage: "Nope")
-        spinUntil(timeout: 0.3, controller.userScrollTick != tickBefore)
-
-        XCTAssertEqual(controller.userScrollTick, tickBefore)
-        XCTAssertEqual(controller.userMessageToScrollId, anchorBefore,
+        XCTAssertEqual(MessageListView.newestTurn(in: controller.messages), anchorBefore,
                        "a rejected handoff must not move the transcript off the live turn")
     }
 
@@ -806,6 +799,8 @@ final class ChatControllerTests: XCTestCase {
         XCTAssertEqual(service.lastQuery, "question")
         XCTAssertEqual(service.streamChatCallCount, 2, "a failed recovery attempt must not retry again")
         XCTAssertEqual(controller.messages.last?.messageBody, "Recovered answer")
+        XCTAssertNotNil(controller.messages.first?.turnId)
+        XCTAssertEqual(controller.messages.first?.turnId, controller.messages.last?.turnId)
     }
 
     func test_streamingBackgroundRecovery_resendReportsItsOwnPairedResponseEvents() {

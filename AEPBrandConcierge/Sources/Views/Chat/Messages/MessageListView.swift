@@ -15,22 +15,19 @@ import SwiftUI
 /// Scrollable chat transcript that renders messages and triggers text-to-speech via `onSpeak` when appropriate.
 struct MessageListView: View {
     @Environment(\.conciergeTheme) private var theme
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var rowHeights: [UUID: CGFloat] = [:]
+    @State private var laidOutAnchor: UUID?
+    @State private var navigation = TurnNavigation()
 
     /// Base scroll content padding. Combined with `chatHistoryPadding` to produce the standard
     /// horizontal inset used by text bubbles, suggestion chips, and non-carousel agent elements.
     /// Also referenced by `CarouselGroupView` when computing `scrollContentLeadingInset`.
     static let scrollContentBasePadding: CGFloat = 16
+    private static let rowSpacing: CGFloat = 12
 
     let messages: [Message]
     var privacyNotice: ConciergePrivacyNoticeBehavior = ConciergePrivacyNoticeBehavior()
-    var userScrollTick: Int = 0
-    var userMessageToScrollId: UUID?
-    var scrollToLastOnAppear: Bool = false
-    /// Gates `shouldFillRemainingHeight` so only a turn that's actually in flight fills the screen —
-    /// message-list shape alone can't distinguish "just arrived" from "settled a while ago with
-    /// nothing following it" (e.g. a reopened past conversation, or an empty-response fallback
-    /// message), since both look structurally identical.
-    var chatState: ChatState = .idle
     @Binding var isInputFocused: Bool
     let onSpeak: (String) -> Void
     var onSuggestionTap: ((String) -> Void)?
@@ -38,30 +35,46 @@ struct MessageListView: View {
     var onCtaButtonTap: ((_ label: String, _ url: String) -> Void)?
 
     var body: some View {
+        let rows = transcriptRows
+        let turn = Self.newestTurn(in: messages)
         GeometryReader { geometry in
             ScrollViewReader { proxy in
+                let turnRows = turn.map { rows.dropFirst($0.startIndex) } ?? rows.suffix(0)
+                let heights = turnRows.compactMap { rowHeights[$0.id] }
+                let turnHeight = heights.isEmpty ? nil
+                    : heights.reduce(0, +) + Self.rowSpacing * CGFloat(heights.count - 1)
+                let measuredAnchor = heights.count == turnRows.count && geometry.size.height > 0 ? turn?.anchorId : nil
+                let pending = scenePhase == .active && laidOutAnchor == measuredAnchor ? measuredAnchor : nil
+                let bottom = theme.layout.chatHistoryBottomPadding
                 ScrollView {
-                    messageStack(geometry: geometry)
-                        .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
-                        .padding(.bottom, theme.layout.chatHistoryBottomPadding)
-                }
-                // Scroll user message to top when sent, allowing agent response to fill screen below
-                .onChange(of: userScrollTick) { _ in
-                    guard let messageId = userMessageToScrollId else { return }
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            proxy.scrollTo(messageId, anchor: .top)
-                        }
+                    VStack(spacing: Self.rowSpacing) {
+                        messageRows(rows, turnStart: turn?.startIndex)
                     }
+                    .padding(.top, theme.layout.chatHistoryPaddingTopExpanded)
+                    .padding(.bottom, bottom + Self.trailingSpace(
+                        viewport: geometry.size.height,
+                        turnHeight: turnHeight,
+                        bottomPadding: bottom
+                    ))
+                    .background(GeometryReader { _ in
+                        Color.clear.preference(key: LaidOutAnchorKey.self, value: measuredAnchor)
+                    })
                 }
-                // When reopening a chat with prior messages, jump to the bottom so the user sees the latest exchange.
-                .onAppear {
-                    if scrollToLastOnAppear, let lastId = messages.last?.id {
-                        DispatchQueue.main.async {
-                            proxy.scrollTo(lastId, anchor: .top)
-                        }
+                .onPreferenceChange(RowHeightsKey.self) { rowHeights = $0 }
+                .onPreferenceChange(LaidOutAnchorKey.self) { laidOutAnchor = $0 }
+                .onChange(of: messages.isEmpty) { if $0 { navigation = TurnNavigation() } }
+                .task(id: pending) {
+                    guard let pending, let turn else { return }
+                    // This runs only after a layout containing both the anchor and its padding.
+                    guard !Task.isCancelled,
+                          navigation.consume(turn, older: messages.prefix(turn.startIndex)) else { return }
+                    proxy.scrollTo(pending, anchor: .top)
+                }
+                .simultaneousGesture(DragGesture().onChanged { drag in
+                    if let turn, abs(drag.translation.height) >= abs(drag.translation.width) {
+                        _ = navigation.consume(turn, older: messages.prefix(turn.startIndex))
                     }
-                }
+                })
                 .onTapGesture {
                     if isInputFocused {
                         isInputFocused = false
@@ -72,9 +85,9 @@ struct MessageListView: View {
     }
 
     @ViewBuilder
-    private func messageStack(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 12) {
-            ForEach(Array(transcriptRows.enumerated()), id: \.element.id) { index, row in
+    private func messageRows(_ rows: [TranscriptRow], turnStart: Int?) -> some View {
+        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+            VStack(spacing: Self.rowSpacing) {
                 let message = row.message
                 // showHeader: insert a "Suggestions" label above the first chip in a group
                 if isFirstInSuggestionGroup(at: index),
@@ -96,33 +109,67 @@ struct MessageListView: View {
                             .padding(horizontalPadding(for: .basic(isUserMessage: true)))
                         messageView(message)
                     }
-                    .id(row.id)
                 } else {
                     messageView(message)
-                        .id(row.id)
                 }
             }
-
-            // Scroll room for the turn that's in flight. The anchor can only come to rest at the
-            // top of the viewport if there's at least a screenful of content beneath it, so the
-            // shortfall is reserved here.
-            //
-            // This is deliberately *additive* — a sibling below the whole turn rather than a
-            // minimum height on the response bubble — because the distance between the anchor and
-            // the bubble isn't fixed: a typed turn anchors on the user's message above the bubble,
-            // while a `sendDataHandoff(...)` turn with no local message anchors on the bubble
-            // itself. A minimum height on the bubble only reserves correctly for the first case
-            // and leaves the second a full `messageBlockerHeight` short. As a sibling it holds for
-            // both, without anyone having to measure the anchor.
-            //
-            // The turn's own messages already contribute roughly `messageBlockerHeight` toward
-            // that screenful, so only the remainder is reserved and the list doesn't over-scroll.
-            // The gate collapses this the moment the turn settles, so a completed turn never
-            // leaves a permanent gap below the last message.
-            if shouldFillRemainingHeight(at: messages.count - 1) {
-                Spacer(minLength: 0)
-                    .frame(height: max(0, geometry.size.height - theme.layout.messageBlockerHeight))
+            .background {
+                if let turnStart, index >= turnStart {
+                    GeometryReader { geometry in
+                        Color.clear.preference(key: RowHeightsKey.self, value: [row.id: geometry.size.height])
+                    }
+                }
             }
+            .id(row.id)
+        }
+    }
+
+    struct TurnAnchor: Equatable {
+        let id: UUID
+        let anchorId: UUID
+        let startIndex: Int
+    }
+
+    struct TurnNavigation {
+        private var handled: Set<UUID> = []
+
+        mutating func consume(_ turn: TurnAnchor, older: ArraySlice<Message>) -> Bool {
+            guard handled.insert(turn.id).inserted else { return false }
+            // Removing a failed turn must not re-anchor older transcript rows.
+            handled.formUnion(older.map { $0.turnId ?? $0.id })
+            return true
+        }
+    }
+
+    static func newestTurn(in messages: [Message]) -> TurnAnchor? {
+        if let id = messages.last?.turnId,
+           let index = messages.firstIndex(where: { $0.turnId == id }) {
+            return TurnAnchor(id: id, anchorId: messages[index].id, startIndex: index)
+        }
+        guard let index = messages.lastIndex(where: {
+            if case .template(.basic(isUserMessage: true)) = $0.content { return true }
+            return false
+        }) else { return nil }
+        let id = messages[index].id
+        return TurnAnchor(id: id, anchorId: id, startIndex: index)
+    }
+
+    static func trailingSpace(viewport: CGFloat, turnHeight: CGFloat?, bottomPadding: CGFloat) -> CGFloat {
+        guard let turnHeight else { return 0 }
+        return max(0, viewport - turnHeight - bottomPadding)
+    }
+
+    private enum RowHeightsKey: PreferenceKey {
+        static let defaultValue: [UUID: CGFloat] = [:]
+        static func reduce(value: inout [UUID: CGFloat], nextValue: () -> [UUID: CGFloat]) {
+            value.merge(nextValue(), uniquingKeysWith: { _, latest in latest })
+        }
+    }
+
+    private enum LaidOutAnchorKey: PreferenceKey {
+        static let defaultValue: UUID? = nil
+        static func reduce(value: inout UUID?, nextValue: () -> UUID?) {
+            if let anchor = nextValue() { value = anchor }
         }
     }
 
@@ -276,44 +323,4 @@ struct MessageListView: View {
         return true
     }
 
-    /// True when a turn is actively in flight (`chatState == .processing`) AND the message at `index`
-    /// is the agent's response to the latest user message with nothing appended after it yet (no
-    /// suggestions, cards, or new user message). The message-shape check alone matches the Android
-    /// implementation this was ported from; the `chatState` check is additionally required so a
-    /// settled conversation with the same shape (reopened past conversation, empty-response
-    /// fallback) doesn't also fill. Deliberately `== .processing` rather than `!= .idle`: `.error`
-    /// is also non-idle, and this must not fill an error-state bubble even if a future change to
-    /// the error path leaves one as the last message (today it doesn't, but that's an accident of
-    /// `ChatController`'s error handling, not something this guard should rely on).
-    /// Internal (not private) so `shouldFillRemainingHeight` can be unit tested directly — a
-    /// snapshot alone can't detect an inverted or broken condition here, since the reserved space
-    /// only affects scrollable content height, which is invisible in a single fixed-frame capture.
-    func shouldFillRemainingHeight(at index: Int) -> Bool {
-        guard chatState == .processing,
-              messages.indices.contains(index),
-              index == messages.count - 1,
-              case .template(.basic(isUserMessage: false)) = messages[index].content
-        else { return false }
-
-        // Either the placeholder sits directly below this turn's anchor, or - for a handoff with no
-        // local message - the placeholder *is* the anchor. Without the filler there's nothing below
-        // the anchor to scroll against, so the scroll clamps part-way.
-        if isTurnAnchor(at: index - 1) || isTurnAnchor(at: index) { return true }
-
-        guard let lastUserIndex = messages.lastIndex(where: {
-            if case .template(.basic(isUserMessage: true)) = $0.content { return true }
-            return false
-        })
-        else { return false }
-        return lastUserIndex == index - 1
-    }
-
-    /// Returns true when the message at `index` is the anchor the controller scrolled to the top.
-    ///
-    /// A typed turn anchors on the user's own message; a `sendDataHandoff(...)` turn anchors on its
-    /// local message, which is rendered as an agent message. Asking the controller covers both.
-    private func isTurnAnchor(at index: Int) -> Bool {
-        guard let anchorId = userMessageToScrollId, messages.indices.contains(index) else { return false }
-        return messages[index].id == anchorId
-    }
 }
