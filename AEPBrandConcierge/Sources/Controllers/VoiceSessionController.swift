@@ -675,3 +675,37 @@ final class VoiceSessionOwnership: @unchecked Sendable {
         }
     }
 }
+
+// MARK: - ConciergeVoiceTransportHolder
+
+/// Holds the transport the app registered with `Concierge.setVoiceTransport(_:)`.
+///
+/// Every chat reads it, so a new value reaches the chats already open as well as later ones. A
+/// running conversation keeps the transport it started with.
+final class ConciergeVoiceTransportHolder: @unchecked Sendable {
+    static let shared = ConciergeVoiceTransportHolder()
+
+    private let LOG_TAG = "ConciergeVoiceTransportHolder"
+    private let lock = NSLock()
+    private var _transport: VoiceTransport?
+    private let changeSubject = PassthroughSubject<Void, Never>()
+
+    /// The registered transport, or `nil` when the app offers no voice.
+    var transport: VoiceTransport? {
+        lock.lock()
+        defer { lock.unlock() }
+        return _transport
+    }
+
+    /// Fires after every change, on the thread that made it. Read `transport` for the current value.
+    var changes: AnyPublisher<Void, Never> { changeSubject.eraseToAnyPublisher() }
+
+    /// Replaces the registered transport. Pass `nil` to clear it.
+    func set(_ transport: VoiceTransport?) {
+        lock.lock()
+        _transport = transport
+        lock.unlock()
+        Log.debug(label: LOG_TAG, transport == nil ? "Voice transport cleared." : "Voice transport registered.")
+        changeSubject.send()
+    }
+}

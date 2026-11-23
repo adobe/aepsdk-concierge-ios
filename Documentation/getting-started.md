@@ -120,27 +120,21 @@ Copy [`LiveKitTransport.swift`](../ConciergeDemoApp/LiveKitTransport.swift) into
 
 If you change the transport, keep the rules in the `VoiceTransport` documentation. In particular, `send(_:topic:)` must use reliable delivery (with LiveKit, `publish(data:options:)` with `reliable: true`) and throw if the message can't be sent; Brand Concierge then shows an error message in the chat. When you update LiveKit, check that the file still builds and repeat the device checks below.
 
-#### 4. Pass the transport when showing the chat
+#### 4. Register the transport
 
-Keep one instance for the life of the app: Brand Concierge reuses it for each conversation, sets the delegate before connecting and clears it before disconnecting.
+Keep one instance for the life of the app and register it once, for example at app launch. Brand Concierge reuses it for each conversation, sets the delegate before connecting and clears it before disconnecting.
 
 ```swift
 enum Voice {
     static let transport = LiveKitTransport()
 }
 
-Concierge.show(surfaces: ["my-surface"], voiceTransport: Voice.transport)
+Concierge.setVoiceTransport(Voice.transport)
 ```
 
-`Concierge.present(on:...)` takes the same `voiceTransport` parameter. The transport is kept for re-shows of the same chat, like `textSpeaker`; a chat first shown without a transport stays without one. For chats opened from the floating button, pass it to `Concierge.wrap(...)`:
+The transport applies to every chat, however it is opened (`show(...)`, `present(on:...)` or the floating button from `wrap(...)`), including chats that are already open. A voice conversation that is running keeps the transport it started with, so a new transport takes effect from the next conversation. Pass `nil` to turn voice off: the voice button disappears, or, if a conversation is running, stays until the conversation ends so the user can stop it.
 
-```swift
-Concierge.wrap(AppRootView(), surfaces: ["my-surface"], voiceTransport: Voice.transport)
-```
-
-Pass the same instance at every `wrap`, `show` and `present` call, as the demo app does.
-
-When a transport is provided, the composer shows a voice button. During a conversation:
+While a transport is registered, the composer shows a voice button. During a conversation:
 
 - **Chat.** The transcript appears in the chat. From the end of the user's words until the agent starts to reply, the chat shows the thinking indicator (with the theme's `loading.message`), as it does for a typed message. Each reply's product cards, sources and prompt suggestions appear when the agent finishes it. Tapping a prompt suggestion sends it to the voice agent, which answers by voice; taps are ignored while the user is speaking and until the agent starts to reply. Typing, dictation and data handoffs are paused; `Concierge.sendDataHandoff` completes with `.chatInProgress`.
 - **Microphone permission.** Brand Concierge asks for it when the user taps the voice button. If the user denies it, no conversation starts and the chat offers to open Settings.
