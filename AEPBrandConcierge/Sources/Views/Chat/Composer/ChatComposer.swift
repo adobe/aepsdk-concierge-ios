@@ -34,8 +34,8 @@ struct ChatComposer: View {
     let onComplete: () -> Void
     let onSend: () -> Void
     var onLinkTap: ((URL) -> Void)?
-    /// Voice conversation entry point, shown only when the app provided a voice transport. Defaults keep
-    /// existing call sites valid.
+    /// Voice conversation entry point, shown while a voice transport is registered or a voice conversation
+    /// is running. Defaults keep existing call sites valid.
     var isVoiceAvailable: Bool = false
     var isVoiceSessionActive: Bool = false
     var isVoiceConnecting: Bool = false
