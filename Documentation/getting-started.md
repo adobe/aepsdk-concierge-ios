@@ -166,7 +166,7 @@ Without it, iOS suspends the app seconds after it leaves the foreground and the 
 
 - Brand Concierge reads `continuesInBackground` once per conversation, when it calls `connect(_:)`. The reference transport starts the microphone there. A conversation still asking for microphone permission or fetching its credentials ends when the app goes to the background, because iOS doesn't let an app start the microphone from there.
 - While the conversation runs in the background, iOS shows the microphone indicator in the status bar; tapping it returns to the app. Transcripts and product cards that arrive meanwhile are in the chat when the user returns.
-- It ends for the same reasons as in the foreground (see [step 4](#4-pass-the-transport-when-showing-the-chat)), or when the user force-quits the app.
+- It ends for the same reasons as in the foreground (see [step 4](#4-register-the-transport)), or when the user force-quits the app.
 - App Review: describe the voice conversation, which the user starts and hears, in your review notes as the reason for the `audio` background mode.
 
 #### Audio quality
