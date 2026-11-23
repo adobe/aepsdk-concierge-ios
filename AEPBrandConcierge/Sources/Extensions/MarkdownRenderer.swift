@@ -100,6 +100,8 @@ struct MarkdownRenderer {
     private let attributed: AttributedString
     /// Optional foreground color applied as a base to emitted text unless an inline color overrides it.
     private let textColor: UIColor?
+    /// Optional override for Markdown headings.
+    private let headingColor: UIColor?
     /// Base font used for paragraphs; headers and code derive from this for sizing/mono.
     private let baseFont: UIFont
 
@@ -132,10 +134,12 @@ struct MarkdownRenderer {
     static func buildBlocks(
         markdown: String,
         textColor: UIColor? = nil,
+        headingColor: UIColor? = nil,
         baseFont: UIFont = .preferredFont(forTextStyle: .body)
     ) -> [MarkdownRenderer.MarkdownBlock] {
         let colorKey = textColor.map { String(describing: $0) } ?? "nil"
-        let cacheKey = "\(baseFont.fontName)|\(baseFont.pointSize)|\(colorKey)|\(markdown)" as NSString
+        let headingColorKey = headingColor.map { String(describing: $0) } ?? "nil"
+        let cacheKey = "\(baseFont.fontName)|\(baseFont.pointSize)|\(colorKey)|\(headingColorKey)|\(markdown)" as NSString
         if let cached = blockCache.object(forKey: cacheKey) {
             return cached.blocks
         }
@@ -145,7 +149,7 @@ struct MarkdownRenderer {
             failurePolicy: .returnPartiallyParsedIfPossible
         )
         guard let attributed = try? AttributedString(markdown: markdown, options: options) else { return [] }
-        var builder = MarkdownRenderer(attributed: attributed, textColor: textColor, baseFont: baseFont)
+        var builder = MarkdownRenderer(attributed: attributed, textColor: textColor, headingColor: headingColor, baseFont: baseFont)
         let result = builder.build()
         blockCache.setObject(BlockBox(result), forKey: cacheKey)
         return result
@@ -503,9 +507,11 @@ struct MarkdownRenderer {
     /// Applies base text styling to the given attributed substring and appends it as a `.text`
     /// block, routing through `appendBlock(_:)` to attach to the correct parent component.
     ///
-    /// - Parameter ns: The attributed text to style and emit as a paragraph block.
-    private mutating func pushParagraph(_ ns: NSAttributedString) {
-        let styled = applyBaseStyling(ns, textColor: textColor, baseFont: baseFont)
+    /// - Parameters:
+    ///   - ns: The attributed text to style and emit as a paragraph block.
+    ///   - foregroundColor: An optional override for the base text color.
+    private mutating func pushParagraph(_ ns: NSAttributedString, foregroundColor: UIColor? = nil) {
+        let styled = applyBaseStyling(ns, textColor: foregroundColor ?? textColor, baseFont: baseFont)
         appendBlock(.text(styled))
     }
 
@@ -528,7 +534,7 @@ struct MarkdownRenderer {
     /// Pops the top `header` node from the stack and emits it as a styled `.text` block
     /// if the buffered content is not empty.
     ///
-    /// Applies the appropriate header font for `level` and the base foreground color
+    /// Applies the appropriate header font for `level` and the configured heading or base foreground color
     /// before routing through `pushParagraph(_:)` to the correct structural parent.
     /// Does nothing if the top node is not a `header`.
     private mutating func popHeaderToBlock() {
@@ -538,8 +544,8 @@ struct MarkdownRenderer {
             if buffer.length > 0 {
                 let r = NSRange(location: 0, length: buffer.length)
                 buffer.addAttribute(.font, value: headerFont(for: level), range: r)
-                buffer.addAttribute(.foregroundColor, value: textColor ?? UIColor.label, range: r)
-                pushParagraph(buffer)
+                buffer.addAttribute(.foregroundColor, value: headingColor ?? textColor ?? UIColor.label, range: r)
+                pushParagraph(buffer, foregroundColor: headingColor)
             }
         }
     }

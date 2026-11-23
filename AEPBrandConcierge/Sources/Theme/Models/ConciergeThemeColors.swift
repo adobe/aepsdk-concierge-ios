@@ -44,19 +44,23 @@ public struct ConciergeMessageColors: Codable {
     public var conciergeBackground: CodableColor?
     public var conciergeText: CodableColor
     public var conciergeLink: CodableColor
+    /// Markdown heading color in concierge messages. When nil, headings use `conciergeText`.
+    public var conciergeHeading: CodableColor?
 
     public init(
         userBackground: CodableColor = CodableColor(Color(UIColor.secondarySystemBackground)),
         userText: CodableColor = CodableColor(Color.primary),
         conciergeBackground: CodableColor? = nil,
         conciergeText: CodableColor = CodableColor(Color.primary),
-        conciergeLink: CodableColor = CodableColor(Color.accentColor)
+        conciergeLink: CodableColor = CodableColor(Color.accentColor),
+        conciergeHeading: CodableColor? = nil
     ) {
         self.userBackground = userBackground
         self.userText = userText
         self.conciergeBackground = conciergeBackground
         self.conciergeText = conciergeText
         self.conciergeLink = conciergeLink
+        self.conciergeHeading = conciergeHeading
     }
 }
 

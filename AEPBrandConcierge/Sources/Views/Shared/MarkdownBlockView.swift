@@ -20,6 +20,8 @@ struct MarkdownBlockView: View {
 
     let markdown: String
     var textColor: UIColor
+    /// Optional heading color; when nil, headings inherit `textColor`.
+    var headingColor: UIColor? = nil
     /// Foreground color applied to inline hyperlink text. Defaults to the system link color.
     /// (Underlining is applied separately by `MarkdownText`, controlled by `linkUnderline`.)
     var linkColor: UIColor = .link
@@ -49,6 +51,7 @@ struct MarkdownBlockView: View {
         let blocks = MarkdownRenderer.buildBlocks(
             markdown: markdown,
             textColor: textColor,
+            headingColor: headingColor,
             baseFont: baseFont
         )
         let transformedBlocks = blocks.map(transformBlock)
