@@ -25,12 +25,15 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
 
     private let configuration = ConciergeConfiguration()
     private var transport: FakeVoiceTransport!
+    private var holder: ConciergeVoiceTransportHolder!
     private var service: MockChatService!
     private var events: [Event] = []
 
     override func setUp() {
         super.setUp()
         transport = FakeVoiceTransport()
+        holder = ConciergeVoiceTransportHolder()
+        holder.set(transport)
         service = MockChatService(configuration: configuration)
         events = []
         ConciergeXDMContextStore.shared.clear()
@@ -39,8 +42,9 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
     override func tearDown() {
         ConciergeXDMContextStore.shared.clear()
         transport = nil
+        holder = nil
         service = nil
-        Concierge.voiceTransport = nil
+        Concierge.setVoiceTransport(nil)
         super.tearDown()
     }
 
@@ -66,14 +70,63 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertFalse(controller.isVoiceSessionActive)
     }
 
-    func test_newChatSessions_useThePresentedTransport() {
-        Concierge.voiceTransport = transport
+    func test_setVoiceTransport_reachesAChatThatIsAlreadyOpen() {
+        Concierge.setVoiceTransport(nil)
         let session = Concierge.makeSession(configuration: configuration, sessionID: "session")
+        XCTAssertFalse(session.controller.isVoiceAvailable)
+
+        Concierge.setVoiceTransport(transport)
         XCTAssertTrue(session.controller.isVoiceAvailable)
 
-        Concierge.voiceTransport = nil
-        let withoutVoice = Concierge.makeSession(configuration: configuration, sessionID: "session")
-        XCTAssertFalse(withoutVoice.controller.isVoiceAvailable)
+        Concierge.setVoiceTransport(nil)
+        XCTAssertFalse(session.controller.isVoiceAvailable)
+    }
+
+    func test_setVoiceTransport_fromABackgroundThread_reachesAnOpenChat() {
+        holder.set(nil)
+        let controller = makeController()
+        XCTAssertFalse(controller.isVoiceAvailable)
+
+        DispatchQueue.global().async { [holder, transport] in holder?.set(transport) }
+        spinUntil(controller.isVoiceAvailable)
+
+        XCTAssertTrue(controller.isVoiceAvailable)
+    }
+
+    func test_clearingTheTransport_duringAConversation_keepsItRunningAndStoppable() {
+        let controller = makeController()
+        startListening(controller)
+
+        holder.set(nil)
+
+        XCTAssertTrue(controller.isVoiceAvailable)
+        XCTAssertTrue(controller.voiceEnabled, "the user must still be able to stop")
+        XCTAssertEqual(transport.disconnectCount, 0)
+        userSays("still here", isFinal: true)
+        XCTAssertEqual(controller.messages.first?.messageBody, "still here")
+
+        controller.stopVoiceSession()
+
+        XCTAssertFalse(controller.isVoiceAvailable)
+        XCTAssertFalse(controller.voiceEnabled)
+    }
+
+    func test_replacingTheTransport_duringAConversation_takesEffectForTheNextOne() {
+        let controller = makeController()
+        startListening(controller)
+        let replacement = FakeVoiceTransport()
+
+        holder.set(replacement)
+        XCTAssertEqual(transport.disconnectCount, 0)
+        controller.stopVoiceSession()
+        spinUntil(transport.disconnectCount == 1)
+
+        startVoice(controller)
+        service.emitBootstrap()
+        spinUntil(!replacement.connections.isEmpty)
+
+        XCTAssertEqual(transport.connections.count, 1)
+        XCTAssertEqual(replacement.connections.count, 1)
     }
 
     // MARK: - Start
@@ -948,7 +1001,7 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
                        chatService: service,
                        speechCapturer: capturer,
                        speaker: SilentSpeaker(),
-                       voiceTransport: withVoice ? transport : nil,
+                       voiceTransportHolder: withVoice ? holder : ConciergeVoiceTransportHolder(),
                        requestMicrophonePermission: requestPermission ?? { permission },
                        dispatch: { [weak self] in self?.events.append($0) },
                        appState: appState,

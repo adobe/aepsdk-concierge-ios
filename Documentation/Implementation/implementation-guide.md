@@ -380,29 +380,27 @@ provide the necessary routing context.
 
 Brand Concierge requires a list of **surface identifiers** to resolve the correct chat configuration on the BC server. Every chat session is started with surfaces, either directly via `show(...)` / `present(on:...)` or, when using the built-in floating button, via the value stored by `wrap(...)`.
 
-#### `Concierge.wrap(_:surfaces:title:subtitle:hideButton:voiceTransport:handleLink:)`
+#### `Concierge.wrap(_:surfaces:title:subtitle:hideButton:handleLink:)`
 
-> [!IMPORTANT]: The `surfaces`, `title`, `subtitle`, `voiceTransport`, and `handleLink` parameters on `wrap(...)` only apply when chat is triggered via the built-in floating button. When chat is triggered via `Concierge.show(...)` or `Concierge.present(on:...)`, the values passed to those APIs are used instead.
+> [!IMPORTANT]: The `surfaces`, `title`, `subtitle`, and `handleLink` parameters on `wrap(...)` only apply when chat is triggered via the built-in floating button. When chat is triggered via `Concierge.show(...)` or `Concierge.present(on:...)`, the values passed to those APIs are used instead.
 
 - **`content`** *(required)*: The SwiftUI content to wrap.
 - **`surfaces`**: Surfaces for the chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat.
 - **`subtitle`**: Header subtitle text shown at the top of the chat.
 - **`hideButton`**: When `true`, hides the built-in floating button so chat can be triggered from custom host-app UI. Defaults to `false`.
-- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, the transport stored by an earlier call is kept; if none was ever provided, voice conversations are disabled. `wrap(...)` runs on every SwiftUI body update, so pass the same long-lived instance each time. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
+#### `Concierge.show(surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
 
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
 - **`title`**: Header title text shown at the top of the chat for this session.
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
-- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
 
-#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:voiceTransport:handleLink:)`
+#### `Concierge.present(on:surfaces:title:subtitle:speechCapturer:textSpeaker:handleLink:)`
 
 - **`on presentingViewController`** *(required)*: The UIKit view controller that will host the chat UI as a child view controller, filling its view.
 - **`surfaces`** *(required)*: Surfaces for this chat session. Sent to the Brand Concierge server to resolve the chat configuration.
@@ -410,8 +408,11 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`subtitle`**: Header subtitle text shown at the top of the chat for this session.
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
-- **`voiceTransport`**: The app's `VoiceTransport`, which carries voice conversation audio. If `nil`, voice conversations are disabled. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
+
+#### `Concierge.setVoiceTransport(_:)`
+
+- **`transport`**: The app's `VoiceTransport`, which carries voice conversation audio, or `nil` to turn voice conversations off. Applies to chats that are already open and to chats opened later; a running voice conversation keeps the transport it started with. Can be called from any thread. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 
 ### Option A - Manual API call (no floating button)
 

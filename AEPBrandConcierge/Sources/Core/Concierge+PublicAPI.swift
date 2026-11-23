@@ -48,6 +48,21 @@ public extension Concierge {
         ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
     }
 
+    // MARK: - Voice
+
+    /// Registers the app's voice transport, which carries voice conversations. The chat shows the
+    /// voice button only while a transport is registered. See `VoiceTransport`.
+    ///
+    /// Applies to chats already open and to chats opened later. A running voice conversation keeps the
+    /// transport it started with; after `nil`, the voice button disappears once no conversation runs.
+    /// Register one long-lived instance, for example at app launch. The SDK keeps a strong reference
+    /// to it until it is replaced or cleared. Can be called from any thread.
+    ///
+    /// - Parameter transport: The app's transport, or `nil` to turn voice conversations off.
+    static func setVoiceTransport(_ transport: VoiceTransport?) {
+        ConciergeVoiceTransportHolder.shared.set(transport)
+    }
+
     // MARK: - XDM Context
 
     /// Applies a JSON Merge Patch (RFC 7396) to the SDK's held XDM context, which is merged into
@@ -146,13 +161,11 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle shown under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    ///   - voiceTransport: Optional real-time connection for voice conversations. The voice button is
-    ///     shown only when one is provided. See `VoiceTransport`.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
-    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceTransport: VoiceTransport? = nil, handleLink: ((URL) -> Bool)? = nil) {
+    static func show(surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config, generation in
-            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, voiceTransport: voiceTransport, handleLink: handleLink)
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
             guard let session = resolvePresentationSession(configuration: config, generation: generation) else { return }
             showConciergeOverlay(session: session, generation: generation)
@@ -170,9 +183,6 @@ public extension Concierge {
     ///   - title: Optional title shown in the chat header for subsequent sessions.
     ///   - subtitle: Optional subtitle shown under the title for subsequent sessions.
     ///   - hideButton: Whether to hide the floating button.
-    ///   - voiceTransport: Optional real-time connection for voice conversations in chats opened from
-    ///     the floating button. The voice button is shown only when one is provided. Pass the same
-    ///     long-lived instance on every call. See `VoiceTransport`.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
     /// - Returns: A view that renders `content` and conditionally overlays the chat UI.
@@ -182,7 +192,6 @@ public extension Concierge {
         title: String? = nil,
         subtitle: String? = nil,
         hideButton: Bool = false,
-        voiceTransport: VoiceTransport? = nil,
         handleLink: ((URL) -> Bool)? = nil
     ) -> some View {
         // wrap() is called inside a SwiftUI body and re-evaluates on every state change.
@@ -191,7 +200,6 @@ public extension Concierge {
         if let title = title { self.chatTitle = title }
         if let subtitle = subtitle { self.chatSubtitle = subtitle }
         if !surfaces.isEmpty { self.surfaces = surfaces }
-        if let voiceTransport = voiceTransport { self.voiceTransport = voiceTransport }
         if let handleLink = handleLink {
             self.linkInterceptor = ConciergeLinkInterceptor(handleLink: handleLink)
         }
@@ -226,13 +234,11 @@ public extension Concierge {
     ///   - subtitle: Optional subtitle displayed under the title.
     ///   - speechCapturer: Optional speech capture implementation to use.
     ///   - textSpeaker: Optional text-to-speech implementation to use.
-    ///   - voiceTransport: Optional real-time connection for voice conversations. The voice button is
-    ///     shown only when one is provided. See `VoiceTransport`.
     ///   - handleLink: Optional callback invoked when a link is tapped in the chat.
     ///     Return `true` to claim the link (the SDK takes no action). Return `false` to let the SDK handle it normally.
-    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, voiceTransport: VoiceTransport? = nil, handleLink: ((URL) -> Bool)? = nil) {
+    static func present(on presentingViewController: UIViewController, surfaces: [String], title: String? = nil, subtitle: String? = nil, speechCapturer: SpeechCapturing? = nil, textSpeaker: TextSpeaking? = nil, handleLink: ((URL) -> Bool)? = nil) {
         fetchChatConfiguration(forSurfaces: surfaces) { config, generation in
-            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, voiceTransport: voiceTransport, handleLink: handleLink)
+            applyPresentationConfiguration(title: title, subtitle: subtitle, speechCapturer: speechCapturer, textSpeaker: textSpeaker, handleLink: handleLink)
 
             guard let session = resolvePresentationSession(configuration: config, generation: generation) else { return }
             attachConciergeUIKitHost(session: session, presentingViewController: presentingViewController, generation: generation)
@@ -250,19 +256,17 @@ extension Concierge {
         subtitle: String?,
         speechCapturer: SpeechCapturing?,
         textSpeaker: TextSpeaking?,
-        voiceTransport: VoiceTransport?,
         handleLink: ((URL) -> Bool)?
     ) {
         self.chatTitle = title ?? ConciergeConstants.Defaults.TITLE
         self.chatSubtitle = subtitle
         self.speechCapturer = speechCapturer
         self.textSpeaker = textSpeaker
-        self.voiceTransport = voiceTransport
         self.linkInterceptor = handleLink.map { ConciergeLinkInterceptor(handleLink: $0) } ?? ConciergeLinkInterceptor()
     }
 
     /// Re-presents the Concierge chat overlay using the currently stored configuration
-    /// (title, subtitle, link interceptor, speech capturer, voice transport, etc.) without overwriting any values.
+    /// (title, subtitle, link interceptor, speech capturer, etc.) without overwriting any values.
     ///
     /// Used by the floating button and other internal re-show paths where the customer's
     /// previously configured values should be preserved.
@@ -397,7 +401,6 @@ extension Concierge {
             subtitle: chatSubtitle,
             speechCapturer: speechCapturer,
             textSpeaker: textSpeaker,
-            voiceTransport: voiceTransport,
             dispatch: { event in MobileCore.dispatch(event: event) },
             urlSessionConfiguration: resolvedURLSessionConfiguration(),
             identityGeneration: identityGeneration

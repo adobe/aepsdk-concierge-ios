@@ -106,8 +106,13 @@ final class ChatController: ObservableObject {
 
     // MARK: - Voice
 
-    /// The transport the app passed to `show`/`present`, or `nil` when the app does not offer voice.
-    private let voiceTransport: VoiceTransport?
+    /// Holds the transport the app registers with `Concierge.setVoiceTransport(_:)`. A conversation
+    /// reads it when it starts and keeps that transport until it ends.
+    private let voiceTransportHolder: ConciergeVoiceTransportHolder
+
+    /// Mirrors whether `voiceTransportHolder` holds a transport, so the voice button updates in a chat
+    /// that is already open.
+    @Published private var hasVoiceTransport = false
 
     /// Injectable so tests do not depend on the simulator's microphone permission.
     private let requestMicrophonePermission: () async -> Bool
@@ -162,10 +167,12 @@ final class ChatController: ObservableObject {
     var isRecording: Bool { inputState == .recording }
     var isProcessing: Bool { chatState == .processing }
     var composerEditable: Bool { identityReady && chatState != .processing && !isVoiceSessionActive }
-    var isVoiceAvailable: Bool { voiceTransport != nil }
+    /// Stays true while a conversation runs, so it can still be stopped after the app clears the transport.
+    var isVoiceAvailable: Bool { hasVoiceTransport || isVoiceSessionActive }
     var voiceEnabled: Bool {
-        guard identityReady, voiceTransport != nil else { return false }
+        guard identityReady else { return false }
         if isVoiceSessionActive { return true }
+        guard hasVoiceTransport else { return false }
         // A claim without a session of our own belongs to another chat's conversation.
         return chatState == .idle && !isRecording && !isVoiceClaimed
     }
@@ -189,7 +196,7 @@ final class ChatController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil, appState: ConciergeAppState = .shared) {
+    init(configuration: ConciergeConfiguration, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, dispatch: ((_ event: Event) -> Void)? = nil, urlSessionConfiguration: URLSessionConfiguration = .default, identityGeneration: Int? = nil, appState: ConciergeAppState = .shared) {
         let generation = identityGeneration ?? ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -198,7 +205,7 @@ final class ChatController: ObservableObject {
         self.chatService = ConciergeChatService(configuration: configuration, urlSessionConfiguration: urlSessionConfiguration)
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: generation)
         self.dispatch = dispatch
-        self.voiceTransport = voiceTransport
+        self.voiceTransportHolder = .shared
         self.requestMicrophonePermission = VoiceSessionController.requestMicrophonePermission
         self.voiceOwnership = .shared
         self.appState = appState
@@ -210,11 +217,12 @@ final class ChatController: ObservableObject {
         observeComposerState()
         observeAppState()
         observeVoiceOwnership()
+        observeVoiceTransport()
     }
 
     #if DEBUG
     // Internal for testing only
-    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransport: VoiceTransport? = nil, requestMicrophonePermission: @escaping () async -> Bool = { true }, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT, appState: ConciergeAppState = .shared, backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS, voiceOwnership: VoiceSessionOwnership = VoiceSessionOwnership()) {
+    init(configuration: ConciergeConfiguration?, chatService: ConciergeChatService, speechCapturer: SpeechCapturing?, speaker: TextSpeaking?, voiceTransportHolder: ConciergeVoiceTransportHolder = ConciergeVoiceTransportHolder(), requestMicrophonePermission: @escaping () async -> Bool = { true }, dispatch: ((_ event: Event) -> Void)? = nil, handoffTurnTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_TURN_TIMEOUT, handoffFirstChunkTimeout: TimeInterval = ConciergeConstants.Request.DATA_HANDOFF_FIRST_CHUNK_TIMEOUT, appState: ConciergeAppState = .shared, backgroundRecoveryMaxAge: TimeInterval = ConciergeConstants.Session.TTL_SECONDS, voiceOwnership: VoiceSessionOwnership = VoiceSessionOwnership()) {
         self.identityGeneration = ConciergeIdentityBoundary.shared.synchronized {
             ConciergeIdentityBoundary.shared.generation
         }
@@ -222,7 +230,7 @@ final class ChatController: ObservableObject {
         self.chatService = chatService
         self.speechController = SpeechController(capturer: speechCapturer, speaker: speaker, identityGeneration: identityGeneration)
         self.dispatch = dispatch
-        self.voiceTransport = voiceTransport
+        self.voiceTransportHolder = voiceTransportHolder
         self.requestMicrophonePermission = requestMicrophonePermission
         self.voiceOwnership = voiceOwnership
         self.appState = appState
@@ -234,6 +242,7 @@ final class ChatController: ObservableObject {
         observeComposerState()
         observeAppState()
         observeVoiceOwnership()
+        observeVoiceTransport()
     }
     #endif
 
@@ -270,6 +279,15 @@ final class ChatController: ObservableObject {
                 self?.onMain { $0.isVoiceClaimed = $0.voiceOwnership.isClaimed }
             }
             .store(in: &cancellables)
+    }
+
+    private func observeVoiceTransport() {
+        voiceTransportHolder.changes
+            .sink { [weak self] in
+                self?.onMain { $0.hasVoiceTransport = $0.voiceTransportHolder.transport != nil }
+            }
+            .store(in: &cancellables)
+        hasVoiceTransport = voiceTransportHolder.transport != nil
     }
 
     func applyTextChange(_ newText: String) {
@@ -693,7 +711,7 @@ final class ChatController: ObservableObject {
 
     /// Starts a voice conversation: asks for microphone permission, fetches session credentials
     /// from the Concierge service, then connects through the app's voice transport. Does nothing
-    /// when the app passed no transport, the chat is busy, or another chat's voice conversation is
+    /// when the app registered no transport, the chat is busy, or another chat's voice conversation is
     /// running. A denied permission starts nothing on the service and shows the permission dialog instead.
     func startVoiceSession() {
         ConciergeIdentityBoundary.shared.synchronized {
@@ -702,7 +720,7 @@ final class ChatController: ObservableObject {
     }
 
     private func startAdmittedVoiceSession() {
-        guard identityReady, let transport = voiceTransport else { return }
+        guard identityReady, let transport = voiceTransportHolder.transport else { return }
         guard chatState == .idle, !isVoiceSessionActive, !isRecording else {
             Log.warning(label: LOG_TAG, "startVoiceSession ignored. Expected an idle chat, but chatState was '\(chatState)', a voice session active was '\(isVoiceSessionActive)' and inputState was '\(inputState)'.")
             return
