@@ -50,9 +50,7 @@ public enum ChatState: Equatable {
     ///   `sendMessage`, `sendEnabled` and `micEnabled` all require `.idle` and the only route back
     ///   runs inside a turn those guards prevent from starting.
     ///
-    ///   The case is kept because removing it is a breaking API change, and the views still reason
-    ///   about it - `MessageListView.shouldFillRemainingHeight` deliberately refuses to fill an
-    ///   `.error` bubble so the guard stays correct if a producer is ever reintroduced. Today the
-    ///   only writer is the `DEBUG`-only `ChatController.setChatStateForTesting`.
+    ///   The case is kept because removing it is a breaking API change. Today the only writer
+    ///   is the `DEBUG`-only `ChatController.setChatStateForTesting`.
     case error(ChatError)
 }

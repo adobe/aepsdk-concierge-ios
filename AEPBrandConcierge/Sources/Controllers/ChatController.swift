@@ -56,8 +56,6 @@ final class ChatController: ObservableObject {
     }
 
     @Published private(set) var chatState: ChatState = .idle
-    @Published var userScrollTick: Int = 0
-    @Published var userMessageToScrollId: UUID?
     @Published var showPermissionDialog: Bool = false
     @Published var audioLevel: Float = 0
 
@@ -351,13 +349,10 @@ final class ChatController: ObservableObject {
         // Clear input via controller to keep state machine consistent
         inputController.apply(.sendMessage)
 
-        let newMessage = Message(template: .basic(isUserMessage: isUser), messageBody: text)
+        let turnId = UUID()
+        var newMessage = Message(template: .basic(isUserMessage: isUser), messageBody: text)
+        if isUser { newMessage.turnId = turnId }
         messages.append(newMessage)
-
-        if isUser {
-            // Store the user message ID first
-            scrollToTop(messageId: newMessage.id)
-        }
 
         if isUser {
             // Reads the store synchronously (no async work involved) so the same snapshot
@@ -367,7 +362,7 @@ final class ChatController: ObservableObject {
             let sessionID = chatService.resolveSessionID()
             let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
             dispatchTrackingEvent(.querySubmitted(query: text, xdmFields: xdmContext))
-            streamAgentResponse(for: text, heldXDMFields: xdmContext, sessionID: sessionID)
+            streamAgentResponse(for: text, transcriptTurnId: turnId, heldXDMFields: xdmContext, sessionID: sessionID)
         } else {
             clearState()
         }
@@ -406,20 +401,15 @@ final class ChatController: ObservableObject {
             return false
         }
 
-        var anchorMessageId: UUID?
+        let turnId = UUID()
         if let localMessage, !localMessage.isEmpty {
-            let message = Message(template: .basic(isUserMessage: false), messageBody: localMessage)
+            let message = Message(template: .basic(isUserMessage: false), messageBody: localMessage).inTurn(turnId)
             messages.append(message)
-            anchorMessageId = message.id
         }
 
         let kind = TurnKind.handoff(noResponse: handoffFirstChunkTimeout, ceiling: handoffTurnTimeout)
-        let turn = streamAgentResponse(for: routingHint, extraXDMFields: xdmFields,
-                                       kind: kind, completion: completion)
-
-        // `streamAgentResponse` appends its placeholder synchronously, so with no local message
-        // that placeholder is the turn's anchor instead.
-        scrollToTop(messageId: anchorMessageId ?? turn.placeholderId)
+        streamAgentResponse(for: routingHint, transcriptTurnId: turnId, extraXDMFields: xdmFields,
+                            kind: kind, completion: completion)
         return true
     }
 
@@ -470,7 +460,8 @@ final class ChatController: ObservableObject {
         guard Date().timeIntervalSince(request.attemptStartedAt) < backgroundRecoveryMaxAge else {
             Log.warning(label: LOG_TAG, "Background recovery skipped because the session expired while waiting.")
             dispatchTrackingEvent(.errorOccurred(errorMessage: request.error.localizedDescription))
-            messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage))
+            messages.append(Message(template: .basic(isUserMessage: false), messageBody: networkErrorMessage)
+                .inTurn(turn.transcriptTurnId))
             turn.resolve(request.error)
             endTurn(turn)
             return
@@ -483,7 +474,8 @@ final class ChatController: ObservableObject {
         latestPromptSuggestions = []
         // The resend is a new request with its own interaction ID, so it reports its own
         // responseStarted/responseCompleted pair rather than completing the failed attempt's.
-        _ = streamAgentResponse(for: request.query, heldXDMFields: request.xdmFields, sessionID: request.sessionID,
+        _ = streamAgentResponse(for: request.query, transcriptTurnId: turn.transcriptTurnId,
+                                heldXDMFields: request.xdmFields, sessionID: request.sessionID,
                                 kind: .typed, allowsBackgroundRecovery: false)
     }
 
@@ -556,21 +548,8 @@ final class ChatController: ObservableObject {
         latestLinkHints = []
         latestPromptSuggestions = []
         lastTurnSessionID = nil
-        userMessageToScrollId = nil
         showPermissionDialog = false
         audioLevel = 0
-    }
-
-    /// Scrolls the transcript so `messageId` sits at the top, leaving the rest of the screen for
-    /// the response that follows.
-    ///
-    /// The tick is bumped on the next main-queue pass so the id is published *before* the change
-    /// `MessageListView` observes; a same-pass update would scroll to the previous turn's anchor.
-    private func scrollToTop(messageId: UUID) {
-        userMessageToScrollId = messageId
-        DispatchQueue.main.async {
-            self.userScrollTick &+= 1
-        }
     }
 
     // MARK: - Welcome Content
@@ -763,16 +742,18 @@ final class ChatController: ObservableObject {
     /// bounded. See `TurnKind`.
     @discardableResult
     private func streamAgentResponse(for query: String,
+                                     transcriptTurnId: UUID,
                                      heldXDMFields: [String: Any]? = nil,
                                      extraXDMFields: [String: Any]? = nil,
                                      sessionID: String? = nil,
                                      kind: TurnKind = .typed,
                                      allowsBackgroundRecovery: Bool = true,
                                      completion: ((ConciergeError?) -> Void)? = nil) -> ChatTurn {
-        let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "")
+        let placeholder = Message(template: .basic(isUserMessage: false), messageBody: "").inTurn(transcriptTurnId)
         messages.append(placeholder)
 
         let turn = ChatTurn(placeholderId: placeholder.id,
+                            transcriptTurnId: transcriptTurnId,
                             kind: kind,
                             allowsBackgroundRecovery: allowsBackgroundRecovery,
                             outcome: completion)
@@ -981,7 +962,7 @@ final class ChatController: ObservableObject {
                         // back to `.idle` runs inside a turn those guards prevent from starting.
                         if turn.rendersFailures {
                             self.messages.append(Message(template: .basic(isUserMessage: false),
-                                                         messageBody: self.networkErrorMessage))
+                                                         messageBody: self.networkErrorMessage).inTurn(turn.transcriptTurnId))
                         }
 
                         self.endTurn(turn)
@@ -998,9 +979,10 @@ final class ChatController: ObservableObject {
                                 self.dispatchTrackingEvent(.errorOccurred(errorMessage: ConciergeError.invalidResponseData.localizedDescription))
                                 // Nothing in the response could be shown, but its suggestions still offer a next step.
                                 let errorMessage = Message(template: .basic(isUserMessage: false), messageBody: "Sorry, I wasn't able to get a response from the Concierge Service. \n\nPlease try again later.")
-                                self.messages.append(contentsOf: [errorMessage] + self.latestPromptSuggestions.map {
+                                let fallback = [errorMessage] + self.latestPromptSuggestions.map {
                                     Message(template: .promptSuggestion(text: $0))
-                                })
+                                }
+                                self.messages.append(contentsOf: fallback.map { $0.inTurn(turn.transcriptTurnId) })
                             }
                             self.endTurn(turn)
                             return
@@ -1040,7 +1022,8 @@ final class ChatController: ObservableObject {
                         ))
 
                         self.appendElements(plan, payload: completedPayload, sessionId: resolvedSessionID,
-                                            promptSuggestions: self.latestPromptSuggestions)
+                                            promptSuggestions: self.latestPromptSuggestions,
+                                            transcriptTurnId: turn.transcriptTurnId)
 
                         self.endTurn(turn)
                     }
@@ -1079,10 +1062,12 @@ final class ChatController: ObservableObject {
     }
 
     private func appendElements(_ plan: ResponseElementPlan, payload: ConversationPayload, sessionId: String?,
-                                promptSuggestions: [String]) {
+                                promptSuggestions: [String], transcriptTurnId: UUID? = nil) {
         let newMessages = plan.makeMessages(nativeCards: nativeCards, payload: payload, sessionId: sessionId,
                                             promptSuggestions: promptSuggestions)
-        if !newMessages.isEmpty { messages.append(contentsOf: newMessages) }
+        if !newMessages.isEmpty {
+            messages.append(contentsOf: transcriptTurnId.map { id in newMessages.map { $0.inTurn(id) } } ?? newMessages)
+        }
         if let event = plan.cardsRenderedEvent { dispatchTrackingEvent(event) }
     }
 

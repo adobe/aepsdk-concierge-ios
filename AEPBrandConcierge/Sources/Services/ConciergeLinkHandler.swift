@@ -11,6 +11,7 @@
  */
 
 import UIKit
+import AEPServices
 
 /// Handles URL routing decisions for the concierge chat interface.
 /// Determines whether URLs should be opened in an in-app webview, handled as universal links
@@ -20,6 +21,18 @@ public enum ConciergeLinkHandler {
     /// URL schemes intended to load within a WKWebView: standard web protocols and WebKit
     /// internal schemes (about:blank, about:srcdoc).
     private static let webSchemes: Set<String> = ["http", "https", "about"]
+
+    private static let blockedSchemes: Set<String> = ["javascript", "file", "content", "intent", "data"]
+
+    static func isBlockedURL(_ url: URL) -> Bool {
+        blockedSchemes.contains(url.scheme?.lowercased() ?? "")
+    }
+
+    private static func rejectBlockedURL(_ url: URL) -> Bool {
+        guard isBlockedURL(url) else { return false }
+        Log.warning(label: "ConciergeLinkHandler", "Blocked URL scheme: \(url.scheme ?? "")")
+        return true
+    }
     
     /// Injectable URL opener for testing. Defaults to `UIApplication.shared.open`.
     /// Uses KVC to access the shared application to remain safe for App Extensions.
@@ -51,8 +64,9 @@ public enum ConciergeLinkHandler {
     ///
     /// For custom scheme URLs (deep links), the system handler is called immediately.
     /// For http/https URLs, the system is first asked to open the URL as a universal link.
-    /// If the host app has registered the URL's domain and path via Associated Domains,
-    /// the app handles the navigation natively. Otherwise, the URL falls back to the in-app webview.
+    /// If an installed app has registered the URL's domain and path via Associated Domains,
+    /// that app handles the navigation natively. Otherwise, the URL falls back to the in-app webview.
+    /// Dangerous schemes, including `intent:`, are ignored.
     ///
     /// - Parameters:
     ///   - url: The URL to open.
@@ -63,6 +77,8 @@ public enum ConciergeLinkHandler {
         openInWebView: @escaping (URL) -> Void,
         openWithSystem: @escaping (URL) -> Void
     ) {
+        guard !rejectBlockedURL(url) else { return }
+
         // "Get directions" links arrive as platform-neutral geo: URIs (RFC 5870). iOS has no
         // native geo: handler, so rewrite them to an Apple Maps directions URL, which then routes
         // through the web-link path below (opens the Maps app via universal link, or the in-app
@@ -79,6 +95,45 @@ public enum ConciergeLinkHandler {
             }
         } else {
             openWithSystem(resolvedURL)
+        }
+    }
+
+    /// Routes a link tapped in chat: the host's interceptor first, then `handleURL`
+    /// (installed app via universal link, otherwise the in-app webview or system handler).
+    static func handleTappedLink(
+        _ url: URL,
+        interceptor: ConciergeLinkInterceptor,
+        openInWebView: @escaping (URL) -> Void,
+        openWithSystem: @escaping (URL) -> Void
+    ) {
+        if interceptor.handleLink(url) { return }
+        handleURL(url, openInWebView: openInWebView, openWithSystem: openWithSystem)
+    }
+
+    /// Routes WebView navigations without invoking the host's chat-link callback.
+    /// Only tapped HTTPS links may launch an app; automatic web redirects remain in the WebView.
+    static func handleWebViewURL(
+        _ url: URL,
+        isUserInitiated: Bool,
+        openWithSystem: (URL) -> Void,
+        completion: @escaping (_ shouldLoad: Bool) -> Void
+    ) {
+        guard !rejectBlockedURL(url) else {
+            completion(false)
+            return
+        }
+
+        if isUserInitiated && url.scheme?.lowercased() == "https" {
+            urlOpener(url, [.universalLinksOnly: true]) { success in
+                DispatchQueue.main.async {
+                    completion(!success)
+                }
+            }
+        } else if isWebLink(url) {
+            completion(true)
+        } else {
+            openWithSystem(url)
+            completion(false)
         }
     }
 }

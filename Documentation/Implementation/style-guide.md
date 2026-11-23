@@ -688,6 +688,7 @@ Visual styling using CSS-like variable names. All properties in the `theme` obje
 | `--message-concierge-background` | `colors.message.conciergeBackground` | `Color` | `systemBackground` | AI message bubble background |
 | `--message-concierge-text` | `colors.message.conciergeText` | `Color` | `primary` | AI message text color |
 | `--message-concierge-link-color` | `colors.message.conciergeLink` | `Color` | `accentColor` | Link color for concierge messages: sources-list links, inline link **text**, and the inline link-**icon** fallback color. |
+| `--message-concierge-heading-color` | `colors.message.conciergeHeading` | `Color?` | `nil` (headings use `--message-concierge-text`) | Optional color for Markdown headings in concierge messages. Links inside headings retain the link color; invalid values are ignored. |
 
 ### Colors - Buttons
 
@@ -1135,6 +1136,7 @@ This example opts into agent-only padding with `--agent-message-padding`. Omit t
     "--message-concierge-background": "#F5F5F5",
     "--message-concierge-text": "#292929",
     "--message-concierge-link-color": "#274DEA",
+    "--message-concierge-heading-color": "#292929",
     "--message-border-radius": "10px",
     "--message-padding": "8px 16px",
     "--agent-message-padding": "8px 16px",
@@ -1406,6 +1408,7 @@ This section documents which properties are fully implemented, partially impleme
 | `--message-concierge-background` | ✅ | Used in ChatMessageView, SourcesListView |
 | `--message-concierge-text` | ✅ | Used in ChatMessageView |
 | `--message-concierge-link-color` | ✅ | Used in SourceRowView; inline link text and link-icon fallback in BasicMessageView |
+| `--message-concierge-heading-color` | ✅ | Used by BasicMessageView and MarkdownRenderer for concierge Markdown headings |
 | `--button-primary-background` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-primary-text` | ✅ | Used in ConciergePressableButtonStyle |
 | `--button-secondary-border` | ✅ | Used in ConciergePressableButtonStyle |

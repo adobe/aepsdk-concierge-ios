@@ -153,9 +153,9 @@ struct PrivacyNoticeView: View {
 
     private func handleLinkTap(_ url: URL) {
         linkClickTracker.track(url.absoluteString, ConciergeConstants.TrackingEvent.LinkClickOrigin.PRIVACY_NOTICE)
-        if linkInterceptor.handleLink(url) { return }
-        ConciergeLinkHandler.handleURL(
+        ConciergeLinkHandler.handleTappedLink(
             url,
+            interceptor: linkInterceptor,
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )

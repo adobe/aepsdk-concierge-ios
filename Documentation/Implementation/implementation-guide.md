@@ -284,6 +284,7 @@ Concierge.sendDataHandoff(
 - **`routingHint`**: A keyword consumed only by Brand Concierge's current phrase-based router (e.g. `"successful-checkout"`) — the end user never sees it, and it is not conversational content. Defaults to empty, which is appropriate when `xdmFields` carries the routing context on its own.
 - **`xdmFields`** *(required)*: Arbitrary XDM-shaped data merged into the root of the XDM object the SDK forwards alongside the routing hint — an ordinary nested dictionary, e.g. `["commerce": ["order": ["purchaseID": "123"]]]`. Must be non-empty, follow the [XDM context](#xdm-context) value rules, and must not use `identityMap` as a top-level key (reserved by the SDK). These fields are deep-merged over any held XDM context.
 - **`localMessage`**: Optional text rendered immediately in the chat transcript as a local, non-networked message, distinct from the data forwarded to Brand Concierge. `nil`/empty -> nothing shown locally; the conversation only gets whatever Product Advisor eventually replies with.
+- **Transcript scrolling**: The chat aligns the first row of each new turn near the top: the typed prompt, the handoff's `localMessage`, or the response placeholder if there is no local message. Streaming text, cards and background retries are part of the same turn and do not trigger another automatic scroll. Dragging the transcript takes control from pending auto-scroll. Reopening the full chat anchors the newest turn again, and the transcript reserves only the trailing space needed to align short turns.
 - **`completion`**: Optional closure called exactly once with the outcome, on the main actor, and always within 60 seconds — a handoff turn is bounded on both ends, so the callback can't be left hanging by a slow or stalled backend. It receives a `Result<Void, ConciergeDataHandoffError>`. `.success` means Brand Concierge completed the turn and its response was rendered into the transcript — not merely that the payload passed validation. On `.failure`, the error is a typed `ConciergeDataHandoffError`:
 
   | Error | `code` | Meaning |
@@ -630,8 +631,11 @@ Alternatively, use the `handleLink` callback to intercept specific domains and h
 
 When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHandler` using the following flow:
 
-1. **Custom scheme URLs** (e.g. `myapp://`, `mailto:`, `tel:`) — opened immediately via the system (deep link).
-2. **http/https URLs** — the system is first asked to open the URL as a universal link. If the host app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), the app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay.
+1. **Blocked schemes** (`javascript`, `file`, `content`, `intent`, `data`, case-insensitive) — if the host callback does not handle the link, the SDK ignores it with a warning and does not load or forward it.
+2. **Custom scheme URLs** (e.g. `myapp://`, `mailto:`, `tel:`) — opened immediately via the system (deep link).
+3. **http/https URLs** — the system is first asked to open the URL as a universal link. If an installed app has registered the URL's domain via [Associated Domains](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_associated-domains), that app handles the navigation natively. Otherwise, the URL falls back to the in-app WebView overlay. This can open another installed app, not just the host app, and never opens a browser as the fallback.
+
+For "Get directions" links, the SDK converts a backend `geo:` URL to an Apple Maps HTTPS directions URL before this universal-link check. Real coordinates are preferred; a `geo:0,0?q=<address>` URL uses the address instead.
 
 **Default link handling flow:** `handleLink` callback (if provided) -> deep link / universal link check -> WebView overlay.
 
@@ -699,7 +703,11 @@ When `handleLink` returns `true`, the SDK does not open the WebView overlay or p
 
 Links clicked *inside* the in-app WebView overlay (ex: links on a page that has already loaded in the overlay) follow their own routing rules, independent of the `handleLink` callback:
 
-- **`http` / `https` / `about` URLs**: Loaded within the WebView.
-- **Non-web schemes** (ex: `mailto:`, `tel:`, `sms:`, `myapp://`): The WebView cancels the navigation and forwards the URL to the system via `UIApplication.open`, which routes it to the appropriate handler app (Mail, Phone, Messages, a custom deep-link destination, etc.).
+- **Tapped main-frame `https` links**: The SDK first tries a universal-link handoff to an installed app. If no app accepts the URL, that same navigation continues in the existing WebView, without opening a browser or restarting the original page. Subframe and new-window links do not trigger this handoff.
+- **Automatic web navigations** (including redirects, initial loads, forms and back/forward navigation), and **`http` / `about` URLs**: Loaded within the WebView without attempting to launch an app. WebKit's `.linkActivated` navigation type identifies a user tap.
+- **Blocked schemes** (`javascript`, `file`, `content`, `intent`, `data`, case-insensitive): Cancelled with a warning, without invoking the system URL opener. This applies to redirects as well as taps.
+- **Other non-web schemes** (ex: `mailto:`, `tel:`, `sms:`, `myapp://`): The WebView cancels the navigation and forwards the URL to the system via SwiftUI's `openURL`, which routes it to the appropriate handler app (Mail, Phone, Messages, a custom deep-link destination, etc.).
 
-No additional configuration is required for this behavior. Universal-link forwarding for in-chat links (the `handleLink` -> universal link -> WebView fallback described above) applies only to links tapped in chat messages; it is not re-evaluated for links inside an already loaded WebView page.
+The overlay uses `WKWebView`, not `SFSafariViewController`, and sizes its content within the hosting view's safe area, including the bottom home-indicator inset. Its close button and copyable URL bar remain at the top; there is no bottom toolbar. Back/forward swipe gestures remain available.
+
+No additional configuration is required. The host `handleLink` callback still applies only to links tapped in chat, not links or redirects inside the WebView. A host that returns `true` takes responsibility for handling its claimed URL; the default SDK rules apply when it returns `false`.

@@ -89,10 +89,6 @@ struct ChatView: View {
             MessageListView(
                 messages: displayMessages,
                 privacyNotice: theme.behavior.privacyNotice,
-                userScrollTick: controller.userScrollTick,
-                userMessageToScrollId: controller.userMessageToScrollId,
-                scrollToLastOnAppear: controller.hasConversationStarted,
-                chatState: controller.chatState,
                 isInputFocused: $isInputFocused
             ) { text in
                 controller.speak(text)

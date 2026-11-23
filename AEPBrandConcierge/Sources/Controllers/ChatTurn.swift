@@ -76,6 +76,7 @@ final class ChatTurn {
     /// product cards, prompt suggestions and an abandoned turn's cleanup all shift indices, and a
     /// stale index edits or deletes the wrong message instead of failing loudly.
     let placeholderId: UUID
+    let transcriptTurnId: UUID
 
     let kind: TurnKind
     let allowsBackgroundRecovery: Bool
@@ -93,10 +94,12 @@ final class ChatTurn {
     private var ceilingDeadline: DispatchWorkItem?
 
     init(placeholderId: UUID,
+         transcriptTurnId: UUID = UUID(),
          kind: TurnKind,
          allowsBackgroundRecovery: Bool = true,
          outcome: ((ConciergeError?) -> Void)? = nil) {
         self.placeholderId = placeholderId
+        self.transcriptTurnId = transcriptTurnId
         self.kind = kind
         self.allowsBackgroundRecovery = allowsBackgroundRecovery
         self.outcome = outcome
