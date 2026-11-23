@@ -80,4 +80,47 @@ final class MessageTests: XCTestCase {
         XCTAssertEqual(BasicMessageView.markdownBlockSpacing(font: font, lineHeightMultiplier: 0), font.lineHeight, accuracy: 0.001)
         XCTAssertEqual(BasicMessageView.markdownBlockSpacing(font: font, lineHeightMultiplier: .nan), font.lineHeight, accuracy: 0.001)
     }
+
+    @MainActor
+    func test_agentMessage_headingColorFromThemeKeepsBodyAndLinkColors() throws {
+        let configurations: [(json: String, heading: String)] = [
+            (##"{"theme":{"--message-concierge-text":"#123456","--message-concierge-link-color":"#0077CC"}}"##, "#123456"),
+            (##"{"theme":{"--message-concierge-text":"#123456","--message-concierge-link-color":"#0077CC","--message-concierge-heading-color":"#D83426"}}"##, "#D83426")
+        ]
+        let markdown = "# Heading [link](https://example.com)\n\nBody text"
+
+        for configuration in configurations {
+            let theme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(configuration.json.utf8))
+            let view = BasicMessageView(isUserMessage: false, messageBody: markdown).conciergeTheme(theme)
+            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 600))
+            let hosting = UIHostingController(rootView: view)
+            window.rootViewController = hosting
+            window.isHidden = false
+            defer {
+                window.isHidden = true
+                window.rootViewController = nil
+            }
+            hosting.view.layoutIfNeeded()
+
+            let textViews = markdownTextViews(in: hosting.view)
+            let heading = try XCTUnwrap(textViews.first { $0.text.contains("Heading") }?.attributedText)
+            let body = try XCTUnwrap(textViews.first { $0.text.contains("Body text") }?.attributedText)
+            let headingColor = try XCTUnwrap(heading.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor)
+            let bodyColor = try XCTUnwrap(body.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor)
+            let linkRange = (heading.string as NSString).range(of: "link")
+            XCTAssertNotEqual(linkRange.location, NSNotFound)
+            guard linkRange.location != NSNotFound else { return }
+            let linkColor = try XCTUnwrap(heading.attribute(.foregroundColor, at: linkRange.location, effectiveRange: nil) as? UIColor)
+
+            XCTAssertEqual(Color(uiColor: headingColor).toHexString(), configuration.heading)
+            XCTAssertEqual(Color(uiColor: bodyColor).toHexString(), "#123456")
+            XCTAssertEqual(Color(uiColor: linkColor).toHexString(), "#0077CC")
+        }
+    }
+
+    @MainActor
+    private func markdownTextViews(in view: UIView) -> [MarkdownText.AutoSizingTextView] {
+        let current = (view as? MarkdownText.AutoSizingTextView).map { [$0] } ?? []
+        return current + view.subviews.flatMap { markdownTextViews(in: $0) }
+    }
 }

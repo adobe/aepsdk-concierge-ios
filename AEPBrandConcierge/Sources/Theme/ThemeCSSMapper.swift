@@ -50,6 +50,14 @@ public enum CSSKeyMapper {
         "message-concierge-background": { cssValue, theme in theme.colors.message.conciergeBackground = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-text": { cssValue, theme in theme.colors.message.conciergeText = CSSValueConverter.parseColor(cssValue) },
         "message-concierge-link-color": { cssValue, theme in theme.colors.message.conciergeLink = CSSValueConverter.parseColor(cssValue) },
+        "message-concierge-heading-color": { cssValue, theme in
+            let value = cssValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard CSSValueConverter.isValidHexColor(value) else {
+                Log.warning(label: ConciergeConstants.LOG_TAG, "Ignoring invalid --message-concierge-heading-color; expected #RRGGBB or #RRGGBBAA.")
+                return
+            }
+            theme.colors.message.conciergeHeading = CSSValueConverter.parseColor(value)
+        },
 
         // Colors - Citations
         "citations-background-color": { cssValue, theme in theme.colors.citation.background = CSSValueConverter.parseColor(cssValue) },

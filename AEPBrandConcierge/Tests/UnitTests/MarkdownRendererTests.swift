@@ -101,6 +101,72 @@ final class MarkdownRendererTests: XCTestCase {
             XCTFail("Expected text block for header")
         }
     }
+
+    func test_buildBlocks_headingColorOverridesAllLevelsAndKeepsBodyAndFonts() throws {
+        let markdown = """
+        # Heading one
+
+        ## Heading two
+
+        ### Heading three
+
+        #### Heading four
+
+        ##### Heading five
+
+        ###### Heading six
+
+        Body text
+        """
+        let bodyColor = UIColor.black
+        var originalFonts: [UIFont] = []
+        let configurations: [(headingColor: UIColor?, expected: UIColor)] = [
+            (nil, bodyColor), (.red, .red), (.blue, .blue), (nil, bodyColor)
+        ]
+
+        for (index, configuration) in configurations.enumerated() {
+            let blocks = MarkdownRenderer.buildBlocks(
+                markdown: markdown,
+                textColor: bodyColor,
+                headingColor: configuration.headingColor
+            )
+            XCTAssertEqual(blocks.count, 7)
+            guard blocks.count == 7 else { return }
+
+            for headingIndex in 0..<6 {
+                guard case .text(let heading) = blocks[headingIndex] else {
+                    return XCTFail("Expected a text block for heading \(headingIndex + 1)")
+                }
+                let color = try XCTUnwrap(heading.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor)
+                let font = try XCTUnwrap(heading.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)
+                XCTAssertEqual(color, configuration.expected)
+                if index == 0 {
+                    originalFonts.append(font)
+                } else {
+                    XCTAssertEqual(font, originalFonts[headingIndex])
+                }
+            }
+
+            guard case .text(let body) = blocks[6] else {
+                return XCTFail("Expected a body text block")
+            }
+            XCTAssertEqual(body.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, bodyColor)
+        }
+    }
+
+    func test_buildBlocks_headingColorAppliesInsideBlockQuotesWithoutChangingBody() throws {
+        let blocks = MarkdownRenderer.buildBlocks(
+            markdown: "> ## Quoted heading\n>\n> Quoted body",
+            textColor: .black,
+            headingColor: .red
+        )
+        guard case .blockQuote(let children) = blocks.first, children.count == 2,
+              case .text(let heading) = children[0], case .text(let body) = children[1] else {
+            return XCTFail("Expected a quoted heading and body")
+        }
+        XCTAssertEqual(heading.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, .red)
+        XCTAssertEqual(body.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, .black)
+    }
     
     // MARK: - Unordered List Tests
     

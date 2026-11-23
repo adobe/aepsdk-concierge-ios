@@ -218,6 +218,7 @@ struct BasicMessageView: View {
             MarkdownBlockView(
                 markdown: annotatedBody,
                 textColor: UIColor(theme.colors.message.conciergeText.color),
+                headingColor: theme.colors.message.conciergeHeading.map { UIColor($0.color) },
                 // Inline link text and the link *icon* below both default to
                 // `--message-concierge-link-color`, themeable independently of `--color-primary`.
                 // The icon can still diverge when `citations.linkIconStyle.color` overrides it.

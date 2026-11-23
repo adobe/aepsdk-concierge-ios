@@ -280,7 +280,34 @@ final class ThemeCSSMapperTests: XCTestCase {
     }
 
     // MARK: - Color Mapping Tests
-    
+
+    func test_messageConciergeHeadingColor_isOptionalAndMapsThemeJSON() throws {
+        let defaultJSON = ##"{"theme":{"--message-concierge-text":"#123456"}}"##
+        let defaultTheme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(defaultJSON.utf8))
+        XCTAssertNil(defaultTheme.colors.message.conciergeHeading)
+
+        let configuredJSON = ##"{"theme":{"--message-concierge-heading-color":" #A1B2C380 "}}"##
+        let configuredTheme = try JSONDecoder().decode(ConciergeTheme.self, from: Data(configuredJSON.utf8))
+        XCTAssertEqual(configuredTheme.colors.message.conciergeHeading?.color.toHexString(), "#A1B2C380")
+        XCTAssertNil(configuredTheme.cssVariables["--message-concierge-heading-color"])
+
+        let encoded = try JSONEncoder().encode(configuredTheme)
+        let roundTrip = try JSONDecoder().decode(ConciergeTheme.self, from: encoded)
+        XCTAssertEqual(roundTrip.colors.message.conciergeHeading?.color.toHexString(), "#A1B2C380")
+    }
+
+    func test_messageConciergeHeadingColor_invalidValuesDoNotOverrideExistingColor() {
+        for value in ["", " ", "#123", "#GGGGGG", "not-a-color"] {
+            var theme = ConciergeTheme()
+            CSSKeyMapper.apply(cssKey: "--message-concierge-heading-color", cssValue: value, to: &theme)
+            XCTAssertNil(theme.colors.message.conciergeHeading, "Invalid value \(value) must not enable an override")
+
+            CSSKeyMapper.apply(cssKey: "--message-concierge-heading-color", cssValue: "#123456", to: &theme)
+            CSSKeyMapper.apply(cssKey: "--message-concierge-heading-color", cssValue: value, to: &theme)
+            XCTAssertEqual(theme.colors.message.conciergeHeading?.color.toHexString(), "#123456")
+        }
+    }
+
     func test_colorPrimary_mapsToPrimaryColor() {
         // Given
         var theme = ConciergeTheme()
