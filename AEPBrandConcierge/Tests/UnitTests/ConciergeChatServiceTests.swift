@@ -715,7 +715,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         return query["conversation"] as? [String: Any]
     }
 
-    func test_createVoiceBootstrapPayload_carriesLivekitBootstrapTypeUnderData() throws {
+    func test_createVoiceBootstrapPayload_carriesVoiceStartMarker() throws {
         // Given
         let service = ConciergeChatService(configuration: makeConfiguration())
 
@@ -723,13 +723,13 @@ final class ConciergeChatServiceTests: XCTestCase {
         let conversation = voiceBootstrapConversation(from: try extractVoiceBootstrapDictionary(from: service))
 
         // Then
-        let data = conversation?["data"] as? [String: Any]
-        XCTAssertEqual(data?["type"] as? String, "livekit-bootstrap")
-        XCTAssertEqual(data?.count, 1, "the bootstrap data part carries only its type")
-        XCTAssertNil(conversation?["type"], "type must not sit at the conversation top level")
+        let voice = conversation?["voice"] as? [String: Any]
+        XCTAssertEqual(voice?["action"] as? String, "start")
+        XCTAssertEqual(voice?.count, 1, "the voice marker carries only its action")
+        XCTAssertNil(conversation?["data"], "without a token, there is no data part")
     }
 
-    func test_createVoiceBootstrapPayload_marksXDMEventTypeAsVoice() throws {
+    func test_createVoiceBootstrapPayload_omitsXDMEventType() throws {
         // Given
         let service = ConciergeChatService(configuration: makeConfiguration())
 
@@ -737,19 +737,46 @@ final class ConciergeChatServiceTests: XCTestCase {
         let payload = try extractVoiceBootstrapDictionary(from: service)
         let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
 
-        // Then — the service needs both this and `data.type` to treat the request as a bootstrap
-        XCTAssertEqual(xdm["eventType"] as? String, "conversation.voice")
+        // Then — the `voice` marker alone makes the request a bootstrap
+        XCTAssertNil(xdm["eventType"])
         XCTAssertNotNil(xdm["identityMap"])
     }
 
-    func test_createChatPayload_omitsVoiceEventType() throws {
+    func test_createChatPayload_omitsVoiceMarker() throws {
         let service = ConciergeChatService(configuration: makeConfiguration())
 
         let payloadData = try service.createChatPayload(query: "hi")
         let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: payloadData) as? [String: Any])
-        let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
 
-        XCTAssertNil(xdm["eventType"], "a chat turn must not be marked as a voice bootstrap")
+        XCTAssertNil(voiceBootstrapConversation(from: payload)?["voice"], "the service rejects `voice` together with `message`")
+    }
+
+    func test_createVoiceBootstrapPayload_withToken_attachesAuthDataPartAlongsideVoiceMarker() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let data = try service.createVoiceBootstrapPayload(token: "token-abc")
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let conversation = voiceBootstrapConversation(from: payload)
+
+        // Then — the same data part a chat turn sends
+        XCTAssertEqual((conversation?["voice"] as? [String: Any])?["action"] as? String, "start")
+        let auth = conversation?["data"] as? [String: Any]
+        XCTAssertEqual(auth?["type"] as? String, "auth")
+        XCTAssertEqual((auth?["payload"] as? [String: Any])?["token"] as? String, "token-abc")
+    }
+
+    func test_createVoiceBootstrapPayload_withBlankToken_omitsAuthDataPart() throws {
+        // Given
+        let service = ConciergeChatService(configuration: makeConfiguration())
+
+        // When
+        let data = try service.createVoiceBootstrapPayload(token: "  ")
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        // Then
+        XCTAssertNil(voiceBootstrapConversation(from: payload)?["data"])
     }
 
     func test_createVoiceBootstrapPayload_omitsMessage() throws {
@@ -799,7 +826,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual((xdm["loyalty"] as? [String: Any])?["tier"] as? String, "gold")
         let ecidEntries = (xdm["identityMap"] as? [String: Any])?["ECID"] as? [[String: Any]]
         XCTAssertEqual(ecidEntries?.first?["id"] as? String, "real-ecid", "the SDK's identityMap wins")
-        XCTAssertEqual(xdm["eventType"] as? String, "conversation.voice", "the SDK's eventType wins")
+        XCTAssertEqual(xdm["eventType"] as? String, "app.custom", "passed through as in a chat turn")
     }
 
     func test_createVoiceBootstrapPayload_withNilEcid_throwsInvalidEcidError() {
@@ -1277,7 +1304,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         StubURLProtocol.reset()
         let service = makeStubbedService(region: "va7")
 
-        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { _ in })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in }, onComplete: { _ in })
         await waitForCondition { StubURLProtocol.count >= 1 }
 
         let request = try XCTUnwrap(StubURLProtocol.last)
@@ -1290,12 +1317,37 @@ final class ConciergeChatServiceTests: XCTestCase {
         StubURLProtocol.reset()
         let service = makeStubbedService()
 
-        service.bootstrapVoiceSession(sessionID: "resolved-session-id", onBootstrap: { _ in }, onComplete: { _ in })
+        service.bootstrapVoiceSession(token: nil, sessionID: "resolved-session-id", onBootstrap: { _ in }, onComplete: { _ in })
         await waitForCondition { StubURLProtocol.count >= 1 }
 
         let url = try XCTUnwrap(StubURLProtocol.last?.url)
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         XCTAssertEqual(items.first { $0.name == "sessionId" }?.value, "resolved-session-id")
+    }
+
+    func test_bootstrapVoiceSession_sendsTheTokenInTheBodyAndNotInAHeader() async throws {
+        StubURLProtocol.reset()
+        let service = makeStubbedService()
+
+        service.bootstrapVoiceSession(token: "athlete-token-123", onBootstrap: { _ in }, onComplete: { _ in })
+        await waitForCondition { StubURLProtocol.count >= 1 }
+
+        let request = try XCTUnwrap(StubURLProtocol.last)
+        let headers = request.allHTTPHeaderFields ?? [:]
+        XCTAssertFalse(headers.values.contains { $0.contains("athlete-token-123") }, "The token must not appear in any header")
+        let body: Any
+        if let data = request.httpBody {
+            body = try JSONSerialization.jsonObject(with: data)
+        } else {
+            let stream = try XCTUnwrap(request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            body = try JSONSerialization.jsonObject(with: stream)
+        }
+        let conversation = voiceBootstrapConversation(from: try XCTUnwrap(body as? [String: Any]))
+        XCTAssertEqual((conversation?["voice"] as? [String: Any])?["action"] as? String, "start")
+        let auth = conversation?["data"] as? [String: Any]
+        XCTAssertEqual((auth?["payload"] as? [String: Any])?["token"] as? String, "athlete-token-123")
     }
 
     func test_bootstrapVoiceSession_deliversCredentials_whenSessionPayloadArrives() async {
@@ -1307,7 +1359,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let received = LockedBox<VoiceSessionBootstrap?>(nil)
         let completion = LockedBox<ConciergeError??>(nil)
-        service.bootstrapVoiceSession(onBootstrap: { received.value = $0 }, onComplete: { completion.value = .some($0) })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { received.value = $0 }, onComplete: { completion.value = .some($0) })
         await waitForCondition { completion.value != nil }
 
         XCTAssertEqual(received.value, VoiceSessionBootstrap(url: "wss://rtc.example.com", token: "session-abc"))
@@ -1323,7 +1375,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let received = LockedBox<[VoiceSessionBootstrap]>([])
         let completed = LockedBox<Bool>(false)
-        service.bootstrapVoiceSession(onBootstrap: { received.value.append($0) }, onComplete: { _ in completed.value = true })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { received.value.append($0) }, onComplete: { _ in completed.value = true })
         await waitForCondition { completed.value }
 
         XCTAssertEqual(received.value, [VoiceSessionBootstrap(url: "wss://a", token: "t1")])
@@ -1338,7 +1390,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let bootstrapped = LockedBox<Bool>(false)
         let completed = LockedBox<Bool>(false)
-        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { _ in completed.value = true })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in bootstrapped.value = true }, onComplete: { _ in completed.value = true })
         await waitForCondition { completed.value }
 
         XCTAssertFalse(bootstrapped.value, "a non-session type or a session without a token must not bootstrap")
@@ -1351,7 +1403,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let bootstrapped = LockedBox<Bool>(false)
         let completion = LockedBox<ConciergeError??>(nil)
-        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
         await waitForCondition { completion.value != nil }
 
         XCTAssertFalse(bootstrapped.value)
@@ -1369,7 +1421,7 @@ final class ConciergeChatServiceTests: XCTestCase {
 
         let bootstrapped = LockedBox<Bool>(false)
         let completion = LockedBox<ConciergeError??>(nil)
-        service.bootstrapVoiceSession(onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in bootstrapped.value = true }, onComplete: { completion.value = .some($0) })
         await waitForCondition { completion.value != nil }
 
         XCTAssertFalse(bootstrapped.value)
@@ -1382,7 +1434,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let service = makeStubbedService()
 
         let error = LockedBox<ConciergeError?>(nil)
-        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in }, onComplete: { error.value = $0 })
         await waitForCondition { error.value != nil }
 
         XCTAssertNotNil(error.value, "a network failure must surface a ConciergeError, matching streamChat")
@@ -1396,7 +1448,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let service = ConciergeChatService(configuration: makeConfiguration(), urlSessionConfiguration: sessionConfig)
 
         let error = LockedBox<ConciergeError?>(nil)
-        service.bootstrapVoiceSession(onBootstrap: { _ in }, onComplete: { error.value = $0 })
+        service.bootstrapVoiceSession(token: nil, onBootstrap: { _ in }, onComplete: { error.value = $0 })
         await waitForCondition { error.value != nil }
 
         XCTAssertNotNil(error.value, "bootstrap should surface a ConciergeError when the URL can't be built")
