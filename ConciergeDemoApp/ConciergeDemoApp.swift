@@ -10,12 +10,17 @@
  governing permissions and limitations under the License.
  */
 
+import AEPBrandConcierge
 import SwiftUI
 
 @main
 struct ConciergeDemoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var deepLinkState = DeepLinkState()
+
+    init() {
+        Concierge.setVoiceTransport(DemoVoice.transport)
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -40,9 +45,8 @@ class DeepLinkState: ObservableObject {
     @Published var targetTab: ContentView.DemoTab?
 }
 
-/// The app's one voice transport. Brand Concierge reuses it for every conversation. Every
-/// `Concierge.show` and `Concierge.present` call, and the `Concierge.wrap` that shows the floating
-/// button, passes it, because a reopened chat keeps the transport it was first shown with.
+/// The app's one voice transport, registered at launch. Brand Concierge reuses it for every
+/// conversation in every chat.
 enum DemoVoice {
     static let transport = LiveKitTransport()
 }
