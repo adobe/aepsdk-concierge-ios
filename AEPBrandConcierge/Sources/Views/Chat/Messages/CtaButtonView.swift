@@ -53,9 +53,9 @@ struct CtaButtonView: View {
         guard let urlString = action.url else { return }
         onTap?(action.text, urlString)
         guard let url = URL(string: urlString) else { return }
-        if linkInterceptor.handleLink(url) { return }
-        ConciergeLinkHandler.handleURL(
+        ConciergeLinkHandler.handleTappedLink(
             url,
+            interceptor: linkInterceptor,
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )

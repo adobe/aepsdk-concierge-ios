@@ -471,9 +471,9 @@ private extension ProductDetailCardView {
     func handleCardTap() {
         cardTapHandler.cardTapped(data)
         guard let destination = data.destinationURL else { return }
-        if linkInterceptor.handleLink(destination) { return }
-        ConciergeLinkHandler.handleURL(
+        ConciergeLinkHandler.handleTappedLink(
             destination,
+            interceptor: linkInterceptor,
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )
@@ -490,9 +490,9 @@ extension ProductDetailCardView {
     func handleProductCardCtaButtonTap(_ action: ActionButton) {
         guard let urlString = action.url, let url = URL(string: urlString) else { return }
         onTap?(action.text, urlString)
-        if linkInterceptor.handleLink(url) { return }
-        ConciergeLinkHandler.handleURL(
+        ConciergeLinkHandler.handleTappedLink(
             url,
+            interceptor: linkInterceptor,
             openInWebView: { webViewPresenter.openURL($0) },
             openWithSystem: { openURL($0) }
         )

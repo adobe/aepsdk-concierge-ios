@@ -58,9 +58,17 @@ struct WebViewPopover: View {
                         openURL(deepLinkURL)
                     }
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(Color(UIColor.systemBackground))
             .clipShape(RoundedCornerShape(radius: 16, corners: [.topLeft, .topRight]))
+            // Only the sheet surface fills the bottom inset (home indicator, floating tab bar,
+            // keyboard); web content stays inside the safe area so bottom controls remain visible.
+            .background(
+                RoundedCornerShape(radius: 16, corners: [.topLeft, .topRight])
+                    .fill(Color(UIColor.systemBackground))
+                    .ignoresSafeArea(.all, edges: .bottom)
+            )
             .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: -5)
             .offset(y: dragOffset)
             .gesture(
@@ -83,7 +91,6 @@ struct WebViewPopover: View {
             )
         }
         .background(Color.clear)
-        .ignoresSafeArea(edges: .bottom)
         .transition(.move(edge: .bottom))
         .onAppear {
             currentURLString = url.absoluteString
@@ -272,16 +279,18 @@ struct ConciergeWebView: UIViewRepresentable {
             }
             let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
             
-            if ConciergeLinkHandler.isWebLink(requestURL) {
-                // Update currentURLString before the navigation starts so that
-                // updateUIView won't see a stale value and force reload the original URL.
-                if isMainFrame {
-                    parent.currentURLString = requestURL.absoluteString
+            // Only taps confirmed in the main frame may hand off to an installed app;
+            // subframe and new-window (nil target frame) navigations stay in the WebView.
+            ConciergeLinkHandler.handleWebViewURL(
+                requestURL,
+                isUserInitiated: navigationAction.navigationType == .linkActivated && isMainFrame,
+                openWithSystem: { parent.onOpenDeepLink?($0) }
+            ) { shouldLoad in
+                if shouldLoad && isMainFrame {
+                    // Prevent updateUIView from reloading the original URL during navigation.
+                    self.parent.currentURLString = requestURL.absoluteString
                 }
-                decisionHandler(.allow)
-            } else {
-                parent.onOpenDeepLink?(requestURL)
-                decisionHandler(.cancel)
+                decisionHandler(shouldLoad ? .allow : .cancel)
             }
         }
     }
