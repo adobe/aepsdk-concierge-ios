@@ -747,17 +747,19 @@ final class ChatController: ObservableObject {
                 self.presentPermissionDialog(for: .voiceConversation)
                 return
             }
+            let token = await ConciergeAuthTokenResolver.shared.resolveToken()
+            guard self.activeVoice === run else { return }
             ConciergeIdentityBoundary.shared.synchronized {
                 guard self.identityReady else {
                     self.finishVoiceSession(run)
                     return
                 }
-                self.bootstrapVoiceSession(run, transport: transport)
+                self.bootstrapVoiceSession(run, transport: transport, token: token)
             }
         }
     }
 
-    private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport) {
+    private func bootstrapVoiceSession(_ run: VoiceRun, transport: VoiceTransport, token: String?) {
         guard activeVoice === run else { return }
         run.bootstrapStarted = true
         // The service replays the bootstrap's context on every voice turn, so this snapshot is the
@@ -766,6 +768,7 @@ final class ChatController: ObservableObject {
         let xdmContext = ConciergeXDMContextStore.shared.snapshot(for: sessionID)
         run.xdmContext = xdmContext
         chatService.bootstrapVoiceSession(
+            token: token,
             xdmFields: xdmContext.isEmpty ? nil : xdmContext,
             sessionID: sessionID,
             // Weak, so an open request doesn't keep the run, and its claim on voice, alive after the chat goes away.
