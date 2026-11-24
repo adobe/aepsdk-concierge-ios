@@ -349,9 +349,13 @@ final class VoiceSessionController: NSObject, @unchecked Sendable {
                     setMicrophone(enabled: false)
                 }
             case .reconnecting:
-                // The transport keeps the microphone as it was; an interruption mute stays.
                 cancelConnectionTimer()
                 setState(.listening)
+                // A transport can come back with the microphone live, so mute it again if an
+                // interruption is still on.
+                if isAudioInterrupted {
+                    setMicrophone(enabled: false)
+                }
             default:
                 break
             }
