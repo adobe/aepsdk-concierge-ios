@@ -48,6 +48,21 @@ public extension Concierge {
         ConciergeAuthTokenResolver.shared.setProvider(provider, timeout: timeout)
     }
 
+    // MARK: - Voice
+
+    /// Registers the app's voice transport, which carries voice conversations. The chat shows the
+    /// voice button only while a transport is registered. See `VoiceTransport`.
+    ///
+    /// Applies to chats already open and to chats opened later. A running voice conversation keeps the
+    /// transport it started with; after `nil`, the voice button disappears once no conversation runs.
+    /// Register one long-lived instance, for example at app launch. The SDK keeps a strong reference
+    /// to it until it is replaced or cleared. Can be called from any thread.
+    ///
+    /// - Parameter transport: The app's transport, or `nil` to turn voice conversations off.
+    static func setVoiceTransport(_ transport: VoiceTransport?) {
+        ConciergeVoiceTransportHolder.shared.set(transport)
+    }
+
     // MARK: - XDM Context
 
     /// Applies a JSON Merge Patch (RFC 7396) to the SDK's held XDM context, which is merged into

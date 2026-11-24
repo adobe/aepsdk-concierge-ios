@@ -177,8 +177,8 @@ MobileCore.resetIdentities()
 
 Concierge then ends the current conversation locally:
 
-- **Cleared:** backend session, transcript, unsent draft, held XDM context and in-flight work (chat, data handoff, feedback, speech capture and speech output). Nothing is retried under the new identity.
-- **Retained:** token-provider registration, configuration, consent, surfaces and server-side conversation history. The host remains responsible for sign-out and clearing its auth token.
+- **Cleared:** backend session, transcript, unsent draft, held XDM context and in-flight work (chat, data handoff, feedback, speech capture, speech output and voice conversation). Nothing is retried under the new identity.
+- **Retained:** token-provider and voice transport registrations, configuration, consent, surfaces and server-side conversation history. The host remains responsible for sign-out and clearing its auth token.
 - **UI:** a visible chat stays open with input disabled until Concierge is ready again; a hidden chat stays hidden. `show`/`present` calls made during reset are ignored, and data handoffs during reset complete with `noActiveSession`.
 
 Sending resumes, with a new `sessionId`, once Edge Identity reports reset complete and refreshed identity and configuration are available. This requires the **AEPEdgeIdentity** extension to be registered. If reset is still pending after five seconds, Concierge logs a warning describing what it is waiting on.
@@ -191,8 +191,8 @@ After reset, if a conversation was in progress, Concierge dispatches a **Brand C
 ## XDM context
 
 Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
-later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
-requests don't include it.
+later chat message (typed, dictated, or a tapped prompt suggestion), every voice conversation, and
+every data handoff. Feedback requests don't include it.
 
 ```swift
 try Concierge.updateXDMContext([
@@ -218,6 +218,10 @@ try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
   clears it, as does showing chat with a different ECID, server, datastream, region or surfaces.
 - **Timing:** A chat message captures the context when it's sent. Updates made after that don't
   change a message that's already in flight.
+- **Voice conversations:** A voice conversation captures the context once, when it starts. The
+  service uses that context for every spoken turn and every prompt suggestion tapped during the
+  conversation, and the Query Submitted event for a tapped suggestion carries the same context.
+  Updates made during the conversation apply from the next voice conversation or typed message.
 - **Data handoffs:** The handoff's `xdmFields` are deep-merged over the held context, and the
   handoff values win. `NSNull()` in a handoff is sent as JSON null rather than removing a key. The
   held context itself isn't changed.
@@ -364,11 +368,12 @@ the local message and the streamed Brand Concierge/Product Advisor response.
 
 The callback completes after the forwarding stream finishes, reporting either the
 delivered response or the first error encountered along the way. A handoff submitted
-while another chat turn is still processing is rejected immediately with
-`ConciergeDataHandoffError.chatInProgress`; the SDK does not queue or retain it, and
-nothing is rendered for the rejected handoff — not even `localMessage`. The host app
-owns the retry and can resubmit the same handoff once the in-flight turn finishes,
-whether it succeeded or failed. An empty `routingHint` is allowed when the XDM fields
+while another chat turn is still processing, or while a voice conversation is running,
+is rejected immediately with `ConciergeDataHandoffError.chatInProgress`; the SDK does
+not queue or retain it, and nothing is rendered for the rejected handoff — not even
+`localMessage`. The host app owns the retry and can resubmit the same handoff once the
+in-flight turn finishes, whether it succeeded or failed, or once the voice conversation
+ends. An empty `routingHint` is allowed when the XDM fields
 provide the necessary routing context.
 
 ### API reference
@@ -404,6 +409,10 @@ Brand Concierge requires a list of **surface identifiers** to resolve the correc
 - **`speechCapturer`**: Custom `SpeechCapturing` implementation. If `nil`, the SDK creates the default speech capturer internally.
 - **`textSpeaker`**: Custom `TextSpeaking` implementation. If `nil`, text to speech is disabled.
 - **`handleLink`**: Optional callback invoked before the SDK's default link routing. Return `true` to claim the URL; return `false` to let the SDK handle it normally.
+
+#### `Concierge.setVoiceTransport(_:)`
+
+- **`transport`**: The app's `VoiceTransport`, which carries voice conversation audio, or `nil` to turn voice conversations off. Applies to chats that are already open and to chats opened later; a running voice conversation keeps the transport it started with. Can be called from any thread. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations).
 
 ### Option A - Manual API call (no floating button)
 

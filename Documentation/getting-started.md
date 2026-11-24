@@ -89,3 +89,48 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 ```
+
+### Optional: voice conversations
+
+Brand Concierge can hold a spoken conversation with the agent. The SDK runs the conversation (credentials, session lifecycle, transcript and UI), and your app supplies the audio connection by implementing the `VoiceTransport` protocol. Brand Concierge has no WebRTC dependency, so apps that don't use voice ship no WebRTC code.
+
+Register your transport once, for example at app launch:
+
+```swift
+Concierge.setVoiceTransport(myVoiceTransport)
+```
+
+The transport applies to every chat, however it is opened (`show(...)`, `present(on:...)` or the floating button from `wrap(...)`), including chats that are already open. A voice conversation that is running keeps the transport it started with, so a new transport takes effect from the next conversation. Pass `nil` to turn voice off: the voice button disappears, or, if a conversation is running, stays until the conversation ends so the user can stop it. `setVoiceTransport` can be called from any thread.
+
+A `VoiceTransport` connects to the URL and token in the `VoiceConnection` Brand Concierge passes to `connect(_:)`, publishes the microphone, plays the agent's audio, reports its state and incoming data messages to its `delegate`, and sends the data messages Brand Concierge passes to `send(_:topic:)`. Send them with reliable delivery (with LiveKit, `publish(data:options:)` with `reliable: true`), and throw if the message can't be sent; Brand Concierge then shows an error message in the chat. Keep one instance for the life of the app: Brand Concierge reuses it for each conversation, sets the delegate before connecting and clears it before disconnecting. The sample app contains a complete implementation built on the LiveKit Swift SDK to copy.
+
+While a transport is registered, the composer shows a voice button. While a voice conversation runs, the transcript renders in the chat, the thinking indicator (with the theme's `loading.message`) shows from the end of the user's words until the agent starts to reply, as it does for a typed message, and each reply's product cards, sources and prompt suggestions appear when the agent finishes it. Tapping a prompt suggestion sends it to the voice agent, which answers by voice; taps are ignored while connecting, while the user is speaking and until the agent starts to reply. Typed messages, dictation and data handoffs are paused. Only one voice conversation runs at a time across the app: if the overlay chat and a chat opened with `present(on:...)` are both open, the voice button in the other one is disabled until the conversation ends. The app must provide `NSMicrophoneUsageDescription` in its `Info.plist`. Brand Concierge asks for microphone permission when the user starts a conversation, before it requests a voice session; if the permission is denied, no conversation starts and the chat offers to open Settings. A failed connection ends the conversation and shows an error message in the chat, as does a transport that does not report `.connected` within 20 seconds of `connect(_:)` (Brand Concierge then calls `disconnect()`). The same message appears when the voice agent ends the session because of a server error; when it ends an idle session, the conversation ends without a message. While the transport reports `.reconnecting`, the conversation stays open and the voice button shows a spinner; if the transport does not report `.connected` again within 30 seconds, the conversation ends with the same error message.
+
+Every voice conversation ends 60 minutes after the transport first reports `.connected`, in the foreground or the background, as a normal end without a message (Brand Concierge calls `disconnect()`). Reconnects don't restart the count; a new conversation gets its own 60 minutes.
+
+#### Background conversations
+
+By default a voice conversation ends when the app goes to the background, including when the user locks the screen. To keep it running while the screen is locked or the user is in another app, opt in from your transport:
+
+```swift
+final class MyVoiceTransport: VoiceTransport {
+    var continuesInBackground: Bool { true }
+    // ...
+}
+```
+
+Then add the `audio` background mode to your app's `Info.plist`, so iOS keeps the app running with the microphone live:
+
+```xml
+<key>UIBackgroundModes</key>
+<array>
+    <string>audio</string>
+</array>
+```
+
+Without it, iOS suspends the app seconds after it leaves the foreground and the conversation fails. The sample app's LiveKit transport opts in; return `false` (or offer an in-app setting and return its value) if you don't want background conversations.
+
+- Brand Concierge reads `continuesInBackground` once per conversation, when it calls `connect(_:)`. Start the microphone in `connect(_:)`. A conversation still asking for microphone permission or fetching its credentials ends when the app goes to the background, because iOS doesn't let an app start the microphone from there.
+- While the conversation runs in the background, iOS shows the microphone indicator in the status bar; tapping it returns to the app. Transcripts and product cards that arrive meanwhile are in the chat when the user returns.
+- It ends when the user ends it, closes the chat, force-quits the app, after 60 minutes, or when the voice agent ends an idle session (after about a minute without activity).
+- App Review: describe the voice conversation, which the user starts and hears, in your review notes as the reason for the `audio` background mode.

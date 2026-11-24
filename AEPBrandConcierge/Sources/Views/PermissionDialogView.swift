@@ -13,7 +13,16 @@
 import SwiftUI
 
 struct PermissionDialogView: View {
+    /// The feature the denied permissions are needed for.
+    enum Purpose: Equatable {
+        /// Speech to text, which needs the microphone and speech recognition.
+        case dictation
+        /// A voice conversation, which needs only the microphone.
+        case voiceConversation
+    }
+
     // Uses the environment theme instead of requiring callers to pass one explicitly.
+    var purpose: Purpose = .dictation
     let onCancel: () -> Void
     let onOpenSettings: () -> Void
 
@@ -28,14 +37,28 @@ struct PermissionDialogView: View {
         colorScheme == .dark ? theme.colors.surface.dark.color : theme.colors.surface.light.color
     }
 
+    private var title: String {
+        switch purpose {
+        case .dictation: return "Microphone and Speech Recognition Required"
+        case .voiceConversation: return "Microphone Access Required"
+        }
+    }
+
+    private var message: String {
+        switch purpose {
+        case .dictation: return "To use speech to text, please enable microphone access and speech recognition in Settings."
+        case .voiceConversation: return "To have a voice conversation, please enable microphone access in Settings."
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Microphone and Speech Recognition Required")
+                    Text(title)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.primary)
 
-                    Text("To use speech to text, please enable microphone access and speech recognition in Settings.")
+                    Text(message)
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

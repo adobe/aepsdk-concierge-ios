@@ -73,9 +73,46 @@ final class MockChatService: ConciergeChatService {
     override func cancelActiveStream() {
         cancelActiveStreamCallCount += 1
         pendingOnChunk = nil
+        if completesOnCancel, pendingBootstrapComplete != nil {
+            completeBootstrap(.unreachable)
+        }
         guard completesOnCancel, let complete = pendingOnComplete else { return }
         pendingOnComplete = nil
         complete(.unreachable)
+    }
+
+    // Captures for the voice bootstrap path. Handlers are held so a test decides when the backend
+    // answers and closes the stream.
+    private(set) var bootstrapVoiceSessionCallCount = 0
+    private(set) var lastBootstrapToken: String?
+    private(set) var lastBootstrapXDMFields: [String: Any]?
+    private(set) var lastBootstrapSessionID: String?
+    private var pendingOnBootstrap: ((VoiceSessionBootstrap) -> Void)?
+    private var pendingBootstrapComplete: ((ConciergeError?) -> Void)?
+
+    override func bootstrapVoiceSession(token: String?,
+                                        xdmFields: [String: Any]? = nil,
+                                        sessionID: String? = nil,
+                                        onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
+                                        onComplete: @escaping (ConciergeError?) -> Void) {
+        bootstrapVoiceSessionCallCount += 1
+        lastBootstrapToken = token
+        lastBootstrapXDMFields = xdmFields
+        lastBootstrapSessionID = sessionID
+        pendingOnBootstrap = onBootstrap
+        pendingBootstrapComplete = onComplete
+    }
+
+    func emitBootstrap(url: String = "wss://voice.example", token: String = "room-token") {
+        pendingOnBootstrap?(VoiceSessionBootstrap(url: url, token: token))
+        pendingOnBootstrap = nil
+    }
+
+    func completeBootstrap(_ error: ConciergeError? = nil) {
+        pendingOnBootstrap = nil
+        guard let complete = pendingBootstrapComplete else { return }
+        pendingBootstrapComplete = nil
+        complete(error)
     }
 
     func triggerCompletion() {
