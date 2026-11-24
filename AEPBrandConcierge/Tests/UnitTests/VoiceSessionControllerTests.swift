@@ -232,7 +232,7 @@ final class VoiceSessionControllerTests: XCTestCase {
         session.stop()
     }
 
-    func test_reconnecting_keepsTheSession_andReturnsToListening_withoutUnmuting() async {
+    func test_reconnecting_keepsTheSession_andReturnsToListening_mutedAgainWhileInterrupted() async {
         let transport = FakeVoiceTransport()
         let listener = RecordingVoiceListener()
         let session = start(transport, listener: listener, reconnectTimeout: 0.05)
@@ -245,9 +245,24 @@ final class VoiceSessionControllerTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 150_000_000)
 
         XCTAssertEqual(listener.states, [.connecting, .listening, .reconnecting, .listening])
-        XCTAssertEqual(transport.microphoneChanges, [false], "the interruption mute stays after reconnecting")
+        XCTAssertEqual(transport.microphoneChanges, [false, false],
+                       "a transport can reconnect with the microphone live, so the interruption mute is applied again")
         XCTAssertEqual(transport.disconnectCount, 0)
         XCTAssertTrue(transport.delegate === session)
+        session.stop()
+    }
+
+    func test_reconnecting_withoutAnInterruption_leavesTheMicrophoneAlone() async {
+        let transport = FakeVoiceTransport()
+        let listener = RecordingVoiceListener()
+        let session = start(transport, listener: listener)
+        await listening(listener)
+
+        transport.report(.reconnecting)
+        transport.report(.connected)
+
+        XCTAssertEqual(session.state, .listening)
+        XCTAssertEqual(transport.microphoneChanges, [])
         session.stop()
     }
 

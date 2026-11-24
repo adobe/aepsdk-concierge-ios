@@ -67,7 +67,9 @@ public protocol VoiceTransport: AnyObject {
     /// Mutes or unmutes the microphone without leaving the room. Brand Concierge mutes it while
     /// another app interrupts the audio session (for example, a phone call), including an
     /// interruption that began while connecting, and unmutes it when iOS allows the audio to resume.
-    /// If iOS does not, Brand Concierge ends the conversation instead. Called only while connected.
+    /// If iOS does not, Brand Concierge ends the conversation instead. Called only while connected
+    /// or reconnecting. When a reconnect succeeds, it mutes the microphone again if the
+    /// interruption is still on.
     ///
     /// If the microphone cannot be changed, report `.failed(_:)`, including when the change fails
     /// after this method has returned: Brand Concierge can't tell whether the microphone is live, so

@@ -18,8 +18,9 @@ import os
 /// Brand Concierge's `VoiceTransport` built on the LiveKit Swift SDK.
 ///
 /// Copy this file into your app and add the LiveKit package
-/// (`https://github.com/livekit/client-sdk-swift`) to your app target. Create one instance and pass
-/// it to every `Concierge.wrap(...)`, `Concierge.show(...)` or `Concierge.present(...)` call.
+/// (`https://github.com/livekit/client-sdk-swift`) to your app target. Create one instance for the
+/// life of the app and register it once with `Concierge.setVoiceTransport(_:)`, for example at app
+/// launch.
 ///
 /// Brand Concierge calls this class on the main thread, and the class keeps its own state on the
 /// main thread too: LiveKit callbacks hop to main and are dropped unless they come from the current
