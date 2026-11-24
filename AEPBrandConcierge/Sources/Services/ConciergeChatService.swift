@@ -339,25 +339,33 @@ class ConciergeChatService: NSObject {
         }
     }
 
-    private static let utcTimestampFormatter = makeTimestampFormatter(timeZone: TimeZone(secondsFromGMT: 0)!)
-    private static let localTimestampFormatterLock = NSLock()
-    private static var cachedLocalTimestampFormatter: ISO8601DateFormatter?
-
-    private static func makeTimestampFormatter(timeZone: TimeZone) -> ISO8601DateFormatter {
+    private static let utcTimestampFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+    private static let localTimestampFormatterLock = NSLock()
+    private static var cachedLocalTimestampFormatter: DateFormatter?
+
+    // Matches Web SDK `toISOStringLocal`: always a numeric offset, so zero-offset zones emit `+00:00`, not `Z`.
+    private static func makeLocalTimestampFormatter(timeZone: TimeZone) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
         formatter.timeZone = timeZone
         return formatter
     }
 
     // Cached formatters are never mutated after creation, so concurrent requests can share them safely.
-    private static func localTimestampFormatter(for timeZone: TimeZone) -> ISO8601DateFormatter {
+    private static func localTimestampFormatter(for timeZone: TimeZone) -> DateFormatter {
         localTimestampFormatterLock.lock()
         defer { localTimestampFormatterLock.unlock() }
         if let formatter = cachedLocalTimestampFormatter, formatter.timeZone == timeZone {
             return formatter
         }
-        let formatter = makeTimestampFormatter(timeZone: timeZone)
+        let formatter = makeLocalTimestampFormatter(timeZone: timeZone)
         cachedLocalTimestampFormatter = formatter
         return formatter
     }

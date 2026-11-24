@@ -1155,7 +1155,7 @@ final class ConciergeChatServiceTests: XCTestCase {
         let timestamp = "2026-11-24T16:08:58.985Z"
         let date = try XCTUnwrap(formatter.date(from: timestamp))
         let cases: [(minutes: Int, localTime: String)] = [
-            (0, "2026-11-24T16:08:58.985Z"),
+            (0, "2026-11-24T16:08:58.985+00:00"),
             (330, "2026-11-24T21:38:58.985+05:30"),
             (-480, "2026-11-24T08:08:58.985-08:00"),
             (345, "2026-11-24T21:53:58.985+05:45"),
