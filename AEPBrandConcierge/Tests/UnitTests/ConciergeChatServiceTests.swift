@@ -1182,11 +1182,11 @@ final class ConciergeChatServiceTests: XCTestCase {
                            formatter.date(from: try XCTUnwrap(placeContext["localTime"] as? String)))
             let offset = try XCTUnwrap(placeContext["localTimezoneOffset"] as? NSNumber)
             XCTAssertNotEqual(CFGetTypeID(offset), CFBooleanGetTypeID(), "The offset must be a JSON number, not a boolean.")
-            XCTAssertEqual(offset.doubleValue, Double(testCase.minutes))
+            XCTAssertEqual(offset.doubleValue, Double(-testCase.minutes))
         }
     }
 
-    func test_outboundTimeContext_mergesCallerPlaceContextAndPreservesOverrides() async throws {
+    func test_outboundTimeContext_preservesCallerPlaceContextAndOverridesTimeFields() async throws {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let date = try XCTUnwrap(formatter.date(from: "2026-11-24T16:08:58.985Z"))
@@ -1209,16 +1209,75 @@ final class ConciergeChatServiceTests: XCTestCase {
 
                 let xdm = try await captureOutboundXDM(service: service, isFeedback: isFeedback, fields: fields)
                 let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
-                XCTAssertEqual(xdm["timestamp"] as? String, "caller-timestamp")
+                XCTAssertEqual(xdm["timestamp"] as? String, formatter.string(from: date))
                 var expectedContext: [String: Any] = [
                     "localTime": "2026-11-24T21:38:58.985+05:30",
-                    "localTimezoneOffset": 330
+                    "localTimezoneOffset": -330
                 ]
                 expectedContext.merge(callerContext) { _, caller in caller }
+                expectedContext["localTime"] = "2026-11-24T21:38:58.985+05:30"
+                expectedContext["localTimezoneOffset"] = -330
                 XCTAssertEqual(placeContext as NSDictionary, expectedContext as NSDictionary)
                 XCTAssertEqual(xdm["commerce"] as? NSDictionary, fields["commerce"] as? NSDictionary)
                 let identityMap = try XCTUnwrap(xdm["identityMap"] as? [String: Any])
                 XCTAssertEqual((identityMap["ECID"] as? [[String: Any]])?.first?["id"] as? String, "ecid-123")
+            }
+        }
+    }
+
+    func test_requestTimeFieldsOverrideHeldTimestampAndRefreshOnEachTurn() async throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let dates = try ["2026-01-15T16:08:58.985Z", "2026-07-15T16:08:58.985Z"].map {
+            try XCTUnwrap(formatter.date(from: $0))
+        }
+        let timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        var capturedDate = dates[0]
+        let fields: [String: Any] = [
+            "timestamp": "2020-01-01T00:00:00.000Z",
+            "placeContext": [
+                "localTime": "stale-local-time",
+                "localTimezoneOffset": 330,
+                "geo": ["city": "Boston"]
+            ]
+        ]
+
+        for (index, date) in dates.enumerated() {
+            capturedDate = date
+            let service = makeStubbedService(dateProvider: { capturedDate }, timeZoneProvider: { timeZone })
+            let xdm = try await awaitPayloadXDM(service: service, fields: fields)
+            let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
+            XCTAssertEqual(xdm["timestamp"] as? String, formatter.string(from: date))
+            XCTAssertEqual(placeContext["localTimezoneOffset"] as? Int, index == 0 ? 480 : 420)
+            XCTAssertEqual(placeContext["localTime"] as? String, index == 0
+                           ? "2026-01-15T08:08:58.985-08:00" : "2026-07-15T09:08:58.985-07:00")
+            XCTAssertEqual((placeContext["geo"] as? [String: Any])?["city"] as? String, "Boston")
+        }
+    }
+
+    private func awaitPayloadXDM(service: ConciergeChatService, fields: [String: Any]) async throws -> [String: Any] {
+        try await captureOutboundXDM(service: service, isFeedback: false, fields: fields)
+    }
+
+    func test_outboundTimeContext_truncatesToMillisecondsBeforeDSTBoundary() async throws {
+        let formatter = ISO8601DateFormatter()
+        let boundary = try XCTUnwrap(formatter.date(from: "2026-03-08T10:00:00Z"))
+        let timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        let cases: [(offset: TimeInterval, timestamp: String, localTime: String, localTimezoneOffset: Int)] = [
+            (-0.0001, "2026-03-08T09:59:59.999Z", "2026-03-08T01:59:59.999-08:00", 480),
+            (0, "2026-03-08T10:00:00.000Z", "2026-03-08T03:00:00.000-07:00", 420)
+        ]
+
+        for isFeedback in [false, true] {
+            for testCase in cases {
+                let service = makeStubbedService(dateProvider: { boundary.addingTimeInterval(testCase.offset) },
+                                                 timeZoneProvider: { timeZone })
+                let xdm = try await captureOutboundXDM(service: service, isFeedback: isFeedback)
+                let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
+
+                XCTAssertEqual(xdm["timestamp"] as? String, testCase.timestamp)
+                XCTAssertEqual(placeContext["localTime"] as? String, testCase.localTime)
+                XCTAssertEqual(placeContext["localTimezoneOffset"] as? Int, testCase.localTimezoneOffset)
             }
         }
     }
@@ -1243,7 +1302,7 @@ final class ConciergeChatServiceTests: XCTestCase {
                 let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
                 let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
                 XCTAssertEqual(xdm["timestamp"] as? String, formatter.string(from: date))
-                XCTAssertEqual(placeContext["localTimezoneOffset"] as? Int, index == 0 ? -480 : -420)
+                XCTAssertEqual(placeContext["localTimezoneOffset"] as? Int, index == 0 ? 480 : 420)
                 XCTAssertEqual(placeContext["localTime"] as? String, index == 0
                                ? "2026-01-15T08:08:58.985-08:00" : "2026-07-15T09:08:58.985-07:00")
             }

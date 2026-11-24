@@ -237,8 +237,11 @@ class ConciergeChatService: NSObject {
             conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
         }
 
-        var xdm = ConciergeXDMContextStore.merging(extraXDMFields ?? [:], over: createTimeXDM())
-        // Caller fields override time defaults, but can never displace the SDK's identityMap.
+        let requestTime = createTimeXDM()
+        var xdm = requestTime.applying(to: ConciergeXDMContextStore.merging(
+            extraXDMFields ?? [:], over: requestTime.fields
+        ))
+        // Request-time fields and identityMap are SDK-owned; other caller fields are preserved.
         xdm[ConciergeConstants.Request.Keys.IDENTITY_MAP] = identityMapPayload
 
         let payload: [String: Any] = [
@@ -272,9 +275,13 @@ class ConciergeChatService: NSObject {
     func createFeedbackPayload(data: [String: Any], token: String? = nil) throws -> Data {
         let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
 
+        let requestTime = createTimeXDM()
         var payload = ConciergeXDMContextStore.merging(
-            data, over: [ConciergeConstants.Request.Keys.XDM: createTimeXDM()]
+            data, over: [ConciergeConstants.Request.Keys.XDM: requestTime.fields]
         )
+        let callerXDM = payload[ConciergeConstants.Request.Keys.XDM] as? [String: Any]
+            ?? requestTime.fields
+        payload[ConciergeConstants.Request.Keys.XDM] = requestTime.applying(to: callerXDM)
         payload[ConciergeConstants.Request.Keys.Consent.META] = [
             ConciergeConstants.Request.Keys.Consent.CONSENT: [
                 ConciergeConstants.Request.Keys.Consent.STATE: consentState
@@ -306,22 +313,66 @@ class ConciergeChatService: NSObject {
         return jsonData
     }
 
-    private func createTimeXDM() -> [String: Any] {
-        let date = dateProvider()
-        let timeZone = timeZoneProvider()
+    private struct RequestTimeXDM {
+        let timestamp: String
+        let localTime: String
+        let localTimezoneOffset: Int
+
+        var fields: [String: Any] {
+            [
+                ConciergeConstants.Request.Keys.TIMESTAMP: timestamp,
+                ConciergeConstants.Request.Keys.PLACE_CONTEXT: [
+                    ConciergeConstants.Request.Keys.LOCAL_TIME: localTime,
+                    ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET: localTimezoneOffset
+                ]
+            ]
+        }
+
+        func applying(to xdm: [String: Any]) -> [String: Any] {
+            var result = xdm
+            result[ConciergeConstants.Request.Keys.TIMESTAMP] = timestamp
+            var placeContext = result[ConciergeConstants.Request.Keys.PLACE_CONTEXT] as? [String: Any] ?? [:]
+            placeContext[ConciergeConstants.Request.Keys.LOCAL_TIME] = localTime
+            placeContext[ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET] = localTimezoneOffset
+            result[ConciergeConstants.Request.Keys.PLACE_CONTEXT] = placeContext
+            return result
+        }
+    }
+
+    private static let utcTimestampFormatter = makeTimestampFormatter(timeZone: TimeZone(secondsFromGMT: 0)!)
+    private static let localTimestampFormatterLock = NSLock()
+    private static var cachedLocalTimestampFormatter: ISO8601DateFormatter?
+
+    private static func makeTimestampFormatter(timeZone: TimeZone) -> ISO8601DateFormatter {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        let timestamp = formatter.string(from: date)
         formatter.timeZone = timeZone
+        return formatter
+    }
 
-        return [
-            ConciergeConstants.Request.Keys.TIMESTAMP: timestamp,
-            ConciergeConstants.Request.Keys.PLACE_CONTEXT: [
-                ConciergeConstants.Request.Keys.LOCAL_TIME: formatter.string(from: date),
-                ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET: timeZone.secondsFromGMT(for: date) / 60
-            ]
-        ]
+    // Cached formatters are never mutated after creation, so concurrent requests can share them safely.
+    private static func localTimestampFormatter(for timeZone: TimeZone) -> ISO8601DateFormatter {
+        localTimestampFormatterLock.lock()
+        defer { localTimestampFormatterLock.unlock() }
+        if let formatter = cachedLocalTimestampFormatter, formatter.timeZone == timeZone {
+            return formatter
+        }
+        let formatter = makeTimestampFormatter(timeZone: timeZone)
+        cachedLocalTimestampFormatter = formatter
+        return formatter
+    }
+
+    private func createTimeXDM() -> RequestTimeXDM {
+        // Truncate before formatting so rounding cannot move localTime across a DST boundary.
+        let capturedDate = dateProvider()
+        let date = Date(timeIntervalSince1970: (capturedDate.timeIntervalSince1970 * 1000).rounded(.down) / 1000)
+        let timeZone = timeZoneProvider()
+
+        return RequestTimeXDM(
+            timestamp: Self.utcTimestampFormatter.string(from: date),
+            localTime: Self.localTimestampFormatter(for: timeZone).string(from: date),
+            localTimezoneOffset: -timeZone.secondsFromGMT(for: date) / 60
+        )
     }
 
     /// Builds the `{ type: "auth", payload: { token } }` data part, or `nil` for a missing/blank token.
