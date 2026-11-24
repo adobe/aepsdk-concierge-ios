@@ -188,6 +188,12 @@ public enum ConciergeConstants {
                 static let PAYLOAD = "payload"
                 static let TOKEN = "token"
             }
+
+            /// Keys for the `query.conversation.voice` marker of a voice bootstrap. See `Values.VoiceBootstrap` for the `action` value.
+            enum VoiceBootstrap {
+                static let VOICE = "voice"
+                static let ACTION = "action"
+            }
         }
 
         enum Values {
@@ -202,6 +208,11 @@ public enum ConciergeConstants {
 
             enum AuthData {
                 static let TYPE_AUTH = "auth"
+            }
+
+            enum VoiceBootstrap {
+                /// `query.conversation.voice.action` value requesting voice session credentials.
+                static let ACTION_START = "start"
             }
         }
     }
