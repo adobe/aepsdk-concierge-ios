@@ -103,11 +103,15 @@ class ConciergeChatService: NSObject {
 
     // MARK: - Voice Bootstrap
 
-    /// Requests voice session credentials with a `livekit-bootstrap` conversation event on the
+    /// Requests voice session credentials with a `voice: { action: "start" }` conversation event on the
     /// regular conversations endpoint (with the region, like a chat turn). `onBootstrap` fires at most once, for the first `response.voice` of type
     /// `livekit_session` carrying both `livekitUrl` and `token`. `onComplete` has the same semantics
     /// as in `streamChat`: an error on failure, `nil` when the stream closes. A stream that closes
     /// without a session payload completes with `nil`; callers treat that as a failed bootstrap.
+    ///
+    /// `token` is resolved by the caller, as for `streamChat`, and sent where a chat turn sends it;
+    /// pass `nil` to send the bootstrap without one. The service doesn't pass it to the agent during
+    /// voice yet.
     ///
     /// `xdmFields` is the held XDM context snapshot. The service keeps the bootstrap's `xdm` for the
     /// voice session and sends it with every voice turn, so later context updates don't reach a
@@ -115,7 +119,8 @@ class ConciergeChatService: NSObject {
     ///
     /// Shares the per-request streaming state with `streamChat`, so callers must not run a bootstrap
     /// and a chat turn on the same instance at the same time.
-    func bootstrapVoiceSession(xdmFields: [String: Any]? = nil,
+    func bootstrapVoiceSession(token: String?,
+                               xdmFields: [String: Any]? = nil,
                                sessionID: String? = nil,
                                onBootstrap: @escaping (VoiceSessionBootstrap) -> Void,
                                onComplete: @escaping (ConciergeError?) -> Void) {
@@ -136,7 +141,7 @@ class ConciergeChatService: NSObject {
             }
             onCompleteHandler = onComplete
 
-            let payload = try createVoiceBootstrapPayload(xdmFields: xdmFields)
+            let payload = try createVoiceBootstrapPayload(token: token, xdmFields: xdmFields)
 
             var request = URLRequest(url: url)
             request.httpMethod = ConciergeConstants.HTTPMethods.POST
@@ -146,6 +151,7 @@ class ConciergeChatService: NSObject {
             request.timeoutInterval = ConciergeConstants.Request.READ_TIMEOUT
 
             dataTask = session.dataTask(with: request)
+            // The request body is not logged, as for chat: it carries the app's auth token.
             Log.debug(label: LOG_TAG, "Sending voice bootstrap request to Concierge Service: \(url)")
 
             SessionManager.shared.refreshSessionActivity()
@@ -294,27 +300,29 @@ class ConciergeChatService: NSObject {
     }
 
     /// Creates the JSON payload for a voice-bootstrap request. Same envelope as `createChatPayload`
-    /// (surfaces, identity map, consent), but `conversation` carries `data: { type: "livekit-bootstrap" }`
-    /// instead of `message`, and `xdm.eventType` is `conversation.voice`. The service needs both to
-    /// treat the request as a bootstrap rather than a chat turn. No auth token is attached: the `data`
-    /// slot holds the bootstrap discriminator, and the service identifies the user through the identity map.
-    /// - Parameter xdmFields: The held XDM context, merged into `xdm` as in a chat turn. The SDK's
-    ///   `identityMap` and `eventType` win on collision.
+    /// (surfaces, identity map, consent, and the auth token in `data`), but `conversation` carries the
+    /// `voice: { action: "start" }` marker instead of `message`. The service rejects `voice` together
+    /// with `message`.
+    /// - Parameters:
+    ///   - token: The app-supplied auth token, or `nil`/blank to omit the `data` part.
+    ///   - xdmFields: The held XDM context, merged into `xdm` as in a chat turn. The SDK's
+    ///     `identityMap` wins on collision.
     /// - Returns: JSON data for the request body.
     /// - Note: Internal visibility for testing.
-    func createVoiceBootstrapPayload(xdmFields: [String: Any]? = nil) throws -> Data {
+    func createVoiceBootstrapPayload(token: String? = nil, xdmFields: [String: Any]? = nil) throws -> Data {
         try requireConversationPrerequisites()
 
-        let conversation: [String: Any] = [
+        var conversation: [String: Any] = [
             ConciergeConstants.Request.Keys.SURFACES: USE_TEMPS ? [TEMP_surface] : configuration.surfaces,
-            ConciergeConstants.Request.Keys.VoiceBootstrap.DATA: [
-                ConciergeConstants.Request.Keys.VoiceBootstrap.TYPE: ConciergeConstants.Request.Values.VoiceBootstrap.TYPE_LIVEKIT_BOOTSTRAP
+            ConciergeConstants.Request.Keys.VoiceBootstrap.VOICE: [
+                ConciergeConstants.Request.Keys.VoiceBootstrap.ACTION: ConciergeConstants.Request.Values.VoiceBootstrap.ACTION_START
             ]
         ]
+        if let dataPart = Self.authDataPart(for: token) {
+            conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
+        }
 
-        var extraXDMFields = xdmFields ?? [:]
-        extraXDMFields[ConciergeConstants.Request.Keys.EVENT_TYPE] = ConciergeConstants.Request.Values.VoiceBootstrap.EVENT_TYPE_VOICE
-        let payload = makeConversationEventPayload(conversation: conversation, extraXDMFields: extraXDMFields)
+        let payload = makeConversationEventPayload(conversation: conversation, extraXDMFields: xdmFields)
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
             throw ConciergeError.invalidData("Unable to create JSON payload for Brand Concierge voice bootstrap request.")
