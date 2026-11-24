@@ -190,6 +190,14 @@ After reset, if a conversation was in progress, Concierge dispatches a **Brand C
 
 ## XDM context
 
+Every chat, data handoff and feedback request includes request-time XDM defaults:
+`timestamp` is UTC ISO-8601 with milliseconds, and `placeContext.localTime` represents the same
+instant in the device's local timezone with milliseconds and an ISO-8601 offset.
+`placeContext.localTimezoneOffset` is a JSON number in minutes east of UTC (for example, `330`
+for `+05:30`). These fields are generated together for each request, not from the session time.
+App-provided XDM values override matching time fields; other `placeContext` fields merge with
+the generated defaults. The SDK's `identityMap` remains protected.
+
 Use `Concierge.updateXDMContext(_:)` to hold app-provided XDM data. The SDK sends it with every
 later chat message (typed, dictated, or a tapped prompt suggestion) and every data handoff. Feedback
 requests don't include it.

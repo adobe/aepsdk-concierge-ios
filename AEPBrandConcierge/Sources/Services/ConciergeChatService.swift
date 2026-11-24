@@ -33,6 +33,8 @@ class ConciergeChatService: NSObject {
 
     private var configuration: ConciergeConfiguration
     private var session: URLSession!
+    private let dateProvider: () -> Date
+    private let timeZoneProvider: () -> TimeZone
 
     // Per-turn streaming state. Written synchronously in `streamChat` (on the caller's thread, before
     // `resume()`) and read/cleared on the URLSession delegate queue — `resume()` establishes the
@@ -47,8 +49,12 @@ class ConciergeChatService: NSObject {
     // MARK: - Initialization
 
     init(configuration: ConciergeConfiguration,
-         urlSessionConfiguration: URLSessionConfiguration = .default) {
+         urlSessionConfiguration: URLSessionConfiguration = .default,
+         dateProvider: @escaping () -> Date = Date.init,
+         timeZoneProvider: @escaping () -> TimeZone = { .current }) {
         self.configuration = configuration
+        self.dateProvider = dateProvider
+        self.timeZoneProvider = timeZoneProvider
         
         super.init()
 
@@ -231,14 +237,9 @@ class ConciergeChatService: NSObject {
             conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
         }
 
-        var xdm: [String: Any] = [
-            ConciergeConstants.Request.Keys.IDENTITY_MAP: identityMapPayload
-        ]
-        // Host-supplied handoff fields are shallow-merged alongside the SDK's own XDM. Collisions
-        // resolve in the SDK's favour so a caller can never displace `identityMap`.
-        if let extraXDMFields = extraXDMFields {
-            xdm.merge(extraXDMFields) { current, _ in current }
-        }
+        var xdm = ConciergeXDMContextStore.merging(extraXDMFields ?? [:], over: createTimeXDM())
+        // Caller fields override time defaults, but can never displace the SDK's identityMap.
+        xdm[ConciergeConstants.Request.Keys.IDENTITY_MAP] = identityMapPayload
 
         let payload: [String: Any] = [
             ConciergeConstants.Request.Keys.EVENTS: [
@@ -271,7 +272,9 @@ class ConciergeChatService: NSObject {
     func createFeedbackPayload(data: [String: Any], token: String? = nil) throws -> Data {
         let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
 
-        var payload = data
+        var payload = ConciergeXDMContextStore.merging(
+            data, over: [ConciergeConstants.Request.Keys.XDM: createTimeXDM()]
+        )
         payload[ConciergeConstants.Request.Keys.Consent.META] = [
             ConciergeConstants.Request.Keys.Consent.CONSENT: [
                 ConciergeConstants.Request.Keys.Consent.STATE: consentState
@@ -301,6 +304,24 @@ class ConciergeChatService: NSObject {
         }
 
         return jsonData
+    }
+
+    private func createTimeXDM() -> [String: Any] {
+        let date = dateProvider()
+        let timeZone = timeZoneProvider()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        let timestamp = formatter.string(from: date)
+        formatter.timeZone = timeZone
+
+        return [
+            ConciergeConstants.Request.Keys.TIMESTAMP: timestamp,
+            ConciergeConstants.Request.Keys.PLACE_CONTEXT: [
+                ConciergeConstants.Request.Keys.LOCAL_TIME: formatter.string(from: date),
+                ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET: timeZone.secondsFromGMT(for: date) / 60
+            ]
+        ]
     }
 
     /// Builds the `{ type: "auth", payload: { token } }` data part, or `nil` for a missing/blank token.

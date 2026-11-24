@@ -552,7 +552,10 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertEqual(Set(payload.keys), Set(["events"]))
         let event = try XCTUnwrap(events.first)
         let serializedXdm = try XCTUnwrap(event["xdm"] as? [String: Any])
-        XCTAssertEqual(serializedXdm as NSDictionary, xdm as NSDictionary)
+        var originalXdm = serializedXdm
+        XCTAssertNotNil(originalXdm.removeValue(forKey: "timestamp"))
+        XCTAssertNotNil(originalXdm.removeValue(forKey: "placeContext"))
+        XCTAssertEqual(originalXdm as NSDictionary, xdm as NSDictionary)
         XCTAssertEqual(extractFeedbackConsentState(from: payload), "in")
     }
 
@@ -580,7 +583,10 @@ final class ConciergeChatServiceTests: XCTestCase {
             XCTAssertEqual(events.count, 1)
             let event = try XCTUnwrap(events.first)
             let actualXdm = try XCTUnwrap(event["xdm"] as? [String: Any])
-            XCTAssertEqual(actualXdm as NSDictionary, xdm as NSDictionary)
+            var originalXdm = actualXdm
+            XCTAssertNotNil(originalXdm.removeValue(forKey: "timestamp"))
+            XCTAssertNotNil(originalXdm.removeValue(forKey: "placeContext"))
+            XCTAssertEqual(originalXdm as NSDictionary, xdm as NSDictionary)
             XCTAssertNil(try XCTUnwrap(feedbackConversation(from: payload))["data"])
             XCTAssertEqual(extractFeedbackConsentState(from: payload), "unknown")
         }
@@ -1133,9 +1139,154 @@ final class ConciergeChatServiceTests: XCTestCase {
         XCTAssertFalse(json.contains("athlete-token-123"), "token omitted when there is no conversation node to attach to")
     }
 
+    // MARK: - Request-time XDM
+
+    func test_streamChat_timeContext_usesOneInstantAndNumericOffsets() async throws {
+        try await assertOutboundTimeContext(isFeedback: false)
+    }
+
+    func test_sendFeedback_timeContext_usesOneInstantAndNumericOffsets() async throws {
+        try await assertOutboundTimeContext(isFeedback: true)
+    }
+
+    private func assertOutboundTimeContext(isFeedback: Bool) async throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = "2026-11-24T16:08:58.985Z"
+        let date = try XCTUnwrap(formatter.date(from: timestamp))
+        let cases: [(minutes: Int, localTime: String)] = [
+            (0, "2026-11-24T16:08:58.985Z"),
+            (330, "2026-11-24T21:38:58.985+05:30"),
+            (-480, "2026-11-24T08:08:58.985-08:00"),
+            (345, "2026-11-24T21:53:58.985+05:45"),
+            (-210, "2026-11-24T12:38:58.985-03:30"),
+            (840, "2026-11-25T06:08:58.985+14:00")
+        ]
+
+        for testCase in cases {
+            let calls = LockedBox(0)
+            let timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: testCase.minutes * 60))
+            let service = makeStubbedService(dateProvider: {
+                let count = calls.value
+                calls.value = count + 1
+                return date.addingTimeInterval(Double(count))
+            }, timeZoneProvider: { timeZone })
+            XCTAssertEqual(calls.value, 0, "Capture the instant at request construction, not service initialization.")
+
+            let xdm = try await captureOutboundXDM(service: service, isFeedback: isFeedback)
+            let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
+            XCTAssertEqual(calls.value, 1, "All time fields must use a single captured instant.")
+            XCTAssertEqual(xdm["timestamp"] as? String, timestamp)
+            XCTAssertEqual(placeContext["localTime"] as? String, testCase.localTime)
+            XCTAssertEqual(formatter.date(from: try XCTUnwrap(xdm["timestamp"] as? String)),
+                           formatter.date(from: try XCTUnwrap(placeContext["localTime"] as? String)))
+            let offset = try XCTUnwrap(placeContext["localTimezoneOffset"] as? NSNumber)
+            XCTAssertNotEqual(CFGetTypeID(offset), CFBooleanGetTypeID(), "The offset must be a JSON number, not a boolean.")
+            XCTAssertEqual(offset.doubleValue, Double(testCase.minutes))
+        }
+    }
+
+    func test_outboundTimeContext_mergesCallerPlaceContextAndPreservesOverrides() async throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = try XCTUnwrap(formatter.date(from: "2026-11-24T16:08:58.985Z"))
+        let timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 330 * 60))
+        let callerContexts: [[String: Any]] = [
+            ["countryCode": "US"],
+            ["countryCode": "US", "localTime": "caller-local-time"],
+            ["localTimezoneOffset": 90],
+            ["localTime": NSNull(), "localTimezoneOffset": NSNull()]
+        ]
+        for isFeedback in [false, true] {
+            for callerContext in callerContexts {
+                let service = makeStubbedService(dateProvider: { date }, timeZoneProvider: { timeZone })
+                let fields: [String: Any] = [
+                    "timestamp": "caller-timestamp",
+                    "placeContext": callerContext,
+                    "identityMap": ["ECID": [["id": isFeedback ? "ecid-123" : "cannot-override"]]],
+                    "commerce": ["order": ["purchaseID": "purchase-1"]]
+                ]
+
+                let xdm = try await captureOutboundXDM(service: service, isFeedback: isFeedback, fields: fields)
+                let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
+                XCTAssertEqual(xdm["timestamp"] as? String, "caller-timestamp")
+                var expectedContext: [String: Any] = [
+                    "localTime": "2026-11-24T21:38:58.985+05:30",
+                    "localTimezoneOffset": 330
+                ]
+                expectedContext.merge(callerContext) { _, caller in caller }
+                XCTAssertEqual(placeContext as NSDictionary, expectedContext as NSDictionary)
+                XCTAssertEqual(xdm["commerce"] as? NSDictionary, fields["commerce"] as? NSDictionary)
+                let identityMap = try XCTUnwrap(xdm["identityMap"] as? [String: Any])
+                XCTAssertEqual((identityMap["ECID"] as? [[String: Any]])?.first?["id"] as? String, "ecid-123")
+            }
+        }
+    }
+
+    func test_payloadTimeContext_isFreshPerRequestAndUsesOffsetAtCapturedDate() throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let dates = try ["2026-01-15T16:08:58.985Z", "2026-07-15T16:08:58.985Z"].map {
+            try XCTUnwrap(formatter.date(from: $0))
+        }
+        let timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+        var capturedDate = dates[0]
+        let service = makeStubbedService(dateProvider: { capturedDate }, timeZoneProvider: { timeZone })
+
+        for isFeedback in [false, true] {
+            for (index, date) in dates.enumerated() {
+                capturedDate = date
+                let data = try isFeedback
+                    ? service.createFeedbackPayload(data: ["xdm": ["conversation": ["turnID": "t-1"]]])
+                    : service.createChatPayload(query: "hello")
+                let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+                let xdm = try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+                let placeContext = try XCTUnwrap(xdm["placeContext"] as? [String: Any])
+                XCTAssertEqual(xdm["timestamp"] as? String, formatter.string(from: date))
+                XCTAssertEqual(placeContext["localTimezoneOffset"] as? Int, index == 0 ? -480 : -420)
+                XCTAssertEqual(placeContext["localTime"] as? String, index == 0
+                               ? "2026-01-15T08:08:58.985-08:00" : "2026-07-15T09:08:58.985-07:00")
+            }
+        }
+        service.invalidateTransportForIdentityReset()
+    }
+
+    private func captureOutboundXDM(
+        service: ConciergeChatService,
+        isFeedback: Bool,
+        fields: [String: Any] = [:]
+    ) async throws -> [String: Any] {
+        StubURLProtocol.reset()
+        defer { service.invalidateTransportForIdentityReset() }
+        if isFeedback {
+            var xdm = fields
+            xdm["conversation"] = ["turnID": "t-1", "feedback": ["source": "end-user"]]
+            service.sendFeedback(data: ["xdm": xdm], token: nil)
+        } else {
+            service.streamChat("hello", token: nil, extraXDMFields: fields,
+                               onChunk: { _ in }, onComplete: { _ in })
+        }
+        await waitForCondition(timeout: 3) { StubURLProtocol.count == 1 }
+        let request = try XCTUnwrap(StubURLProtocol.last)
+        let json: Any
+        if let body = request.httpBody {
+            json = try JSONSerialization.jsonObject(with: body)
+        } else {
+            let stream = try XCTUnwrap(request.httpBodyStream)
+            stream.open()
+            defer { stream.close() }
+            json = try JSONSerialization.jsonObject(with: stream)
+        }
+        let payload = try XCTUnwrap(json as? [String: Any])
+        return try XCTUnwrap(extractFirstEvent(from: payload)?["xdm"] as? [String: Any])
+    }
+
     // MARK: - Stubbed-network helpers
 
-    private func makeStubbedService() -> ConciergeChatService {
+    private func makeStubbedService(
+        dateProvider: @escaping () -> Date = Date.init,
+        timeZoneProvider: @escaping () -> TimeZone = { .current }
+    ) -> ConciergeChatService {
         let model = ConciergeConfiguration(consentCollectValue: "y",
                                            datastream: "ds-123",
                                            ecid: "ecid-123",
@@ -1143,7 +1294,8 @@ final class ConciergeChatServiceTests: XCTestCase {
                                            surfaces: ["web://test.adobe.com/surface"])
         let sessionConfig = URLSessionConfiguration.ephemeral
         sessionConfig.protocolClasses = [StubURLProtocol.self]
-        return ConciergeChatService(configuration: model, urlSessionConfiguration: sessionConfig)
+        return ConciergeChatService(configuration: model, urlSessionConfiguration: sessionConfig,
+                                    dateProvider: dateProvider, timeZoneProvider: timeZoneProvider)
     }
 
     private func waitForCondition(timeout: TimeInterval, _ condition: @escaping () -> Bool) async {
