@@ -161,6 +161,16 @@ final class ChatControllerVoiceSessionTests: XCTestCase {
         XCTAssertEqual(service.lastBootstrapSessionID, configuration.sessionId)
     }
 
+    func test_bootstrap_sendsTheResolvedAuthToken() {
+        ConciergeAuthTokenResolver.shared.setProvider({ "voice-auth-token" }, timeout: 3)
+        defer { ConciergeAuthTokenResolver.shared.setProvider(nil) }
+        let controller = makeController()
+
+        startVoice(controller)
+
+        XCTAssertEqual(service.lastBootstrapToken, "voice-auth-token")
+    }
+
     func test_bootstrap_withNoHeldXDMContext_sendsNoExtraXDMFields() {
         let controller = makeController()
 
