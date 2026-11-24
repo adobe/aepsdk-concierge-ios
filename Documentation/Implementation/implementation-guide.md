@@ -38,6 +38,10 @@ Speech to text uses iOS Speech + microphone APIs. Add these to the app's `Info.p
 
 The SDK handles permission requests internally when the user taps the microphone button; no additional permission-request code is required from the host app.
 
+### Voice (optional)
+
+Spoken conversations with the agent need a Brand Concierge version that includes `VoiceTransport` (5.10.3 and earlier don't), Xcode 16.3 or later, a LiveKit dependency in your app, and voice enabled for your Brand Concierge by Adobe. See [Optional: voice conversations](../getting-started.md#optional-voice-conversations) for the setup steps and limitations.
+
 ---
 
 ## Installation
@@ -233,7 +237,7 @@ try Concierge.updateXDMContext(["loyalty": ["tier": NSNull()]])
 
 ## Authentication
 
-If your backend requires proof of the user's identity, register a token provider to supply an app-minted authentication token. Brand Concierge attaches it to every chat and feedback request until the provider is cleared.
+If your backend requires proof of the user's identity, register a token provider to supply an app-minted authentication token. Brand Concierge attaches it to every chat and feedback request until the provider is cleared. Voice conversations don't send it.
 
 The provider closure is `async`, so it serves both integration styles with the same API:
 
