@@ -189,10 +189,10 @@ public enum ConciergeConstants {
                 static let TOKEN = "token"
             }
 
-            /// Keys for the voice-bootstrap `data` part. See `Values.VoiceBootstrap` for the `type` value.
+            /// Keys for the `query.conversation.voice` marker of a voice bootstrap. See `Values.VoiceBootstrap` for the `action` value.
             enum VoiceBootstrap {
-                static let DATA = "data"
-                static let TYPE = "type"
+                static let VOICE = "voice"
+                static let ACTION = "action"
             }
         }
 
@@ -211,10 +211,8 @@ public enum ConciergeConstants {
             }
 
             enum VoiceBootstrap {
-                /// `conversation.data.type` value requesting voice session credentials.
-                static let TYPE_LIVEKIT_BOOTSTRAP = "livekit-bootstrap"
-                /// `xdm.eventType` value marking the request as a voice bootstrap.
-                static let EVENT_TYPE_VOICE = "conversation.voice"
+                /// `query.conversation.voice.action` value requesting voice session credentials.
+                static let ACTION_START = "start"
             }
         }
     }
