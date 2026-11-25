@@ -33,6 +33,8 @@ class ConciergeChatService: NSObject {
 
     private var configuration: ConciergeConfiguration
     private var session: URLSession!
+    private let dateProvider: () -> Date
+    private let timeZoneProvider: () -> TimeZone
 
     // Per-turn streaming state. Written synchronously in `streamChat` (on the caller's thread, before
     // `resume()`) and read/cleared on the URLSession delegate queue — `resume()` establishes the
@@ -57,8 +59,12 @@ class ConciergeChatService: NSObject {
     // MARK: - Initialization
 
     init(configuration: ConciergeConfiguration,
-         urlSessionConfiguration: URLSessionConfiguration = .default) {
+         urlSessionConfiguration: URLSessionConfiguration = .default,
+         dateProvider: @escaping () -> Date = Date.init,
+         timeZoneProvider: @escaping () -> TimeZone = { .current }) {
         self.configuration = configuration
+        self.dateProvider = dateProvider
+        self.timeZoneProvider = timeZoneProvider
         
         super.init()
 
@@ -241,14 +247,12 @@ class ConciergeChatService: NSObject {
             conversation[ConciergeConstants.Request.Keys.AuthData.DATA] = dataPart
         }
 
-        var xdm: [String: Any] = [
-            ConciergeConstants.Request.Keys.IDENTITY_MAP: identityMapPayload
-        ]
-        // Host-supplied handoff fields are shallow-merged alongside the SDK's own XDM. Collisions
-        // resolve in the SDK's favour so a caller can never displace `identityMap`.
-        if let extraXDMFields = extraXDMFields {
-            xdm.merge(extraXDMFields) { current, _ in current }
-        }
+        let requestTime = createTimeXDM()
+        var xdm = requestTime.applying(to: ConciergeXDMContextStore.merging(
+            extraXDMFields ?? [:], over: requestTime.fields
+        ))
+        // Request-time fields and identityMap are SDK-owned; other caller fields are preserved.
+        xdm[ConciergeConstants.Request.Keys.IDENTITY_MAP] = identityMapPayload
 
         let payload: [String: Any] = [
             ConciergeConstants.Request.Keys.EVENTS: [
@@ -281,7 +285,13 @@ class ConciergeChatService: NSObject {
     func createFeedbackPayload(data: [String: Any], token: String? = nil) throws -> Data {
         let consentState = ConsentState(configValue: configuration.consentCollectValue).payloadValue
 
-        var payload = data
+        let requestTime = createTimeXDM()
+        var payload = ConciergeXDMContextStore.merging(
+            data, over: [ConciergeConstants.Request.Keys.XDM: requestTime.fields]
+        )
+        let callerXDM = payload[ConciergeConstants.Request.Keys.XDM] as? [String: Any]
+            ?? requestTime.fields
+        payload[ConciergeConstants.Request.Keys.XDM] = requestTime.applying(to: callerXDM)
         payload[ConciergeConstants.Request.Keys.Consent.META] = [
             ConciergeConstants.Request.Keys.Consent.CONSENT: [
                 ConciergeConstants.Request.Keys.Consent.STATE: consentState
@@ -311,6 +321,76 @@ class ConciergeChatService: NSObject {
         }
 
         return jsonData
+    }
+
+    private struct RequestTimeXDM {
+        let timestamp: String
+        let localTime: String
+        let localTimezoneOffset: Int
+
+        var fields: [String: Any] {
+            [
+                ConciergeConstants.Request.Keys.TIMESTAMP: timestamp,
+                ConciergeConstants.Request.Keys.PLACE_CONTEXT: [
+                    ConciergeConstants.Request.Keys.LOCAL_TIME: localTime,
+                    ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET: localTimezoneOffset
+                ]
+            ]
+        }
+
+        func applying(to xdm: [String: Any]) -> [String: Any] {
+            var result = xdm
+            result[ConciergeConstants.Request.Keys.TIMESTAMP] = timestamp
+            var placeContext = result[ConciergeConstants.Request.Keys.PLACE_CONTEXT] as? [String: Any] ?? [:]
+            placeContext[ConciergeConstants.Request.Keys.LOCAL_TIME] = localTime
+            placeContext[ConciergeConstants.Request.Keys.LOCAL_TIMEZONE_OFFSET] = localTimezoneOffset
+            result[ConciergeConstants.Request.Keys.PLACE_CONTEXT] = placeContext
+            return result
+        }
+    }
+
+    private static let utcTimestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+    private static let localTimestampFormatterLock = NSLock()
+    private static var cachedLocalTimestampFormatter: DateFormatter?
+
+    // Matches Web SDK `toISOStringLocal`: always a numeric offset, so zero-offset zones emit `+00:00`, not `Z`.
+    private static func makeLocalTimestampFormatter(timeZone: TimeZone) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+        formatter.timeZone = timeZone
+        return formatter
+    }
+
+    // Cached formatters are never mutated after creation, so concurrent requests can share them safely.
+    private static func localTimestampFormatter(for timeZone: TimeZone) -> DateFormatter {
+        localTimestampFormatterLock.lock()
+        defer { localTimestampFormatterLock.unlock() }
+        if let formatter = cachedLocalTimestampFormatter, formatter.timeZone == timeZone {
+            return formatter
+        }
+        let formatter = makeLocalTimestampFormatter(timeZone: timeZone)
+        cachedLocalTimestampFormatter = formatter
+        return formatter
+    }
+
+    private func createTimeXDM() -> RequestTimeXDM {
+        // Truncate before formatting so rounding cannot move localTime across a DST boundary.
+        let capturedDate = dateProvider()
+        let date = Date(timeIntervalSince1970: (capturedDate.timeIntervalSince1970 * 1000).rounded(.down) / 1000)
+        let timeZone = timeZoneProvider()
+
+        return RequestTimeXDM(
+            timestamp: Self.utcTimestampFormatter.string(from: date),
+            localTime: Self.localTimestampFormatter(for: timeZone).string(from: date),
+            localTimezoneOffset: -timeZone.secondsFromGMT(for: date) / 60
+        )
     }
 
     /// Builds the `{ type: "auth", payload: { token } }` data part, or `nil` for a missing/blank token.
